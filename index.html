@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#f5e6c8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="خلوتي">
+  <link rel="manifest" href="manifest.json">
+  <title>خلوتي - توتة روحية</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #f8f1e3;
+      --card: #fffdf8;
+      --gold: #c9a227;
+      --gold-dark: #a67c00;
+      --brown: #5c4033;
+      --text: #3e2f1c;
+      --light-cross: #e8d9b5;
+      --green: #5a7d4a;
+      --shadow: 0 4px 15px rgba(92, 64, 51, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+    }
+
+    body {
+      font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* خلفية الصلبان فقط */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 8h4v10h10v4H22v10h-4V22H8v-4h10V8z' fill='%23e8d9b5' fill-opacity='0.45'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      z-index: 1;
+      overflow-x: hidden;
+    }
+
+    /* Header / Logo */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-top: 10px;
+    }
+
+    .logo {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3);
+      overflow: hidden;
+      border: 3px solid var(--gold);
+      background: #fff9e8;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 12px 0 18px;
+    }
+
+    .date-nav button {
+      background: var(--card);
+      border: 1.5px solid var(--gold);
+      color: var(--brown);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .date-nav button:active {
+      transform: scale(0.92);
+      background: var(--gold);
+      color: white;
+    }
+
+    .current-date {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--brown);
+      min-width: 180px;
+      text-align: center;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(201, 162, 39, 0.2);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--brown);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .icon {
+      font-size: 18px;
+    }
+
+    /* Goals */
+    .goals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .goal-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .goal-item input[type="checkbox"] {
+      display: none;
+    }
+
+    .custom-check {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--gold);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    .goal-item input:checked + .custom-check {
+      background: var(--gold);
+      border-color: var(--gold-dark);
+    }
+
+    .goal-item input:checked + .custom-check::after {
+      content: '✓';
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .goal-line {
+      flex: 1;
+      border-bottom: 1.5px dotted #c9b896;
+      height: 22px;
+    }
+
+    .goal-text-input {
+      flex: 1;
+      border: none;
+      border-bottom: 1.5px dotted #c9b896;
+      background: transparent;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .goal-text-input:focus {
+      border-bottom-color: var(--gold);
+    }
+
+    /* Daily icons row */
+    .daily-icons {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .daily-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 18%;
+      min-width: 56px;
+      margin-bottom: 8px;
+    }
+
+    .daily-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #fff9e8, #f5e6c8);
+      border: 1.5px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .daily-item input:checked ~ .daily-icon,
+    .daily-item.checked .daily-icon {
+      background: var(--gold);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .daily-label {
+      font-size: 12px;
+      color: var(--brown);
+      text-align: center;
+    }
+
+    .daily-item input {
+      display: none;
+    }
+
+    /* Service row */
+    .service-row {
+      display: flex;
+      justify-content: space-around;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .service-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 90px;
+    }
+
+    .service-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .service-item.checked .service-circle {
+      background: var(--gold);
+      color: white;
+    }
+
+    .service-label {
+      font-size: 12px;
+      text-align: center;
+      color: var(--brown);
+      line-height: 1.3;
+    }
+
+    .count-badge {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      background: var(--gold-dark);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+    }
+
+    .helper-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .helper-btn {
+      background: #fff9e8;
+      border: 1.5px solid var(--gold);
+      border-radius: 16px;
+      padding: 16px 10px;
+      text-align: center;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--brown);
+      cursor: pointer;
+      line-height: 1.5;
+    }
+
+    .helper-btn:active { background: var(--gold); color: white; }
+
+    .sin-cat {
+      margin-bottom: 14px;
+      background: #fff9e8;
+      border: 1px solid rgba(201,162,39,0.35);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .sin-cat h4 {
+      color: var(--gold-dark);
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .sin-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .sin-chip {
+      background: white;
+      border: 1px solid var(--gold);
+      border-radius: 16px;
+      padding: 5px 10px;
+      font-size: 12.5px;
+      font-family: inherit;
+      color: var(--brown);
+      cursor: pointer;
+    }
+
+    .sin-chip.selected {
+      background: var(--gold);
+      color: white;
+      font-weight: 600;
+    }
+
+    .settings-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: var(--card);
+      border: 1.5px solid var(--gold);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mute-banner {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(92,64,51,0.92);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-size: 13px;
+      z-index: 150;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      max-width: 90%;
+    }
+
+    .mute-banner.show { display: flex; }
+
+    .mute-banner button {
+      background: var(--gold);
+      border: none;
+      color: white;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .guide-text {
+      font-size: 14.5px;
+      line-height: 1.9;
+      text-align: right;
+      color: var(--text);
+    }
+
+    .guide-text h3 {
+      color: var(--brown);
+      margin: 14px 0 8px;
+      font-size: 16px;
+    }
+
+    /* Text areas */
+    .text-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .text-box {
+      background: #fffdf8;
+      border: 1.5px solid rgba(201, 162, 39, 0.3);
+      border-radius: 12px;
+      padding: 10px;
+      min-height: 80px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .text-box:active {
+      border-color: var(--gold);
+    }
+
+    .text-box-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brown);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .text-preview {
+      font-size: 13px;
+      color: #8a7a60;
+      line-height: 1.4;
+      max-height: 50px;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
+    /* Psalms */
+    .psalm-count {
+      font-size: 13px;
+      color: var(--gold-dark);
+      margin-bottom: 10px;
+    }
+
+    .psalm-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .psalm-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .psalm-field label {
+      font-size: 13px;
+      color: var(--brown);
+      min-width: 110px;
+    }
+
+    .psalm-field input {
+      flex: 1;
+      border: none;
+      border-bottom: 1.5px solid #d4c4a0;
+      background: transparent;
+      padding: 6px 4px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .psalm-field input:focus {
+      border-bottom-color: var(--gold);
+    }
+
+    /* Action buttons */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .action-btn {
+      background: linear-gradient(145deg, #c9a227, #a67c00);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 3px 10px rgba(166, 124, 0, 0.3);
+      transition: all 0.2s;
+    }
+
+    .action-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Bottom sections */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .bottom-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1px solid rgba(201, 162, 39, 0.25);
+      box-shadow: var(--shadow);
+    }
+
+    .bottom-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brown);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .bottom-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .mini-btn {
+      background: #f5e6c8;
+      border: 1px solid var(--gold);
+      color: var(--brown);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mini-btn:active {
+      background: var(--gold);
+      color: white;
+    }
+
+    /* Verse footer */
+    .verse-footer {
+      text-align: center;
+      margin-top: 20px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--brown);
+      line-height: 1.6;
+      border-top: 1px solid rgba(201, 162, 39, 0.3);
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(62, 47, 28, 0.55);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card);
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      border-radius: 24px 24px 0 0;
+      padding: 20px;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--brown);
+    }
+
+    .modal-close {
+      background: #f0e6d0;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--brown);
+    }
+
+    .modal textarea {
+      width: 100%;
+      min-height: 180px;
+      border: 1.5px solid rgba(201, 162, 39, 0.4);
+      border-radius: 12px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      background: #fffdf8;
+      color: var(--text);
+    }
+
+    .modal textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .save-btn {
+      width: 100%;
+      margin-top: 14px;
+      background: linear-gradient(145deg, #c9a227, #a67c00);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Prayer content */
+    .prayer-text {
+      font-size: 16px;
+      line-height: 1.9;
+      color: var(--text);
+      text-align: center;
+      padding: 10px 0;
+      background: linear-gradient(180deg, rgba(245,230,200,0.4) 0%, rgba(255,253,248,0.9) 100%);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .prayer-text p {
+      margin-bottom: 12px;
+    }
+
+    #prayerModal .modal-content {
+      background: #fffdf8 url('jesus.jpg') no-repeat top center;
+      background-size: cover;
+    }
+
+    #prayerModal .prayer-text {
+      background: rgba(255, 253, 248, 0.88);
+      text-align: right;
+    }
+
+    /* Psalm selector */
+    .psalm-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .psalm-num {
+      background: #f5e6c8;
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .psalm-num.selected {
+      background: var(--gold);
+      color: white;
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--brown);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
+  <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
+  <div class="mute-banner" id="muteBanner">
+    <span id="audioStatus">🎵 الترنيمة شغالة</span>
+    <button onclick="toggleMute()">كتم / تشغيل</button>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <img src="logo.png" alt="خلوتي - توتة روحية">
+      </div>
+
+      <div class="date-nav">
+        <button id="prevDay" aria-label="اليوم السابق">›</button>
+        <div class="current-date" id="currentDate" onclick="openDatePicker()" style="cursor:pointer;" title="اضغط لاختيار تاريخ">الإثنين: ...</div>
+        <button id="nextDay" aria-label="اليوم التالي">‹</button>
+      </div>
+      <input type="date" id="datePicker" style="display:none;" onchange="setDateFromPicker(this.value)">
+    </div>
+
+    <!-- أهدافى النهاردة -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🍃</span> أهدافى اليوم
+      </div>
+      <div class="goals-list" id="goalsList">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- أنشطة اليوم (تفعيل) -->
+    <div class="card">
+      <div class="card-title"><span class="icon">✓</span> أنشطة اليوم</div>
+      <div class="daily-icons" id="dailyIcons"></div>
+    </div>
+
+    <!-- أقسام تفتح -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📂</span> أقسام الخلوة</div>
+      <div class="daily-icons" id="openIcons"></div>
+    </div>
+
+    <!-- خدمة اليوم + صلوات -->
+    <div class="card">
+      <div class="service-row" id="serviceRow">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- آية اليوم + تأملاتي -->
+    <div class="card">
+      <div class="text-section">
+        <div class="text-box" onclick="openTextModal('verse')">
+          <div class="text-box-title">🍃 آية اليوم</div>
+          <div class="text-preview" id="versePreview">اضغط للكتابة...</div>
+        </div>
+        <div class="text-box" onclick="openTextModal('reflection')">
+          <div class="text-box-title">🍃 تأملاتي اليوم</div>
+          <div class="text-preview" id="reflectionPreview">اضغط للكتابة...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- مزاميري اليوم -->
+    <div class="card">
+      <div class="card-title" style="justify-content: space-between;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="icon">🎵</span> مزاميري اليوم
+          <span class="psalm-count" id="psalmCount" style="font-weight:normal;">العدد: 0</span>
+        </div>
+        <button onclick="openPsalmSelector()" style="background:var(--gold); color:white; border:none; border-radius:20px; padding:6px 12px; font-size:12px; font-family:inherit; cursor:pointer;">
+          ➕ اختيار
+        </button>
+      </div>
+      <div id="selectedPsalmsHome" style="margin:8px 0 4px;font-size:13px;"></div>
+      <div class="psalm-fields">
+        <div class="psalm-field">
+          <label>شكراً يارب على</label>
+          <input type="text" id="psalmThanks" placeholder="...">
+        </div>
+        <div class="psalm-field">
+          <label>عاوز أقولك يارب</label>
+          <input type="text" id="psalmTell" placeholder="...">
+        </div>
+        <div class="psalm-field">
+          <label>طلبة من أجل</label>
+          <input type="text" id="psalmRequest" placeholder="...">
+        </div>
+      </div>
+    </div>
+
+    <div class="action-buttons" style="margin-top:10px;">
+      <button class="action-btn" onclick="openSpokenPrayers()">صلوات مقروءة ومسموعة</button>
+      <button class="action-btn" onclick="openTextModal('altar')">على المذبح</button>
+    </div>
+    <div class="action-buttons" style="margin-top:10px;">
+      <button class="action-btn" onclick="openTextModal('likedReadings')">قراءات لمستني</button>
+      <button class="action-btn" onclick="openPdfOptions()">تحميل PDF</button>
+    </div>
+
+    <!-- الكتاب المقدس + الأجبية -->
+    <div class="bottom-grid">
+      <div class="bottom-card">
+        <div class="bottom-card-title">📖 الكتاب المقدس</div>
+        <div class="bottom-btns">
+          <button class="mini-btn" onclick="showToast('قريباً: العهد القديم')">العهد القديم</button>
+          <button class="mini-btn" onclick="showToast('قريباً: العهد الجديد')">العهد الجديد</button>
+        </div>
+      </div>
+      <div class="bottom-card">
+        <div class="bottom-card-title">⛪ الأجبية</div>
+        <div class="bottom-btns">
+          <button class="mini-btn" onclick="showToast('قريباً: باكر')">باكر</button>
+          <button class="mini-btn" onclick="showToast('قريباً: غروب')">غروب</button>
+          <button class="mini-btn" onclick="showToast('قريباً: نوم')">نوم</button>
+          <button class="mini-btn" onclick="showToast('قريباً: أقسام أخرى')">أخرى</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- الآية -->
+    <div class="verse-footer">
+      «صلوا بلا انقطاع» ١ تسالونيكي ٥: ١٧
+    </div>
+  </div>
+
+  <!-- Text Modal -->
+  <div class="modal" id="textModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">تأملاتي اليوم</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <textarea id="modalTextarea" placeholder="اكتب هنا..."></textarea>
+      <button class="save-btn" onclick="saveText()">حفظ</button>
+      <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;">تحميل PDF</button>
+      <button id="deleteTextBtn" onclick="deleteText()" style="display:none; width:100%; margin-top:10px; background:#c0392b; color:white; border:none; border-radius:25px; padding:12px; font-family:inherit; font-size:15px; cursor:pointer;">مسح النص</button>
+    </div>
+  </div>
+
+  <!-- Prayer Modal -->
+  <div class="modal" id="prayerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="prayerTitle">صلاة</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="prayer-text" id="prayerContent"></div>
+      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()">تحميل PDF للصلاة</button>
+      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()">تحميل PDF للصلاة</button>
+    </div>
+  </div>
+
+  <!-- Confession Helper Modal -->
+  <div class="modal" id="confessionModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="confessionTitle">مساعد الاعتراف</div>
+        <button class="modal-close" onclick="closeConfession()">×</button>
+      </div>
+      <div id="confessionBody"></div>
+    </div>
+  </div>
+
+  <!-- Psalm Selector Modal -->
+  <div class="modal" id="psalmModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">اختيار المزامير</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <p style="font-size:13px; color:#8a7a60; margin-bottom:8px;">اضغط للاختيار · اضغط مطوّلًا للقراءة</p>
+      <div id="selectedPsalmsBar" style="margin-bottom:10px;font-size:13px;"></div>
+      <div class="psalm-grid" id="psalmGrid"></div>
+      <button class="save-btn" onclick="openMazameerPdf()">فتح سفر المزامير كامل (PDF)</button>
+      <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="closeModal()">تم</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="psalms.js"></script>
+  <script src="bible-svd.js"></script>
+  <script>
+    // ============ State ============
+    let currentDate = (function() {
+      const n = new Date();
+      return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12, 0, 0, 0);
+    })();
+    let currentTextType = null;
+    let selectedPsalms = [];
+
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    // مجموعة تفعيل فقط (ضغط = عملتها)
+    const toggleItems = [
+      { id: 'baker', label: 'باكر', icon: '☀️' },
+      { id: 'sunset', label: 'غروب', icon: '🌅' },
+      { id: 'sleep', label: 'نوم', icon: '🌙' },
+      { id: 'mass', label: 'قداس', icon: '🍷' },
+      { id: 'praise', label: 'تسبيحة', icon: '🎵' },
+      { id: 'fast', label: 'صوم', icon: '🌿' },
+      { id: 'silence', label: 'ساعة صمت', icon: '🤫' },
+      { id: 'service', label: 'خدمة اليوم', icon: '🙏' }
+    ];
+
+    // مجموعة تفتح للكتابة/المحتوى
+    const openItems = [
+      { id: 'oldTestament', label: 'العهد القديم', icon: '📜', type: 'bible' },
+      { id: 'newTestament', label: 'العهد الجديد', icon: '📖', type: 'bible' },
+      { id: 'spiritualReading', label: 'قراءات روحية', icon: '📚', type: 'books' },
+      { id: 'fathers', label: 'آبائيات', icon: '🕯️', type: 'text' },
+      { id: 'bibleComment', label: 'تفسير الكتاب', icon: '🔍', type: 'text' },
+      { id: 'katameros', label: 'قطمارس', icon: '📅', type: 'text' },
+      { id: 'faithExamples', label: 'تمثلوا بإيمانهم', icon: '⭐', type: 'text' },
+      { id: 'prepare', label: 'تحضير', icon: '📝', type: 'text' },
+      { id: 'howStart', label: 'كيف أبدأ خلوة', icon: '🚪', type: 'howto' },
+      { id: 'saintsPraises', label: 'مدائح القديسين', icon: '🎶', type: 'text' },
+      { id: 'progressChart', label: 'مستوى الخلوة', icon: '📊', type: 'chart' },
+      { id: 'servantFollow', label: 'متابعة الخادم', icon: '👥', type: 'servant' }
+    ];
+
+    const dailyItems = toggleItems; // توافق مع الكود القديم للعرض
+
+    const serviceItems = [
+      { id: 'jesusPrayer', label: 'صلاة يسوع', icon: '📿' },
+      { id: 'kyrie', label: 'كيرياليسون', icon: '✝' },
+      { id: 'confession', label: 'مساعد الاعتراف', icon: '🕊️' }
+    ];
+
+    // ============ Helpers ============
+    function getDateKey(date) {
+      // تاريخ محلي عشان منتصف الليل ما ينقلش النشاط ليوم تاني
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function normalizeToLocalDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
+    }
+
+    function loadData() {
+      const key = 'khalwati_' + getDateKey(currentDate);
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      return data;
+    }
+
+    function saveData(data) {
+      const key = 'khalwati_' + getDateKey(currentDate);
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function updateDateDisplay() {
+      const day = dayNames[currentDate.getDay()];
+      const d = currentDate.getDate();
+      const m = currentDate.getMonth() + 1;
+      const y = currentDate.getFullYear();
+      document.getElementById('currentDate').textContent = `${day}: ${y}/${m}/${d}`;
+    }
+
+    function openDatePicker() {
+      const picker = document.getElementById('datePicker');
+      picker.value = getDateKey(currentDate);
+      picker.showPicker ? picker.showPicker() : picker.click();
+    }
+
+    function setDateFromPicker(val) {
+      if (val) {
+        currentDate = new Date(val + 'T12:00:00');
+        renderAll();
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    // ============ Render ============
+    function renderGoals() {
+      const data = loadData();
+      const list = document.getElementById('goalsList');
+      list.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const checked = data['goal' + i] || false;
+        const text = data['goalText' + i] || '';
+        const from = data['goalFrom' + i] || '';
+        const to = data['goalTo' + i] || '';
+        list.innerHTML += `
+          <div class="goal-item" style="flex-wrap:wrap;">
+            <input type="checkbox" id="goal${i}" ${checked ? 'checked' : ''} onchange="toggleGoal(${i})">
+            <label class="custom-check" for="goal${i}"></label>
+            <input type="text" class="goal-text-input" id="goalText${i}" value="${text.replace(/"/g, '&quot;')}" placeholder="اكتب هدفك هنا..." oninput="saveGoalText(${i})">
+            <div style="width:100%; display:flex; gap:8px; margin-top:4px; padding-right:32px; align-items:center; font-size:12px; color:var(--brown);">
+              <span>من</span>
+              <input type="time" id="goalFrom${i}" value="${from}" onchange="saveGoalTime(${i})" style="border:1px solid #d4c4a0; border-radius:8px; padding:4px; font-family:inherit; font-size:12px;">
+              <span>إلى</span>
+              <input type="time" id="goalTo${i}" value="${to}" onchange="saveGoalTime(${i})" style="border:1px solid #d4c4a0; border-radius:8px; padding:4px; font-family:inherit; font-size:12px;">
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function saveGoalText(num) {
+      const data = loadData();
+      data['goalText' + num] = document.getElementById('goalText' + num).value;
+      saveData(data);
+    }
+
+    function saveGoalTime(num) {
+      const data = loadData();
+      data['goalFrom' + num] = document.getElementById('goalFrom' + num).value;
+      data['goalTo' + num] = document.getElementById('goalTo' + num).value;
+      saveData(data);
+    }
+
+    function renderDailyIcons() {
+      const data = loadData();
+      const container = document.getElementById('dailyIcons');
+      container.innerHTML = '';
+      toggleItems.forEach(item => {
+        const checked = data[item.id] || false;
+        container.innerHTML += `
+          <div class="daily-item ${checked ? 'checked' : ''}" onclick="toggleDaily('${item.id}')">
+            <input type="checkbox" id="${item.id}" ${checked ? 'checked' : ''}>
+            <div class="daily-icon">${item.icon}</div>
+            <div class="daily-label">${item.label}</div>
+          </div>
+        `;
+      });
+      const openContainer = document.getElementById('openIcons');
+      if (openContainer) {
+        openContainer.innerHTML = '';
+        openItems.forEach(item => {
+          openContainer.innerHTML += `
+            <div class="daily-item" onclick="handleOpenItem('${item.id}', '${item.type}')">
+              <div class="daily-icon">${item.icon}</div>
+              <div class="daily-label">${item.label}</div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function handleOpenItem(id, type) {
+      if (type === 'text') openTextModal(id);
+      else if (type === 'books') openBooksSection();
+      else if (type === 'chart') openProgressChart();
+      else if (type === 'servant') openServantSection();
+      else if (type === 'howto') openHowStartGuide();
+      else if (type === 'bible') openBible(id === 'newTestament' ? 'NT' : 'OT');
+      else openTextModal(id);
+    }
+
+    let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
+
+    function openBible(testament) {
+      const bible = window.BIBLE_SVD;
+      if (!bible || !bible.books) {
+        document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
+        document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;">جاري تحميل الكتاب المقدس… أو حدّثي الصفحة بعد رفع الملفات.</p>';
+        document.getElementById('prayerModal').classList.add('active');
+        return;
+      }
+      bibleState.testament = testament || 'OT';
+      const books = bible.books.filter(b => b.t === bibleState.testament);
+      if (!books.length) return;
+      // default first book
+      const firstId = books[0].id;
+      const fullIndex = bible.books.findIndex(b => b.id === firstId);
+      bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
+      bibleState.chapter = 0;
+      renderBible();
+    }
+
+    function renderBible() {
+      const bible = window.BIBLE_SVD;
+      if (!bible) return;
+      const book = bible.books[bibleState.bookIndex];
+      if (!book) return;
+      const chCount = book.chapters.length;
+      if (bibleState.chapter >= chCount) bibleState.chapter = 0;
+      const verses = book.chapters[bibleState.chapter] || [];
+      const booksSame = bible.books.filter(b => b.t === book.t);
+
+      const bookOptions = booksSame.map(b => {
+        const idx = bible.books.findIndex(x => x.id === b.id);
+        return `<option value="${idx}" ${idx===bibleState.bookIndex?'selected':''}>${b.name}</option>`;
+      }).join('');
+
+      const chOptions = Array.from({length: chCount}, (_, i) =>
+        `<option value="${i}" ${i===bibleState.chapter?'selected':''}>${i+1}</option>`
+      ).join('');
+
+      const versesHtml = verses.map((v, i) =>
+        `<p style="margin:8px 0;line-height:1.9;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i+1}</span>${v}</p>`
+      ).join('');
+
+      document.getElementById('prayerTitle').textContent = 'الكتاب المقدس — فاندايك';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <button onclick="openBible('OT')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${book.t==='OT'?'var(--gold)':'#fff'};color:${book.t==='OT'?'#fff':'var(--brown)'};font-family:inherit;">العهد القديم</button>
+            <button onclick="openBible('NT')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${book.t==='NT'?'var(--gold)':'#fff'};color:${book.t==='NT'?'#fff':'var(--brown)'};font-family:inherit;">العهد الجديد</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <select id="bibleBook" onchange="bibleState.bookIndex=parseInt(this.value);bibleState.chapter=0;renderBible();"
+              style="flex:2;padding:8px;border-radius:10px;border:1px solid #d4c4a0;font-family:inherit;font-size:14px;">
+              ${bookOptions}
+            </select>
+            <select id="bibleChapter" onchange="bibleState.chapter=parseInt(this.value);renderBible();"
+              style="flex:1;padding:8px;border-radius:10px;border:1px solid #d4c4a0;font-family:inherit;font-size:14px;">
+              ${chOptions}
+            </select>
+          </div>
+          <h3 style="text-align:center;color:var(--brown);margin:8px 0 12px;">${book.name} — إصحاح ${bibleState.chapter+1}</h3>
+          <div style="font-size:15px;">${versesHtml}</div>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <button class="save-btn" style="flex:1;background:#8a7a60;" onclick="biblePrevChapter()">→ السابق</button>
+            <button class="save-btn" style="flex:1;" onclick="bibleNextChapter()">التالي ←</button>
+          </div>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+      const pc = document.getElementById('prayerContent');
+      if (pc) pc.scrollTop = 0;
+    }
+
+    function biblePrevChapter() {
+      if (bibleState.chapter > 0) {
+        bibleState.chapter--;
+      } else if (bibleState.bookIndex > 0) {
+        const prev = window.BIBLE_SVD.books[bibleState.bookIndex - 1];
+        if (prev && prev.t === window.BIBLE_SVD.books[bibleState.bookIndex].t) {
+          bibleState.bookIndex--;
+          bibleState.chapter = prev.chapters.length - 1;
+        }
+      }
+      renderBible();
+    }
+
+    function bibleNextChapter() {
+      const book = window.BIBLE_SVD.books[bibleState.bookIndex];
+      if (bibleState.chapter < book.chapters.length - 1) {
+        bibleState.chapter++;
+      } else if (bibleState.bookIndex < window.BIBLE_SVD.books.length - 1) {
+        const next = window.BIBLE_SVD.books[bibleState.bookIndex + 1];
+        if (next && next.t === book.t) {
+          bibleState.bookIndex++;
+          bibleState.chapter = 0;
+        }
+      }
+      renderBible();
+    }
+
+    function openHowStartGuide() {
+      document.getElementById('prayerTitle').textContent = 'كيف أبدأ خلوة';
+      document.getElementById('prayerContent').innerHTML = `
+        <div class="guide-text" style="text-align:right;">
+          <h3 style="text-align:center;">الخلوة الروحية</h3>
+          <p style="text-align:center; color:var(--gold-dark); font-weight:600;">
+            «هأنذا واقف على الباب وأقرع. إن سمع أحد صوتي وفتح الباب، أدخل إليه وأتعشى معه وهو معي» (رؤ 3: 20)
+          </p>
+
+          <h3>ما هي الخلوة الروحية؟</h3>
+          <p>الجلوس عند قدمي المسيح، والارتواء من الحب الإلهي، والتلذذ بعشرته...</p>
+          <p><strong>الحاجة إلى واحد</strong> — مثال مريم ومرثا.</p>
+
+          <h3>كيف نقوم بعمل خلوة؟</h3>
+          <p>• الإعداد لها<br>• خطوات عملها</p>
+
+          <h3>① ميعادها ومدتها</h3>
+          <p>• يُفضَّل في <strong>الصباح الباكر</strong>.</p>
+          <p>• الكتاب قال: «صلّوا كل حين ولا تملّوا».</p>
+          <p>• نبدأ بـ<strong>قانوننا الروحي</strong> المتفق عليه مع أب الاعتراف.</p>
+          <p>• المدة حسب ما يحتمله الإنسان، والمهم الاستمرار لا الطول مرة واحدة.</p>
+
+          <h3>② أدواتها</h3>
+          <p>• الكتاب المقدس<br>• النوتة الروحية<br>• كتاب روحي<br>• الأجبية</p>
+
+          <h3>③ مكانها</h3>
+          <p>• يُفضَّل في حجرتك<br>• أو مكان معدّ للصلاة<br>• أو الكنيسة<br>• أو الدير<br>• أو مكان هادئ حيث الطبيعة والسماء</p>
+
+          <h3>خطوات عمل الخلوة</h3>
+          <p>1. <strong>تهيئة القلب والفكر</strong><br>
+          2. <strong>الصلاة</strong><br>
+          3. <strong>التفكير والتأمل</strong><br>
+          4. <strong>الكتابة في النوتة</strong><br>
+          5. <strong>ختام الخلوة</strong></p>
+
+          <h3>تطبيق عملي — مثال الابن الضال</h3>
+          <p>• رجع إلى نفسه وجلس مع نفسه<br>
+          • «أقوم الآن» بقرار حاسم<br>
+          • التوبة والرجوع فعليًا</p>
+
+          <h3>فوائد الخلوة الروحية</h3>
+          <p>1. قضاء وقت مع الله<br>
+          2. السعي والاجتهاد للنمو الروحي<br>
+          3. فحص النفس واكتشاف عيوبها وإصلاحها<br>
+          4. الحديث مع الله وسماع صوته<br>
+          5. اقتناء الفضائل الروحية</p>
+
+          <p style="text-align:center; margin-top:16px; color:var(--brown); font-weight:700;">إلى هنا أعاننا الرب 🙏</p>
+        </div>
+      `;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function renderServices() {
+      const data = loadData();
+      const container = document.getElementById('serviceRow');
+      container.innerHTML = '';
+      serviceItems.forEach(item => {
+        let checked = !!data[item.id];
+        if (item.id === 'confession') {
+          checked = !!(data.confessionDone || (typeof data.confession === 'string' && data.confession.trim()));
+        }
+        let countBadge = '';
+        if (item.id === 'jesusPrayer') {
+          const c = data.jesusCount || 0;
+          if (c > 0) countBadge = `<span class="count-badge">${c}</span>`;
+        } else if (item.id === 'kyrie') {
+          const c = data.kyrieCount || 0;
+          if (c > 0) countBadge = `<span class="count-badge">${c}</span>`;
+        }
+        const clickAction = item.id === 'confession' ? "openConfessionHelper()" : 
+                           (item.id === 'jesusPrayer' ? "openPrayer('jesus')" : 
+                           (item.id === 'kyrie' ? "openPrayer('kyrie')" : `toggleService('${item.id}')`));
+        container.innerHTML += `
+          <div class="service-item ${checked ? 'checked' : ''}" onclick="${clickAction}">
+            <div class="service-circle" style="position:relative;">
+              ${item.icon}
+              ${countBadge}
+            </div>
+            <div class="service-label">${item.label}</div>
+          </div>
+        `;
+      });
+    }
+
+    function renderTexts() {
+      const data = loadData();
+      document.getElementById('versePreview').textContent = data.verse || 'اضغط للكتابة...';
+      document.getElementById('reflectionPreview').textContent = data.reflection || 'اضغط للكتابة...';
+    }
+
+    function renderPsalms() {
+      const data = loadData();
+      selectedPsalms = data.selectedPsalms || [];
+      document.getElementById('psalmCount').textContent = `العدد: ${selectedPsalms.length}`;
+      document.getElementById('psalmThanks').value = data.psalmThanks || '';
+      document.getElementById('psalmTell').value = data.psalmTell || '';
+      document.getElementById('psalmRequest').value = data.psalmRequest || '';
+      const home = document.getElementById('selectedPsalmsHome');
+      if (home) {
+        if (!selectedPsalms.length) {
+          home.innerHTML = '';
+        } else {
+          home.innerHTML = selectedPsalms.map(n =>
+            `<button onclick="readPsalm(${n})" style="margin:2px;padding:4px 10px;border-radius:14px;border:1px solid var(--gold);background:#fff9e8;font-family:inherit;font-size:12px;cursor:pointer;">مزمور ${n} 📖</button>`
+          ).join('');
+        }
+      }
+    }
+
+    function renderAll() {
+      updateDateDisplay();
+      renderGoals();
+      renderDailyIcons();
+      renderServices();
+      renderTexts();
+      renderPsalms();
+    }
+
+    // ============ Actions ============
+    function toggleGoal(num) {
+      const data = loadData();
+      data['goal' + num] = document.getElementById('goal' + num).checked;
+      saveData(data);
+    }
+
+    function toggleDaily(id) {
+      const data = loadData();
+      data[id] = !data[id];
+      saveData(data);
+      renderDailyIcons();
+    }
+
+    function handleDailyClick(id) {
+      const openers = {
+        fathers: 'fathers',
+        bibleComment: 'bibleComment',
+        katameros: 'katameros',
+        faithExamples: 'faithExamples'
+      };
+      if (openers[id]) {
+        toggleDaily(id);
+        openTextModal(openers[id]);
+        return;
+      }
+      toggleDaily(id);
+    }
+
+    function toggleService(id) {
+      const data = loadData();
+      data[id] = !data[id];
+      saveData(data);
+      renderServices();
+    }
+
+    // Text modal
+    function openTextModal(type) {
+      currentTextType = type;
+      const data = loadData();
+      const titles = {
+        verse: 'آية اليوم',
+        reflection: 'تأملاتي اليوم',
+        confession: 'الاعتراف',
+        altar: 'على المذبح',
+        likedReadings: 'قراءات لمستني',
+        fathers: 'آبائيات',
+        bibleComment: 'تفسير الكتاب المقدس',
+        katameros: 'قطمارس',
+        faithExamples: 'تمثلوا بإيمانهم',
+        prepare: 'تحضير',
+        howStart: 'كيف أبدأ خلوة',
+        saintsPraises: 'مدائح القديسين',
+        oldTestament: 'العهد القديم',
+        newTestament: 'العهد الجديد',
+        spiritualReading: 'قراءات روحية'
+      };
+      document.getElementById('modalTitle').textContent = titles[type] || type;
+      let val = data[type];
+      if (type === 'confession' && typeof val !== 'string') val = '';
+      document.getElementById('modalTextarea').value = val || '';
+      const delBtn = document.getElementById('deleteTextBtn');
+      if (delBtn) delBtn.style.display = (type === 'confession' || type === 'altar' || type === 'likedReadings') ? 'block' : 'none';
+      document.getElementById('textModal').classList.add('active');
+    }
+
+    function saveText() {
+      const data = loadData();
+      const textVal = document.getElementById('modalTextarea').value;
+      data[currentTextType] = textVal;
+      if (currentTextType === 'confession') {
+        data.confessionDone = !!(textVal && textVal.trim());
+      }
+      if (currentTextType === 'likedReadings' && textVal) {
+        const monthKey = 'readings_' + currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0');
+        const monthNotes = JSON.parse(localStorage.getItem('khalwati_' + monthKey) || '[]');
+        monthNotes.push({ day: getDateKey(currentDate), text: textVal });
+        localStorage.setItem('khalwati_' + monthKey, JSON.stringify(monthNotes));
+      }
+      saveData(data);
+      renderTexts();
+      renderServices();
+      closeModal();
+      showToast('تم الحفظ ✓');
+    }
+
+    function deleteText() {
+      if (!confirm('هل تريد مسح النص؟')) return;
+      const data = loadData();
+      data[currentTextType] = '';
+      if (currentTextType === 'confession') data.confessionDone = false;
+      saveData(data);
+      document.getElementById('modalTextarea').value = '';
+      renderServices();
+      closeModal();
+      showToast('تم المسح');
+    }
+
+    // Prayers
+    function openPrayer(type) {
+      const data = loadData();
+      const titles = {
+        jesus: 'صلاة يسوع',
+        kyrie: 'كيرياليسون'
+      };
+
+      // Counter for today
+      const countKey = type + 'Count';
+      let count = data[countKey] || 0;
+
+      let contentHtml = '';
+
+      if (type === 'kyrie') {
+        const kyrieLines = [
+          'كيرياليسون ٣ يا الله ارحمنا',
+          'كيرياليسون ٣ يا الله اسمعنا',
+          'كيرياليسون ٣ يا الله انظر الينا',
+          'كيرياليسون ٣ يا الله اطلع علينا',
+          'كيرياليسون ٣ يا الله تراءف علينا',
+          'كيرياليسون ٣ نحن شعبك',
+          'كيرياليسون ٣ نحن جبلتك',
+          'كيرياليسون ٣ نجنا من الوباء',
+          'كيرياليسون ٣ نجنا من الغلاء',
+          'كيرياليسون ٣ نجنا من اعدائنا',
+          'كيرياليسون ٣ نحن عبيدك',
+          'كيرياليسون ٣ انت ابن الله',
+          'كيرياليسون ٣ امنا بيك',
+          'كيرياليسون ٣ لانك اتيت و خلصتنا',
+          'كيرياليسون ٣ تعهدنا بخلاصك',
+          'كيرياليسون ٣ واغفر لنا خطايانا'
+        ];
+        contentHtml = `
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="display:inline-flex; align-items:center; gap:10px; background:#f5e6c8; padding:8px 18px; border-radius:25px; border:1.5px solid var(--gold);">
+              <span style="font-size:15px; color:var(--brown);">مرات اليوم:</span>
+              <button onclick="changePrayerCount('kyrie', -1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);background:white;font-size:18px;cursor:pointer;">−</button>
+              <span id="prayerCountDisplay" style="font-size:20px;font-weight:700;color:var(--gold-dark);min-width:30px;">${count}</span>
+              <button onclick="changePrayerCount('kyrie', 1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);background:var(--gold);color:white;font-size:18px;cursor:pointer;">+</button>
+            </div>
+          </div>
+          <div style="font-size:15px; line-height:2; text-align:right;">
+            ${kyrieLines.map(line => `<p style="margin-bottom:6px;">${line}</p>`).join('')}
+          </div>
+        `;
+      } else {
+        // Jesus Prayer - 50 lines
+        const jesusLines = [
+          'أحبك يا رب يا قوتي',
+          'أمجد اسمك يا نصرتي',
+          'أرنم لاسمك يا ملجئي',
+          'أفرح وأبتهج بك يا خلاصي',
+          'استجب لي يا إله بري',
+          'تراءف عليّ واسمع صلاتي',
+          'سهل قدامي طريقك',
+          'انظر إلى مذلتي من مبغضيّ',
+          'ارحمني يا رب لأني ضعيفة',
+          'خلصني من أجل رحمتك',
+          'أسرع إلى نصرتي',
+          'التفت إليّ وارحمني',
+          'نجّ نفسي',
+          'اشف روحي وجسدي',
+          'فرّح قلبي',
+          'كمّل في ضعفي',
+          'أرشدني في أمور حياتي',
+          'سامحني واصفح عني',
+          'فلتكن مشيئتك في حياتي',
+          'انزع الخوف مني',
+          'قُد خطوات حياتي',
+          'قوِّ إيماني',
+          'قدِّس اختياراتي',
+          'استلم حواسي',
+          'قدِّس أفكاري',
+          'دبِّر أفعالي',
+          'أملك على قراراتي',
+          'أملك على قلبي',
+          'حل المشاكل اللي بتواجهني',
+          'أشكرك على كل أحوالي',
+          'أعطني قوة تحمّل',
+          'أعطني صبر وطولة بال',
+          'أعطني محبة للكل',
+          'أعطني بركة الخدمة',
+          'أعطني نعمة في أعين الكل',
+          'أعطني هدوء نفسي وفكري',
+          'أعطِ سلام لأهل بيتي',
+          'أعطني الثقة في مواعيدك',
+          'أعطني حكمة وعلِّمني أسامح',
+          'علِّمني وفهِّمني أحكامك',
+          'أعطني علم معرفتك',
+          'نجِّني من الشرير',
+          'اذكرني في ملكوتك',
+          'ثبِّتني فيك للمنتهى',
+          'املأ بيتي بالسلام والمحبة',
+          'احفظ أحبائي بعنايتك',
+          'علِّمني أن أحب كما أحببتني',
+          'امنحني قلباً شاكراً في كل حال',
+          'ثبِّت خطاي في طريق الحق',
+          'كن معي إلى النفس الأخير'
+        ];
+        contentHtml = `
+          <h2 style="text-align:center; font-size:18px; font-weight:700; color:var(--brown); margin:0 0 14px;">يا ربي يا يسوع المسيح</h2>
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="display:inline-flex; align-items:center; gap:10px; background:#f5e6c8; padding:8px 18px; border-radius:25px; border:1.5px solid var(--gold);">
+              <span style="font-size:15px; color:var(--brown);">مرات اليوم:</span>
+              <button onclick="changePrayerCount('jesus', -1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);background:white;font-size:18px;cursor:pointer;">−</button>
+              <span id="prayerCountDisplay" style="font-size:20px;font-weight:700;color:var(--gold-dark);min-width:30px;">${count}</span>
+              <button onclick="changePrayerCount('jesus', 1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);background:var(--gold);color:white;font-size:18px;cursor:pointer;">+</button>
+            </div>
+          </div>
+          <div style="font-size:14.5px; line-height:1.9; text-align:right;">
+            ${jesusLines.map((line, i) => `<p style="margin-bottom:5px;"><span style="color:var(--gold-dark); font-weight:600;">${i+1}.</span> ${line}</p>`).join('')}
+          </div>
+          <p style="text-align:center; margin-top:16px; font-size:12px; color:#8a7a60;">تلخيص — قيفيان شفيق</p>
+        `;
+      }
+
+      document.getElementById('prayerTitle').textContent = titles[type];
+      document.getElementById('prayerContent').innerHTML = contentHtml;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function changePrayerCount(type, delta) {
+      const data = loadData();
+      const countKey = type + 'Count';
+      let count = (data[countKey] || 0) + delta;
+      if (count < 0) count = 0;
+      data[countKey] = count;
+      saveData(data);
+      const display = document.getElementById('prayerCountDisplay');
+      if (display) display.textContent = count;
+
+      // Also mark the service checkbox if count > 0
+      if (type === 'jesus') {
+        data.jesusPrayer = count > 0;
+      } else {
+        data.kyrie = count > 0;
+      }
+      saveData(data);
+      renderServices();
+    }
+
+    // Psalm selector + reader (من ملف دير أنبا مقار — النص القبطي / السبعينية)
+    // تقدير تقريبي لصفحة بداية كل مزمور في الـ PDF
+    function psalmPdfPage(num) {
+      return Math.max(3, Math.min(315, 2 + Math.round(num * 2.05)));
+    }
+
+    function openMazameerPdf(page) {
+      const url = page ? ('mazameer.pdf#page=' + page) : 'mazameer.pdf';
+      window.open(url, '_blank');
+    }
+
+    function openPsalmSelector() {
+      const grid = document.getElementById('psalmGrid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 150; i++) {
+        const selected = selectedPsalms.includes(i);
+        grid.innerHTML += `
+          <div class="psalm-num ${selected ? 'selected' : ''}"
+               data-num="${i}"
+               onclick="togglePsalm(${i})"
+               oncontextmenu="event.preventDefault(); readPsalm(${i}); return false;">${i}</div>
+        `;
+      }
+      // long-press support
+      let pressTimer = null;
+      grid.querySelectorAll('.psalm-num').forEach(el => {
+        el.addEventListener('touchstart', function(e) {
+          const n = parseInt(this.getAttribute('data-num'));
+          pressTimer = setTimeout(() => { readPsalm(n); }, 550);
+        }, { passive: true });
+        el.addEventListener('touchend', function() { clearTimeout(pressTimer); });
+        el.addEventListener('touchmove', function() { clearTimeout(pressTimer); });
+      });
+      renderSelectedPsalmsBar();
+      document.getElementById('psalmModal').classList.add('active');
+    }
+
+    function renderSelectedPsalmsBar() {
+      const bar = document.getElementById('selectedPsalmsBar');
+      if (!bar) return;
+      if (!selectedPsalms.length) {
+        bar.innerHTML = '<span style="color:#8a7a60;">لم يتم اختيار مزامير بعد</span>';
+        return;
+      }
+      bar.innerHTML = '<strong>المختارة:</strong> ' + selectedPsalms.map(n =>
+        `<button onclick="readPsalm(${n})" style="margin:2px;padding:4px 8px;border-radius:12px;border:1px solid var(--gold);background:#fff9e8;font-family:inherit;font-size:12px;cursor:pointer;">${n} 📖</button>`
+      ).join(' ');
+    }
+
+    function togglePsalm(num) {
+      const idx = selectedPsalms.indexOf(num);
+      if (idx > -1) {
+        selectedPsalms.splice(idx, 1);
+      } else {
+        selectedPsalms.push(num);
+      }
+      selectedPsalms.sort((a, b) => a - b);
+      const data = loadData();
+      data.selectedPsalms = selectedPsalms;
+      saveData(data);
+      document.getElementById('psalmCount').textContent = `العدد: ${selectedPsalms.length}`;
+      const els = document.querySelectorAll('.psalm-num');
+      els.forEach(el => {
+        const n = parseInt(el.getAttribute('data-num') || el.textContent);
+        el.classList.toggle('selected', selectedPsalms.includes(n));
+      });
+      renderSelectedPsalmsBar();
+    }
+
+    function readPsalm(num) {
+      const all = (typeof window.PSALMS === 'object' && window.PSALMS) ? window.PSALMS : {};
+      let text = all[String(num)] || all[num] || '';
+      // تنسيق بسيط للعرض
+      let bodyHtml;
+      if (text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        bodyHtml = lines.map(l => {
+          // أرقام الآيات في البداية
+          if (/^\d+/.test(l)) {
+            return `<p style="margin:6px 0;"><span style="color:var(--gold-dark);font-weight:700;">${l.replace(/^(\d+)/, '$1.')}</span></p>`;
+          }
+          if (l.startsWith('المزمور')) {
+            return `<h3 style="text-align:center;margin:8px 0 12px;color:var(--brown);">${l}</h3>`;
+          }
+          return `<p style="margin:4px 0;">${l}</p>`;
+        }).join('');
+      } else {
+        bodyHtml = `<p style="text-align:center;color:#8a7a60;">النص غير متوفر لهذا المزمور حاليًا.</p>
+          <button class="save-btn" onclick="openMazameerPdf(${psalmPdfPage(num)})">فتح من ملف PDF</button>`;
+      }
+      document.getElementById('prayerTitle').textContent = 'المزمور ' + num;
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;line-height:1.95;font-size:15px;">
+          <p style="text-align:center;color:var(--gold-dark);font-weight:600;font-size:13px;">حسب النص القبطي القديم (السبعينية) — دير أنبا مقار</p>
+          <div style="margin-top:10px;">${bodyHtml}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:center;">
+            ${num > 1 ? `<button class="save-btn" style="background:#8a7a60;flex:1;" onclick="readPsalm(${num-1})">→ السابق</button>` : ''}
+            ${num < 151 ? `<button class="save-btn" style="flex:1;" onclick="readPsalm(${num+1})">التالي ←</button>` : ''}
+          </div>
+          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="openPsalmSelector()">رجوع لاختيار المزامير</button>
+        </div>`;
+      document.getElementById('psalmModal').classList.remove('active');
+      document.getElementById('prayerModal').classList.add('active');
+      // scroll content to top
+      const pc = document.getElementById('prayerContent');
+      if (pc) pc.scrollTop = 0;
+    }
+
+    // Save psalm text fields on change
+    function setupPsalmInputs() {
+      ['psalmThanks', 'psalmTell', 'psalmRequest'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+          const data = loadData();
+          data[id] = document.getElementById(id).value;
+          saveData(data);
+        });
+      });
+    }
+
+    function closeModal() {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    }
+
+    let confessionView = 'home';
+
+    function openConfessionHelper() {
+      confessionView = 'home';
+      renderConfessionHome();
+      document.getElementById('confessionModal').classList.add('active');
+    }
+
+    function closeConfession() {
+      if (confessionView !== 'home') {
+        renderConfessionHome();
+        return;
+      }
+      document.getElementById('confessionModal').classList.remove('active');
+    }
+
+    function renderConfessionHome() {
+      confessionView = 'home';
+      document.getElementById('confessionTitle').textContent = 'مساعد الاعتراف';
+      document.getElementById('confessionBody').innerHTML = `
+        <div class="helper-grid">
+          <button class="helper-btn" onclick="showConfessionPage('before')">🌿<br>قبل الاعتراف</button>
+          <button class="helper-btn" onclick="showConfessionPage('during')">🙏<br>أثناء الاعتراف</button>
+          <button class="helper-btn" onclick="showConfessionPage('after')">✨<br>بعد الاعتراف</button>
+          <button class="helper-btn" onclick="openTextModal('confession'); document.getElementById('confessionModal').classList.remove('active');">✍️<br>كتابة الاعتراف</button>
+        </div>
+      `;
+    }
+
+    function showConfessionPage(page) {
+      confessionView = page;
+      const titles = {
+        before: 'قبل الاعتراف',
+        during: 'أثناء الاعتراف',
+        after: 'بعد الاعتراف'
+      };
+      document.getElementById('confessionTitle').textContent = titles[page];
+      let html = '';
+
+      if (page === 'before') {
+        html = `
+          <div class="guide-text">
+            <h3>كيف أعترف؟</h3>
+            <p>للإعتراف ثلاث عناصر:</p>
+            <p><strong>1- بينى وبين نفسى:</strong> ابدأ بالتوبة مع نفسك، لأنه لا معنى للإعتراف بلا توبة، فالإعتراف ليس مجرد كلمات نتلوها على مسامع الأب الكاهن إنما هو توبة.</p>
+            <p>ومن شروط التوبة:</p>
+            <p>• إنسحاق القلب وندمه على خطاياه.<br>• عزم ثابت على التغيير.<br>• رجاء فى المسيح وفى حنانه، وغفرانه.<br>• إعتراف شفوى بالخطايا أمام الأب الكاهن.</p>
+            <p>فالتوبة ركن أساسى فى سر الإعتراف، وهذه الجلسة بمثابة الإستعداد قبل التوجه للإعتراف.</p>
+            <p><strong>2- جلسة مع الله:</strong> فحينما تشعر بخطاياك وثقلها قدم ندم لله فى صلاتك وتكلم معه بالتفصيل واجعل لغة حديثك معه لغة الفرد وليس الجمع.</p>
+            <p><strong>3- ثم بعد هذا الإعتراف على يد الأب الكاهن</strong> وفى الإعتراف راعِ الآتى:</p>
+            <p>• أن تعترف بكل أنواع الخطايا، فكل خطية لا تعترف بها تظل باقية، وستظل مصدر قلق لك، فكن أمينًا فى إعترافك، وصارح أب إعترافك بكل ما بداخلك.<br>• لا تحاول إيجاد الأعذار، فكلنا خطاة.<br>• اهتم بالنواحى الإيجابية أيضًا من تقصير فى صلاة أو عدم تنفيذ للوصية.<br>• استمع جيدًا لنصائح أبيك الروحى واقبلها.</p>
+            <p>وبعد هذا يصلى الأب الكاهن لك صلاة التحليل فتنال غفران الخطية، وبعد صلاة التحليل تأكد أن الله رفع عنك خطاياك.</p>
+
+            <h3>صلاة قبل الاعتراف</h3>
+            <p>أيها الآب القدوس، الذي يحب رجوع الخطاة، وقد وعدت أنك مستعد لقبولهم، انظر يا رب الآن إلى نفس خاطئة قد ضلت وتاهت في أودية العصيان زمانًا طويلًا، فيه تمررت وشعرت بشقاوتها، لبعدها عن ينبوع خلاصها. والآن تتقدم إليك، تطلب منك تطهيرها من الأدناس والأقذار التي توحلت فيها. اقبلها ولا ترفضها، فإنك إن نظرت إليها بحنوك وعاملتها برحمتك، تنقت وخلصت، وإن أهملتها بادت وهلكت. امنحني يا رب نعمة بها أتجاسر على الدنو منك بإيمان وطيد ورجاء تام. لأعترف بذنوبي وأكره العودة إليها. وليبكتني روحك على آثامي. أنر قلبي لأرى كم أخطأت وأسأت وتركت وأهملت. وامنحني عزمًا على عدم الرجوع إلى الإثم، لأثبت فى حفظ وصاياك، وأحيا لمجد اسمك القدوس. آمين.</p>
+
+            <h3>صلاة التوبة</h3>
+            <p>ربي وإلهي ومخلصي يسوع المسيح، كنز الرحمة ونبع الخلاص، آتي إليك مقرًا بذنوبي. أعترف بأني بوقاحة تجاسرت ودنست هيكلك المقدس بخطاياي. والآن ألجأ إلى رحمتك وتحننك، لأن مراحمك لا تُحصى، وأنك لا ترد خاطئًا قد أقبل إليك. فها أنا آتي يا رب معترفًا بأن آثامي قد طمت فوق رأسي كحمل ثقيل، وقد فارقتني قوتي. فلا تحجب يا رب وجهك عني لئلا أرتاع. ولا توبخني بغضبك. ولا تؤدبني بغيظك. ولا تحاكمني بحسب استحقاقي. ارحمني يا رب فإني ضعيف. اذكر يا رب أني عمل يديك وارأف بي. لا تدخل فى المحاكمة مع عبدك، لأنه لن يتبرر قدامك أي حي. عد وألبسني حلة جديدة تليق بمجدك. اغفر لي وسامحني، لأترنم قائلًا: طوبى لمن غفر إثمه، وسترت خطيته. أعترف لك بخطيئتي، ولا أكتم إثمي. قلت أعترف للرب بذنبي. وأنك رفعت آثام خطيتي. آمين.</p>
+
+            <h3>مرشد محاسبة النفس قبل الاعتراف</h3>
+            <p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">اضغطي على أي خطية لاختيارها، ثم انقليها لكتابة الاعتراف</p>
+            <div id="sinsContainer"></div>
+            <p id="selectedSinsCount" style="margin-top:10px;font-size:13px;color:var(--gold-dark);"></p>
+            <button class="save-btn" onclick="copySinsToConfession()">حفظ الخطايا في كتابة الاعتراف</button>
+          </div>
+          <button class="save-btn" onclick="renderConfessionHome()" style="margin-top:8px;background:#8a7a60;">رجوع</button>
+        `;
+        setTimeout(renderSelectableSins, 30);
+      } else if (page === 'during') {
+        html = `
+          <div class="guide-text">
+            <p>يجب على المعترف أن يكون صادقًا وفي حالة خشوع، منصتًا لإرشاد أب الاعتراف، طالبًا أن ينال توبة وإرشاد الروح القدس من خلال فم الكاهن.</p>
+            <p>وأثناء صلاة الأب الكاهن للتحليل يتلو أيضًا المعترف صلوات طلب رحمة الله والثبات على التوبة للنفس الأخير.</p>
+          </div>
+          <button class="save-btn" onclick="renderConfessionHome()">رجوع</button>
+        `;
+      } else if (page === 'after') {
+        html = `
+          <div class="guide-text">
+            <h3>صلاة بعد الاعتراف</h3>
+            <p>أشكر صلاحك أيها الآب محب البشر، لأنك لم تشأ هلاكي. بل أيقظتني من غفلتي، وهديتني إلى طريقك، ورددتني من وادي الهلاك إلى حمى حصنك الأمين. فاملأني بالرجاء والإيمان. لقد أقبلت إليك يا رب كالمريض إلى الطبيب الشافي، وكالمفتقر الجائع إلى الغذاء المشبع، وكالعطشان إلى ينابيع المياه الحية، وكالفقير إلى مصدر الغنى، وكالخاطئ إلى المخلص، وكالمائت إلى ينبوع الحياة. لأنك خلاصي، وطبيبي، وقوتي، وتعزيتي، وسعادتي، وفيك راحتي. فأعني واحفظني وسيّج حولي. وعلمني أن أضع بين يديك كل إرادتي، لأسير حسب ما تشاء. أعن ضعفي كي أثبت، وأدوم أمينًا لك إلى النهاية.</p>
+          </div>
+          <button class="save-btn" onclick="renderConfessionHome()">رجوع</button>
+        `;
+      }
+
+      document.getElementById('confessionBody').innerHTML = html;
+    }
+
+    // Date navigation
+    document.getElementById('prevDay').addEventListener('click', () => {
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1, 12, 0, 0, 0);
+      renderAll();
+    });
+
+    document.getElementById('nextDay').addEventListener('click', () => {
+      currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 12, 0, 0, 0);
+      renderAll();
+    });
+
+    // Close modal on background click
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    });
+
+    function getPdfStyle() {
+      return {
+        font: localStorage.getItem('khalwati_pdf_font') || 'Noto Naskh Arabic, serif',
+        size: localStorage.getItem('khalwati_pdf_size') || '14',
+        color: localStorage.getItem('khalwati_pdf_color') || '#3e2f1c',
+        frame: localStorage.getItem('khalwati_pdf_frame') || '1'
+      };
+    }
+
+    function printHTML(title, body) {
+      const st = getPdfStyle();
+      const frameCss = st.frame === '1'
+        ? 'border:2px solid #c9a227; padding:20px; border-radius:12px; min-height:70vh;'
+        : '';
+      const w = window.open('', '_blank');
+      if (!w) { showToast('اسمحي بالنوافذ المنبثقة للطباعة'); return; }
+      w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+        <style>
+          body{font-family:${st.font};padding:24px;color:${st.color};line-height:1.85;font-size:${st.size}px;}
+          h1{text-align:center;color:#5c4033;font-size:16px;font-weight:700;margin:8px 0 16px;}
+          h2,h3{font-size:16px;font-weight:700;color:#5c4033;margin:14px 0 8px;}
+          p,div,li{font-size:${st.size}px;font-weight:400;}
+          .frame{${frameCss}}
+          .logo{text-align:center;margin-bottom:12px;}
+          img{max-width:90px;border-radius:50%;}
+        </style>
+        </head><body><div class="logo"><img src="logo.png" alt=""></div><h1>خلوتي - ${title}</h1><div class="frame">${body}</div></body></html>`);
+      w.document.close();
+      setTimeout(() => { w.print(); }, 400);
+    }
+
+    function openPdfOptions() {
+      const st = getPdfStyle();
+      document.getElementById('prayerTitle').textContent = 'إعدادات PDF';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right; line-height:2;">
+          <label>نوع الخط</label>
+          <select id="pdfFont" style="width:100%;padding:8px;margin-bottom:8px;font-family:inherit;">
+            <option value="Noto Naskh Arabic, serif" ${st.font.includes('Naskh')?'selected':''}>نسخ عربي</option>
+            <option value="Amiri, serif" ${st.font.includes('Amiri')?'selected':''}>أميري</option>
+            <option value="Tahoma, sans-serif" ${st.font.includes('Tahoma')?'selected':''}>تاهوما</option>
+          </select>
+          <label>حجم الخط</label>
+          <select id="pdfSize" style="width:100%;padding:8px;margin-bottom:8px;font-family:inherit;">
+            <option value="12" ${st.size==='12'?'selected':''}>12</option>
+            <option value="14" ${st.size==='14'?'selected':''}>14</option>
+            <option value="16" ${st.size==='16'?'selected':''}>16</option>
+            <option value="18" ${st.size==='18'?'selected':''}>18</option>
+          </select>
+          <label>لون الخط</label>
+          <input type="color" id="pdfColor" value="${st.color}" style="width:100%;height:40px;margin-bottom:8px;">
+          <label><input type="checkbox" id="pdfFrame" ${st.frame==='1'?'checked':''}> إطار بسيط للصفحة</label>
+          <button class="save-btn" style="margin-top:12px;" onclick="savePdfOptions()">حفظ الإعدادات</button>
+          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="savePdfOptions(); printCurrentPage();">حفظ وتحميل PDF للصفحة</button>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function savePdfOptions() {
+      localStorage.setItem('khalwati_pdf_font', document.getElementById('pdfFont').value);
+      localStorage.setItem('khalwati_pdf_size', document.getElementById('pdfSize').value);
+      localStorage.setItem('khalwati_pdf_color', document.getElementById('pdfColor').value);
+      localStorage.setItem('khalwati_pdf_frame', document.getElementById('pdfFrame').checked ? '1' : '0');
+      showToast('تم حفظ إعدادات PDF');
+    }
+
+    function printCurrentText() {
+      const title = document.getElementById('modalTitle').textContent;
+      const text = (document.getElementById('modalTextarea').value || '').replace(/\n/g,'<br>');
+      printHTML(title, text || 'لا يوجد نص');
+    }
+
+    function printCurrentPage() {
+      const data = loadData();
+      const day = document.getElementById('currentDate').textContent;
+      let goals = '';
+      for (let i=1;i<=5;i++) {
+        goals += `<p>${data['goal'+i] ? '☑' : '☐'} ${data['goalText'+i] || ''}</p>`;
+      }
+      const body = `
+        <p><strong>${day}</strong></p>
+        <h3>أهدافى اليوم</h3>${goals}
+        <h3>آية اليوم</h3><p>${data.verse || ''}</p>
+        <h3>تأملاتي اليوم</h3><p>${(data.reflection||'').replace(/\n/g,'<br>')}</p>
+        <h3>مزاميري</h3><p>العدد: ${(data.selectedPsalms||[]).length}</p>
+        <p>شكراً يارب على: ${data.psalmThanks||''}</p>
+        <p>عاوز أقولك يارب: ${data.psalmTell||''}</p>
+        <p>طلبة من أجل: ${data.psalmRequest||''}</p>
+        <h3>على المذبح</h3><p>${(data.altar||'').replace(/\n/g,'<br>')}</p>
+        <h3>قراءات لمستني</h3><p>${(data.likedReadings||'').replace(/\n/g,'<br>')}</p>
+      `;
+      printHTML('صفحة اليوم', body);
+    }
+
+    function printMonthlyReadings() {
+      const monthKey = 'readings_' + currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0');
+      const monthNotes = JSON.parse(localStorage.getItem('khalwati_' + monthKey) || '[]');
+      if (!monthNotes.length) { showToast('لا توجد قراءات محفوظة لهذا الشهر'); return; }
+      const body = monthNotes.map(n => `<h3>${n.day}</h3><p>${(n.text||'').replace(/\n/g,'<br>')}</p>`).join('<hr>');
+      printHTML('قراءات الشهر', body);
+    }
+
+    function openSpokenPrayers() {
+      const text = `يا ربي يسوع المسيح ابن الله ارحمني أنا الخاطئ.
+كيرياليسون يا رب ارحم.
+أيها الآب القدوس الذي يحب رجوع الخطاة ارحمنا وباركنا.`;
+      document.getElementById('prayerTitle').textContent = 'صلوات مقروءة ومسموعة';
+      document.getElementById('prayerContent').innerHTML = `
+        <p style="white-space:pre-line; text-align:right;">${text}</p>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button class="save-btn" onclick="speakText(\`${text.replace(/`/g,"'")}\`)">🔊 استماع</button>
+          <button class="save-btn" onclick="window.speechSynthesis && speechSynthesis.cancel()">⏹ إيقاف</button>
+        </div>
+        <button class="save-btn" style="margin-top:8px; background:#5a7d4a;" onclick="printHTML('صلوات مقروءة ومسموعة', '${text.replace(/\n/g,'<br>')}')">تحميل PDF</button>
+      `;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function speakText(text) {
+      if (!window.speechSynthesis) { showToast('الجهاز لا يدعم القراءة الصوتية'); return; }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ar-EG';
+      u.rate = 0.9;
+      speechSynthesis.speak(u);
+    }
+
+    function printPrayer() {
+      const title = document.getElementById('prayerTitle').textContent;
+      const body = document.getElementById('prayerContent').innerText.replace(/\n/g,'<br>');
+      printHTML(title, body);
+    }
+
+    // ===== selectable sins for confession =====
+    let selectedSins = [];
+    const SIN_CATEGORIES = {
+      'خطايا اللسان': ['شتيمة','نميمة','حلفان','كذب','إدانة','استهزاء','انتقاد الآخرين','أغاني عالمية','كثرة الكلام','الرياء','توصيل كلام','حب المديح','النفاق','الشماتة بالآخرين','التشهير بالناس','حب الافتخار بالذات','كثرة الضحك','إلقاء نكت قبيحة'],
+      'خطايا القلب': ['حقد','كراهية','زنى','غضب','انتقام','بطر','غيرة','إدانة','كبرياء','حزن','حب العالم','يأس','حب المال','شك'],
+      'خطايا الفعل': ['زنا','سرقة','حضور أفلام مثيرة','ضرب','التقصير في دفع العشور','التدخين','عدم الطاعة والفتور','شرب الخمور','عدم طاعة الوالدين','إفشاء الأسرار'],
+      'خطايا النظر': ['نظرة شهوانية','نظرة احتقار','نظرة غضب','نظرات غيرة وكبرياء'],
+      'خطايا السمع': ['سماع إدانة الآخرين','سماع كلام السفاهة','حب سماع الأغاني','النجاسة','حب سماع المديح'],
+      'خطايا اللمس': ['الزنا وحاسة اللمس','ارتداء ملابس قصيرة'],
+      'خطايا روحية': ['عدم الصلاة','عدم الصوم','عدم قراءة الكتاب المقدس','عدم الاعتراف والتناول','عدم احترام بيت الله','شك في الأسرار المقدسة','السرحان أثناء الصلاة']
+    };
+
+    function renderSelectableSins() {
+      const container = document.getElementById('sinsContainer');
+      if (!container) return;
+      let html = '';
+      Object.keys(SIN_CATEGORIES).forEach(cat => {
+        html += `<div class="sin-cat"><h4>${cat}</h4><div class="sin-chips">`;
+        SIN_CATEGORIES[cat].forEach(sin => {
+          const sel = selectedSins.includes(sin) ? 'selected' : '';
+          html += `<button type="button" class="sin-chip ${sel}" onclick="toggleSin('${sin.replace(/'/g,"\\'")}')">${sin}</button>`;
+        });
+        html += `</div></div>`;
+      });
+      container.innerHTML = html;
+      updateSelectedSinsCount();
+    }
+
+    function toggleSin(sin) {
+      const idx = selectedSins.indexOf(sin);
+      if (idx > -1) selectedSins.splice(idx, 1);
+      else selectedSins.push(sin);
+      renderSelectableSins();
+      // نقل تلقائي لكتابة الاعتراف بتاريخ اليوم
+      autoSyncSinsToConfession();
+    }
+
+    function updateSelectedSinsCount() {
+      const el = document.getElementById('selectedSinsCount');
+      if (el) el.textContent = selectedSins.length ? `المختارة: ${selectedSins.length} خطية` : 'لم يتم اختيار خطايا بعد';
+    }
+
+    function getTodayDateLabel() {
+      const day = dayNames[currentDate.getDay()];
+      const d = currentDate.getDate();
+      const m = currentDate.getMonth() + 1;
+      const y = currentDate.getFullYear();
+      return day + ' ' + d + '/' + m + '/' + y;
+    }
+
+    function autoSyncSinsToConfession() {
+      const data = loadData();
+      const dateLabel = getTodayDateLabel();
+      const marker = '—— اعتراف بتاريخ ' + dateLabel + ' ——';
+      let base = '';
+      if (typeof data.confession === 'string') {
+        // احذف بلوك تاريخ اليوم القديم لو موجود
+        const parts = data.confession.split(/\n*—— اعتراف بتاريخ /);
+        base = (parts[0] || '').trim();
+        // أعد أي بلوكات تواريخ تانية
+        for (let i = 1; i < parts.length; i++) {
+          const block = '—— اعتراف بتاريخ ' + parts[i];
+          if (!block.startsWith(marker)) {
+            base = base ? (base + '\n\n' + block.trim()) : block.trim();
+          }
+        }
+      }
+      if (selectedSins.length) {
+        const sinsBlock = marker + '\n' + selectedSins.map(s => '• ' + s).join('\n');
+        data.confession = base ? (base + '\n\n' + sinsBlock) : sinsBlock;
+        data.confessionDone = true;
+      } else {
+        data.confession = base;
+        data.confessionDone = !!(base && base.trim());
+      }
+      saveData(data);
+      renderServices();
+    }
+
+    function copySinsToConfession() {
+      if (!selectedSins.length) {
+        showToast('اختاري خطايا أولاً');
+        return;
+      }
+      autoSyncSinsToConfession();
+      const data = loadData();
+      // ensure saved
+      data.confessionDone = true;
+      saveData(data);
+
+      selectedSins = [];
+      document.getElementById('confessionModal').classList.remove('active');
+      openTextModal('confession');
+      showToast('تم حفظ الخطايا في كتابة الاعتراف ✓');
+    }
+
+    // ===== Audio + Settings =====
+    function isMuted() {
+      return localStorage.getItem('khalwati_muted') === '1';
+    }
+
+    function setMuted(val) {
+      localStorage.setItem('khalwati_muted', val ? '1' : '0');
+    }
+
+    function playHymn() {
+      const audio = document.getElementById('hymnAudio');
+      const banner = document.getElementById('muteBanner');
+      if (!audio) return;
+      if (isMuted()) {
+        audio.pause();
+        if (banner) banner.classList.remove('show');
+        return;
+      }
+      audio.currentTime = 0;
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => showToast('اضغطي أي مكان لتشغيل الترنيمة'));
+      if (banner) {
+        banner.classList.add('show');
+        document.getElementById('audioStatus').textContent = '🎵 الترنيمة شغالة';
+      }
+      audio.onended = () => {
+        if (banner) banner.classList.remove('show');
+      };
+    }
+
+    function toggleMute() {
+      const audio = document.getElementById('hymnAudio');
+      if (isMuted()) {
+        setMuted(false);
+        playHymn();
+        showToast('تم تشغيل الصوت');
+      } else {
+        setMuted(true);
+        if (audio) audio.pause();
+        const banner = document.getElementById('muteBanner');
+        if (banner) banner.classList.remove('show');
+        showToast('تم كتم الصوت');
+      }
+    }
+
+    function openSettings() {
+      document.getElementById('prayerTitle').textContent = 'إعدادات التطبيق';
+      const muted = isMuted();
+      const fontSize = localStorage.getItem('khalwati_font_size') || '16';
+      const fontColor = localStorage.getItem('khalwati_font_color') || '#3e2f1c';
+      const confEvery = localStorage.getItem('khalwati_conf_every') || '40';
+      const confDate = localStorage.getItem('khalwati_conf_date') || '';
+      const prayTime = localStorage.getItem('khalwati_pray_time') || '06:00';
+      const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+      const gender = localStorage.getItem('khalwati_gender') || 'girl';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right; line-height:1.9; font-size:14px;">
+          <p><strong>صوت الترنيمة</strong></p>
+          <p>الحالة: ${muted ? 'مكتوم 🔇' : 'مفعّل 🔊'}</p>
+          <button class="save-btn" onclick="toggleMute(); openSettings();">${muted ? 'تفعيل الصوت' : 'كتم الصوت'}</button>
+
+          <p style="margin-top:14px;"><strong>شكل التطبيق</strong></p>
+          <label>حجم الخط</label>
+          <input type="range" id="appFontSize" min="14" max="22" value="${fontSize}" style="width:100%;" oninput="applyAppFont(this.value)">
+          <label>لون الخط</label>
+          <input type="color" id="appFontColor" value="${fontColor}" style="width:100%;height:36px;" onchange="localStorage.setItem('khalwati_font_color', this.value); document.body.style.color=this.value;">
+
+          <p style="margin-top:14px;"><strong>نوع المستخدم (للرسم البياني)</strong></p>
+          <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value)">
+            <option value="girl" ${gender==='girl'?'selected':''}>بنت</option>
+            <option value="boy" ${gender==='boy'?'selected':''}>ولد</option>
+          </select>
+
+          <p style="margin-top:14px;"><strong>ميعاد الاعتراف القادم</strong></p>
+          <label>آخر اعتراف</label>
+          <input type="date" id="confDate" value="${confDate}" style="width:100%;padding:8px;margin-bottom:6px;" onchange="localStorage.setItem('khalwati_conf_date', this.value)">
+          <label>التذكير كل</label>
+          <select id="confEvery" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_conf_every', this.value)">
+            <option value="40" ${confEvery==='40'?'selected':''}>40 يوم</option>
+            <option value="30" ${confEvery==='30'?'selected':''}>كل شهر (30 يوم)</option>
+          </select>
+          <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
+
+          <p style="margin-top:14px;"><strong>أوقات التنبيه (تذكير محلي)</strong></p>
+          <label>صلاة / صوت يسوع</label>
+          <input type="time" id="prayTime" value="${prayTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_pray_time', this.value)">
+          <label>رسالة يومية</label>
+          <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value)">
+          <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast('تم حفظ الإعدادات');">حفظ وطلب إذن الإشعارات</button>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+      updateNextConfInfo();
+    }
+
+    function applyAppFont(size) {
+      localStorage.setItem('khalwati_font_size', size);
+      document.documentElement.style.fontSize = size + 'px';
+    }
+
+    function updateNextConfInfo() {
+      const el = document.getElementById('nextConfInfo');
+      if (!el) return;
+      const confDate = localStorage.getItem('khalwati_conf_date');
+      const every = parseInt(localStorage.getItem('khalwati_conf_every') || '40', 10);
+      if (!confDate) { el.textContent = 'حددي تاريخ آخر اعتراف'; return; }
+      const d = new Date(confDate + 'T12:00:00');
+      d.setDate(d.getDate() + every);
+      el.textContent = 'الاعتراف القادم تقريبًا: ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    }
+
+    function requestNotifyPermission() {
+      if (!('Notification' in window)) { showToast('الجهاز لا يدعم الإشعارات'); return; }
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') showToast('تم تفعيل الإشعارات');
+        else showToast('لم يتم السماح بالإشعارات');
+      });
+    }
+
+    function openBooksSection(filter) {
+      document.getElementById('prayerTitle').textContent = 'كتب مختارة — قراءات روحية';
+      const books = JSON.parse(localStorage.getItem('khalwati_books') || '[]');
+      const q = (filter || '').trim().toLowerCase();
+      const filtered = q ? books.filter(b => (b.name||'').toLowerCase().includes(q)) : books;
+      let list = filtered.length
+        ? filtered.map((b) => {
+            const i = books.indexOf(b);
+            return `<div style="padding:10px;border-bottom:1px solid #eee;">
+              <div style="font-weight:600;">${b.name}</div>
+              ${b.url ? `<a href="${b.url}" target="_blank" style="color:var(--gold-dark);font-size:12px;">فتح الرابط</a>` : ''}
+              <div style="margin-top:6px;">
+                <button onclick="removeBook(${i})" style="border:none;background:#c0392b;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;">حذف</button>
+              </div>
+            </div>`;
+          }).join('')
+        : '<p style="color:#8a7a60;">لا توجد كتب بعد</p>';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;">
+          <input type="text" id="bookSearch" placeholder="🔍 بحث في كتبك..." value="${filter||''}"
+            oninput="openBooksSection(this.value)" style="width:100%;padding:8px;margin:6px 0;font-family:inherit;">
+          <p style="font-size:13px;color:#8a7a60;">أضيفي كتابًا من جهازك أو رابط من النت</p>
+          <input type="text" id="bookName" placeholder="اسم الكتاب" style="width:100%;padding:8px;margin:6px 0;font-family:inherit;">
+          <input type="url" id="bookUrl" placeholder="رابط من النت (اختياري)" style="width:100%;padding:8px;margin:6px 0;font-family:inherit;">
+          <button class="save-btn" onclick="addBook()">إضافة كتاب</button>
+          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="searchBooksOnline()">بحث كتب روحية على جوجل</button>
+          <div style="margin-top:12px;">${list}</div>
+          <button class="save-btn" style="margin-top:10px;" onclick="openTextModal('spiritualReading')">كتابة قراءات روحية</button>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function searchBooksOnline() {
+      const q = encodeURIComponent('كتب روحية مسيحية قبطية pdf');
+      window.open('https://www.google.com/search?q=' + q, '_blank');
+    }
+
+    function addBook() {
+      const name = (document.getElementById('bookName').value || '').trim();
+      const url = (document.getElementById('bookUrl').value || '').trim();
+      if (!name && !url) { showToast('اكتبي اسم الكتاب'); return; }
+      const books = JSON.parse(localStorage.getItem('khalwati_books') || '[]');
+      books.push({ name: name || 'كتاب', url });
+      localStorage.setItem('khalwati_books', JSON.stringify(books));
+      showToast('تمت الإضافة');
+      openBooksSection();
+    }
+
+    function removeBook(i) {
+      const books = JSON.parse(localStorage.getItem('khalwati_books') || '[]');
+      books.splice(i, 1);
+      localStorage.setItem('khalwati_books', JSON.stringify(books));
+      openBooksSection();
+    }
+
+    function dayScore(d) {
+      const key = 'khalwati_' + getDateKey(d);
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      let score = 0;
+      ['baker','sunset','sleep','mass','praise','fast','silence','service'].forEach(k => { if (data[k]) score++; });
+      if (data.jesusCount) score += Math.min(3, data.jesusCount);
+      if (data.kyrieCount) score += Math.min(2, data.kyrieCount);
+      if (data.confessionDone || (typeof data.confession === 'string' && data.confession.trim())) score += 2;
+      if (data.reflection) score += 1;
+      if (data.verse) score += 1;
+      return Math.min(12, score);
+    }
+
+    function openProgressChart(period) {
+      period = period || 'week';
+      const gender = localStorage.getItem('khalwati_gender') || 'girl';
+      const personEmoji = gender === 'boy' ? '👦' : '👧';
+      const person = gender === 'boy' ? 'ولد' : 'بنت';
+      let levels = [];
+      if (period === 'week') {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i, 12);
+          levels.push({ label: dayNames[d.getDay()], score: dayScore(d) });
+        }
+      } else if (period === 'month') {
+        for (let i = 3; i >= 0; i--) {
+          let sum = 0, cnt = 0;
+          for (let j = 0; j < 7; j++) {
+            const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - (i*7+j), 12);
+            sum += dayScore(d); cnt++;
+          }
+          levels.push({ label: 'أ' + (4-i), score: Math.round(sum / cnt) });
+        }
+      } else {
+        for (let i = 5; i >= 0; i--) {
+          const m = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 15, 12);
+          let sum = 0, cnt = 0;
+          for (let j = 0; j < 28; j++) {
+            const d = new Date(m.getFullYear(), m.getMonth(), j+1, 12);
+            if (d.getMonth() !== m.getMonth()) break;
+            sum += dayScore(d); cnt++;
+          }
+          levels.push({ label: (m.getMonth()+1) + '', score: cnt ? Math.round(sum / cnt) : 0 });
+        }
+      }
+      const avg = levels.length ? levels.reduce((a,b)=>a+b.score,0)/levels.length : 0;
+      const trend = levels.length >= 2 ? (levels[levels.length-1].score - levels[0].score) : 0;
+      const trendText = trend > 1 ? 'ارتفاع 📈 — قربتِ من يسوع' : trend < -1 ? 'انخفاض 📉 — رجعي خطوة' : 'ثبات ➡️';
+      const step = Math.min(10, Math.round(avg));
+      // 3 مستويات: بداية السلم / اقتراب / وصول نهائي (عناق يسوع)
+      // النهائي يظهر عند مستوى عالي في الأسبوعي أو الشهري أو السنوي
+      let level = 'low';
+      if (avg >= 9) level = 'final';
+      else if (avg >= 6) level = 'high';
+      let progressImg, stageText;
+      if (gender === 'boy') {
+        if (level === 'final') {
+          progressImg = 'progress-boy-final.jpg';
+          stageText = 'المستوى النهائي — الولد في حضن يسوع 🤗';
+        } else if (level === 'high') {
+          progressImg = 'progress-boy-high.jpg';
+          stageText = 'قرب الولد من يسوع — يمسك بيده';
+        } else {
+          progressImg = 'progress-boy-low.jpg';
+          stageText = 'الولد في بداية السلم نحو يسوع';
+        }
+      } else {
+        if (level === 'final') {
+          progressImg = 'progress-girl-final.jpg';
+          stageText = 'المستوى النهائي — البنت في حضن يسوع 🤗';
+        } else if (level === 'high') {
+          progressImg = 'progress-girl-high.jpg';
+          stageText = 'قرب البنت من يسوع — تمد يدها إليه';
+        } else {
+          progressImg = 'progress-girl-low.jpg';
+          stageText = 'البنت في بداية السلم نحو يسوع';
+        }
+      }
+      const bars = levels.map(l => {
+        const h = 10 + l.score * 10;
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:28px;">
+          <div style="font-size:14px;">${l.score >= 7 ? '🙂' : l.score >= 4 ? '😐' : '😔'}</div>
+          <div style="width:20px;height:${h}px;background:linear-gradient(#c9a227,#a67c00);border-radius:6px 6px 0 0;"></div>
+          <div style="font-size:10px;">${l.label}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('prayerTitle').textContent = 'مستوى الخلوة';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:center;">
+          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">
+            <button onclick="openProgressChart('week')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='week'?'var(--gold)':'#fff'};color:${period==='week'?'#fff':'var(--brown)'};font-family:inherit;">أسبوعي</button>
+            <button onclick="openProgressChart('month')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='month'?'var(--gold)':'#fff'};color:${period==='month'?'#fff':'var(--brown)'};font-family:inherit;">شهري</button>
+            <button onclick="openProgressChart('year')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='year'?'var(--gold)':'#fff'};color:${period==='year'?'#fff':'var(--brown)'};font-family:inherit;">سنوي</button>
+          </div>
+          <p style="margin-bottom:4px;font-weight:600;">${stageText}</p>
+          <p style="margin-bottom:8px;font-size:13px;">الاتجاه: <strong>${trendText}</strong> — الدرجة: ${step}/10</p>
+          <div style="border-radius:16px;overflow:hidden;border:2px solid #c9a227;margin:8px 0;box-shadow:0 4px 16px rgba(92,64,51,0.12);">
+            <img src="${progressImg}" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;">
+          </div>
+          <div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:4px;">
+            ${bars}
+          </div>
+          <p style="margin-top:10px;font-size:12px;color:#8a7a60;">كل ما التزمتِ بالخلوة والصلاة، الصورة تتغير وتقربك أكثر من يسوع.</p>
+          <p style="font-size:12px;color:#8a7a60;">اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.</p>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function openServantSection() {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      const rows = list.length
+        ? list.map((p,i) => `<tr>
+            <td style="padding:6px;border-bottom:1px solid #eee;">
+              <strong>${p.name||''}</strong><br>
+              <span style="font-size:11px;color:#8a7a60;">آخر اعتراف: ${p.lastConfession||'—'}</span><br>
+              <span style="font-size:11px;color:#8a7a60;">آخر تناول: ${p.lastCommunion||'—'}</span>
+            </td>
+            <td style="padding:6px;border-bottom:1px solid #eee;">${p.phone||''}</td>
+            <td style="padding:6px;border-bottom:1px solid #eee;white-space:nowrap;">
+              <button onclick="editServed(${i})" style="font-size:11px;margin:2px;">تعديل</button>
+              <button onclick="printServedPdf(${i})" style="font-size:11px;margin:2px;">PDF</button>
+              ${p.phone ? `<a href="tel:${p.phone}" style="font-size:11px;margin:2px;">اتصال</a>` : ''}
+              ${p.phone ? `<a href="https://wa.me/${(p.phone||'').replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px;margin:2px;">واتساب</a>` : ''}
+              <button onclick="removeServed(${i})" style="font-size:11px;color:#c0392b;margin:2px;">حذف</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="3">لا يوجد مخدومين بعد</td></tr>';
+      document.getElementById('prayerTitle').textContent = 'متابعة الخادم — المخدومين';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;font-size:13px;">
+          <button class="save-btn" onclick="addServedForm()">➕ إضافة مخدوم</button>
+          <div style="overflow-x:auto;margin-top:10px;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <tr style="background:#f5e6c8;"><th>المخدوم</th><th>تليفون</th><th>إجراءات</th></tr>
+              ${rows}
+            </table>
+          </div>
+          <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="exportServedCsv()">تصدير CSV (إكسيل)</button>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function addServedForm() {
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;">
+          <input id="sName" placeholder="اسم المخدوم" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <input id="sAddress" placeholder="العنوان" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <input id="sBirth" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <input id="sPhone" placeholder="رقم التليفون" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <input id="sFather" placeholder="أب الاعتراف" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <label style="font-size:12px;">آخر اعتراف</label>
+          <input id="sLastConf" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <label style="font-size:12px;">آخر تناول</label>
+          <input id="sLastComm" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
+          <textarea id="sNotes" placeholder="ملاحظات الخادم / الخلوة" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;min-height:70px;"></textarea>
+          <button class="save-btn" onclick="saveServed()">حفظ</button>
+          <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openServantSection()">رجوع</button>
+        </div>`;
+    }
+
+    function readServedForm() {
+      return {
+        name: document.getElementById('sName').value,
+        address: document.getElementById('sAddress').value,
+        birth: document.getElementById('sBirth').value,
+        phone: document.getElementById('sPhone').value,
+        father: document.getElementById('sFather').value,
+        lastConfession: document.getElementById('sLastConf').value,
+        lastCommunion: document.getElementById('sLastComm').value,
+        notes: document.getElementById('sNotes').value
+      };
+    }
+
+    function saveServed() {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      list.push(readServedForm());
+      localStorage.setItem('khalwati_served', JSON.stringify(list));
+      showToast('تم الحفظ');
+      openServantSection();
+    }
+
+    function removeServed(i) {
+      if (!confirm('حذف هذا المخدوم؟')) return;
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      list.splice(i, 1);
+      localStorage.setItem('khalwati_served', JSON.stringify(list));
+      openServantSection();
+    }
+
+    function editServed(i) {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      const p = list[i];
+      addServedForm();
+      setTimeout(() => {
+        document.getElementById('sName').value = p.name || '';
+        document.getElementById('sAddress').value = p.address || '';
+        document.getElementById('sBirth').value = p.birth || '';
+        document.getElementById('sPhone').value = p.phone || '';
+        document.getElementById('sFather').value = p.father || '';
+        document.getElementById('sLastConf').value = p.lastConfession || '';
+        document.getElementById('sLastComm').value = p.lastCommunion || '';
+        document.getElementById('sNotes').value = p.notes || '';
+        const btn = document.querySelector('#prayerContent .save-btn');
+        if (btn) btn.setAttribute('onclick', `updateServed(${i})`);
+      }, 30);
+    }
+
+    function updateServed(i) {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      list[i] = readServedForm();
+      localStorage.setItem('khalwati_served', JSON.stringify(list));
+      showToast('تم التعديل');
+      openServantSection();
+    }
+
+    function printServedPdf(i) {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      const p = list[i];
+      if (!p) return;
+      const body = `
+        <h3>ملف المخدوم: ${p.name||''}</h3>
+        <p><strong>العنوان:</strong> ${p.address||'—'}</p>
+        <p><strong>تاريخ الميلاد:</strong> ${p.birth||'—'}</p>
+        <p><strong>التليفون:</strong> ${p.phone||'—'}</p>
+        <p><strong>أب الاعتراف:</strong> ${p.father||'—'}</p>
+        <p><strong>آخر اعتراف:</strong> ${p.lastConfession||'—'}</p>
+        <p><strong>آخر تناول:</strong> ${p.lastCommunion||'—'}</p>
+        <h3>ملاحظات الخادم / الخلوة</h3>
+        <p>${(p.notes||'—').replace(/\n/g,'<br>')}</p>
+      `;
+      printHTML('متابعة — ' + (p.name||'مخدوم'), body);
+    }
+
+    function exportServedCsv() {
+      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      let csv = 'الاسم,العنوان,تاريخ الميلاد,التليفون,أب الاعتراف,آخر اعتراف,آخر تناول,ملاحظات\n';
+      list.forEach(p => {
+        csv += `"${p.name||''}","${p.address||''}","${p.birth||''}","${p.phone||''}","${p.father||''}","${p.lastConfession||''}","${p.lastCommunion||''}","${p.notes||''}"\n`;
+      });
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'المخدومين.csv';
+      a.click();
+    }
+
+    // Init
+    if (localStorage.getItem('khalwati_font_size')) {
+      document.documentElement.style.fontSize = localStorage.getItem('khalwati_font_size') + 'px';
+    }
+    if (localStorage.getItem('khalwati_font_color')) {
+      document.body.style.color = localStorage.getItem('khalwati_font_color');
+    }
+    renderAll();
+    setupPsalmInputs();
+    setTimeout(checkReminders, 1200);
+
+    function checkReminders() {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const now = new Date();
+      const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      const prayTime = localStorage.getItem('khalwati_pray_time') || '06:00';
+      const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+      const todayKey = getDateKey(now);
+      // اعتراف
+      const confDate = localStorage.getItem('khalwati_conf_date');
+      const every = parseInt(localStorage.getItem('khalwati_conf_every') || '40', 10);
+      if (confDate) {
+        const d = new Date(confDate + 'T12:00:00');
+        d.setDate(d.getDate() + every);
+        const dueKey = getDateKey(d);
+        if (dueKey <= todayKey && localStorage.getItem('khalwati_conf_notified_' + dueKey) !== '1') {
+          new Notification('خلوتي', { body: 'حان ميعاد الاعتراف القادم 🕊️' });
+          localStorage.setItem('khalwati_conf_notified_' + dueKey, '1');
+        }
+      }
+      // صلاة / رسالة — مرة في اليوم عند فتح التطبيق حول الوقت المحدد
+      if (hhmm >= prayTime && localStorage.getItem('khalwati_pray_notified_' + todayKey) !== '1') {
+        if (hhmm.slice(0,2) === prayTime.slice(0,2)) {
+          new Notification('خلوتي — صوت يسوع', { body: 'وقت الصلاة والخلوة 🙏' });
+          localStorage.setItem('khalwati_pray_notified_' + todayKey, '1');
+        }
+      }
+      if (hhmm >= msgTime && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1') {
+        if (hhmm.slice(0,2) === msgTime.slice(0,2)) {
+          new Notification('خلوتي', { body: 'رسالة اليوم: صلّوا بلا انقطاع ✝️' });
+          localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+        }
+      }
+    }
+
+    // Play hymn on open (full duration)
+    window.addEventListener('load', () => {
+      setTimeout(playHymn, 400);
+    });
+    // fallback if autoplay blocked
+    document.body.addEventListener('click', function once() {
+      const audio = document.getElementById('hymnAudio');
+      if (audio && audio.paused && !isMuted() && audio.currentTime < 1) playHymn();
+      document.body.removeEventListener('click', once);
+    }, { once: true });
+
+    // Service Worker for offline
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error', err));
+    }
+  </script>
+</body>
+</html>

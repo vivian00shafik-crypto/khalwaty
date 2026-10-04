@@ -887,26 +887,6 @@
       <button class="action-btn" onclick="openPdfOptions()">تحميل PDF</button>
     </div>
 
-    <!-- الكتاب المقدس + الأجبية -->
-    <div class="bottom-grid">
-      <div class="bottom-card">
-        <div class="bottom-card-title">📖 الكتاب المقدس</div>
-        <div class="bottom-btns">
-          <button class="mini-btn" onclick="showToast('قريباً: العهد القديم')">العهد القديم</button>
-          <button class="mini-btn" onclick="showToast('قريباً: العهد الجديد')">العهد الجديد</button>
-        </div>
-      </div>
-      <div class="bottom-card">
-        <div class="bottom-card-title">⛪ الأجبية</div>
-        <div class="bottom-btns">
-          <button class="mini-btn" onclick="showToast('قريباً: باكر')">باكر</button>
-          <button class="mini-btn" onclick="showToast('قريباً: غروب')">غروب</button>
-          <button class="mini-btn" onclick="showToast('قريباً: نوم')">نوم</button>
-          <button class="mini-btn" onclick="showToast('قريباً: أقسام أخرى')">أخرى</button>
-        </div>
-      </div>
-    </div>
-
     <!-- الآية -->
     <div class="verse-footer">
       «صلوا بلا انقطاع» ١ تسالونيكي ٥: ١٧
@@ -997,6 +977,7 @@
     const openItems = [
       { id: 'oldTestament', label: 'العهد القديم', icon: '📜', type: 'bible' },
       { id: 'newTestament', label: 'العهد الجديد', icon: '📖', type: 'bible' },
+      { id: 'agpeya', label: 'الأجبية', icon: '⛪', type: 'agpeya' },
       { id: 'spiritualReading', label: 'قراءات روحية', icon: '📚', type: 'books' },
       { id: 'fathers', label: 'آبائيات', icon: '🕯️', type: 'text' },
       { id: 'bibleComment', label: 'تفسير الكتاب', icon: '🔍', type: 'text' },
@@ -1005,7 +986,6 @@
       { id: 'prepare', label: 'تحضير', icon: '📝', type: 'text' },
       { id: 'howStart', label: 'كيف أبدأ خلوة', icon: '🚪', type: 'howto' },
       { id: 'saintsPraises', label: 'مدائح القديسين', icon: '🎶', type: 'text' },
-      { id: 'progressChart', label: 'مستوى الخلوة', icon: '📊', type: 'chart' },
       { id: 'servantFollow', label: 'متابعة الخادم', icon: '👥', type: 'servant' }
     ];
 
@@ -1014,7 +994,8 @@
     const serviceItems = [
       { id: 'jesusPrayer', label: 'صلاة يسوع', icon: '📿' },
       { id: 'kyrie', label: 'كيرياليسون', icon: '✝' },
-      { id: 'confession', label: 'مساعد الاعتراف', icon: '🕊️' }
+      { id: 'confession', label: 'مساعد الاعتراف', icon: '🕊️' },
+      { id: 'progressChart', label: 'مستوى الخلوة', icon: '📊' }
     ];
 
     // ============ Helpers ============
@@ -1143,7 +1124,48 @@
       else if (type === 'servant') openServantSection();
       else if (type === 'howto') openHowStartGuide();
       else if (type === 'bible') openBible(id === 'newTestament' ? 'NT' : 'OT');
+      else if (type === 'agpeya') openAgpeya();
       else openTextModal(id);
+    }
+
+    function openAgpeya() {
+      document.getElementById('prayerTitle').textContent = 'الأجبية';
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;">
+          <p style="margin-bottom:12px;color:#8a7a60;font-size:13px;">اختاري صلاة من صلوات الأجبية:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="save-btn" onclick="openAgpeyaHour('باكر')">☀️ باكر</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الثالثة')">🕒 الثالثة</button>
+            <button class="save-btn" onclick="openAgpeyaHour('السادسة')">🕛 السادسة</button>
+            <button class="save-btn" onclick="openAgpeyaHour('التاسعة')">🕒 التاسعة</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الغروب')">🌅 الغروب</button>
+            <button class="save-btn" onclick="openAgpeyaHour('النوم')">🌙 النوم</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الستار')">🕯️ الستار</button>
+            <button class="save-btn" style="background:#5a7d4a;" onclick="openAgpeyaHour('أخرى')">📿 أخرى</button>
+          </div>
+        </div>`;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function openAgpeyaHour(name) {
+      const data = loadData();
+      const key = 'agpeya_' + name;
+      const saved = data[key] || '';
+      document.getElementById('prayerTitle').textContent = 'الأجبية — ' + name;
+      document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:right;">
+          <p style="font-size:13px;color:#8a7a60;margin-bottom:8px;">مساحة لتسجيل صلوات ${name} أو ملاحظاتك عليها</p>
+          <textarea id="agpeyaText" style="width:100%;min-height:180px;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;font-size:15px;line-height:1.8;resize:vertical;">${saved}</textarea>
+          <button class="save-btn" style="margin-top:10px;" onclick="saveAgpeyaHour('${name}')">حفظ</button>
+          <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openAgpeya()">رجوع للأجبية</button>
+        </div>`;
+    }
+
+    function saveAgpeyaHour(name) {
+      const data = loadData();
+      data['agpeya_' + name] = document.getElementById('agpeyaText').value;
+      saveData(data);
+      showToast('تم الحفظ');
     }
 
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
@@ -1318,7 +1340,8 @@
         }
         const clickAction = item.id === 'confession' ? "openConfessionHelper()" : 
                            (item.id === 'jesusPrayer' ? "openPrayer('jesus')" : 
-                           (item.id === 'kyrie' ? "openPrayer('kyrie')" : `toggleService('${item.id}')`));
+                           (item.id === 'kyrie' ? "openPrayer('kyrie')" : 
+                           (item.id === 'progressChart' ? "openProgressChart()" : `toggleService('${item.id}')`)));
         container.innerHTML += `
           <div class="service-item ${checked ? 'checked' : ''}" onclick="${clickAction}">
             <div class="service-circle" style="position:relative;">

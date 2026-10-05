@@ -270,10 +270,14 @@
 
     /* Service row */
     .service-row {
-      display: flex;
-      justify-content: space-around;
-      gap: 8px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 12px 10px;
+      justify-items: center;
+      align-items: start;
+      max-width: 300px;
+      margin: 0 auto;
     }
 
     .service-item {
@@ -281,9 +285,14 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      flex: 1;
-      min-width: 90px;
+      min-width: 72px;
     }
+
+    /* شكل صليب: أعلى · يمين/يسار · أسفل */
+    .service-item:nth-child(1) { grid-column: 2; grid-row: 1; }
+    .service-item:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .service-item:nth-child(3) { grid-column: 3; grid-row: 2; }
+    .service-item:nth-child(4) { grid-column: 2; grid-row: 3; }
 
     .service-circle {
       width: 56px;
@@ -938,17 +947,15 @@
         <div class="modal-title">اختيار المزامير</div>
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
-      <p style="font-size:13px; color:#8a7a60; margin-bottom:8px;">اضغط للاختيار · اضغط مطوّلًا للقراءة</p>
+      <p style="font-size:13px; color:#8a7a60; margin-bottom:8px;">اضغط للاختيار · اضغط مطوّلًا للقراءة — ترجمة فاندايك</p>
       <div id="selectedPsalmsBar" style="margin-bottom:10px;font-size:13px;"></div>
       <div class="psalm-grid" id="psalmGrid"></div>
-      <button class="save-btn" onclick="openMazameerPdf()">فتح سفر المزامير كامل (PDF)</button>
-      <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="closeModal()">تم</button>
+      <button class="save-btn" style="background:#8a7a60;" onclick="closeModal()">تم</button>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="psalms.js"></script>
   <script src="bible-svd.js"></script>
   <script>
     // ============ State ============
@@ -1697,41 +1704,39 @@
       renderSelectedPsalmsBar();
     }
 
+    function getVanDyckPsalmsBook() {
+      const bible = window.BIBLE_SVD;
+      if (!bible || !bible.books) return null;
+      return bible.books.find(b => b.id === 19 || b.code === 'Ps' || b.name === 'المزامير') || null;
+    }
+
     function readPsalm(num) {
-      const all = (typeof window.PSALMS === 'object' && window.PSALMS) ? window.PSALMS : {};
-      let text = all[String(num)] || all[num] || '';
-      // تنسيق بسيط للعرض
-      let bodyHtml;
-      if (text) {
-        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-        bodyHtml = lines.map(l => {
-          // أرقام الآيات في البداية
-          if (/^\d+/.test(l)) {
-            return `<p style="margin:6px 0;"><span style="color:var(--gold-dark);font-weight:700;">${l.replace(/^(\d+)/, '$1.')}</span></p>`;
-          }
-          if (l.startsWith('المزمور')) {
-            return `<h3 style="text-align:center;margin:8px 0 12px;color:var(--brown);">${l}</h3>`;
-          }
-          return `<p style="margin:4px 0;">${l}</p>`;
-        }).join('');
+      num = parseInt(num, 10);
+      const book = getVanDyckPsalmsBook();
+      let bodyHtml = '';
+      if (book && num >= 1 && num <= book.chapters.length) {
+        const verses = book.chapters[num - 1] || [];
+        bodyHtml = `<h3 style="text-align:center;margin:8px 0 12px;color:var(--brown);">المزمور ${num}</h3>` +
+          verses.map((v, i) =>
+            `<p style="margin:8px 0;line-height:1.95;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i + 1}</span>${v}</p>`
+          ).join('');
       } else {
-        bodyHtml = `<p style="text-align:center;color:#8a7a60;">النص غير متوفر لهذا المزمور حاليًا.</p>
-          <button class="save-btn" onclick="openMazameerPdf(${psalmPdfPage(num)})">فتح من ملف PDF</button>`;
+        bodyHtml = `<p style="text-align:center;color:#8a7a60;">النص غير متوفر لهذا المزمور حاليًا.</p>`;
       }
+      const maxPs = book ? book.chapters.length : 150;
       document.getElementById('prayerTitle').textContent = 'المزمور ' + num;
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;line-height:1.95;font-size:15px;">
-          <p style="text-align:center;color:var(--gold-dark);font-weight:600;font-size:13px;">حسب النص القبطي القديم (السبعينية) — دير أنبا مقار</p>
+          <p style="text-align:center;color:var(--gold-dark);font-weight:600;font-size:13px;">ترجمة فاندايك</p>
           <div style="margin-top:10px;">${bodyHtml}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:center;">
-            ${num > 1 ? `<button class="save-btn" style="background:#8a7a60;flex:1;" onclick="readPsalm(${num-1})">→ السابق</button>` : ''}
-            ${num < 151 ? `<button class="save-btn" style="flex:1;" onclick="readPsalm(${num+1})">التالي ←</button>` : ''}
+            ${num > 1 ? `<button class="save-btn" style="background:#8a7a60;flex:1;" onclick="readPsalm(${num - 1})">→ السابق</button>` : ''}
+            ${num < maxPs ? `<button class="save-btn" style="flex:1;" onclick="readPsalm(${num + 1})">التالي ←</button>` : ''}
           </div>
           <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="openPsalmSelector()">رجوع لاختيار المزامير</button>
         </div>`;
       document.getElementById('psalmModal').classList.remove('active');
       document.getElementById('prayerModal').classList.add('active');
-      // scroll content to top
       const pc = document.getElementById('prayerContent');
       if (pc) pc.scrollTop = 0;
     }

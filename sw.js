@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v9';
+const CACHE_NAME = 'khalwati-v10';
 const urlsToCache = [
   './',
   './index.html',
@@ -14,9 +14,7 @@ const urlsToCache = [
   './progress-boy-high.jpg',
   './progress-boy-low.jpg',
   './progress-boy-final.jpg',
-  './psalms.js',
-  './bible-svd.js',
-  './mazameer.pdf'
+  './bible-svd.js'
 ];
 
 self.addEventListener('install', event => {

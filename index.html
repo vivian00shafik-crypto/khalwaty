@@ -268,49 +268,68 @@
       display: none;
     }
 
-    /* Service row */
+    /* Service row — شكل صليب كما في التصميم */
     .service-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 12px 10px;
-      justify-items: center;
-      align-items: start;
-      max-width: 300px;
-      margin: 0 auto;
+      position: relative;
+      width: 290px;
+      height: 300px;
+      margin: 12px auto 8px;
     }
 
     .service-item {
+      position: absolute;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      min-width: 72px;
+      width: 88px;
+      z-index: 2;
     }
 
-    /* شكل صليب: أعلى · يمين/يسار · أسفل */
-    .service-item:nth-child(1) { grid-column: 2; grid-row: 1; }
-    .service-item:nth-child(2) { grid-column: 1; grid-row: 2; }
-    .service-item:nth-child(3) { grid-column: 3; grid-row: 2; }
-    .service-item:nth-child(4) { grid-column: 2; grid-row: 3; }
+    /* أعلى · يسار · يمين · أسفل */
+    .service-item.pos-top { top: 0; left: 50%; transform: translateX(-50%); }
+    .service-item.pos-left { top: 50%; left: 0; transform: translateY(-55%); }
+    .service-item.pos-right { top: 50%; right: 0; transform: translateY(-55%); }
+    .service-item.pos-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+    .service-cross-center {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.92;
+    }
+
+    .service-cross-center svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 2px 6px rgba(158,120,40,0.25));
+    }
 
     .service-circle {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      border: 2px solid var(--gold);
+      border: 2.5px solid #c9a227;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      background: white;
+      font-size: 28px;
+      background: #fffef8;
       cursor: pointer;
       transition: all 0.2s;
+      box-shadow: 0 2px 10px rgba(158,120,40,0.18);
     }
 
     .service-item.checked .service-circle {
-      background: var(--gold);
+      background: linear-gradient(145deg, #e8c96a, #c9a227);
       color: white;
+      border-color: #a67c00;
     }
 
     .service-label {
@@ -318,6 +337,7 @@
       text-align: center;
       color: var(--brown);
       line-height: 1.3;
+      font-weight: 600;
     }
 
     .count-badge {
@@ -998,10 +1018,11 @@
 
     const dailyItems = toggleItems; // توافق مع الكود القديم للعرض
 
+    // ترتيب مطابق للتصميم: أعلى · يسار · يمين · أسفل
     const serviceItems = [
       { id: 'jesusPrayer', label: 'صلاة يسوع', icon: '📿' },
-      { id: 'kyrie', label: 'كيرياليسون', icon: '✝' },
       { id: 'confession', label: 'مساعد الاعتراف', icon: '🕊️' },
+      { id: 'kyrie', label: 'كيرياليسون', icon: '✝' },
       { id: 'progressChart', label: 'مستوى الخلوة', icon: '📊' }
     ];
 
@@ -1331,7 +1352,29 @@
     function renderServices() {
       const data = loadData();
       const container = document.getElementById('serviceRow');
-      container.innerHTML = '';
+      container.innerHTML = `
+        <div class="service-cross-center" aria-hidden="true">
+          <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="crossGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#f0d78c"/>
+                <stop offset="45%" style="stop-color:#c9a227"/>
+                <stop offset="100%" style="stop-color:#8a6914"/>
+              </linearGradient>
+            </defs>
+            <!-- صليب مزخرف في الوسط -->
+            <rect x="52" y="18" width="16" height="84" rx="3" fill="url(#crossGold)"/>
+            <rect x="28" y="42" width="64" height="16" rx="3" fill="url(#crossGold)"/>
+            <circle cx="60" cy="50" r="7" fill="#fff8e0" stroke="#c9a227" stroke-width="1.5"/>
+            <circle cx="60" cy="50" r="3" fill="#c9a227"/>
+            <!-- زخارف بسيطة -->
+            <path d="M60 18 Q66 28 60 34 Q54 28 60 18" fill="#e8c96a" opacity="0.8"/>
+            <path d="M28 50 Q36 44 40 50 Q36 56 28 50" fill="#e8c96a" opacity="0.7"/>
+            <path d="M92 50 Q84 44 80 50 Q84 56 92 50" fill="#e8c96a" opacity="0.7"/>
+            <path d="M60 102 Q66 94 60 88 Q54 94 60 102" fill="#e8c96a" opacity="0.8"/>
+          </svg>
+        </div>`;
+      const posClass = { jesusPrayer: 'pos-top', confession: 'pos-left', kyrie: 'pos-right', progressChart: 'pos-bottom' };
       serviceItems.forEach(item => {
         let checked = !!data[item.id];
         if (item.id === 'confession') {
@@ -1350,7 +1393,7 @@
                            (item.id === 'kyrie' ? "openPrayer('kyrie')" : 
                            (item.id === 'progressChart' ? "openProgressChart()" : `toggleService('${item.id}')`)));
         container.innerHTML += `
-          <div class="service-item ${checked ? 'checked' : ''}" onclick="${clickAction}">
+          <div class="service-item ${posClass[item.id] || ''} ${checked ? 'checked' : ''}" onclick="${clickAction}">
             <div class="service-circle" style="position:relative;">
               ${item.icon}
               ${countBadge}

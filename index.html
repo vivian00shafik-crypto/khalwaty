@@ -1005,13 +1005,13 @@
       { id: 'oldTestament', label: 'العهد القديم', icon: '📜', type: 'bible' },
       { id: 'newTestament', label: 'العهد الجديد', icon: '📖', type: 'bible' },
       { id: 'agpeya', label: 'الأجبية', icon: '⛪', type: 'agpeya' },
-      { id: 'howStart', label: 'كيف أبدأ خلوة', icon: '🚪', type: 'howto' },
+      { id: 'spiritualReading', label: 'قراءات روحية', icon: '📚', type: 'books' },
       { id: 'fathers', label: 'آبائيات', icon: '🕯️', type: 'text' },
       { id: 'bibleComment', label: 'تفسير الكتاب', icon: '🔍', type: 'text' },
       { id: 'katameros', label: 'قطمارس', icon: '📅', type: 'text' },
       { id: 'faithExamples', label: 'تمثلوا بإيمانهم', icon: '⭐', type: 'text' },
       { id: 'prepare', label: 'تحضير', icon: '📝', type: 'text' },
-      { id: 'spiritualReading', label: 'قراءات روحية', icon: '📚', type: 'books' },
+      { id: 'howStart', label: 'كيف أبدأ خلوة', icon: '🚪', type: 'howto' },
       { id: 'saintsPraises', label: 'مدائح القديسين', icon: '🎶', type: 'text' },
       { id: 'servantFollow', label: 'متابعة الخادم', icon: '👥', type: 'servant' }
     ];
@@ -2162,28 +2162,6 @@
       }
     }
 
-
-    const DAILY_VERSES = [
-      { theme: 'رجاء', ar: 'لأَنِّي عَارِفٌ الأَفْكَارَ الَّتِي أَنَا مُفَتَّكِرٌ بِهَا عَنْكُمْ، يَقُولُ الرَّبُّ، أَفْكَارَ سَلاَمٍ لاَ لِلشَّرِّ، لأُعْطِيَكُمْ آخِرَةً وَرَجَاءً. (إرميا 29: 11)', en: 'For I know the thoughts that I think toward you, says the Lord, thoughts of peace and not of evil, to give you a future and a hope. (Jer 29:11)' },
-      { theme: 'سلام', ar: 'سَلاَمًا أَتْرُكُ لَكُمْ. سَلاَمِي أُعْطِيكُمْ. لَيْسَ كَمَا يُعْطِي الْعَالَمُ أُعْطِيكُمْ أَنَا. لاَ تَضْطَرِبْ قُلُوبُكُمْ وَلاَ تَرْهَبْ. (يوحنا 14: 27)', en: 'Peace I leave with you, My peace I give to you... Let not your heart be troubled, neither let it be afraid. (John 14:27)' },
-      { theme: 'محبة', ar: 'مَنْ لاَ يُحِبُّ لَمْ يَعْرِفِ اللهَ، لأَنَّ اللهَ مَحَبَّةٌ. (1 يوحنا 4: 8)', en: 'He who does not love does not know God, for God is love. (1 John 4:8)' },
-      { theme: 'غفران', ar: 'إِنِ اعْتَرَفْنَا بِخَطَايَانَا فَهُوَ أَمِينٌ وَعَادِلٌ، حَتَّى يَغْفِرَ لَنَا خَطَايَانَا وَيُطَهِّرَنَا مِنْ كُلِّ إِثْمٍ. (1 يوحنا 1: 9)', en: 'If we confess our sins, He is faithful and just to forgive us our sins and to cleanse us from all unrighteousness. (1 John 1:9)' },
-      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ بِكُلِّ قَلْبِكَ، وَعَلَى فَهْمِكَ لاَ تَعْتَمِدْ. (أمثال 3: 5)', en: 'Trust in the Lord with all your heart, and lean not on your own understanding. (Prov 3:5)' },
-      { theme: 'فرح', ar: 'افْرَحُوا فِي الرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: افْرَحُوا. (فيلبي 4: 4)', en: 'Rejoice in the Lord always. Again I will say, rejoice! (Phil 4:4)' },
-      { theme: 'رجاء', ar: 'وَالآنَ يَا بَنِيَّ اثْبُتُوا فِيهِ، حَتَّى مَتَى أَظْهَرَ يَكُونُ لَنَا ثِقَةٌ، وَلاَ نَخْجَلَ مِنْهُ فِي مَجِيئِهِ. (1 يوحنا 2: 28)', en: 'And now, little children, abide in Him, that when He appears, we may have confidence... (1 John 2:28)' },
-      { theme: 'سلام', ar: 'وَلْيَمْلِكْ فِي قُلُوبِكُمْ سَلاَمُ اللهِ الَّذِي إِلَيْهِ دُعِيتُمْ فِي جَسَدٍ وَاحِدٍ. (كولوسي 3: 15)', en: 'And let the peace of God rule in your hearts, to which also you were called in one body. (Col 3:15)' },
-      { theme: 'محبة', ar: 'هذِهِ هِيَ وَصِيَّتِي أَنْ تُحِبُّوا بَعْضُكُمْ بَعْضًا كَمَا أَحْبَبْتُكُمْ. (يوحنا 15: 12)', en: 'This is My commandment, that you love one another as I have loved you. (John 15:12)' },
-      { theme: 'غفران', ar: 'وَكُونُوا لُطَفَاءَ بَعْضُكُمْ نَحْوَ بَعْضٍ، شَفُوقِينَ، مُتَسَامِحِينَ كَمَا سَامَحَكُمُ اللهُ أَيْضًا فِي الْمَسِيحِ. (أفسس 4: 32)', en: 'And be kind to one another, tenderhearted, forgiving one another, even as God in Christ forgave you. (Eph 4:32)' },
-      { theme: 'اتكال', ar: 'أُلْقِ عَلَى الرَّبِّ هَمَّكَ فَيُعِينَكَ. لاَ يَدَعُ الصِّدِّيقَ يَتَزَعْزَعُ إِلَى الأَبَدِ. (مزمور 55: 22)', en: 'Cast your burden on the Lord, and He shall sustain you. (Psalm 55:22)' },
-      { theme: 'فرح', ar: 'جَعَلْتَنِي أَعْرِفُ سَبِيلَ الْحَيَاةِ. أَمَامَكَ شِبَعُ سُرُورٍ. فِي يَمِينِكَ نِعَمٌ إِلَى الأَبَدِ. (مزمور 16: 11)', en: 'You will show me the path of life; in Your presence is fullness of joy. (Psalm 16:11)' }
-    ];
-    function getDailyVerse() {
-      const i = new Date().getDate() % DAILY_VERSES.length;
-      const v = DAILY_VERSES[i];
-      const lang = localStorage.getItem('khalwati_lang') || 'ar';
-      return { theme: v.theme, text: lang === 'en' ? v.en : v.ar };
-    }
-
     function openSettings() {
       document.getElementById('prayerTitle').textContent = 'إعدادات التطبيق';
       const muted = isMuted();
@@ -2194,28 +2172,6 @@
       const prayTime = localStorage.getItem('khalwati_pray_time') || '06:00';
       const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
       const gender = localStorage.getItem('khalwati_gender') || 'girl';
-      const lang = localStorage.getItem('khalwati_lang') || 'ar';
-      let cd = '', cm = '', cy = '';
-      if (confDate && confDate.length >= 8) {
-        const p = confDate.split('-');
-        cy = p[0] || ''; cm = p[1] || ''; cd = p[2] || '';
-      }
-      let dayOpts = '<option value="">يوم</option>';
-      for (let i = 1; i <= 31; i++) {
-        const v = String(i).padStart(2,'0');
-        dayOpts += '<option value="'+v+'" '+(cd===v?'selected':'')+'>'+i+'</option>';
-      }
-      const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-      let monthOpts = '<option value="">شهر</option>';
-      for (let i = 1; i <= 12; i++) {
-        const v = String(i).padStart(2,'0');
-        monthOpts += '<option value="'+v+'" '+(cm===v?'selected':'')+'>'+monthNames[i-1]+'</option>';
-      }
-      const thisYear = new Date().getFullYear();
-      let yearOpts = '<option value="">سنة</option>';
-      for (let y = thisYear; y >= thisYear - 15; y--) {
-        yearOpts += '<option value="'+y+'" '+(cy===String(y)?'selected':'')+'>'+y+'</option>';
-      }
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right; line-height:1.9; font-size:14px;">
           <p><strong>صوت الترنيمة</strong></p>
@@ -2228,56 +2184,30 @@
           <label>لون الخط</label>
           <input type="color" id="appFontColor" value="${fontColor}" style="width:100%;height:36px;" onchange="localStorage.setItem('khalwati_font_color', this.value); document.body.style.color=this.value;">
 
-          <p style="margin-top:14px;"><strong>اللغة / Language</strong></p>
-          <select id="appLang" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_lang', this.value); showToast(this.value==='en'?'Language: English':'اللغة: العربية');">
-            <option value="ar" ${lang==='ar'?'selected':''}>العربية</option>
-            <option value="en" ${lang==='en'?'selected':''}>English</option>
-          </select>
-
           <p style="margin-top:14px;"><strong>نوع المستخدم (للرسم البياني)</strong></p>
           <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value)">
-            <option value="girl" ${gender==='girl'?'selected':''}>بنت / Girl</option>
-            <option value="boy" ${gender==='boy'?'selected':''}>ولد / Boy</option>
+            <option value="girl" ${gender==='girl'?'selected':''}>بنت</option>
+            <option value="boy" ${gender==='boy'?'selected':''}>ولد</option>
           </select>
 
           <p style="margin-top:14px;"><strong>ميعاد الاعتراف القادم</strong></p>
-          <label>آخر اعتراف (يوم / شهر / سنة)</label>
-          <div style="display:flex;gap:6px;margin-bottom:6px;direction:ltr;">
-            <select id="confDay" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${dayOpts}</select>
-            <select id="confMonth" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${monthOpts}</select>
-            <select id="confYear" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${yearOpts}</select>
-          </div>
+          <label>آخر اعتراف</label>
+          <input type="date" id="confDate" value="${confDate}" style="width:100%;padding:8px;margin-bottom:6px;" onchange="localStorage.setItem('khalwati_conf_date', this.value)">
           <label>التذكير كل</label>
-          <select id="confEvery" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_conf_every', this.value); updateNextConfInfo();">
+          <select id="confEvery" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_conf_every', this.value)">
             <option value="40" ${confEvery==='40'?'selected':''}>40 يوم</option>
             <option value="30" ${confEvery==='30'?'selected':''}>كل شهر (30 يوم)</option>
           </select>
           <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
 
           <p style="margin-top:14px;"><strong>أوقات التنبيه (تذكير محلي)</strong></p>
-          <label>تنبيه الصلاة</label>
+          <label>صلاة / صوت يسوع</label>
           <input type="time" id="prayTime" value="${prayTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_pray_time', this.value)">
-          <label>صوت يسوع اليومي (آية كتابية)</label>
+          <label>رسالة يومية</label>
           <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value)">
-          <p style="font-size:12px;color:#8a7a60;">عند وقت التنبيه تُرسل آية عن الرجاء أو السلام أو المحبة أو الغفران أو الاتكال أو الفرح.</p>
           <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast('تم حفظ الإعدادات');">حفظ وطلب إذن الإشعارات</button>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
-      updateNextConfInfo();
-    }
-
-    function saveConfDateParts() {
-      const d = document.getElementById('confDay');
-      const m = document.getElementById('confMonth');
-      const y = document.getElementById('confYear');
-      if (!d || !m || !y) return;
-      if (!d.value || !m.value || !y.value) {
-        localStorage.removeItem('khalwati_conf_date');
-        updateNextConfInfo();
-        return;
-      }
-      const iso = y.value + '-' + m.value + '-' + d.value;
-      localStorage.setItem('khalwati_conf_date', iso);
       updateNextConfInfo();
     }
 
@@ -2642,18 +2572,16 @@
           localStorage.setItem('khalwati_conf_notified_' + dueKey, '1');
         }
       }
-      // تنبيه الصلاة
+      // صلاة / رسالة — مرة في اليوم عند فتح التطبيق حول الوقت المحدد
       if (hhmm >= prayTime && localStorage.getItem('khalwati_pray_notified_' + todayKey) !== '1') {
         if (hhmm.slice(0,2) === prayTime.slice(0,2)) {
-          new Notification('خلوتي', { body: 'وقت الصلاة والخلوة 🙏' });
+          new Notification('خلوتي — صوت يسوع', { body: 'وقت الصلاة والخلوة 🙏' });
           localStorage.setItem('khalwati_pray_notified_' + todayKey, '1');
         }
       }
-      // صوت يسوع اليومي — آية كتابية
       if (hhmm >= msgTime && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1') {
         if (hhmm.slice(0,2) === msgTime.slice(0,2)) {
-          const verse = getDailyVerse();
-          new Notification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', { body: verse.text });
+          new Notification('خلوتي', { body: 'رسالة اليوم: صلّوا بلا انقطاع ✝️' });
           localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
         }
       }

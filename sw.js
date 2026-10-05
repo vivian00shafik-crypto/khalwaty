@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v10';
+const CACHE_NAME = 'khalwati-v11';
 const urlsToCache = [
   './',
   './index.html',
@@ -14,6 +14,8 @@ const urlsToCache = [
   './progress-boy-high.jpg',
   './progress-boy-low.jpg',
   './progress-boy-final.jpg',
+  './progress-girl-final.mp4',
+  './progress-boy-final.mp4',
   './bible-svd.js'
 ];
 

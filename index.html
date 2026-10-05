@@ -2319,10 +2319,11 @@
       let level = 'low';
       if (avg >= 9) level = 'final';
       else if (avg >= 6) level = 'high';
-      let progressImg, stageText;
+      let progressImg, stageText, progressVideo = null;
       if (gender === 'boy') {
         if (level === 'final') {
           progressImg = 'progress-boy-final.jpg';
+          progressVideo = 'progress-boy-final.mp4';
           stageText = 'المستوى النهائي — الولد في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-boy-high.jpg';
@@ -2334,6 +2335,7 @@
       } else {
         if (level === 'final') {
           progressImg = 'progress-girl-final.jpg';
+          progressVideo = 'progress-girl-final.mp4';
           stageText = 'المستوى النهائي — البنت في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-girl-high.jpg';
@@ -2361,8 +2363,12 @@
           </div>
           <p style="margin-bottom:4px;font-weight:600;">${stageText}</p>
           <p style="margin-bottom:8px;font-size:13px;">الاتجاه: <strong>${trendText}</strong> — الدرجة: ${step}/10</p>
-          <div style="border-radius:16px;overflow:hidden;border:2px solid #c9a227;margin:8px 0;box-shadow:0 4px 16px rgba(92,64,51,0.12);">
-            <img src="${progressImg}" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;">
+          <div style="border-radius:16px;overflow:hidden;border:2px solid #c9a227;margin:8px 0;box-shadow:0 4px 16px rgba(92,64,51,0.12);background:#000;">
+            ${level === 'final' && progressVideo
+              ? `<video id="progressFinalVideo" src="${progressVideo}" playsinline controls autoplay style="width:100%;display:block;max-height:360px;background:#000;"></video>
+                 <p style="text-align:center;background:#fff9e8;margin:0;padding:8px;font-size:13px;color:var(--brown);font-weight:600;">🎉 نهاية هدف الخلوة — وصول إلى حضن يسوع</p>`
+              : `<img src="${progressImg}" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;">`
+            }
           </div>
           <div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:4px;">
             ${bars}

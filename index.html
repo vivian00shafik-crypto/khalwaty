@@ -7,6 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="خلوتي">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=El+Messiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Reem+Kufi:wght@400;700&family=Roboto:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
   <title>خلوتي - توتة روحية</title>
   <style>
@@ -2628,21 +2631,35 @@
       const font = localStorage.getItem('khalwati_font') || 'Cairo';
       const align = localStorage.getItem('khalwati_align') || 'right';
       const size = localStorage.getItem('khalwati_font_size') || '16';
-      const stack = "'" + font + "', 'Cairo', 'Noto Naskh Arabic', sans-serif";
+      const stack = '"' + font + '", "Cairo", "Noto Naskh Arabic", sans-serif';
       document.documentElement.style.setProperty('--app-font', stack);
       document.documentElement.style.setProperty('--app-align', align);
       document.documentElement.style.setProperty('--app-font-size', size + 'px');
-      if (document.body) {
-        document.body.style.fontFamily = stack;
-        document.body.style.fontSize = size + 'px';
-        document.body.style.textAlign = align;
+      // فرض الخط بقوة على كل العناصر (يتغلب على أي تنسيق قديم)
+      let st = document.getElementById('khalwati-font-force');
+      if (!st) {
+        st = document.createElement('style');
+        st.id = 'khalwati-font-force';
+        document.head.appendChild(st);
       }
-      // تحميل الخط إن أمكن ثم إعادة التطبيق
+      st.textContent = `
+        html, body, button, input, textarea, select,
+        .icon-label, .text-box, .text-box-title, .modal-title,
+        .action-btn, .save-btn, .align-btn, .helper-btn, .section-title,
+        .day-name, .date-nav, .verse-line, #prayerContent, #prayerTitle,
+        .font-opt, p, span, div, label, a {
+          font-family: ${stack} !important;
+        }
+        body { font-size: ${size}px !important; text-align: ${align} !important; }
+        .icon-label { font-size: ${Math.max(10, parseInt(size,10) * 0.75)}px !important; }
+      `;
+      if (document.body) {
+        document.body.style.setProperty('font-family', stack, 'important');
+        document.body.style.setProperty('font-size', size + 'px', 'important');
+        document.body.style.setProperty('text-align', align, 'important');
+      }
       if (document.fonts && document.fonts.load) {
-        document.fonts.load('16px "' + font + '"').then(function() {
-          document.documentElement.style.setProperty('--app-font', stack);
-          if (document.body) document.body.style.fontFamily = stack;
-        }).catch(function(){});
+        document.fonts.load('16px "' + font + '"').catch(function(){});
       }
       document.documentElement.setAttribute('dir', 'rtl');
       document.documentElement.setAttribute('lang', localStorage.getItem('khalwati_lang') || 'ar');
@@ -2651,7 +2668,8 @@
     function setAppFont(name) {
       localStorage.setItem('khalwati_font', name);
       applyTypography();
-      showToast('الخط: ' + name);
+      const label = (name === 'Aref Ruqaa') ? 'خط اليد' : name;
+      showToast('تم تطبيق الخط: ' + label);
     }
     function setAppAlign(a) {
       localStorage.setItem('khalwati_align', a);

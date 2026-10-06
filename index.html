@@ -1531,6 +1531,16 @@
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <div style="width:100%;margin:8px 0;text-align:right;">
+              <label style="font-size:12px;color:#8a7a60;">خط نص الكتاب (مستقل عن الصفحة الرئيسية)</label>
+              <select id="bibleFontSelect" onchange="setBibleFont(this.value)" style="width:100%;padding:8px;margin-top:4px;font-family:inherit;">
+                ${['Aref Ruqaa','Amiri','Cairo','Noto Naskh Arabic','Scheherazade New','Tajawal'].map(f => {
+                  const cur = getBibleFont();
+                  const lab = f==='Aref Ruqaa'?'✍ خط اليد':f;
+                  return '<option value="'+f+'" '+(cur===f?'selected':'')+'>'+lab+'</option>';
+                }).join('')}
+              </select>
+            </div>
             <button onclick="openBible('OT')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${book.t==='OT'?'var(--gold)':'#fff'};color:${book.t==='OT'?'#fff':'var(--brown)'};font-family:inherit;">العهد القديم</button>
             <button onclick="openBible('NT')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${book.t==='NT'?'var(--gold)':'#fff'};color:${book.t==='NT'?'#fff':'var(--brown)'};font-family:inherit;">العهد الجديد</button>
           </div>
@@ -1557,6 +1567,7 @@
     }
 
           applyStoredHighlights(document.getElementById('prayerContent'));
+      applyBibleFontToContent(document.getElementById('prayerContent'));
 
     function biblePrevChapter() {
       if (bibleState.chapter > 0) {
@@ -2102,6 +2113,7 @@
       const pc = document.getElementById('prayerContent');
       if (pc) pc.scrollTop = 0;
       applyStoredHighlights(document.getElementById('prayerContent'));
+      applyBibleFontToContent(document.getElementById('prayerContent'));
     }
 
     // Save psalm text fields on change
@@ -2646,9 +2658,13 @@
         html, body, button, input, textarea, select,
         .icon-label, .text-box, .text-box-title, .modal-title,
         .action-btn, .save-btn, .align-btn, .helper-btn, .section-title,
-        .day-name, .date-nav, .verse-line, #prayerContent, #prayerTitle,
-        .font-opt, p, span, div, label, a {
+        .day-name, .date-nav, #prayerTitle, .font-opt, label {
           font-family: ${stack} !important;
+        }
+        /* لا نفرض خط التطبيق على التصميم ولا نص الكتاب */
+        #verseDesignText, #verseDesignText *,
+        #prayerContent .verse-line, #prayerContent .bible-verse-text {
+          font-family: inherit;
         }
         body { font-size: ${size}px !important; text-align: ${align} !important; }
         .icon-label { font-size: ${Math.max(10, parseInt(size,10) * 0.75)}px !important; }
@@ -2689,6 +2705,19 @@
     }
 
     let verseMenuEl = null;
+
+    function getBibleFont() {
+      return localStorage.getItem('khalwati_bible_font') || localStorage.getItem('khalwati_font') || 'Amiri';
+    }
+    function setBibleFont(name) {
+      localStorage.setItem('khalwati_bible_font', name);
+      // أعد فتح الإصحاح الحالي إن وُجد
+      if (window._bibleState && window._bibleState.bookId != null) {
+        renderBible(window._bibleState.bookId, window._bibleState.chapter);
+      }
+      showToast('خط الكتاب: ' + name + ' (لا يغيّر خط الصفحة الرئيسية)');
+    }
+
     function openVerseMenu(ev, el) {
       ev.stopPropagation();
       const menu = document.getElementById('verseMenu');
@@ -2813,6 +2842,15 @@
       showToast('تم التمييز — سيبقى حتى تزيله');
       closeVerseMenu();
     }
+    function applyBibleFontToContent(root) {
+      const font = getBibleFont();
+      const scope = root || document.getElementById('prayerContent');
+      if (!scope) return;
+      scope.querySelectorAll('.verse-line').forEach(function(el) {
+        el.style.setProperty('font-family', '"' + font + '", serif', 'important');
+      });
+    }
+
     function applyStoredHighlights(root) {
       const scope = root || document;
       scope.querySelectorAll('.verse-line[data-ref]').forEach(el => {
@@ -2945,7 +2983,7 @@
         text: txt,
         ref: ref,
         bg: 1,
-        font: localStorage.getItem('khalwati_font') || 'Cairo',
+        font: localStorage.getItem('khalwati_design_font') || localStorage.getItem('khalwati_font') || 'Cairo',
         size: autoSize,
         color: '#3e2f1c',
         align: 'center',
@@ -2998,6 +3036,7 @@
           <button class="save-btn" style="margin-top:12px;" onclick="saveDesignToDevice(false)">💾 حفظ الصورة على الموبايل</button>
         </div>`;
       enableDesignTextDrag();
+      updateDesignStyle();
     }
 
     function enableDesignTextDrag() {
@@ -3057,13 +3096,18 @@
       if (fontEl) window._designState.font = fontEl.value;
       if (sizeEl) window._designState.size = parseInt(sizeEl.value, 10) || 18;
       if (colorEl) window._designState.color = colorEl.value;
+      // خط التصميم فقط — لا يغيّر خط الصفحة الرئيسية
+      localStorage.setItem('khalwati_design_font', window._designState.font);
       const box = document.getElementById('verseDesignText');
       const st = window._designState;
       if (box) {
-        box.style.fontFamily = "'" + st.font + "', serif";
-        box.style.fontSize = st.size + 'px';
+        box.style.setProperty('font-family', '"' + st.font + '", serif', 'important');
+        box.style.setProperty('font-size', st.size + 'px', 'important');
         box.style.color = st.color;
         box.style.textAlign = st.align;
+        box.querySelectorAll('*').forEach(function(n) {
+          n.style.setProperty('font-family', '"' + st.font + '", serif', 'important');
+        });
       }
     }
 

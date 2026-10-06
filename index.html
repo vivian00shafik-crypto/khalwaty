@@ -157,14 +157,16 @@
       font-style: normal;
       font-weight: 400;
       font-display: swap;
-      src: url('fonts/ArefRuqaa-400.woff') format('woff');
+      src: url('fonts/ArefRuqaa-400.woff') format('woff'),
+           url('fonts/ArefRuqaa-400.ttf') format('truetype');
     }
     @font-face {
       font-family: 'Aref Ruqaa';
       font-style: normal;
       font-weight: 700;
       font-display: swap;
-      src: url('fonts/ArefRuqaa-700.woff') format('woff');
+      src: url('fonts/ArefRuqaa-700.woff') format('woff'),
+           url('fonts/ArefRuqaa-700.ttf') format('truetype');
     }
 
     @font-face {
@@ -1070,9 +1072,10 @@
     #modalTextarea.hl-pink { background: #f8d7e8; }
     .verse-menu {
       position: fixed; z-index: 4000; background: #fffdf8; border: 2px solid var(--gold);
-      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 12px;
-      left: 10px; right: 10px; bottom: 12px; top: auto;
-      max-width: none; width: auto; max-height: 70vh; overflow-y: auto; text-align: right;
+      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 12px 12px;
+      left: 10px; right: 10px;
+      max-width: none; width: auto; max-height: 65vh; overflow-y: auto; text-align: right;
+      -webkit-overflow-scrolling: touch;
     }
     .verse-menu button {
       display: block; width: 100%; text-align: right; padding: 10px 12px; margin: 4px 0;
@@ -2258,9 +2261,10 @@
     #modalTextarea.hl-pink { background: #f8d7e8; }
     .verse-menu {
       position: fixed; z-index: 4000; background: #fffdf8; border: 2px solid var(--gold);
-      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 12px;
-      left: 10px; right: 10px; bottom: 12px; top: auto;
-      max-width: none; width: auto; max-height: 70vh; overflow-y: auto; text-align: right;
+      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 12px 12px;
+      left: 10px; right: 10px;
+      max-width: none; width: auto; max-height: 65vh; overflow-y: auto; text-align: right;
+      -webkit-overflow-scrolling: touch;
     }
     .verse-menu button {
       display: block; width: 100%; text-align: right; padding: 10px 12px; margin: 4px 0;
@@ -2573,12 +2577,13 @@
       const appFont = localStorage.getItem('khalwati_font') || 'Cairo';
       const align = localStorage.getItem('khalwati_align') || 'right';
       const fontList = [
+        'Aref Ruqaa',
         'Cairo','Tajawal','Amiri','Almarai','Noto Naskh Arabic','Noto Kufi Arabic',
-        'IBM Plex Sans Arabic','El Messiri','Reem Kufi','Scheherazade New','Aref Ruqaa',
+        'IBM Plex Sans Arabic','El Messiri','Reem Kufi','Scheherazade New',
         'Roboto','Open Sans','Montserrat','Merriweather','Playfair Display'
       ];
       const fontOptionsHtml = fontList.map(f => {
-        const label = (f === 'Aref Ruqaa') ? 'Aref Ruqaa (خط اليد)' : f;
+        const label = (f === 'Aref Ruqaa') ? '✍ خط اليد (Aref Ruqaa)' : f;
         return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — نموذج خلوتي</div>`;
       }).join('');
       return { theme: v.theme, text: lang === 'en' ? v.en : v.ar };
@@ -2688,20 +2693,86 @@
       `;
       document.querySelectorAll('.verse-line.active-verse').forEach(x => x.classList.remove('active-verse'));
       el.classList.add('active-verse');
-      // قائمة ثابتة أسفل الشاشة تظهر كاملة دائمًا
+
+      // شريط سحب + تمرير سهل للقائمة
+      const dragBar = `<div id="verseMenuDrag" style="text-align:center;padding:6px 0 10px;cursor:grab;user-select:none;">
+        <div style="width:48px;height:5px;border-radius:3px;background:#d4c4a0;margin:0 auto 6px;"></div>
+        <span style="font-size:11px;color:#8a7a60;">اسحبي القائمة لأعلى أو لأسفل</span>
+      </div>`;
+      menu.innerHTML = dragBar + menu.innerHTML;
+
       menu.style.display = 'block';
       menu.style.position = 'fixed';
       menu.style.left = '10px';
       menu.style.right = '10px';
-      menu.style.bottom = '12px';
-      menu.style.top = 'auto';
       menu.style.width = 'auto';
       menu.style.maxWidth = 'none';
-      menu.style.maxHeight = '70vh';
+      menu.style.maxHeight = '65vh';
       menu.style.overflowY = 'auto';
       menu.style.zIndex = '4000';
-      // مرر الآية للأعلى قليلًا لو تحت القائمة
-      try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
+      menu.style.webkitOverflowScrolling = 'touch';
+
+      // موضع حسب مكان الآية: تحت → القائمة فوق / فوق → القائمة تحت
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 600;
+      const verseMid = rect.top + rect.height / 2;
+      if (verseMid > vh * 0.45) {
+        // الآية في النصف السفلي → القائمة من أعلى الشاشة
+        menu.style.top = '12px';
+        menu.style.bottom = 'auto';
+      } else {
+        // الآية في النصف العلوي → القائمة من أسفل الشاشة
+        menu.style.top = 'auto';
+        menu.style.bottom = '12px';
+      }
+
+      // سحب القائمة باليد لأعلى/أسفل
+      enableVerseMenuDrag(menu);
+    }
+
+    function enableVerseMenuDrag(menu) {
+      const handle = document.getElementById('verseMenuDrag');
+      if (!handle || !menu) return;
+      let startY = 0, startTop = 0, dragging = false;
+      function getTop() {
+        const t = menu.style.top;
+        if (t && t !== 'auto') return parseFloat(t) || 12;
+        // لو مثبتة من تحت، حولّي لإحداثي top
+        const r = menu.getBoundingClientRect();
+        return r.top;
+      }
+      function onStart(e) {
+        dragging = true;
+        const t = e.touches ? e.touches[0] : e;
+        startY = t.clientY;
+        startTop = getTop();
+        menu.style.bottom = 'auto';
+        menu.style.top = startTop + 'px';
+        handle.style.cursor = 'grabbing';
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const t = e.touches ? e.touches[0] : e;
+        const dy = t.clientY - startY;
+        let next = startTop + dy;
+        const maxTop = (window.innerHeight || 600) - 120;
+        if (next < 8) next = 8;
+        if (next > maxTop) next = maxTop;
+        menu.style.top = next + 'px';
+        menu.style.bottom = 'auto';
+        e.preventDefault();
+      }
+      function onEnd() {
+        dragging = false;
+        handle.style.cursor = 'grab';
+      }
+      handle.onmousedown = onStart;
+      handle.ontouchstart = onStart;
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
     }
     function closeVerseMenu() {
       const menu = document.getElementById('verseMenu');
@@ -2876,8 +2947,8 @@
         const border = (st.bg === i) ? '#c9a227' : '#ddd';
         bgs += `<img src="${src}" onclick="selectVerseBg(${i})" style="width:56px;height:70px;object-fit:cover;border-radius:8px;border:2px solid ${border};margin:3px;cursor:pointer;" alt="خلفية ${i}">`;
       }
-      const fonts = ['Cairo','Amiri','Noto Naskh Arabic','Tajawal','Scheherazade New','Aref Ruqaa','Roboto'];
-      const fontOpts = fonts.map(f => `<option value="${f}" style="font-family:'${f}',serif;" ${st.font===f?'selected':''}>${f==='Aref Ruqaa'?'Aref Ruqaa (خط اليد)':f}</option>`).join('');
+      const fonts = ['Aref Ruqaa','Cairo','Amiri','Noto Naskh Arabic','Tajawal','Scheherazade New','Roboto'];
+      const fontOpts = fonts.map(f => `<option value="${f}" style="font-family:'${f}',serif;" ${st.font===f?'selected':''}>${f==='Aref Ruqaa'?'✍ خط اليد':f}</option>`).join('');
       const bgUrl = VERSE_BACKGROUNDS[st.bg] || VERSE_BACKGROUNDS[1];
       document.getElementById('prayerTitle').textContent = 'تصميم الآية / التأمل';
       document.getElementById('prayerContent').innerHTML = `
@@ -3204,12 +3275,13 @@
       const appFont = localStorage.getItem('khalwati_font') || 'Cairo';
       const align = localStorage.getItem('khalwati_align') || 'right';
       const fontList = [
+        'Aref Ruqaa',
         'Cairo','Tajawal','Amiri','Almarai','Noto Naskh Arabic','Noto Kufi Arabic',
-        'IBM Plex Sans Arabic','El Messiri','Reem Kufi','Scheherazade New','Aref Ruqaa',
+        'IBM Plex Sans Arabic','El Messiri','Reem Kufi','Scheherazade New',
         'Roboto','Open Sans','Montserrat','Merriweather','Playfair Display'
       ];
       const fontOptionsHtml = fontList.map(f => {
-        const label = (f === 'Aref Ruqaa') ? 'Aref Ruqaa (خط اليد)' : f;
+        const label = (f === 'Aref Ruqaa') ? '✍ خط اليد (Aref Ruqaa)' : f;
         return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — نموذج خلوتي</div>`;
       }).join('');
       let cd = '', cm = '', cy = '';

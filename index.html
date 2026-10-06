@@ -2473,10 +2473,9 @@
       }
       audio.onended = () => {
         if (banner) banner.classList.remove('show');
-        // بعد انتهاء الترنيمة: صوت يسوع إن كان معلقًا من التنبيه
-        if (window._pendingJesusVoice) {
-          window._pendingJesusVoice = false;
-          playSawtRabina();
+        const todayKey = getDateKey(new Date());
+        if (localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1') {
+          scheduleJesusVoiceAfterHymn();
         }
       };
     }
@@ -2528,6 +2527,29 @@
       return { theme: v.theme, text: lang === 'en' ? v.en : v.ar };
     }
 
+
+
+    function scheduleJesusVoiceAfterHymn() {
+      if (window._jesusVoiceTimer) {
+        clearTimeout(window._jesusVoiceTimer);
+        window._jesusVoiceTimer = null;
+      }
+      const delay = 3 * 60 * 1000;
+      window._jesusVoiceTimer = setTimeout(function() {
+        window._jesusVoiceTimer = null;
+        deliverJesusVoiceVerse();
+      }, delay);
+      showToast('الآية وصوت يسوع بعد 3 دقائق من انتهاء الترنيمة');
+    }
+
+    function deliverJesusVoiceVerse() {
+      const verse = getDailyVerse();
+      showVerseInApp(verse);
+      showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text);
+      playSawtRabina();
+      const todayKey = getDateKey(new Date());
+      localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+    }
 
     function playSawtRabina() {
       const a = document.getElementById('sawtRabina');
@@ -2680,19 +2702,25 @@
       }
       if (!txt) { showToast('لا يوجد نص للتصميم'); return; }
       closeVerseMenu();
+      const len = (txt || '').length;
+      let autoSize = 20;
+      if (len > 80) autoSize = 18;
+      if (len > 150) autoSize = 16;
+      if (len > 280) autoSize = 15;
+      if (len > 450) autoSize = 14;
+      if (len > 700) autoSize = 13;
       window._designState = {
         text: txt,
         ref: ref,
         bg: 1,
         font: localStorage.getItem('khalwati_font') || 'Cairo',
-        size: 18,
+        size: autoSize,
         color: '#3e2f1c',
-        align: 'center'
+        align: 'center',
+        autoFit: true
       };
       renderVerseDesignUI();
       document.getElementById('prayerModal').classList.add('active');
-      // حفظ تلقائي بعد رسم قصير
-      setTimeout(function(){ saveDesignToDevice(true); }, 600);
     }
 
     function renderVerseDesignUI() {
@@ -2762,7 +2790,6 @@
       document.querySelectorAll('#prayerContent img[onclick^="selectVerseBg"]').forEach((im, idx) => {
         im.style.borderColor = (idx + 1 === i) ? '#c9a227' : '#ddd';
       });
-      saveDesignToDevice(true);
     }
 
     function saveDesignToDevice(silent) {
@@ -2785,12 +2812,24 @@
         ctx.fillStyle = st.color || '#3e2f1c';
         ctx.textAlign = st.align === 'left' ? 'left' : (st.align === 'right' ? 'right' : 'center');
         const x = st.align === 'left' ? 48 : (st.align === 'right' ? w - 48 : w / 2);
-        ctx.font = 'bold ' + Math.max(18, (st.size || 18) - 2) + 'px ' + (st.font || 'Cairo');
-        if (st.ref) {
-          wrapCanvasText(ctx, st.ref, x, 120, w - 96, 28);
+        let bodySize = st.size || 18;
+        if (st.autoFit !== false) {
+          const tlen = (st.text || '').length;
+          if (tlen > 80) bodySize = Math.min(bodySize, 18);
+          if (tlen > 150) bodySize = Math.min(bodySize, 16);
+          if (tlen > 280) bodySize = Math.min(bodySize, 15);
+          if (tlen > 450) bodySize = Math.min(bodySize, 14);
+          if (tlen > 700) bodySize = Math.min(bodySize, 13);
         }
-        ctx.font = (st.size || 18) + 4 + 'px ' + (st.font || 'Cairo');
-        wrapCanvasText(ctx, st.text || '', x, 180, w - 96, (st.size || 18) + 12);
+        const titleSize = Math.max(14, bodySize - 2);
+        ctx.font = 'bold ' + titleSize + 'px ' + (st.font || 'Cairo');
+        let yCursor = 100;
+        if (st.ref) {
+          yCursor = wrapCanvasText(ctx, st.ref, x, yCursor, w - 96, titleSize + 8);
+          yCursor += 16;
+        }
+        ctx.font = bodySize + 'px ' + (st.font || 'Cairo');
+        wrapCanvasText(ctx, st.text || '', x, yCursor, w - 96, bodySize + 10);
         ctx.font = '16px Cairo';
         ctx.textAlign = 'center';
         ctx.fillText('خلوتي ✝', w / 2, h - 48);
@@ -2835,6 +2874,7 @@
         if (line) { ctx.fillText(line, x, yy); yy += lineHeight; }
         yy += 6;
       });
+      return yy;
     }
 
 
@@ -3429,33 +3469,21 @@
       // صوت يسوع اليومي + آية
       if ((forceTest === 'verse') || (mins >= msgMins && mins <= msgMins + 90 && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1')) {
         const verse = getDailyVerse();
-        showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text);
-        showVerseInApp(verse);
-        // الصوت بعد انتهاء الترنيمة إن كانت شغالة، وإلا فورًا
         const hymn = document.getElementById('hymnAudio');
         if (hymn && !hymn.paused && !hymn.ended) {
-          window._pendingJesusVoice = true;
-        } else {
-          playSawtRabina();
+          /* بعد onended هيتجدول 3 دقائق */
+        } else if (!window._jesusVoiceTimer) {
+          scheduleJesusVoiceAfterHymn();
         }
-        localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
       }
     }
 
     function testJesusVoiceNow() {
       const todayKey = getDateKey(new Date());
       localStorage.removeItem('khalwati_msg_notified_' + todayKey);
-      const verse = getDailyVerse();
-      showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text);
-      showVerseInApp(verse);
-      const hymn = document.getElementById('hymnAudio');
-      if (hymn && !hymn.paused && !hymn.ended) {
-        window._pendingJesusVoice = true;
-        showToast('الصوت سيبدأ بعد انتهاء الترنيمة');
-      } else {
-        playSawtRabina();
-        showToast('تم تشغيل صوت يسوع');
-      }
+      if (window._jesusVoiceTimer) { clearTimeout(window._jesusVoiceTimer); window._jesusVoiceTimer = null; }
+      deliverJesusVoiceVerse();
+      showToast('تجربة: الآية مع الصوت الآن');
     }
 
     // فحص كل دقيقة طالما التطبيق مفتوح

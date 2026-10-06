@@ -2459,28 +2459,50 @@
       const audio = document.getElementById('hymnAudio');
       const banner = document.getElementById('muteBanner');
       if (!audio) return;
-      // لا تشغّل صوت يسوع مع فتح التطبيق — بعد الترنيمة فقط
       const sawt = document.getElementById('sawtRabina');
       if (sawt) { try { sawt.pause(); sawt.currentTime = 0; } catch(e) {} }
+
+      function onHymnReallyEnded() {
+        if (banner) banner.classList.remove('show');
+        armJesusVoiceTwoMinutesAfterHymn();
+      }
+
       if (isMuted()) {
         audio.pause();
         if (banner) banner.classList.remove('show');
+        // لو الصوت مكتوم: اعتبر الترنيمة انتهت وابدأ عدّاد دقيقتين
+        armJesusVoiceTwoMinutesAfterHymn();
         return;
       }
-      audio.currentTime = 0;
+      try { audio.currentTime = 0; } catch(e) {}
       const p = audio.play();
-      if (p && p.catch) p.catch(() => showToast('اضغطي أي مكان لتشغيل الترنيمة'));
+      if (p && p.catch) p.catch(function() {
+        showToast('اضغطي أي مكان لتشغيل الترنيمة');
+      });
       if (banner) {
         banner.classList.add('show');
-        document.getElementById('audioStatus').textContent = '🎵 الترنيمة شغالة';
+        const st = document.getElementById('audioStatus');
+        if (st) st.textContent = '🎵 الترنيمة شغالة';
       }
-      audio.onended = () => {
-        if (banner) banner.classList.remove('show');
-        const todayKey = getDateKey(new Date());
-        if (localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1') {
-          scheduleJesusVoiceAfterHymn();
+      audio.onended = onHymnReallyEnded;
+      // احتياطي لو onended ما اشتغلش على بعض الموبايلات
+      if (window._hymnEndPoll) clearInterval(window._hymnEndPoll);
+      window._hymnEndPoll = setInterval(function() {
+        if (!audio) return;
+        if (audio.ended || (audio.duration > 0 && audio.currentTime >= audio.duration - 0.4)) {
+          clearInterval(window._hymnEndPoll);
+          window._hymnEndPoll = null;
+          onHymnReallyEnded();
         }
-      };
+      }, 1000);
+    }
+
+    function armJesusVoiceTwoMinutesAfterHymn() {
+      const todayKey = getDateKey(new Date());
+      if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1') return;
+      if (window._jesusVoiceArmed) return;
+      window._jesusVoiceArmed = true;
+      scheduleJesusVoiceAfterHymn();
     }
 
     function toggleMute() {
@@ -2542,15 +2564,20 @@
         window._jesusVoiceTimer = null;
         deliverJesusVoiceVerse();
       }, delay);
-      showToast('الآية وصوت يسوع بعد دقيقتين من انتهاء الترنيمة');
+      showToast('صوت يسوع والآية بعد دقيقتين…');
     }
 
     function deliverJesusVoiceVerse() {
+      const todayKey = getDateKey(new Date());
+      if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1' && !window._forceJesusTest) {
+        return;
+      }
+      window._forceJesusTest = false;
       const verse = getDailyVerse();
       showVerseInApp(verse);
       showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text);
       playSawtRabina();
-      const todayKey = getDateKey(new Date());
+      localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
       localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
     }
 
@@ -3702,6 +3729,9 @@
     function testJesusVoiceNow() {
       const todayKey = getDateKey(new Date());
       localStorage.removeItem('khalwati_msg_notified_' + todayKey);
+      localStorage.removeItem('khalwati_jesus_day_' + todayKey);
+      window._jesusVoiceArmed = false;
+      window._forceJesusTest = true;
       if (window._jesusVoiceTimer) { clearTimeout(window._jesusVoiceTimer); window._jesusVoiceTimer = null; }
       deliverJesusVoiceVerse();
       showToast('تجربة: الآية مع الصوت الآن');

@@ -2537,12 +2537,12 @@
         clearTimeout(window._jesusVoiceTimer);
         window._jesusVoiceTimer = null;
       }
-      const delay = 3 * 60 * 1000;
+      const delay = 2 * 60 * 1000;
       window._jesusVoiceTimer = setTimeout(function() {
         window._jesusVoiceTimer = null;
         deliverJesusVoiceVerse();
       }, delay);
-      showToast('الآية وصوت يسوع بعد 3 دقائق من انتهاء الترنيمة');
+      showToast('الآية وصوت يسوع بعد دقيقتين من انتهاء الترنيمة');
     }
 
     function deliverJesusVoiceVerse() {
@@ -3626,7 +3626,7 @@
         const verse = getDailyVerse();
         const hymn = document.getElementById('hymnAudio');
         if (hymn && !hymn.paused && !hymn.ended) {
-          /* بعد onended هيتجدول 3 دقائق */
+          /* بعد onended هيتجدول دقيقتين */
         } else if (!window._jesusVoiceTimer) {
           scheduleJesusVoiceAfterHymn();
         }

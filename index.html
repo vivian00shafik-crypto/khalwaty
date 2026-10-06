@@ -3545,18 +3545,52 @@
     function showVerseInApp(verse) {
       const existing = document.getElementById('verseAlertCard');
       if (existing) existing.remove();
+      window._lastJesusVerse = verse;
       const card = document.createElement('div');
       card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:40vh;overflow:auto;';
+      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:45vh;overflow:auto;';
+      const safeTheme = String(verse.theme || '').replace(/</g,'&lt;');
+      const safeText = String(verse.text || '').replace(/</g,'&lt;');
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong style="color:#5c4033;">صوت يسوع اليومي — ${verse.theme}</strong>
-          <button onclick="document.getElementById('verseAlertCard').remove()" style="border:none;background:#f5e6c8;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>
+          <strong style="color:#5c4033;">صوت يسوع اليومي — ${safeTheme}</strong>
+          <button type="button" onclick="document.getElementById('verseAlertCard').remove()" style="border:none;background:#f5e6c8;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>
         </div>
-        <p style="font-size:14px;line-height:1.85;color:#3e2f1c;">${verse.text}</p>
-        <button class="save-btn" style="margin-top:10px;width:100%;" onclick="playSawtRabina();">▶ تشغيل صوت ربنا</button>
+        <p style="font-size:14px;line-height:1.85;color:#3e2f1c;">${safeText}</p>
+        <button class="save-btn" style="margin-top:10px;width:100%;" type="button" onclick="playSawtRabina();">▶ تشغيل صوت ربنا</button>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="save-btn" style="flex:1;margin:0;padding:10px;" type="button" onclick="designJesusVerse();">🎨 تصميم</button>
+          <button class="save-btn" style="flex:1;margin:0;padding:10px;background:#5a7d4a;" type="button" onclick="saveJesusVerseToList();">💾 حفظ في آياتي</button>
+        </div>
       `;
       document.body.appendChild(card);
+    }
+
+    function designJesusVerse() {
+      const v = window._lastJesusVerse || getDailyVerse();
+      const ref = 'صوت يسوع — ' + (v.theme || '');
+      const card = document.getElementById('verseAlertCard');
+      if (card) card.remove();
+      openVerseDesign(v.text || '', ref);
+    }
+
+    function saveJesusVerseToList() {
+      const v = window._lastJesusVerse || getDailyVerse();
+      const ref = 'صوت يسوع — ' + (v.theme || '');
+      const list = JSON.parse(localStorage.getItem('khalwati_saved_verses') || '[]');
+      // تجنب التكرار لنفس النص اليوم
+      if (list[0] && list[0].text === v.text) {
+        showToast('الآية محفوظة بالفعل');
+        return;
+      }
+      list.unshift({ ref: ref, text: v.text || '', date: new Date().toISOString(), source: 'jesus-voice' });
+      localStorage.setItem('khalwati_saved_verses', JSON.stringify(list.slice(0, 200)));
+      // أيضًا كآية اليوم
+      const data = loadData();
+      data.verse = (ref + '\n' + (v.text || '')).trim();
+      saveData(data);
+      if (typeof renderTexts === 'function') renderTexts();
+      showToast('تم الحفظ في آياتي المحفوظة ✓');
     }
 
     function checkReminders(forceTest) {

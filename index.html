@@ -2783,7 +2783,9 @@
         size: autoSize,
         color: '#3e2f1c',
         align: 'center',
-        autoFit: true
+        autoFit: true,
+        posX: 50,
+        posY: 42
       };
       renderVerseDesignUI();
       document.getElementById('prayerModal').classList.add('active');
@@ -2803,14 +2805,15 @@
       document.getElementById('prayerTitle').textContent = 'تصميم الآية / التأمل';
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:center;">
-          <div id="verseDesignPreview" style="position:relative;width:100%;max-width:340px;margin:0 auto;border-radius:16px;overflow:hidden;min-height:300px;background:url(${bgUrl}) center/cover;">
-            <div id="verseDesignText" style="padding:28px 18px;color:${st.color};text-align:${st.align};font-family:'${st.font}',serif;font-size:${st.size}px;text-shadow:0 1px 2px rgba(255,255,255,.75);">
-              <p style="font-size:${Math.max(12, st.size-4)}px;font-weight:700;margin-bottom:12px;">${(st.ref||'').replace(/</g,'&lt;')}</p>
-              <p style="line-height:1.9;white-space:pre-wrap;">${(st.text||'').replace(/</g,'&lt;')}</p>
-              <p style="margin-top:16px;font-size:12px;opacity:.75;">خلوتي ✝</p>
+          <div id="verseDesignPreview" style="position:relative;width:100%;max-width:340px;margin:0 auto;border-radius:16px;overflow:hidden;min-height:360px;height:360px;background:url(${bgUrl}) center/cover;touch-action:none;">
+            <div id="verseDesignText" style="position:absolute;left:${st.posX||50}%;top:${st.posY||42}%;transform:translate(-50%,-50%);width:86%;padding:12px;color:${st.color};text-align:${st.align};font-family:'${st.font}',serif;font-size:${st.size}px;text-shadow:0 1px 2px rgba(255,255,255,.75);cursor:move;user-select:none;">
+              <p style="font-size:${Math.max(12, st.size-4)}px;font-weight:700;margin-bottom:8px;">${(st.ref||'').replace(/</g,'&lt;')}</p>
+              <p style="line-height:1.85;white-space:pre-wrap;">${(st.text||'').replace(/</g,'&lt;')}</p>
+              <p style="margin-top:12px;font-size:12px;opacity:.75;">خلوتي ✝</p>
             </div>
           </div>
-          <p style="margin:12px 0 6px;font-size:13px;">الخلفية:</p>
+          <p style="font-size:12px;color:#8a7a60;margin:8px 0 4px;">👆 اسحبي النص لوضعه في المكان المناسب</p>
+          <p style="margin:8px 0 6px;font-size:13px;">الخلفية:</p>
           <div style="display:flex;flex-wrap:wrap;justify-content:center;">${bgs}</div>
           <div style="text-align:right;margin-top:12px;font-size:13px;">
             <label>الخط</label>
@@ -2828,6 +2831,56 @@
           </div>
           <button class="save-btn" style="margin-top:12px;" onclick="saveDesignToDevice(false)">💾 حفظ الصورة على الموبايل</button>
         </div>`;
+      enableDesignTextDrag();
+    }
+
+    function enableDesignTextDrag() {
+      const box = document.getElementById('verseDesignText');
+      const stage = document.getElementById('verseDesignPreview');
+      if (!box || !stage || !window._designState) return;
+      let dragging = false;
+      function pctFromEvent(clientX, clientY) {
+        const r = stage.getBoundingClientRect();
+        let x = ((clientX - r.left) / r.width) * 100;
+        let y = ((clientY - r.top) / r.height) * 100;
+        x = Math.max(12, Math.min(88, x));
+        y = Math.max(12, Math.min(88, y));
+        return { x: x, y: y };
+      }
+      function applyPos(x, y) {
+        window._designState.posX = x;
+        window._designState.posY = y;
+        box.style.left = x + '%';
+        box.style.top = y + '%';
+      }
+      function onStart(e) {
+        dragging = true;
+        const t = e.touches ? e.touches[0] : e;
+        const p = pctFromEvent(t.clientX, t.clientY);
+        applyPos(p.x, p.y);
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const t = e.touches ? e.touches[0] : e;
+        const p = pctFromEvent(t.clientX, t.clientY);
+        applyPos(p.x, p.y);
+        e.preventDefault();
+      }
+      function onEnd() { dragging = false; }
+      box.onmousedown = onStart;
+      box.ontouchstart = onStart;
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onEnd);
+      window.addEventListener('touchend', onEnd);
+      // also drag on stage empty area
+      stage.onmousedown = function(e) {
+        if (e.target === stage) onStart(e);
+      };
+      stage.ontouchstart = function(e) {
+        if (e.target === stage) onStart(e);
+      };
     }
 
     function updateDesignStyle() {
@@ -2911,12 +2964,25 @@
         const lines = layoutLines(ctx, fullText, maxW, bodySize + 'px ' + fontName);
         const lineH = bodySize * 1.45;
         const blockH = lines.length * lineH;
-        let y = (H - blockH) / 2 - 20;
-        if (y < H * 0.18) y = H * 0.18;
+        // موضع من السحب (نسبة مئوية)
+        const posX = (typeof st.posX === 'number') ? st.posX : 50;
+        const posY = (typeof st.posY === 'number') ? st.posY : 42;
+        let y = (posY / 100) * H - blockH / 2;
+        if (y < 40) y = 40;
+        if (y + blockH > H - 90) y = H - 90 - blockH;
 
         ctx.fillStyle = color;
         ctx.textAlign = align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center');
-        const x = align === 'left' ? (W - maxW) / 2 : (align === 'right' ? (W + maxW) / 2 : W / 2);
+        let x;
+        if (align === 'left') x = (posX / 100) * W - maxW / 2;
+        else if (align === 'right') x = (posX / 100) * W + maxW / 2;
+        else x = (posX / 100) * W;
+        if (align === 'center') {
+          /* x is center */
+        } else {
+          if (x < 40) x = 40;
+          if (x > W - 40) x = W - 40;
+        }
         ctx.font = '600 ' + bodySize + 'px ' + fontName;
         // subtle text shadow for readability
         ctx.shadowColor = 'rgba(255,255,255,0.7)';

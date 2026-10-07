@@ -382,14 +382,37 @@
       text-align: center;
     }
 
-    /* Cards */
+    /* Cards — مظهر رقّ / برشمان مع صلبان بارزة */
     .card {
-      background: var(--card);
-      border-radius: 18px;
-      padding: 16px;
-      margin-bottom: 14px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(201, 162, 39, 0.2);
+      background-color: #f7f1e4;
+      background-image: url('parchment-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: 4px;
+      padding: 18px 16px;
+      margin-bottom: 16px;
+      border: none;
+      box-shadow:
+        0 2px 0 rgba(201, 162, 39, 0.35),
+        0 8px 22px rgba(92, 64, 51, 0.12),
+        inset 0 0 0 1px rgba(201, 162, 39, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 40px rgba(255, 250, 235, 0.35),
+        inset 0 0 2px rgba(201, 162, 39, 0.45);
+    }
+    .card > * {
+      position: relative;
+      z-index: 1;
     }
 
     .card-title {
@@ -735,13 +758,14 @@
     }
 
     .text-box {
-      background: #fffdf8;
-      border: 1.5px solid rgba(201, 162, 39, 0.3);
-      border-radius: 12px;
+      background: rgba(255, 253, 248, 0.55);
+      border: 1px solid rgba(201, 162, 39, 0.35);
+      border-radius: 8px;
       padding: 10px;
       min-height: 80px;
       cursor: pointer;
       transition: all 0.2s;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
     }
 
     .text-box:active {
@@ -920,14 +944,20 @@
     }
 
     .modal-content {
-      background: var(--card);
+      background-color: #f7f1e4;
+      background-image: url('parchment-bg.jpg');
+      background-size: cover;
+      background-position: center top;
       width: 100%;
       max-width: 480px;
       max-height: 85vh;
-      border-radius: 24px 24px 0 0;
+      border-radius: 18px 18px 0 0;
       padding: 20px;
       overflow-y: auto;
       animation: slideUp 0.3s ease;
+      box-shadow:
+        0 -4px 24px rgba(92, 64, 51, 0.2),
+        inset 0 0 0 1px rgba(201, 162, 39, 0.3);
     }
 
     @keyframes slideUp {

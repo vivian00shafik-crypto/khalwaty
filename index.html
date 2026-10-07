@@ -7,9 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="خلوتي">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=El+Messiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@400;700&family=Reem+Kufi:wght@400;700&family=Roboto:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <!-- خطوط Google تُحمّل بعد فتح الواجهة حتى لا تبطّئ البداية -->
   <link rel="manifest" href="manifest.json">
   <title>خلوتي - توتة روحية</title>
   <style>
@@ -1094,8 +1092,8 @@
   </style>
 </head>
 <body>
-  <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
-  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto"></audio>
+  <audio id="hymnAudio" src="hymn.m4a" preload="metadata"></audio>
+  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="none"></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
   <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
   <div class="mute-banner" id="muteBanner">
@@ -1261,8 +1259,38 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="bible-svd.js"></script>
   <script>
+    // تحميل الكتاب عند الحاجة فقط (يقلل تهنيج البداية)
+    window._bibleLoading = false;
+    function ensureBibleLoaded(cb) {
+      if (window.BIBLE_SVD && window.BIBLE_SVD.books) {
+        if (cb) cb();
+        return;
+      }
+      if (window._bibleLoading) {
+        const t = setInterval(function() {
+          if (window.BIBLE_SVD && window.BIBLE_SVD.books) {
+            clearInterval(t);
+            if (cb) cb();
+          }
+        }, 200);
+        return;
+      }
+      window._bibleLoading = true;
+      const s = document.createElement('script');
+      s.src = 'bible-svd.js';
+      s.async = true;
+      s.onload = function() {
+        window._bibleLoading = false;
+        if (cb) cb();
+      };
+      s.onerror = function() {
+        window._bibleLoading = false;
+        if (typeof showToast === 'function') showToast('تعذر تحميل الكتاب المقدس');
+      };
+      document.head.appendChild(s);
+    }
+
     // ============ State ============
     let currentDate = (function() {
       const n = new Date();
@@ -1484,22 +1512,24 @@
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
 
     function openBible(testament) {
-      const bible = window.BIBLE_SVD;
-      if (!bible || !bible.books) {
-        document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
-        document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;">جاري تحميل الكتاب المقدس… أو حدّثي الصفحة بعد رفع الملفات.</p>';
-        document.getElementById('prayerModal').classList.add('active');
-        return;
-      }
       bibleState.testament = testament || 'OT';
-      const books = bible.books.filter(b => b.t === bibleState.testament);
-      if (!books.length) return;
-      // default first book
-      const firstId = books[0].id;
-      const fullIndex = bible.books.findIndex(b => b.id === firstId);
-      bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
-      bibleState.chapter = 0;
-      renderBible();
+      document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
+      document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">جاري تحميل الكتاب المقدس…</p>';
+      document.getElementById('prayerModal').classList.add('active');
+      ensureBibleLoaded(function() {
+        const bible = window.BIBLE_SVD;
+        if (!bible || !bible.books) {
+          document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;">تعذر تحميل الكتاب. تأكد من رفع bible-svd.js</p>';
+          return;
+        }
+        const books = bible.books.filter(b => b.t === bibleState.testament);
+        if (!books.length) return;
+        const firstId = books[0].id;
+        const fullIndex = bible.books.findIndex(b => b.id === firstId);
+        bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
+        bibleState.chapter = 0;
+        renderBible();
+      });
     }
 
     function renderBible() {
@@ -2305,9 +2335,17 @@
         <div style="text-align:right; line-height:2;">
           <label>نوع الخط</label>
           <select id="pdfFont" style="width:100%;padding:8px;margin-bottom:8px;font-family:inherit;">
-            <option value="Noto Naskh Arabic, serif" ${st.font.includes('Naskh')?'selected':''}>نسخ عربي</option>
-            <option value="Amiri, serif" ${st.font.includes('Amiri')?'selected':''}>أميري</option>
-            <option value="Tahoma, sans-serif" ${st.font.includes('Tahoma')?'selected':''}>تاهوما</option>
+            <option value="'Cairo', sans-serif" ${st.font.includes('Cairo')?'selected':''}>Cairo — القاهرة</option>
+            <option value="'Tajawal', sans-serif" ${st.font.includes('Tajawal')?'selected':''}>Tajawal — تجوال</option>
+            <option value="'Amiri', serif" ${st.font.includes('Amiri')?'selected':''}>Amiri — أميري</option>
+            <option value="'Noto Naskh Arabic', serif" ${st.font.includes('Naskh')?'selected':''}>Noto Naskh — نسخ</option>
+            <option value="'Noto Kufi Arabic', sans-serif" ${st.font.includes('Kufi')?'selected':''}>Noto Kufi — كوفي</option>
+            <option value="'Scheherazade New', serif" ${st.font.includes('Scheherazade')?'selected':''}>Scheherazade — شهرزاد</option>
+            <option value="'Aref Ruqaa', serif" ${st.font.includes('Aref')||st.font.includes('Ruqaa')?'selected':''}>Aref Ruqaa — خط اليد</option>
+            <option value="'Almarai', sans-serif" ${st.font.includes('Almarai')?'selected':''}>Almarai — المرعي</option>
+            <option value="'El Messiri', sans-serif" ${st.font.includes('Messiri')?'selected':''}>El Messiri — المسيري</option>
+            <option value="'Reem Kufi', sans-serif" ${st.font.includes('Reem')?'selected':''}>Reem Kufi — ريم كوفي</option>
+            <option value="'IBM Plex Sans Arabic', sans-serif" ${st.font.includes('IBM')?'selected':''}>IBM Plex Arabic</option>
           </select>
           <label>حجم الخط</label>
           <select id="pdfSize" style="width:100%;padding:8px;margin-bottom:8px;font-family:inherit;">
@@ -3931,7 +3969,18 @@
 
     // Play hymn on open (full duration)
     window.addEventListener('load', () => {
-      setTimeout(playHymn, 400);
+      // بعد رسم الواجهة — يقلل الإحساس بالتهنيج
+      setTimeout(function() {
+        if (typeof applyTypography === 'function') applyTypography();
+        // تحميل خطوط جوجل في الخلفية (لو في نت)
+        try {
+          const l = document.createElement('link');
+          l.rel = 'stylesheet';
+          l.href = 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&display=swap';
+          document.head.appendChild(l);
+        } catch(e) {}
+      }, 50);
+      setTimeout(playHymn, 1200);
     });
     // fallback if autoplay blocked
     document.body.addEventListener('click', function once() {

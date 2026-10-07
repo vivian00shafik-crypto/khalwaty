@@ -291,7 +291,12 @@
     }
     body {
       font-family: var(--app-font); font-size: var(--app-font-size); text-align: var(--app-align);
-      background-color: var(--bg);
+      background-color: #f3ead6;
+      background-image: url('parchment-bg.jpg');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
       color: var(--text);
       min-height: 100vh;
       padding-bottom: 40px;
@@ -299,25 +304,18 @@
 
     /* خلفية الصلبان فقط */
     body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 8h4v10h10v4H22v10h-4V22H8v-4h10V8z' fill='%23e8d9b5' fill-opacity='0.45'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
+      display: none;
     }
 
     .container {
       max-width: 480px;
       width: 100%;
       margin: 0 auto;
-      padding: 16px;
+      padding: 12px 10px;
       position: relative;
       z-index: 1;
       overflow-x: hidden;
+      background: transparent;
     }
 
     /* Header / Logo */
@@ -335,7 +333,7 @@
       box-shadow: 0 4px 15px rgba(201, 162, 39, 0.3);
       overflow: hidden;
       border: 3px solid var(--gold);
-      background: #fff9e8;
+      background: transparent;
     }
 
     .logo img {
@@ -354,8 +352,8 @@
     }
 
     .date-nav button {
-      background: var(--card);
-      border: 1.5px solid var(--gold);
+      background: rgba(255,253,248,0.35);
+      border: 1px solid rgba(201,162,39,0.4);
       color: var(--brown);
       width: 36px;
       height: 36px;
@@ -382,28 +380,20 @@
       text-align: center;
     }
 
-    /* Cards — ورقة فقط بدون إطار خارجي */
+    /* Cards — شفافة فوق ورقة الصفحة (بدون مستطيل أوف وايت) */
     .card {
-      background-color: transparent;
-      background-image: url('parchment-bg.jpg');
-      background-size: 100% 100%;
-      background-position: center;
-      background-repeat: no-repeat;
+      background: transparent !important;
+      background-image: none !important;
       border-radius: 0;
-      padding: 20px 16px;
-      margin-bottom: 12px;
-      border: none;
-      box-shadow: none;
+      padding: 16px 8px;
+      margin-bottom: 8px;
+      border: none !important;
+      box-shadow: none !important;
       outline: none;
       position: relative;
-      overflow: visible;
     }
     .card::before {
-      display: none;
-    }
-    .card > * {
-      position: relative;
-      z-index: 1;
+      display: none !important;
     }
 
     .card-title {
@@ -935,19 +925,19 @@
     }
 
     .modal-content {
-      background-color: transparent;
-      background-image: url('parchment-bg.jpg');
-      background-size: 100% 100%;
+      background-color: transparent !important;
+      background-image: url('parchment-bg.jpg') !important;
+      background-size: cover !important;
       background-position: center top;
       width: 100%;
       max-width: 480px;
       max-height: 85vh;
-      border-radius: 0;
+      border-radius: 0 !important;
       padding: 20px;
       overflow-y: auto;
       animation: slideUp 0.3s ease;
-      box-shadow: none;
-      border: none;
+      box-shadow: none !important;
+      border: none !important;
     }
 
     @keyframes slideUp {

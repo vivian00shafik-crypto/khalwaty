@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v27-glass-icons';
+const CACHE_NAME = 'khalwati-v28-icons3d';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './hymn.m4a', './sawt-rabina.mp3',
@@ -9,7 +9,8 @@ const CORE = [
   './Cairo-400.woff2', './Cairo-700.woff2', './Amiri-400.woff2', './Amiri-700.woff2',
   './Tajawal-400.woff2', './Tajawal-700.woff2', './ArefRuqaa-400.woff', './ArefRuqaa-700.woff',
   './NotoNaskhArabic-400.woff2', './NotoNaskhArabic-700.woff2',
-  './ScheherazadeNew-400.woff2', './ScheherazadeNew-700.woff2'
+  './ScheherazadeNew-400.woff2', './ScheherazadeNew-700.woff2',
+  './icons3d/sun.png', './icons3d/moon.png', './icons3d/chalice.png', './icons3d/music.png', './icons3d/leaf.png', './icons3d/pray.png', './icons3d/bible.png', './icons3d/church.png', './icons3d/door.png', './icons3d/candle.png'
 ];
 
 self.addEventListener('install', event => {

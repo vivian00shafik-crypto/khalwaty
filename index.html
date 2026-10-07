@@ -515,11 +515,34 @@
       color: #5c4033;
       line-height: 1;
     }
-    .daily-icon img {
-      width: 30px;
-      height: 30px;
-      object-fit: contain;
-      filter: drop-shadow(0 1px 2px rgba(201,162,39,0.35));
+    .daily-icon {
+      padding: 0 !important;
+      overflow: hidden;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: 0 4px 12px rgba(92, 64, 51, 0.15) !important;
+    }
+    .daily-icon img,
+    .daily-icon img.i3d {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border-radius: 50%;
+      display: block;
+    }
+    .service-circle {
+      padding: 0 !important;
+      overflow: hidden;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: 0 6px 14px rgba(92, 64, 51, 0.16) !important;
+    }
+    .service-circle img.i3d {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border-radius: 50%;
+      display: block;
     }
 
     .daily-item input:checked ~ .daily-icon,
@@ -1347,42 +1370,47 @@
 
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
+    // أيقونات 3D زجاجية دائرية
+    function i3d(name) {
+      return '<img class="i3d" src="icons3d/' + name + '.png" alt="">';
+    }
+
     // مجموعة تفعيل فقط (ضغط = عملتها)
     const toggleItems = [
-      { id: 'baker', label: 'باكر', icon: '☀️' },
-      { id: 'sunset', label: 'غروب', icon: '🌅' },
-      { id: 'sleep', label: 'نوم', icon: '🌙' },
-      { id: 'mass', label: 'قداس', icon: '<img src="icon-mass.png" style="width:28px;height:28px;" alt="قداس">' },
-      { id: 'praise', label: 'تسبيحة', icon: '🎵' },
-      { id: 'fast', label: 'صوم', icon: '🌿' },
-      { id: 'silence', label: 'ساعة صمت', icon: '🤫' },
-      { id: 'service', label: 'خدمة اليوم', icon: '🙏' }
+      { id: 'baker', label: 'باكر', icon: i3d('sun') },
+      { id: 'sunset', label: 'غروب', icon: i3d('sun') },
+      { id: 'sleep', label: 'نوم', icon: i3d('moon') },
+      { id: 'mass', label: 'قداس', icon: i3d('chalice') },
+      { id: 'praise', label: 'تسبيحة', icon: i3d('music') },
+      { id: 'fast', label: 'صوم', icon: i3d('leaf') },
+      { id: 'silence', label: 'ساعة صمت', icon: i3d('moon') },
+      { id: 'service', label: 'خدمة اليوم', icon: i3d('pray') }
     ];
 
     // مجموعة تفتح للكتابة/المحتوى
     const openItems = [
-      { id: 'oldTestament', label: 'العهد القديم', icon: '📜', type: 'bible' },
-      { id: 'newTestament', label: 'العهد الجديد', icon: '📖', type: 'bible' },
-      { id: 'agpeya', label: 'الأجبية', icon: '⛪', type: 'agpeya' },
-      { id: 'howStart', label: 'كيف أبدأ خلوة', icon: '🚪', type: 'howto' },
-      { id: 'fathers', label: 'آبائيات', icon: '🕯️', type: 'text' },
-      { id: 'bibleComment', label: 'تفسير الكتاب', icon: '🔍', type: 'text' },
-      { id: 'katameros', label: 'قطمارس', icon: '📅', type: 'text' },
-      { id: 'faithExamples', label: 'تمثلوا بإيمانهم', icon: '⭐', type: 'text' },
-      { id: 'prepare', label: 'تحضير', icon: '📝', type: 'text' },
-      { id: 'spiritualReading', label: 'قراءات روحية', icon: '📚', type: 'books' },
-      { id: 'saintsPraises', label: 'مدائح القديسين', icon: '🎶', type: 'text' },
-      { id: 'servantFollow', label: 'متابعة الخادم', icon: '👥', type: 'servant' }
+      { id: 'oldTestament', label: 'العهد القديم', icon: i3d('bible'), type: 'bible' },
+      { id: 'newTestament', label: 'العهد الجديد', icon: i3d('bible'), type: 'bible' },
+      { id: 'agpeya', label: 'الأجبية', icon: i3d('church'), type: 'agpeya' },
+      { id: 'howStart', label: 'كيف أبدأ خلوة', icon: i3d('door'), type: 'howto' },
+      { id: 'fathers', label: 'آبائيات', icon: i3d('candle'), type: 'text' },
+      { id: 'bibleComment', label: 'تفسير الكتاب', icon: i3d('bible'), type: 'text' },
+      { id: 'katameros', label: 'قطمارس', icon: i3d('church'), type: 'text' },
+      { id: 'faithExamples', label: 'تمثلوا بإيمانهم', icon: i3d('pray'), type: 'text' },
+      { id: 'prepare', label: 'تحضير', icon: i3d('door'), type: 'text' },
+      { id: 'spiritualReading', label: 'قراءات روحية', icon: i3d('bible'), type: 'books' },
+      { id: 'saintsPraises', label: 'مدائح القديسين', icon: i3d('music'), type: 'text' },
+      { id: 'servantFollow', label: 'متابعة الخادم', icon: i3d('pray'), type: 'servant' }
     ];
 
     const dailyItems = toggleItems; // توافق مع الكود القديم للعرض
 
     // ترتيب مطابق للتصميم: أعلى · يسار · يمين · أسفل
     const serviceItems = [
-      { id: 'jesusPrayer', label: 'صلاة يسوع', icon: '📿' },
-      { id: 'confession', label: 'مساعد الاعتراف', icon: '🕊️' },
-      { id: 'kyrie', label: 'كيرياليسون', icon: '✝' },
-      { id: 'progressChart', label: 'مستوى الخلوة', icon: '📊' }
+      { id: 'jesusPrayer', label: 'صلاة يسوع', icon: i3d('pray') },
+      { id: 'confession', label: 'مساعد الاعتراف', icon: i3d('door') },
+      { id: 'kyrie', label: 'كيرياليسون', icon: i3d('church') },
+      { id: 'progressChart', label: 'مستوى الخلوة', icon: i3d('sun') }
     ];
 
     // ============ Helpers ============

@@ -2284,48 +2284,24 @@
         : '';
       const w = window.open('', '_blank');
       if (!w) { showToast('اسمحي بالنوافذ المنبثقة للطباعة'); return; }
+      // خطوط PDF مفهومة + رابط جوجل عشان تظهر صح في الطباعة
+      const fontLink = 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=El+Messiri:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Reem+Kufi:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&family=Almarai:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap';
       w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+        <link rel="stylesheet" href="${fontLink}">
         <style>
-          body{font-family:${st.font};padding:24px;color:${st.color};line-height:1.85;font-size:${st.size}px;}
-          h1{text-align:center;color:#5c4033;font-size:16px;font-weight:700;margin:8px 0 16px;}
-          h2,h3{font-size:16px;font-weight:700;color:#5c4033;margin:14px 0 8px;}
-          p,div,li{font-size:${st.size}px;font-weight:400;}
+          @import url('${fontLink}');
+          body{font-family:${st.font}, 'Cairo', 'Tahoma', sans-serif !important;padding:24px;color:${st.color};line-height:1.85;font-size:${st.size}px;}
+          h1{text-align:center;color:#5c4033;font-size:16px;font-weight:700;margin:8px 0 16px;font-family:inherit;}
+          h2,h3{font-size:16px;font-weight:700;color:#5c4033;margin:14px 0 8px;font-family:inherit;}
+          p,div,li{font-size:${st.size}px;font-weight:400;font-family:inherit;}
           .frame{${frameCss}}
           .logo{text-align:center;margin-bottom:12px;}
           img{max-width:90px;border-radius:50%;}
-        
-    .verse-line { cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background .15s; }
-    .verse-line:active { background: #f5e6c8; }
-    .verse-line.hl-yellow { background: #fff3b0; }
-    .verse-line.hl-green { background: #d4edda; }
-    .verse-line.hl-blue { background: #d6eaf8; }
-    .verse-line.hl-pink { background: #f8d7e8; }
-    #modalTextarea.hl-yellow { background: #fff3b0; }
-    #modalTextarea.hl-green { background: #d4edda; }
-    #modalTextarea.hl-blue { background: #d6eaf8; }
-    #modalTextarea.hl-pink { background: #f8d7e8; }
-    .verse-menu {
-      position: fixed; z-index: 4000; background: #fffdf8; border: 2px solid var(--gold);
-      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 12px 12px;
-      left: 10px; right: 10px;
-      max-width: none; width: auto; max-height: 65vh; overflow-y: auto; text-align: right;
-      -webkit-overflow-scrolling: touch;
-    }
-    .verse-menu button {
-      display: block; width: 100%; text-align: right; padding: 10px 12px; margin: 4px 0;
-      border: 1px solid #e8d9b5; border-radius: 10px; background: #fff; font-family: inherit;
-      font-size: 14px; color: var(--brown); cursor: pointer;
-    }
-    .verse-menu button:active { background: #f5e6c8; }
-    .align-btn { padding: 10px 16px; border-radius: 10px; border: 2px solid #d4c4a0; background: #fff; font-size: 18px; cursor: pointer; }
-    .align-btn.active { border-color: var(--gold); background: #f5e6c8; }
-    .font-opt { padding: 10px; border: 1px solid #e8d9b5; border-radius: 10px; margin: 4px 0; cursor: pointer; background: #fff; }
-    .font-opt.active { border-color: var(--gold); background: #f5e6c8; }
-
-  </style>
-        </head><body><div class="logo"><img src="logo.png" alt=""></div><h1>خلوتي - ${title}</h1><div class="frame">${body}</div></body></html>`);
+        </style>
+        </head><body><div class="logo"><img src="logo.png" alt=""></div><h1>خلوتي - ${title}</h1><div class="frame">${body}</div>
+        <script>setTimeout(function(){window.print();}, 800);<\/script>
+        </body></html>`);
       w.document.close();
-      setTimeout(() => { w.print(); }, 400);
     }
 
     function openPdfOptions() {
@@ -2696,7 +2672,9 @@
         html, body, button, input, textarea, select,
         .icon-label, .text-box, .text-box-title, .modal-title,
         .action-btn, .save-btn, .align-btn, .helper-btn, .section-title,
-        .day-name, .date-nav, #prayerTitle, .font-opt, label {
+        .day-name, .date-nav, #prayerTitle, .font-opt, label,
+        .text-box p, .text-box span, .card, .card *,
+        #app, #app *:not(#verseDesignText):not(#verseDesignText *):not(.verse-line) {
           font-family: ${stack} !important;
         }
         /* لا نفرض خط التطبيق على التصميم ولا نص الكتاب */
@@ -2719,11 +2697,58 @@
       document.documentElement.setAttribute('lang', localStorage.getItem('khalwati_lang') || 'ar');
     }
 
+    const GOOGLE_FONT_QUERY = {
+      'Cairo': 'Cairo:wght@400;700',
+      'Tajawal': 'Tajawal:wght@400;700',
+      'Amiri': 'Amiri:wght@400;700',
+      'Almarai': 'Almarai:wght@400;700',
+      'Noto Naskh Arabic': 'Noto+Naskh+Arabic:wght@400;700',
+      'Noto Kufi Arabic': 'Noto+Kufi+Arabic:wght@400;700',
+      'IBM Plex Sans Arabic': 'IBM+Plex+Sans+Arabic:wght@400;700',
+      'El Messiri': 'El+Messiri:wght@400;700',
+      'Reem Kufi': 'Reem+Kufi:wght@400;700',
+      'Scheherazade New': 'Scheherazade+New:wght@400;700',
+      'Aref Ruqaa': 'Aref+Ruqaa:wght@400;700',
+      'Roboto': 'Roboto:wght@400;700',
+      'Open Sans': 'Open+Sans:wght@400;700',
+      'Montserrat': 'Montserrat:wght@400;700',
+      'Merriweather': 'Merriweather:wght@400;700',
+      'Playfair Display': 'Playfair+Display:wght@400;700'
+    };
+
+    function ensureGoogleFontLoaded(name, cb) {
+      const q = GOOGLE_FONT_QUERY[name];
+      if (!q) { if (cb) cb(); return; }
+      const id = 'gf-load-' + name.replace(/\s+/g, '-');
+      if (document.getElementById(id)) {
+        if (document.fonts && document.fonts.load) {
+          document.fonts.load('16px "' + name + '"').then(function(){ if (cb) cb(); }).catch(function(){ if (cb) cb(); });
+        } else if (cb) cb();
+        return;
+      }
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + q + '&display=swap';
+      link.onload = function() {
+        if (document.fonts && document.fonts.load) {
+          document.fonts.load('16px "' + name + '"').then(function(){ if (cb) cb(); }).catch(function(){ if (cb) cb(); });
+        } else if (cb) setTimeout(cb, 300);
+      };
+      link.onerror = function() { if (cb) cb(); };
+      document.head.appendChild(link);
+      // احتياطي لو onload ما اشتغلش
+      setTimeout(function(){ if (cb) cb(); }, 1200);
+    }
+
     function setAppFont(name) {
       localStorage.setItem('khalwati_font', name);
-      applyTypography();
       const label = (name === 'Aref Ruqaa') ? 'خط اليد' : name;
-      showToast('تم تطبيق الخط: ' + label);
+      showToast('جاري تطبيق: ' + label + '…');
+      ensureGoogleFontLoaded(name, function() {
+        applyTypography();
+        showToast('تم تطبيق الخط: ' + label);
+      });
     }
     function setAppAlign(a) {
       localStorage.setItem('khalwati_align', a);
@@ -3969,16 +3994,15 @@
 
     // Play hymn on open (full duration)
     window.addEventListener('load', () => {
-      // بعد رسم الواجهة — يقلل الإحساس بالتهنيج
       setTimeout(function() {
-        if (typeof applyTypography === 'function') applyTypography();
-        // تحميل خطوط جوجل في الخلفية (لو في نت)
-        try {
-          const l = document.createElement('link');
-          l.rel = 'stylesheet';
-          l.href = 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&display=swap';
-          document.head.appendChild(l);
-        } catch(e) {}
+        const saved = localStorage.getItem('khalwati_font') || 'Cairo';
+        if (typeof ensureGoogleFontLoaded === 'function') {
+          ensureGoogleFontLoaded(saved, function() {
+            if (typeof applyTypography === 'function') applyTypography();
+          });
+        } else if (typeof applyTypography === 'function') {
+          applyTypography();
+        }
       }, 50);
       setTimeout(playHymn, 1200);
     });

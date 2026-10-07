@@ -1105,8 +1105,8 @@
   </style>
 </head>
 <body>
-  <audio id="hymnAudio" src="hymn.m4a" preload="metadata"></audio>
-  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="none"></audio>
+  <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
+  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto"></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
   <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
   <div class="mute-banner" id="muteBanner">
@@ -2663,7 +2663,29 @@
     function playSawtRabina() {
       const a = document.getElementById('sawtRabina');
       if (!a) return;
-      try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e) {}
+      if (isMuted()) {
+        showToast('الصوت مكتوم — افتحيه من الشريط');
+        return;
+      }
+      try {
+        a.pause();
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && p.catch) {
+          p.catch(function(err) {
+            console.log('sawt play', err);
+            showToast('اضغطي الشاشة لتشغيل صوت يسوع');
+          });
+        }
+        const banner = document.getElementById('muteBanner');
+        if (banner) {
+          banner.classList.add('show');
+          const st = document.getElementById('audioStatus');
+          if (st) st.textContent = '🔔 صوت يسوع';
+        }
+      } catch(e) {
+        showToast('تعذر تشغيل صوت يسوع');
+      }
     }
 
     function applyTypography() {
@@ -4092,13 +4114,22 @@
     // Service Worker for offline
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(function(reg) {
-        // تحديث فوري للنسخة الجديدة
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         reg.update();
+        // تأكد من تحميل الصوتيات في الكاش وأنتِ أونلاين
+        navigator.serviceWorker.ready.then(function() {
+          ['hymn.m4a', 'sawt-rabina.mp3', 'parchment-bg.jpg', 'bible-svd.js', 'psalms.js'].forEach(function(f) {
+            fetch(f, { cache: 'reload' }).catch(function(){});
+          });
+          // حمّل عناصر الصوت في الذاكرة
+          var h = document.getElementById('hymnAudio');
+          var s = document.getElementById('sawtRabina');
+          if (h) { try { h.load(); } catch(e) {} }
+          if (s) { try { s.load(); } catch(e) {} }
+        });
       }).catch(function(err) { console.log('SW error', err); });
-      // رسالة عند العمل بدون نت
       window.addEventListener('offline', function() {
-        if (typeof showToast === 'function') showToast('وضع بدون إنترنت — التطبيق يعمل من الذاكرة');
+        if (typeof showToast === 'function') showToast('وضع بدون إنترنت — من الكاش');
       });
       window.addEventListener('online', function() {
         if (typeof showToast === 'function') showToast('تم الاتصال بالإنترنت');

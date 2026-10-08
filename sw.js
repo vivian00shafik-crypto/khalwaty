@@ -1,7 +1,7 @@
-const CACHE_NAME = 'khalwati-v28-icons3d';
+const CACHE_NAME = 'khalwati-v30-icons-prayer';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
-  './logo.png', './jesus.jpg', './hymn.m4a', './sawt-rabina.mp3',
+  './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',
   './icon-192.png', './icon-512.png', './icon-mass.png',
   './bible-svd.js', './psalms.js', './cross-center.png', './parchment-bg.jpg',
   './progress-boy-final.jpg', './progress-boy-high.jpg', './progress-boy-low.jpg',

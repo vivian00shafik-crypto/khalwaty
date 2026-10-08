@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v44-psalm-ranges';
+const CACHE_NAME = 'khalwati-v45-psalm-agpeya-num';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

@@ -2267,66 +2267,56 @@
 
     function getVanDyckPsalmsBook() {
       const bible = window.BIBLE_SVD;
-      if (bible && bible.books) {
-        const b = bible.books.find(b => b.id === 19 || b.code === 'Ps' || b.name === 'المزامير' || (b.name && b.name.indexOf('مزامير') >= 0));
-        if (b) return b;
-      }
-      // احتياطي من psalms.js (فاندايك)
-      if (window.PSALMS) {
-        const chapters = [];
-        for (let i = 1; i <= 150; i++) {
-          const raw = window.PSALMS[String(i)] || window.PSALMS[i] || '';
-          if (!raw) { chapters.push([]); continue; }
-          const lines = String(raw).split(/\n/).filter(Boolean);
-          const verses = [];
-          lines.forEach(line => {
-            const m = line.match(/^\s*(\d+)\s*[\-\.]?\s*(.+)/);
-            if (m) verses.push(m[2].trim());
-            else if (verses.length) verses[verses.length - 1] += ' ' + line.trim();
-          });
-          chapters.push(verses.length ? verses : [String(raw)]);
-        }
-        return { id: 19, name: 'المزامير', chapters: chapters };
-      }
-      return null;
+      if (!bible || !bible.books) return null;
+      return bible.books.find(b =>
+        b.id === 19 || b.code === 'Ps' || b.name === 'المزامير' ||
+        (b.name && b.name.indexOf('مزامير') >= 0)
+      ) || null;
     }
 
-    setPrayerJesusBg(false);
     function readPsalm(num) {
       num = parseInt(num, 10);
-      const book = getVanDyckPsalmsBook();
-      let bodyHtml = '';
-      if (book && num >= 1 && num <= book.chapters.length) {
-        const verses = book.chapters[num - 1] || [];
-        bodyHtml = `<h3 style="text-align:center;margin:8px 0 12px;color:var(--brown);">المزمور ${num}</h3>` +
-          verses.map((v, i) => {
-            const ref = 'المزمور ' + num + ':' + (i+1);
-            const esc = String(v).replace(/'/g, "\\'");
-            return `<p class="verse-line" data-ref="${ref}" data-text="${esc}" onclick="openVerseMenu(event, this)" style="margin:8px 0;line-height:1.95;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i + 1}</span>${v}</p>`;
-          }).join('');
-      } else {
-        bodyHtml = `<p style="text-align:center;color:#8a7a60;">النص غير متوفر لهذا المزمور حاليًا.</p>`;
-      }
-      const maxPs = book ? book.chapters.length : 150;
-      document.getElementById('prayerTitle').textContent = 'المزمور ' + num;
-      document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right;line-height:1.95;font-size:15px;">
-          <p style="text-align:center;color:var(--gold-dark);font-weight:600;font-size:13px;">ترجمة فاندايك</p>
-          <div style="margin-top:10px;">${bodyHtml}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:center;">
+      setPrayerJesusBg(false);
+      const show = function() {
+        const book = getVanDyckPsalmsBook();
+        let bodyHtml = '';
+        if (book && num >= 1 && num <= book.chapters.length) {
+          const verses = book.chapters[num - 1] || [];
+          bodyHtml = `<h3 style="text-align:center;margin:8px 0 12px;color:var(--brown);">المزمور ${num}</h3>` +
+            verses.map((v, i) => {
+              const ref = 'المزمور ' + num + ':' + (i+1);
+              const esc = String(v).replace(/'/g, "\\'");
+              return `<p class="verse-line" data-ref="${ref}" data-text="${esc}" onclick="openVerseMenu(event, this)" style="margin:8px 0;line-height:1.95;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i + 1}</span>${v}</p>`;
+            }).join('');
+        } else {
+          bodyHtml = `<p style="text-align:center;padding:20px;color:#8a7a60;">
+            تعذّر تحميل المزمور ${num}.<br>
+            تأكدي من رفع ملف <b>bible-svd.js</b> (ترجمة فاندايك).
+          </p>`;
+        }
+        const maxPs = book ? book.chapters.length : 150;
+        document.getElementById('prayerTitle').textContent = 'المزمور ' + num;
+        document.getElementById('prayerContent').innerHTML = `
+          <div style="margin-bottom:10px;">${bodyHtml}</div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
             ${num > 1 ? `<button class="save-btn" style="background:#8a7a60;flex:1;" onclick="readPsalm(${num - 1})">→ السابق</button>` : ''}
             ${num < maxPs ? `<button class="save-btn" style="flex:1;" onclick="readPsalm(${num + 1})">التالي ←</button>` : ''}
-          </div>
-          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="openPsalmSelector()">رجوع لاختيار المزامير</button>
-        </div>`;
-      document.getElementById('psalmModal').classList.remove('active');
-      document.getElementById('prayerModal').classList.add('active');
-      const pc = document.getElementById('prayerContent');
-      if (pc) pc.scrollTop = 0;
-      applyStoredHighlights(document.getElementById('prayerContent'));
-      applyBibleFontToContent(document.getElementById('prayerContent'));
+          </div>`;
+        const pc = document.getElementById('prayerContent');
+        if (typeof applyStoredHighlights === 'function') applyStoredHighlights(pc);
+        if (typeof applyBibleFontToContent === 'function') applyBibleFontToContent(pc);
+        document.getElementById('prayerModal').classList.add('active');
+      };
+      if (window.BIBLE_SVD && window.BIBLE_SVD.books) show();
+      else if (typeof ensureBibleLoaded === 'function') {
+        document.getElementById('prayerTitle').textContent = 'المزامير';
+        document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">جاري تحميل المزامير (فاندايك)…</p>';
+        document.getElementById('prayerModal').classList.add('active');
+        ensureBibleLoaded(show);
+      } else show();
     }
 
+    
     // Save psalm text fields on change
     function setupPsalmInputs() {
       ['psalmThanks', 'psalmTell', 'psalmRequest'].forEach(id => {

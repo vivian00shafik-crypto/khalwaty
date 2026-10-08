@@ -1600,10 +1600,51 @@
 
     setPrayerJesusBg(false);
     function openAgpeya() {
-      document.getElementById('prayerTitle').textContent = 'الأجبية';
+      setPrayerJesusBg(false);
+      document.getElementById('prayerTitle').textContent = 'الأجبية — كتاب السواعي';
       document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right;">
-          <p style="margin-bottom:12px;color:#8a7a60;font-size:13px;">اختاري صلاة من صلوات الأجبية:</p>
+        <div style="text-align:right;line-height:1.85;">
+          <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:14px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);font-size:15px;">أصل كلمة «أجبية»</p>
+            <p style="margin:0;">كلمة <b>أجبية</b> (ajpia) كلمة <b>قبطية</b> (اللغة المصرية القديمة). تعني «كتاب السواعي» أو «كتاب الساعات»، من كلمة <b>ajp</b> / «تي أجب» بمعنى «ساعات».</p>
+          </div>
+
+          <div style="background:rgba(255,253,248,0.9);border:1px solid #e8d9b5;border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:13.5px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);">كتاب السواعي</p>
+            <p style="margin:0 0 8px;">تُستخدم الأجبية في الكنيسة القبطية الأرثوذكسية، وفيها <b>سبع صلوات</b> على مدار اليوم. كل ساعة ترتبط بجزء من حياة السيد المسيح على الأرض.</p>
+            <p style="margin:0 0 6px;font-weight:600;">تركيب كل ساعة:</p>
+            <ol style="margin:0;padding-right:20px;">
+              <li>الصلاة الربانية «أبانا الذي في السماوات»</li>
+              <li>صلاة الشكر</li>
+              <li>المزمور الخمسون (مزمور 50 / 51)</li>
+              <li>مجموعة من المزامير</li>
+              <li>مقتطف من أحد الأناجيل</li>
+              <li>قطع الابتهالات</li>
+              <li>«كيرياليسون» (يا رب ارحم) 41 مرة</li>
+              <li>صلوات قصيرة (قدوس الله…)</li>
+              <li>ختام الساعة</li>
+              <li>«ارحمنا يا الله ثم ارحمنا»</li>
+              <li>الختام بالصلاة الربانية</li>
+            </ol>
+            <p style="margin:10px 0 0;font-size:12px;color:#8a7a60;">الـ 41 مرة ترمز إلى 39 جلدة + الحربة + إكليل الشوك.</p>
+          </div>
+
+          <div style="background:rgba(245,230,200,0.4);border:1px solid #e8d9b5;border-radius:14px;padding:14px 16px;margin-bottom:14px;font-size:13.5px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);">مواعيد صلاة الأجبية</p>
+            <p style="margin:0 0 8px;font-size:12.5px;color:#8a7a60;">المواعيد تقريبية حسب ظروفك — الله ينظر إلى القلب لا إلى الساعة بالثانية.</p>
+            <ul style="margin:0;padding-right:18px;">
+              <li><b>باكر:</b> نحو السادسة صباحًا — بعد الاستيقاظ</li>
+              <li><b>الثالثة:</b> نحو التاسعة صباحًا</li>
+              <li><b>السادسة:</b> نحو الثانية عشرة ظهرًا</li>
+              <li><b>التاسعة:</b> نحو الثالثة ظهرًا</li>
+              <li><b>الغروب (الحادية عشر):</b> نحو الخامسة مساءً</li>
+              <li><b>النوم:</b> نحو السادسة مساءً / عند حلول المساء</li>
+              <li><b>نصف الليل:</b> قبل منتصف الليل</li>
+              <li><b>الستار:</b> خاصة بالكهنة والرهبان</li>
+            </ul>
+          </div>
+
+          <p style="margin-bottom:10px;color:#8a7a60;font-size:13px;font-weight:600;">اختاري صلاة:</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <button class="save-btn" onclick="openAgpeyaHour('باكر')">☀️ باكر</button>
             <button class="save-btn" onclick="openAgpeyaHour('الثالثة')">🕒 الثالثة</button>
@@ -1611,26 +1652,58 @@
             <button class="save-btn" onclick="openAgpeyaHour('التاسعة')">🕒 التاسعة</button>
             <button class="save-btn" onclick="openAgpeyaHour('الغروب')">🌅 الغروب</button>
             <button class="save-btn" onclick="openAgpeyaHour('النوم')">🌙 النوم</button>
+            <button class="save-btn" onclick="openAgpeyaHour('نصف الليل')">🕛 نصف الليل</button>
             <button class="save-btn" onclick="openAgpeyaHour('الستار')">🕯️ الستار</button>
-            <button class="save-btn" style="background:#5a7d4a;" onclick="openAgpeyaHour('أخرى')">📿 أخرى</button>
+            <button class="save-btn" style="background:#5a7d4a;grid-column:1/-1;" onclick="openAgpeyaHour('أخرى')">📿 أخرى</button>
           </div>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
     }
 
     function openAgpeyaHour(name) {
+      setPrayerJesusBg(false);
       const data = loadData();
       const key = 'agpeya_' + name;
       const saved = data[key] || '';
+      const fixed = (window.AGPEYA_TEXTS && window.AGPEYA_TEXTS[name]) ? window.AGPEYA_TEXTS[name] : '';
       document.getElementById('prayerTitle').textContent = 'الأجبية — ' + name;
-      document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right;">
-          <p style="font-size:13px;color:#8a7a60;margin-bottom:8px;">مساحة لتسجيل صلوات ${name} أو ملاحظاتك عليها</p>
-          <textarea id="agpeyaText" style="width:100%;min-height:180px;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;font-size:15px;line-height:1.8;resize:vertical;">${saved}</textarea>
-          <button class="save-btn" style="margin-top:10px;" onclick="saveAgpeyaHour('${name}')">حفظ</button>
-          <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openAgpeya()">رجوع للأجبية</button>
-        </div>`;
+      let body = '';
+      if (fixed) {
+        const html = String(fixed).split(/\n\n+/).map(function(para) {
+          const p = para.trim();
+          if (!p) return '';
+          const first = p.split('\n')[0].trim();
+          const isTitle = first.length < 60 && (
+            /^(مقدمة|الصلاة|المزمور|البولس|إنجيل|القطع|تسبحة|السلام|قانون|كيرياليسون|قدوس|التحليل|طلبة|هلم|بدء|من إيمان)/.test(first) ||
+            /^\(\d+\)/.test(first)
+          );
+          if (isTitle && p.indexOf('\n') === -1) {
+            return '<p style="margin:16px 0 8px;font-weight:700;color:var(--gold-dark);font-size:15.5px;border-bottom:1px solid #e8d9b5;padding-bottom:4px;">' + first + '</p>';
+          }
+          if (isTitle) {
+            const rest = p.slice(first.length).trim();
+            return '<p style="margin:16px 0 6px;font-weight:700;color:var(--gold-dark);font-size:15.5px;">' + first + '</p>' +
+              (rest ? '<p style="margin:0 0 10px;line-height:1.95;font-size:14.5px;">' + rest.replace(/\n/g, '<br>') + '</p>' : '');
+          }
+          return '<p style="margin:0 0 12px;line-height:1.95;font-size:14.5px;">' + p.replace(/\n/g, '<br>') + '</p>';
+        }).join('');
+        body = '<div class="agpeya-prayer" style="text-align:right;color:var(--brown);">' + html + '</div>' +
+          '<div style="margin-top:18px;border-top:1px dashed #e8d9b5;padding-top:12px;">' +
+          '<p style="font-size:12px;color:#8a7a60;margin-bottom:6px;">ملاحظاتك على صلاة ' + name + ':</p>' +
+          '<textarea id="agpeyaText" style="width:100%;min-height:80px;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;font-size:14px;line-height:1.7;resize:vertical;">' + saved.replace(/</g, '&lt;') + '</textarea>' +
+          '<button class="save-btn" style="margin-top:8px;" onclick="saveAgpeyaHour(\'' + name + '\')">حفظ الملاحظات</button>' +
+          '<button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openAgpeya()">رجوع للأجبية</button></div>';
+      } else {
+        body = '<div style="text-align:right;">' +
+          '<p style="font-size:13px;color:#8a7a60;margin-bottom:8px;">نص صلاة ' + name + ' سيُضاف قريباً. يمكنك كتابة ملاحظاتك هنا:</p>' +
+          '<textarea id="agpeyaText" style="width:100%;min-height:180px;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;font-size:15px;line-height:1.8;resize:vertical;">' + saved.replace(/</g, '&lt;') + '</textarea>' +
+          '<button class="save-btn" style="margin-top:8px;" onclick="saveAgpeyaHour(\'' + name + '\')">حفظ</button>' +
+          '<button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openAgpeya()">رجوع للأجبية</button></div>';
+      }
+      document.getElementById('prayerContent').innerHTML = body;
+      document.getElementById('prayerModal').classList.add('active');
     }
+
 
     function saveAgpeyaHour(name) {
       const data = loadData();
@@ -4415,5 +4488,6 @@
     }
   </script>
   <script src="psalms.js"></script>
+  <script src="agpeya-texts.js"></script>
 </body>
 </html>

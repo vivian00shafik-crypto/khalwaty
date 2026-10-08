@@ -1084,14 +1084,28 @@
       margin-bottom: 12px;
     }
 
-    #prayerModal .modal-content {
-      background: #fffdf8 url('jesus-prayer-bg.jpg') no-repeat top center;
-      background-size: cover;
+    /* خلفية يسوع لصلاة يسوع وكيرياليسون فقط */
+    #prayerModal.with-jesus-bg .modal-content {
+      background-color: #3e2f1c !important;
+      background-image: url('jesus-prayer-bg.jpg') !important;
+      background-size: cover !important;
+      background-position: center top !important;
+      background-repeat: no-repeat !important;
     }
-
-    #prayerModal .prayer-text {
-      background: rgba(255, 253, 248, 0.88);
+    #prayerModal.with-jesus-bg .prayer-text {
+      background: rgba(255, 253, 248, 0.72) !important;
       text-align: right;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    #prayerModal.with-jesus-bg .modal-header {
+      background: rgba(255, 253, 248, 0.85);
+      border-radius: 12px;
+      padding: 8px 4px;
+      margin-bottom: 8px;
+    }
+    #prayerModal:not(.with-jesus-bg) .modal-content {
+      background-image: none;
     }
 
     /* Psalm selector */
@@ -1584,6 +1598,7 @@
       else openTextModal(id);
     }
 
+    setPrayerJesusBg(false);
     function openAgpeya() {
       document.getElementById('prayerTitle').textContent = 'الأجبية';
       document.getElementById('prayerContent').innerHTML = `
@@ -1626,6 +1641,7 @@
 
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
 
+    setPrayerJesusBg(false);
     function openBible(testament) {
       bibleState.testament = testament || 'OT';
       document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
@@ -1905,6 +1921,7 @@
     }
 
     // Text modal
+    setPrayerJesusBg(false);
     function openTextModal(type) {
       currentTextType = type;
       const data = loadData();
@@ -2013,6 +2030,30 @@
     }
 
     // Prayers
+
+    function setPrayerJesusBg(on) {
+      const modal = document.getElementById('prayerModal');
+      if (!modal) return;
+      const mc = modal.querySelector('.modal-content');
+      if (on) {
+        modal.classList.add('with-jesus-bg');
+        if (mc) {
+          mc.style.backgroundImage = "url('jesus-prayer-bg.jpg'), url('jesus.jpg')";
+          mc.style.backgroundSize = 'cover';
+          mc.style.backgroundPosition = 'center top';
+          mc.style.backgroundColor = '#3e2f1c';
+        }
+      } else {
+        modal.classList.remove('with-jesus-bg');
+        if (mc) {
+          mc.style.backgroundImage = '';
+          mc.style.backgroundColor = '';
+          mc.style.backgroundSize = '';
+          mc.style.backgroundPosition = '';
+        }
+      }
+    }
+
     function openPrayer(type) {
       const data = loadData();
       const titles = {
@@ -2131,6 +2172,7 @@
 
       document.getElementById('prayerTitle').textContent = titles[type];
       document.getElementById('prayerContent').innerHTML = contentHtml;
+      setPrayerJesusBg(true);
       document.getElementById('prayerModal').classList.add('active');
     }
 
@@ -2249,6 +2291,7 @@
       return null;
     }
 
+    setPrayerJesusBg(false);
     function readPsalm(num) {
       num = parseInt(num, 10);
       const book = getVanDyckPsalmsBook();
@@ -2296,6 +2339,7 @@
     }
 
     function closeModal() {
+      setPrayerJesusBg(false);
       document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     }
 
@@ -2442,6 +2486,7 @@
       w.document.close();
     }
 
+    setPrayerJesusBg(false);
     function openPdfOptions() {
       const st = getPdfStyle();
       document.getElementById('prayerTitle').textContent = 'إعدادات PDF';

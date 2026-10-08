@@ -546,7 +546,8 @@
     }
 
     .daily-item input:checked ~ .daily-icon,
-    .daily-item.checked .daily-icon {
+    .daily-item.checked .daily-icon,
+    .daily-item.used .daily-icon {
       transform: scale(1.1);
       box-shadow:
         0 0 0 3px rgba(255, 220, 100, 0.95),
@@ -1561,6 +1562,7 @@
 
     function renderDailyIcons() {
       const data = loadData();
+      const used = data.usedSections || {};
       const container = document.getElementById('dailyIcons');
       container.innerHTML = '';
       toggleItems.forEach(item => {
@@ -1577,8 +1579,9 @@
       if (openContainer) {
         openContainer.innerHTML = '';
         openItems.forEach(item => {
+          const isUsed = !!used[item.id];
           openContainer.innerHTML += `
-            <div class="daily-item" onclick="handleOpenItem('${item.id}', '${item.type}')">
+            <div class="daily-item ${isUsed ? 'used checked' : ''}" onclick="handleOpenItem('${item.id}', '${item.type}')">
               <div class="daily-icon">${item.icon}</div>
               <div class="daily-label">${item.label}</div>
             </div>
@@ -1588,6 +1591,13 @@
     }
 
     function handleOpenItem(id, type) {
+      try {
+        const data = loadData();
+        data.usedSections = data.usedSections || {};
+        data.usedSections[id] = true;
+        saveData(data);
+        renderDailyIcons();
+      } catch (e) {}
       if (type === 'text') openTextModal(id);
       else if (type === 'books') openBooksSection();
       else if (type === 'chart') openProgressChart();
@@ -1662,6 +1672,127 @@
       document.getElementById('prayerModal').classList.add('active');
     }
 
+    
+    const ARABIC_PSALM_ORDINALS = {
+      'الأول':1,'الاول':1,'الثاني':2,'الثانى':2,'الثالث':3,'الرابع':4,'الخامس':5,
+      'السادس':6,'السابع':7,'الثامن':8,'التاسع':9,'العاشر':10,
+      'الحادي عشر':11,'الحادى عشر':11,'الثاني عشر':12,'الثانى عشر':12,
+      'الثالث عشر':13,'الرابع عشر':14,'الخامس عشر':15,'السادس عشر':16,
+      'السابع عشر':17,'الثامن عشر':18,'التاسع عشر':19,
+      'العشرون':20,'الحادي والعشرون':21,'الحادى والعشرون':21,'الثاني والعشرون':22,'الثانى والعشرون':22,
+      'الثالث والعشرون':23,'الرابع والعشرون':24,'الخامس والعشرون':25,'السادس والعشرون':26,
+      'السابع والعشرون':27,'الثامن والعشرون':28,'التاسع والعشرون':29,
+      'الثلاثون':30,'الحادي والثلاثون':31,'الحادى والثلاثون':31,'الثاني والثلاثون':32,'الثانى والثلاثون':32,
+      'الثالث والثلاثون':33,'الرابع والثلاثون':34,'الخامس والثلاثون':35,'السادس والثلاثون':36,
+      'السابع والثلاثون':37,'الثامن والثلاثون':38,'التاسع والثلاثون':39,
+      'الأربعون':40,'الاربعون':40,'الحادي والأربعون':41,'الحادى والأربعون':41,'الثاني والأربعون':42,'الثانى والأربعون':42,
+      'الثالث والأربعون':43,'الرابع والأربعون':44,'الخامس والأربعون':45,'السادس والأربعون':46,
+      'السابع والأربعون':47,'الثامن والأربعون':48,'التاسع والأربعون':49,
+      'الخمسون':50,'الحادي والخمسون':51,'الحادى والخمسون':51,'الثاني والخمسون':52,'الثانى والخمسون':52,
+      'الثالث والخمسون':53,'الرابع والخمسون':54,'الخامس والخمسون':55,'السادس والخمسون':56,
+      'السابع والخمسون':57,'الثامن والخمسون':58,'التاسع والخمسون':59,
+      'الستون':60,'الحادي والستون':61,'الحادى والستون':61,'الثاني والستون':62,'الثانى والستون':62,
+      'الثالث والستون':63,'الرابع والستون':64,'الخامس والستون':65,'السادس والستون':66,
+      'السابع والستون':67,'الثامن والستون':68,'التاسع والستون':69,
+      'السبعون':70,'الحادي والسبعون':71,'الحادى والسبعون':71,'الثاني والسبعون':72,'الثانى والسبعون':72,
+      'الثالث والسبعون':73,'الرابع والسبعون':74,'الخامس والسبعون':75,'السادس والسبعون':76,
+      'السابع والسبعون':77,'الثامن والسبعون':78,'التاسع والسبعون':79,
+      'الثمانون':80,'الحادي والثمانون':81,'الحادى والثمانون':81,'الثاني والثمانون':82,'الثانى والثمانون':82,
+      'الثالث والثمانون':83,'الرابع والثمانون':84,'الخامس والثمانون':85,'السادس والثمانون':86,
+      'السابع والثمانون':87,'الثامن والثمانون':88,'التاسع والثمانون':89,
+      'التسعون':90,'الحادي والتسعون':91,'الحادى والتسعون':91,'الثاني والتسعون':92,'الثانى والتسعون':92,
+      'الثالث والتسعون':93,'الرابع والتسعون':94,'الخامس والتسعون':95,'السادس والتسعون':96,
+      'السابع والتسعون':97,'الثامن والتسعون':98,'التاسع والتسعون':99,
+      'المائة':100,'المائة والأول':101,'المائة والاول':101,'المائة والثاني':102,'المائة والثانى':102,
+      'المائة والثالث':103,'المائة والرابع':104,'المائة والخامس':105,'المائة والسادس':106,
+      'المائة والسابع':107,'المائة والثامن':108,'المائة والتاسع':109,
+      'المائة والعاشر':110,'المائة والحادي عشر':111,'المائة والحادى عشر':111,
+      'المائة والثاني عشر':112,'المائة والثانى عشر':112,'المائة والثالث عشر':113,
+      'المائة والرابع عشر':114,'المائة والخامس عشر':115,'المائة والسادس عشر':116,
+      'المائة والسابع عشر':117,'المائة والثامن عشر':118,'المائة والتاسع عشر':119,
+      'المائة والعشرون':120,'المائة والحادي والعشرون':121,'المائة والحادى والعشرون':121,
+      'المائة والثاني والعشرون':122,'المائة والثانى والعشرون':122,'المائة والثالث والعشرون':123,
+      'المائة والرابع والعشرون':124,'المائة والخامس والعشرون':125,'المائة والسادس والعشرون':126,
+      'المائة والسابع والعشرون':127,'المائة والثامن والعشرون':128,'المائة والتاسع والعشرون':129,
+      'المائة والثلاثون':130,'المائة والحادي والثلاثون':131,'المائة والحادى والثلاثون':131,
+      'المائة والثاني والثلاثون':132,'المائة والثانى والثلاثون':132,'المائة والثالث والثلاثون':133,
+      'المائة والرابع والثلاثون':134,'المائة والخامس والثلاثون':135,'المائة والسادس والثلاثون':136,
+      'المائة والسابع والثلاثون':137,'المائة والثامن والثلاثون':138,'المائة والتاسع والثلاثون':139,
+      'المائة والأربعون':140,'المائة والاربعون':140,'المائة والحادي والأربعون':141,'المائة والحادى والأربعون':141,
+      'المائة والثاني والأربعون':142,'المائة والثانى والأربعون':142,'المائة والثالث والأربعون':143,
+      'المائة والرابع والأربعون':144,'المائة والخامس والأربعون':145,'المائة والسادس والأربعون':146,
+      'المائة والسابع والأربعون':147,'المائة والثامن والأربعون':148,'المائة والتاسع والأربعون':149,
+      'المائة والخمسون':150
+    };
+
+    function arabicPsalmNameToNum(name) {
+      if (!name) return 0;
+      name = String(name).trim().replace(/^ال/, 'ال');
+      if (ARABIC_PSALM_ORDINALS[name]) return ARABIC_PSALM_ORDINALS[name];
+      // try without leading ال on ordinal part after المزمور
+      const n = parseInt(name, 10);
+      return (n >= 1 && n <= 150) ? n : 0;
+    }
+
+    function linkifyPsalmRefs(text) {
+      if (!text || text.indexOf('psalm-ref') !== -1) return text;
+      // Western digits: المزمور 23 / مزمور 23
+      text = text.replace(/(المزمور|مزمور)\s*(\d{1,3})\b/g, function(m, label, num) {
+        const n = parseInt(num, 10);
+        if (n < 1 || n > 150) return m;
+        return '<a href="javascript:void(0)" class="psalm-ref" data-psalm="' + n + '" onclick="event.stopPropagation();openPsalmFromAgpeya(' + n + ')" style="color:var(--gold-dark);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;">' + label + ' ' + num + '</a>';
+      });
+      // Arabic ordinal: المزمور الرابع / المزمور المائة والثامن عشر
+      text = text.replace(/المزمور\s+([\u0600-\u06FF\s]{2,40}?)(?=\s*[\n\r.<«»"']|$|هلليلويا|المجد)/g, function(m, ord) {
+        ord = ord.trim();
+        if (!ord || /\d/.test(ord)) return m; // digits handled above
+        // longest match in map
+        let n = 0, matched = '';
+        const keys = Object.keys(ARABIC_PSALM_ORDINALS).sort(function(a,b){return b.length-a.length;});
+        for (let i=0;i<keys.length;i++) {
+          if (ord === keys[i] || ord.indexOf(keys[i]) === 0) {
+            // prefer exact or longest prefix that is the whole ordinal phrase
+            if (ord === keys[i] || /^\s/.test(ord.slice(keys[i].length)) || ord.slice(keys[i].length)==='') {
+              n = ARABIC_PSALM_ORDINALS[keys[i]];
+              matched = keys[i];
+              break;
+            }
+          }
+        }
+        if (!n) n = arabicPsalmNameToNum(ord);
+        if (!n) return m;
+        const label = matched || ord;
+        return '<a href="javascript:void(0)" class="psalm-ref" data-psalm="' + n + '" onclick="event.stopPropagation();openPsalmFromAgpeya(' + n + ')" style="color:var(--gold-dark);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;">المزمور ' + label + '</a>' + (matched && ord.length > matched.length ? ord.slice(matched.length) : '');
+      });
+      return text;
+    }
+
+    window._agpeyaBackHour = null;
+    function openPsalmFromAgpeya(num) {
+      // remember current hour title if possible
+      const titleEl = document.getElementById('prayerTitle');
+      if (titleEl && titleEl.textContent.indexOf('الأجبية') === 0) {
+        window._agpeyaBackHour = titleEl.textContent.replace(/^الأجبية\s*—\s*/, '').trim();
+      }
+      readPsalm(num);
+      // inject back button after content loads
+      setTimeout(function() {
+        const pc = document.getElementById('prayerContent');
+        if (!pc) return;
+        if (pc.querySelector('.agpeya-back-psalm')) return;
+        const back = document.createElement('button');
+        back.className = 'save-btn agpeya-back-psalm';
+        back.style.cssText = 'margin-top:10px;background:#5a7d4a;width:100%;';
+        back.textContent = window._agpeyaBackHour ? ('رجوع إلى صلاة ' + window._agpeyaBackHour) : 'رجوع للأجبية';
+        back.onclick = function() {
+          if (window._agpeyaBackHour) openAgpeyaHour(window._agpeyaBackHour);
+          else openAgpeya();
+        };
+        pc.appendChild(back);
+      }, 120);
+    }
+
+
     function openAgpeyaHour(name) {
       setPrayerJesusBg(false);
       const data = loadData();
@@ -1680,14 +1811,14 @@
             /^\(\d+\)/.test(first)
           );
           if (isTitle && p.indexOf('\n') === -1) {
-            return '<p style="margin:16px 0 8px;font-weight:700;color:var(--gold-dark);font-size:15.5px;border-bottom:1px solid #e8d9b5;padding-bottom:4px;">' + first + '</p>';
+            return '<p style="margin:16px 0 8px;font-weight:700;color:var(--gold-dark);font-size:15.5px;border-bottom:1px solid #e8d9b5;padding-bottom:4px;">' + linkifyPsalmRefs(first) + '</p>';
           }
           if (isTitle) {
             const rest = p.slice(first.length).trim();
-            return '<p style="margin:16px 0 6px;font-weight:700;color:var(--gold-dark);font-size:15.5px;">' + first + '</p>' +
-              (rest ? '<p style="margin:0 0 10px;line-height:1.95;font-size:14.5px;">' + rest.replace(/\n/g, '<br>') + '</p>' : '');
+            return '<p style="margin:16px 0 6px;font-weight:700;color:var(--gold-dark);font-size:15.5px;">' + linkifyPsalmRefs(first) + '</p>' +
+              (rest ? '<p style="margin:0 0 10px;line-height:1.95;font-size:14.5px;">' + linkifyPsalmRefs(rest.replace(/\n/g, '<br>')) + '</p>' : '');
           }
-          return '<p style="margin:0 0 12px;line-height:1.95;font-size:14.5px;">' + p.replace(/\n/g, '<br>') + '</p>';
+          return '<p style="margin:0 0 12px;line-height:1.95;font-size:14.5px;">' + linkifyPsalmRefs(p.replace(/\n/g, '<br>')) + '</p>';
         }).join('');
         body = '<div class="agpeya-prayer" style="text-align:right;color:var(--brown);">' + html + '</div>' +
           '<div style="margin-top:18px;border-top:1px dashed #e8d9b5;padding-top:12px;">' +

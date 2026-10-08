@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v42-meals';
+const CACHE_NAME = 'khalwati-v43-psalm-links';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

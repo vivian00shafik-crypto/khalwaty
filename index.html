@@ -2814,10 +2814,93 @@
       window._forceJesusTest = false;
       const verse = getDailyVerse();
       showVerseInApp(verse);
-      showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text);
+      showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text + '\n\nاضغطي الإشعار لتشغيل الصوت', {
+        tag: 'khalwati-jesus-now',
+        renotify: true,
+        requireInteraction: true,
+        data: { type: 'jesus', play: true, theme: verse.theme, text: verse.text }
+      });
       playSawtRabina();
       localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
       localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+    }
+
+
+    /** أقرب وقت لـ hh:mm اليوم أو بكرة */
+    function nextTimeTodayOrTomorrow(hhmm) {
+      const parts = (hhmm || '21:00').split(':');
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      const d = new Date();
+      d.setSeconds(0, 0);
+      d.setHours(h, m, 0, 0);
+      if (d.getTime() <= Date.now() + 15000) {
+        d.setDate(d.getDate() + 1);
+      }
+      return d;
+    }
+
+    /** جدولة إشعار صوت يسوع في الوقت اللي المستخدم محدداه — حتى والتطبيق مقفول */
+    async function scheduleJesusNotificationForUserTime() {
+      try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        if (!navigator.serviceWorker) return;
+        const reg = await navigator.serviceWorker.ready;
+        const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+        const when = nextTimeTodayOrTomorrow(msgTime);
+        const verse = getDailyVerse();
+        // إلغاء إشعار مجدول قديم بنفس الوسم
+        try {
+          const old = await reg.getNotifications({ tag: 'khalwati-jesus-scheduled', includeTriggered: true });
+          old.forEach(n => n.close());
+        } catch (e) {}
+        const options = {
+          body: verse.text + '\n\nاضغطي هنا لتشغيل صوت يسوع 🔔',
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          dir: 'rtl',
+          lang: 'ar',
+          tag: 'khalwati-jesus-scheduled',
+          renotify: true,
+          requireInteraction: true,
+          silent: false,
+          vibrate: [300, 100, 300, 100, 500],
+          data: { type: 'jesus', theme: verse.theme, text: verse.text, play: true }
+        };
+        if (typeof TimestampTrigger !== 'undefined') {
+          options.showTrigger = new TimestampTrigger(when.getTime());
+          await reg.showNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', options);
+          localStorage.setItem('khalwati_jesus_scheduled_at', String(when.getTime()));
+          console.log('Scheduled Jesus notification at', when.toString());
+        } else {
+          // بدون TimestampTrigger: نعتمد على checkReminders عند فتح التطبيق + setTimeout لو الصفحة مفتوحة
+          localStorage.setItem('khalwati_jesus_scheduled_at', String(when.getTime()));
+          if (window._scheduledJesusTimeout) clearTimeout(window._scheduledJesusTimeout);
+          const delay = when.getTime() - Date.now();
+          if (delay > 0 && delay < 24 * 60 * 60 * 1000) {
+            window._scheduledJesusTimeout = setTimeout(function() {
+              deliverJesusVoiceVerse();
+              scheduleJesusNotificationForUserTime(); // اليوم التالي
+            }, delay);
+          }
+        }
+      } catch (e) {
+        console.log('schedule jesus err', e);
+      }
+    }
+
+    /** لو فات ميعاد اليوم والتطبيق كان مقفول — يسلّم الآية والصوت عند أول فتح */
+    function catchUpMissedJesusVoice() {
+      const now = new Date();
+      const todayKey = getDateKey(now);
+      if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1') return;
+      const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+      const msgMins = timeToMinutes(msgTime);
+      const mins = now.getHours() * 60 + now.getMinutes();
+      // بعد الميعاد المحدد (وهامش دقيقتين)
+      if (mins >= msgMins) {
+        deliverJesusVoiceVerse();
+      }
     }
 
     function playSawtRabina() {
@@ -3747,8 +3830,9 @@
           <label>تنبيه الصلاة</label>
           <input type="time" id="prayTime" value="${prayTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_pray_time', this.value)">
           <label>صوت يسوع اليومي (آية كتابية)</label>
-          <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value)">
-          <p style="font-size:12px;color:#8a7a60;">عند وقت التنبيه تُرسل آية عن الرجاء أو السلام أو المحبة أو الغفران أو الاتكال أو الفرح.</p>
+          <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value); scheduleJesusNotificationForUserTime();">
+          <p style="font-size:12px;color:#8a7a60;">والتطبيق مقفول: يوصلك إشعار بصوت نظام الموبايل + نص الآية. صوت يسوع الخاص يشتغل لما تضغطي الإشعار (قيود أندرويد/آيفون تمنع تشغيل ملف صوتي والتطبيق مقفول تمامًا). فعّلي الإشعارات وارفعي صوت الإعلامات من إعدادات الموبايل.</p>
+          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="requestNotifyPermission();">تفعيل إشعارات صوت يسوع في الخلفية</button>
           <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast('تم حفظ الإعدادات');">حفظ وطلب إذن الإشعارات</button>
           <button class="save-btn" style="margin-top:8px;background:#c9a227;" onclick="requestNotifyPermission(); testJesusVoiceNow();">تجربة صوت يسوع الآن (آية + صوت)</button>
           <p style="font-size:12px;color:#8a7a60;margin-top:8px;">ملاحظة: تنبيهات المتصفح تظهر بقوة والتطبيق مفتوح أو في الخلفية القريبة. ثبّتي التطبيق على الشاشة الرئيسية وفعّلي إذن الإشعارات.</p>
@@ -3791,8 +3875,12 @@
     function requestNotifyPermission() {
       if (!('Notification' in window)) { showToast('الجهاز لا يدعم الإشعارات — سيظهر التنبيه داخل التطبيق'); return; }
       Notification.requestPermission().then(p => {
-        if (p === 'granted') showToast('تم تفعيل إشعارات النظام ✓');
-        else showToast('لم يُسمح بإشعارات النظام — التنبيه سيظهر داخل التطبيق عند الفتح');
+        if (p === 'granted') {
+          showToast('تم تفعيل إشعارات النظام ✓ — هتوصلك في الوقت المحدد حتى والتطبيق مقفول');
+          scheduleJesusNotificationForUserTime();
+        } else {
+          showToast('لم يُسمح بإشعارات النظام — التنبيه عند فتح التطبيق');
+        }
       });
     }
 
@@ -4118,20 +4206,30 @@
       return (parseInt(p[0],10)||0) * 60 + (parseInt(p[1],10)||0);
     }
 
-    async function showAppNotification(title, body) {
-      // إشعار نظام إن وُجد إذن
+    async function showAppNotification(title, body, opts) {
+      opts = opts || {};
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
           if (navigator.serviceWorker && navigator.serviceWorker.ready) {
             const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification(title, {
+            const options = {
               body: body,
               icon: './icon-192.png',
               badge: './icon-192.png',
               dir: 'rtl',
               lang: 'ar',
-              tag: 'khalwati-' + Date.now()
-            });
+              tag: opts.tag || ('khalwati-' + Date.now()),
+              renotify: true,
+              requireInteraction: true,
+              data: opts.data || { type: 'jesus', play: true },
+              silent: false,
+              vibrate: [200, 100, 200, 100, 400]
+            };
+            // جدولة لوقت لاحق إن وُجد TimestampTrigger (كروم أندرويد)
+            if (opts.showAt && typeof TimestampTrigger !== 'undefined') {
+              options.showTrigger = new TimestampTrigger(opts.showAt);
+            }
+            await reg.showNotification(title, options);
           } else {
             new Notification(title, { body: body, icon: './icon-192.png', dir: 'rtl' });
           }
@@ -4220,14 +4318,17 @@
         localStorage.setItem('khalwati_pray_notified_' + todayKey, '1');
       }
 
-      // صوت يسوع اليومي + آية
-      if ((forceTest === 'verse') || (mins >= msgMins && mins <= msgMins + 90 && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1')) {
-        const verse = getDailyVerse();
+      // صوت يسوع اليومي + آية — في الوقت المحدد
+      if ((forceTest === 'verse') || (mins >= msgMins && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1' && localStorage.getItem('khalwati_jesus_day_' + todayKey) !== '1')) {
         const hymn = document.getElementById('hymnAudio');
         if (hymn && !hymn.paused && !hymn.ended) {
-          /* بعد onended هيتجدول دقيقتين */
-        } else if (!window._jesusVoiceTimer) {
-          scheduleJesusVoiceAfterHymn();
+          /* الترنيمة شغالة — بعد انتهائها + دقيقتين */
+          if (!window._jesusVoiceArmed) {
+            window._jesusVoiceArmed = true;
+            scheduleJesusVoiceAfterHymn();
+          }
+        } else {
+          deliverJesusVoiceVerse();
         }
       }
     }
@@ -4244,7 +4345,24 @@
     }
 
     // فحص كل دقيقة طالما التطبيق مفتوح
-    setTimeout(function(){ checkReminders(); }, 1500);
+    setTimeout(function(){
+      checkReminders();
+      catchUpMissedJesusVoice();
+      scheduleJesusNotificationForUserTime();
+      // من إشعار النظام
+      if (location.search.indexOf('jesusVoice=1') >= 0) {
+        deliverJesusVoiceVerse();
+        try { history.replaceState({}, '', location.pathname); } catch(e) {}
+      }
+    }, 1500);
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', function(ev) {
+        if (ev.data && ev.data.type === 'JESUS_VOICE_FROM_NOTIFICATION') {
+          window._forceJesusTest = true;
+          deliverJesusVoiceVerse();
+        }
+      });
+    }
     setInterval(function(){ checkReminders(); }, 60000);
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) checkReminders();

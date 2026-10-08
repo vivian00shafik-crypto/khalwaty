@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v31-fix-script';
+const CACHE_NAME = 'khalwati-v33-notify-sound';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',
@@ -85,3 +85,23 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+
+
+/* إشعارات: صوت النظام والتطبيق مقفول + تشغيل صوت يسوع عند الفتح */
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const data = event.notification.data || {};
+  event.waitUntil((async function() {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url && c.url.indexOf(self.registration.scope) !== -1) {
+        await c.focus();
+        c.postMessage({ type: 'JESUS_VOICE_FROM_NOTIFICATION', data: data, play: true });
+        return;
+      }
+    }
+    await clients.openWindow('./index.html?jesusVoice=1&play=1');
+  })());
+});
+
+self.addEventListener('notificationclose', function() {});

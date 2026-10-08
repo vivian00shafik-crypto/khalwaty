@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v34-agpeya-baker';
+const CACHE_NAME = 'khalwati-v35-agpeya-third';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

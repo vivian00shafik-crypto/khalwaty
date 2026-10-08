@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v46-psalm-clear';
+const CACHE_NAME = 'khalwati-v47-psalm-bible-ui';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

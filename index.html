@@ -1735,35 +1735,58 @@
     }
 
     function linkifyPsalmRefs(text) {
-      if (!text || text.indexOf('psalm-ref') !== -1) return text;
-      // Western digits: المزمور 23 / مزمور 23
-      text = text.replace(/(المزمور|مزمور)\s*(\d{1,3})\b/g, function(m, label, num) {
-        const n = parseInt(num, 10);
-        if (n < 1 || n > 150) return m;
-        return '<a href="javascript:void(0)" class="psalm-ref" data-psalm="' + n + '" onclick="event.stopPropagation();openPsalmFromAgpeya(' + n + ')" style="color:var(--gold-dark);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;">' + label + ' ' + num + '</a>';
+      if (!text || text.indexOf('class="psalm-ref"') !== -1) return text;
+
+      function psalmLink(n, label) {
+        n = parseInt(n, 10);
+        if (!(n >= 1 && n <= 150)) return String(label);
+        return '<a href="javascript:void(0)" class="psalm-ref" data-psalm="' + n + '" onclick="event.preventDefault();event.stopPropagation();openPsalmFromAgpeya(' + n + ')" style="color:var(--gold-dark);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;">' + label + '</a>';
+      }
+
+      function linkNumberList(nums) {
+        // Expand ranges then link each plain number (no HTML yet)
+        return nums.replace(/\b(\d{1,3})\s*[-–—]\s*(\d{1,3})\b/g, function(m, a, b) {
+          const startN = parseInt(a, 10);
+          const endN = parseInt(b, 10);
+          if (startN < 1 || endN > 150 || startN > endN || (endN - startN) > 40) return m;
+          const parts = [];
+          for (let n = startN; n <= endN; n++) parts.push(String(n));
+          return parts.join('، ');
+        }).replace(/\b(\d{1,3})\b/g, function(m, num) {
+          return psalmLink(num, num);
+        });
+      }
+
+      // Phrases about psalms containing number lists: مزامير ... (129-133، 136-137)
+      text = text.replace(/((?:مزامير|المزامير|مزمور|المزمور)[^0-9<\n]{0,60})([0-9][0-9\s،,\-–—()]{2,80})/g, function(whole, prefix, nums) {
+        if (/:\s*\d/.test(prefix + nums)) return whole; // gospel chapter:verse
+        return prefix + linkNumberList(nums);
       });
-      // Arabic ordinal: المزمور الرابع / المزمور المائة والثامن عشر
+
+      // المزمور 23 / مزمور 23 (plain, not already linked)
+      text = text.replace(/(المزمور|مزمور)\s*(\d{1,3})\b/g, function(m, label, num) {
+        return psalmLink(num, label + ' ' + num);
+      });
+
+      // Arabic ordinal titles
       text = text.replace(/المزمور\s+([\u0600-\u06FF\s]{2,40}?)(?=\s*[\n\r.<«»"']|$|هلليلويا|المجد)/g, function(m, ord) {
         ord = ord.trim();
-        if (!ord || /\d/.test(ord)) return m; // digits handled above
-        // longest match in map
+        if (!ord || /\d/.test(ord)) return m;
         let n = 0, matched = '';
         const keys = Object.keys(ARABIC_PSALM_ORDINALS).sort(function(a,b){return b.length-a.length;});
-        for (let i=0;i<keys.length;i++) {
+        for (let i = 0; i < keys.length; i++) {
           if (ord === keys[i] || ord.indexOf(keys[i]) === 0) {
-            // prefer exact or longest prefix that is the whole ordinal phrase
-            if (ord === keys[i] || /^\s/.test(ord.slice(keys[i].length)) || ord.slice(keys[i].length)==='') {
-              n = ARABIC_PSALM_ORDINALS[keys[i]];
-              matched = keys[i];
-              break;
-            }
+            n = ARABIC_PSALM_ORDINALS[keys[i]];
+            matched = keys[i];
+            break;
           }
         }
         if (!n) n = arabicPsalmNameToNum(ord);
         if (!n) return m;
         const label = matched || ord;
-        return '<a href="javascript:void(0)" class="psalm-ref" data-psalm="' + n + '" onclick="event.stopPropagation();openPsalmFromAgpeya(' + n + ')" style="color:var(--gold-dark);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;">المزمور ' + label + '</a>' + (matched && ord.length > matched.length ? ord.slice(matched.length) : '');
+        return psalmLink(n, 'المزمور ' + label) + (matched && ord.length > matched.length ? ord.slice(matched.length) : '');
       });
+
       return text;
     }
 

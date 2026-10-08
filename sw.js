@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v30-icons-prayer';
+const CACHE_NAME = 'khalwati-v31-fix-script';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

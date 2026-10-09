@@ -1,9 +1,9 @@
-const CACHE_NAME = 'khalwati-v49-preserve-history';
+const CACHE_NAME = 'khalwati-v50-deutero';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',
   './icon-192.png', './icon-512.png', './icon-mass.png',
-  './bible-svd.js', './psalms.js', './agpeya-texts.js', './cross-center.png', './parchment-bg.jpg',
+  './bible-svd.js', './bible-deutero.js', './psalms.js', './agpeya-texts.js', './cross-center.png', './parchment-bg.jpg',
   './progress-boy-final.jpg', './progress-boy-high.jpg', './progress-boy-low.jpg',
   './progress-girl-final.jpg', './progress-girl-high.jpg', './progress-girl-low.jpg',
   './Cairo-400.woff2', './Cairo-700.woff2', './Amiri-400.woff2', './Amiri-700.woff2',

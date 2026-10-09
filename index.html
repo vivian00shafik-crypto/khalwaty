@@ -2046,6 +2046,57 @@
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
 
     setPrayerJesusBg(false);
+    
+    function getMergedBibleBooks() {
+      const bible = window.BIBLE_SVD;
+      if (!bible || !bible.books) return [];
+      const books = bible.books.slice();
+      const deutero = (window.BIBLE_DEUTERO && window.BIBLE_DEUTERO.books) ? window.BIBLE_DEUTERO.books : [];
+      if (!deutero.length) return books;
+
+      function findIdx(pred) {
+        for (let i = 0; i < books.length; i++) {
+          if (pred(books[i])) return i;
+        }
+        return -1;
+      }
+      function byCode(code) {
+        return deutero.find(function(b){ return b.code === code; });
+      }
+      function insertAfter(namePred, bookObj) {
+        if (!bookObj || !bookObj.chapters || !bookObj.chapters.length) return;
+        // avoid duplicates
+        if (books.some(function(b){ return b.code === bookObj.code || b.id === bookObj.id; })) return;
+        const idx = findIdx(namePred);
+        if (idx >= 0) books.splice(idx + 1, 0, bookObj);
+        else books.push(bookObj);
+      }
+
+      // ترتيب قبطي/سبعينية تقريبي وسط العهد القديم
+      insertAfter(function(b){ return b.name === 'نحميا' || b.code === 'Neh'; }, byCode('Tob'));
+      insertAfter(function(b){ return (b.name && b.name.indexOf('طوبيا') >= 0) || b.code === 'Tob'; }, byCode('Jdt'));
+      insertAfter(function(b){ return b.name === 'أستير' || b.code === 'Est'; }, byCode('EstG'));
+      insertAfter(function(b){ return b.name === 'المزامير' || b.code === 'Ps'; }, byCode('Ps151'));
+      insertAfter(function(b){ return b.name === 'نشيد الأنشاد' || b.code === 'Song' || (b.name && b.name.indexOf('نشيد') >= 0); }, byCode('Wis'));
+      insertAfter(function(b){ return (b.name && b.name.indexOf('حكمة') >= 0) || b.code === 'Wis'; }, byCode('Sir'));
+      insertAfter(function(b){ return (b.name && b.name.indexOf('مراثي') >= 0) || b.code === 'Lam'; }, byCode('Bar'));
+      // المكابيين في آخر العهد القديم قبل أول سفر NT
+      const firstNT = findIdx(function(b){ return b.t === 'NT'; });
+      const mac1 = byCode('1Mac');
+      const mac2 = byCode('2Mac');
+      if (mac1 && !books.some(function(b){ return b.code === '1Mac'; })) {
+        if (firstNT >= 0) books.splice(firstNT, 0, mac1);
+        else books.push(mac1);
+      }
+      if (mac2 && !books.some(function(b){ return b.code === '2Mac'; })) {
+        const i1 = findIdx(function(b){ return b.code === '1Mac'; });
+        if (i1 >= 0) books.splice(i1 + 1, 0, mac2);
+        else if (firstNT >= 0) books.splice(firstNT, 0, mac2);
+        else books.push(mac2);
+      }
+      return books;
+    }
+
     function openBible(testament) {
       bibleState.testament = testament || 'OT';
       document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
@@ -2057,10 +2108,13 @@
           document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;">تعذر تحميل الكتاب. تأكد من رفع bible-svd.js</p>';
           return;
         }
-        const books = bible.books.filter(b => b.t === bibleState.testament);
+        const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : bible.books;
+        // أعد فهرسة مؤقتة على المصفوفة المدمجة
+        window._mergedBooks = allBooks;
+        const books = allBooks.filter(b => b.t === bibleState.testament);
         if (!books.length) return;
         const firstId = books[0].id;
-        const fullIndex = bible.books.findIndex(b => b.id === firstId);
+        const fullIndex = allBooks.findIndex(b => b.id === firstId);
         bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
         bibleState.chapter = 0;
         renderBible();
@@ -2070,15 +2124,17 @@
     function renderBible() {
       const bible = window.BIBLE_SVD;
       if (!bible) return;
-      const book = bible.books[bibleState.bookIndex];
+      const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : bible.books;
+      window._mergedBooks = allBooks;
+      const book = allBooks[bibleState.bookIndex];
       if (!book) return;
       const chCount = book.chapters.length;
       if (bibleState.chapter >= chCount) bibleState.chapter = 0;
       const verses = book.chapters[bibleState.chapter] || [];
-      const booksSame = bible.books.filter(b => b.t === book.t);
+      const booksSame = allBooks.filter(b => b.t === book.t);
 
       const bookOptions = booksSame.map(b => {
-        const idx = bible.books.findIndex(x => x.id === b.id);
+        const idx = allBooks.findIndex(x => x.id === b.id);
         return `<option value="${idx}" ${idx===bibleState.bookIndex?'selected':''}>${b.name}</option>`;
       }).join('');
 
@@ -4981,6 +5037,7 @@
     }
   </script>
   <script src="psalms.js"></script>
+  <script src="bible-deutero.js"></script>
   <script src="agpeya-texts.js"></script>
 </body>
 </html>

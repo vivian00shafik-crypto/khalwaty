@@ -2057,7 +2057,7 @@
           '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="bibleState.bookIndex=(window._mergedBooks||[]).findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="biblePauseSpeak();">⏸</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#a65d4a;" onclick="bibleStopSpeak();">⏹</button>' +
-          '<label style="font-size:12px;width:100%;text-align:center;"><input type="checkbox" '+(localStorage.getItem('khalwati_bible_music')==='1'?'checked':'')+' onchange="localStorage.setItem(\'khalwati_bible_music\', this.checked?\'1\':\'0\'); if(!this.checked) stopBibleMusic();"> موسيقى هادئة</label></div>';
+          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="toggleBibleMusic();">🎵 موسيقى الناي</button></div>';
         if (chapterNum !== agNum) {
           h += '<p style="text-align:center;margin:0 0 12px;font-size:12px;color:#8a7a60;">ترقيم الأجبية ' + agNum + ' ← نص فاندايك (مزمور ' + chapterNum + ')</p>';
         } else {
@@ -2242,37 +2242,71 @@
       } catch (e) { return null; }
     }
 
+    function getBibleMusicEl() {
+      return document.getElementById('bibleMusicAudio') || document.getElementById('bibleBgMusic');
+    }
+    function isBibleMusicOn() {
+      return localStorage.getItem('khalwati_bible_music') === '1';
+    }
     function startBibleMusic() {
-      if (localStorage.getItem('khalwati_bible_music') !== '1') return;
+      if (!isBibleMusicOn()) return;
       if (typeof isMuted === 'function' && isMuted()) return;
       try {
-        let a = document.getElementById('bibleBgMusic');
+        let a = getBibleMusicEl();
         if (!a) {
           a = document.createElement('audio');
           a.id = 'bibleBgMusic';
           a.loop = true;
           a.preload = 'auto';
-          // ترنيمة البداية بصوت منخفض كخلفية هادئة
-          a.src = './hymn.m4a';
+          a.src = './bible-music.mp3';
+          a.setAttribute('playsinline', '');
           document.body.appendChild(a);
         }
-        a.volume = 0.12;
+        a.loop = true;
+        a.volume = 0.4;
+        try { a.muted = false; } catch(e) {}
         const p = a.play();
         if (p && p.catch) p.catch(function(){});
+        window._bibleMusicPlaying = true;
+        updateBibleMusicBtn();
       } catch (e) {}
     }
     function stopBibleMusic() {
       try {
-        const a = document.getElementById('bibleBgMusic');
-        if (a) { a.pause(); a.currentTime = 0; }
+        const a = getBibleMusicEl();
+        if (a) { a.pause(); try { a.currentTime = 0; } catch(e) {} }
+        window._bibleMusicPlaying = false;
+        updateBibleMusicBtn();
       } catch (e) {}
+    }
+    function toggleBibleMusic() {
+      if (isBibleMusicOn() && window._bibleMusicPlaying) {
+        localStorage.setItem('khalwati_bible_music', '0');
+        stopBibleMusic();
+      } else {
+        localStorage.setItem('khalwati_bible_music', '1');
+        startBibleMusic();
+      }
+      const cb = document.getElementById('bibleMusicToggle');
+      if (cb) cb.checked = isBibleMusicOn();
+    }
+    function updateBibleMusicBtn() {
+      const btn = document.getElementById('bibleMusicBtn');
+      if (!btn) return;
+      if (isBibleMusicOn() && window._bibleMusicPlaying) {
+        btn.textContent = '🎵 إيقاف الموسيقى';
+        btn.style.background = '#a65d4a';
+      } else {
+        btn.textContent = '🎵 موسيقى الناي';
+        btn.style.background = '#5a7d4a';
+      }
     }
 
     function bibleStopSpeak() {
       window._bibleSpeaking = false;
       window._bibleSpeakQueue = [];
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-      stopBibleMusic();
+      /* music separate */
       // remove highlight
       document.querySelectorAll('.verse-line.speaking').forEach(function(el){ el.classList.remove('speaking'); });
     }
@@ -2311,7 +2345,7 @@
       try { window.speechSynthesis.getVoices(); } catch (e) {}
       bibleStopSpeak();
       window._bibleSpeaking = true;
-      startBibleMusic();
+      /* موسيقى منفصلة */
 
       const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
       const book = allBooks[bibleState.bookIndex];
@@ -2358,7 +2392,7 @@
       if (!v) return;
       bibleStopSpeak();
       window._bibleSpeaking = true;
-      startBibleMusic();
+      /* موسيقى منفصلة */
       const lines = document.querySelectorAll('.verse-line');
       if (lines[idx]) lines[idx].classList.add('speaking');
       bibleSpeakText('آية ' + (idx + 1) + '. ' + v, function() {
@@ -2428,6 +2462,7 @@
             <button type="button" class="save-btn" style="flex:1;min-width:110px;background:#5a7d4a;margin:0;" onclick="bibleSpeakChapter()" aria-label="قراءة الإصحاح صوتياً">🔊 قراءة</button>
             <button type="button" class="save-btn" style="flex:1;min-width:90px;background:#8a7a60;margin:0;" onclick="biblePauseSpeak()" aria-label="إيقاف مؤقت">⏸ إيقاف</button>
             <button type="button" class="save-btn" style="flex:1;min-width:90px;background:#a65d4a;margin:0;" onclick="bibleStopSpeak()" aria-label="إيقاف نهائي">⏹ توقف</button>
+            <button type="button" id="bibleMusicBtn" class="save-btn" style="flex:1;min-width:130px;background:#5a7d4a;margin:0;" onclick="toggleBibleMusic()" aria-label="موسيقى الناي">🎵 موسيقى الناي</button>
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--brown);width:100%;justify-content:center;">
               <input type="checkbox" id="bibleMusicToggle" ${localStorage.getItem('khalwati_bible_music')==='1'?'checked':''} onchange="localStorage.setItem('khalwati_bible_music', this.checked?'1':'0'); if(!this.checked) stopBibleMusic();">
               موسيقى هادئة أثناء القراءة
@@ -3052,6 +3087,8 @@
     function closeModal() {
       setPrayerJesusBg(false);
       document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      try { stopBibleMusic(); } catch(e) {}
+      try { bibleStopSpeak(); } catch(e) {}
     }
 
     let confessionView = 'home';

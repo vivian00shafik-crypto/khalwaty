@@ -1599,7 +1599,7 @@
     function setDateFromPicker(val) {
       if (val) {
         currentDate = new Date(val + 'T12:00:00');
-        renderAll();
+        try { renderAll(); } catch (e) { console.error("renderAll", e); }
       }
     }
 
@@ -2880,12 +2880,12 @@
     // Date navigation
     document.getElementById('prevDay').addEventListener('click', () => {
       currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1, 12, 0, 0, 0);
-      renderAll();
+      try { renderAll(); } catch (e) { console.error("renderAll", e); }
     });
 
     document.getElementById('nextDay').addEventListener('click', () => {
       currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1, 12, 0, 0, 0);
-      renderAll();
+      try { renderAll(); } catch (e) { console.error("renderAll", e); }
     });
 
     // Close modal on background click
@@ -4808,7 +4808,7 @@
       } catch (e) {}
     }
 
-    function showAppNotification(title, body, opts) {
+    async function showAppNotification(title, body, opts) {
       opts = opts || {};
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -5045,7 +5045,7 @@
         reg.update();
         // تأكد من تحميل الصوتيات في الكاش وأنتِ أونلاين
         navigator.serviceWorker.ready.then(function() {
-          ['hymn.m4a', 'sawt-rabina.mp3', 'parchment-bg.jpg', 'bible-svd.js', 'psalms.js'].forEach(function(f) {
+          ['hymn.m4a', 'sawt-rabina.mp3', 'prayer-alarm.mp3', 'parchment-bg.jpg', 'bible-svd.js', 'psalms.js', 'bible-deutero.js'].forEach(function(f) {
             fetch(f, { cache: 'reload' }).catch(function(){});
           });
           // حمّل عناصر الصوت في الذاكرة

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v51-prayer-alarm';
+const CACHE_NAME = 'khalwati-v52-fix-hang';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3', './prayer-alarm.mp3',

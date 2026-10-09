@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="theme-color" content="#f5e6c8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,8 +16,6 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=100">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=100">
   <style>
-    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-gutter: stable; overflow-anchor: none; }
-    body { overscroll-behavior-y: none; }
 
     /* خطوط محلية أوفلاين */
     @font-face {
@@ -1234,14 +1232,38 @@
       overflow: hidden;
     }
 
+  
+    /* تثبيت الواجهة — منع الحركة يمين/شمال */
+    html, body {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+      width: 100% !important;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+      position: relative;
+    }
+    #app, .container, main, #mainContent {
+      overflow-x: hidden !important;
+      max-width: 100% !important;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    img, video, canvas, svg {
+      max-width: 100%;
+    }
+
   </style>
 </head>
 <body>
   <div id="a11yLive" aria-live="polite" aria-atomic="true"></div>
   <a href="#mainContent" class="sr-only" id="skipToContent">تخطى إلى المحتوى</a>
-  <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
-  <audio id="prayerAlarmAudio" preload="auto" src="./prayer-alarm.mp3"></audio>
-  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto"></audio>
+  <audio id="hymnAudio" src="hymn.m4a" preload="auto" playsinline webkit-playsinline></audio>
+  <audio id="prayerAlarmAudio" preload="auto" src="./prayer-alarm.mp3" playsinline webkit-playsinline></audio>
+  <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto" playsinline webkit-playsinline></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
   <button class="settings-btn" onclick="openSettings()" title="الإعدادات" aria-label="الإعدادات">⚙️</button>
   <div class="mute-banner" id="muteBanner">
@@ -2227,14 +2249,7 @@
       } catch (e) {}
     }
 
-    function duckHymn(on) {
-      try {
-        const h = document.getElementById('hymnAudio');
-        if (h) h.volume = on ? 0.12 : 1;
-      } catch (e) {}
-    }
     function bibleStopSpeak() {
-      duckHymn(false);
       window._bibleSpeaking = false;
       window._bibleSpeakQueue = [];
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -2277,7 +2292,6 @@
       try { window.speechSynthesis.getVoices(); } catch (e) {}
       bibleStopSpeak();
       window._bibleSpeaking = true;
-      duckHymn(true);
       startBibleMusic();
 
       const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
@@ -2308,7 +2322,7 @@
           const idx = parseInt(m[1], 10) - 1;
           if (lines[idx]) {
             lines[idx].classList.add('speaking');
-            try { lines[idx].scrollIntoView({ block: 'nearest' }); } catch (e) {}
+            try { lines[idx].scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
           }
         }
         bibleSpeakText(text, speakNext);
@@ -2325,7 +2339,6 @@
       if (!v) return;
       bibleStopSpeak();
       window._bibleSpeaking = true;
-      duckHymn(true);
       startBibleMusic();
       const lines = document.querySelectorAll('.verse-line');
       if (lines[idx]) lines[idx].classList.add('speaking');
@@ -3381,48 +3394,74 @@
 
     function setMuted(val) {
       localStorage.setItem('khalwati_muted', val ? '1' : '0');
+      try {
+        const audio = document.getElementById('hymnAudio');
+        if (audio) {
+          if (val) audio.pause();
+        }
+        const sawt = document.getElementById('sawtRabina');
+        if (sawt && val) sawt.pause();
+        const alarm = document.getElementById('prayerAlarmAudio');
+        if (alarm && val) alarm.pause();
+        if (val) { try { stopBibleMusic(); } catch(e) {} }
+        if (val) { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {} }
+      } catch(e) {}
     }
 
     function playHymn() {
+      try {
       const audio = document.getElementById('hymnAudio');
       const banner = document.getElementById('muteBanner');
       if (!audio) return;
       const sawt = document.getElementById('sawtRabina');
       if (sawt) { try { sawt.pause(); sawt.currentTime = 0; } catch(e) {} }
+      try { stopBibleMusic(); } catch(e) {}
+      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {}
 
       function onHymnReallyEnded() {
+        if (window._hymnEndedOnce) return;
+        window._hymnEndedOnce = true;
+        if (window._hymnEndPoll) { clearInterval(window._hymnEndPoll); window._hymnEndPoll = null; }
         if (banner) banner.classList.remove('show');
-        armJesusVoiceTwoMinutesAfterHymn();
+        try { armJesusVoiceTwoMinutesAfterHymn(); } catch(e) {}
       }
 
       if (isMuted()) {
-        audio.pause();
+        try { audio.pause(); } catch(e) {}
         if (banner) banner.classList.remove('show');
-        // لو الصوت مكتوم: اعتبر الترنيمة انتهت وابدأ عدّاد دقيقتين
         armJesusVoiceTwoMinutesAfterHymn();
         return;
       }
-      try { audio.currentTime = 0; } catch(e) {}
+      window._hymnEndedOnce = false;
+      try {
+        audio.muted = false;
+        audio.volume = 1;
+        if (audio.readyState < 2) { try { audio.load(); } catch(e) {} }
+        audio.currentTime = 0;
+      } catch(e) {}
       const p = audio.play();
-      if (p && p.catch) p.catch(function() {
-        showToast('اضغطي أي مكان لتشغيل الترنيمة');
-      });
+      if (p && p.catch) {
+        p.catch(function(err) {
+          console.log('hymn play blocked', err);
+          if (typeof showToast === 'function') showToast('اضغطي أي مكان لتشغيل الترنيمة');
+        });
+      }
       if (banner) {
         banner.classList.add('show');
         const st = document.getElementById('audioStatus');
         if (st) st.textContent = '🎵 الترنيمة شغالة';
       }
       audio.onended = onHymnReallyEnded;
-      // احتياطي لو onended ما اشتغلش على بعض الموبايلات
       if (window._hymnEndPoll) clearInterval(window._hymnEndPoll);
       window._hymnEndPoll = setInterval(function() {
-        if (!audio) return;
-        if (audio.ended || (audio.duration > 0 && audio.currentTime >= audio.duration - 0.4)) {
-          clearInterval(window._hymnEndPoll);
-          window._hymnEndPoll = null;
-          onHymnReallyEnded();
-        }
+        try {
+          if (!audio) return;
+          if (audio.ended || (audio.duration > 0 && !isNaN(audio.duration) && audio.currentTime >= audio.duration - 0.4)) {
+            onHymnReallyEnded();
+          }
+        } catch(e) {}
       }, 1000);
+      } catch (e) { console.log('playHymn error', e); }
     }
 
     function armJesusVoiceTwoMinutesAfterHymn() {
@@ -5390,37 +5429,41 @@
           applyTypography();
         }
       }, 50);
-      setTimeout(playHymn, 1200);
+      setTimeout(function(){ try { playHymn(); } catch(e) { console.log(e); } }, 800);
     });
-    // fallback if autoplay blocked: أول لمسة تشغّل الترنيمة وتجهّز صوت يسوع
-    (function setupFirstGestureAudio() {
-      let unlocked = false;
-      function onGesture() {
-        const hymn = document.getElementById('hymnAudio');
-        const sawt = document.getElementById('sawtRabina');
-        try {
-          if (hymn && hymn.paused && !isMuted() && hymn.currentTime < 1 && !hymn.ended) playHymn();
-        } catch (e) {}
-        // فك قفل المتصفح لصوت يسوع عشان يشتغل لوحده بعد الترنيمة
-        if (!unlocked && sawt) {
-          unlocked = true;
-          try {
-            sawt.muted = true;
-            const pr = sawt.play();
-            const done = function() { try { sawt.pause(); sawt.currentTime = 0; sawt.muted = false; } catch (e) {} };
-            if (pr && pr.then) pr.then(done).catch(function() { sawt.muted = false; unlocked = false; });
-            else done();
-          } catch (e) { unlocked = false; }
+    // تشغيل عند أول لمسة (متصفحات تمنع autoplay)
+    function tryUnlockAudio() {
+      try {
+        const audio = document.getElementById('hymnAudio');
+        if (!audio) return;
+        if (!isMuted() && (audio.paused || audio.currentTime < 0.5)) {
+          playHymn();
         }
-        if (unlocked) {
-          ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function(ev) {
-            document.removeEventListener(ev, onGesture, true);
-          });
-        }
-      }
-      ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function(ev) {
-        document.addEventListener(ev, onGesture, true);
-      });
+      } catch(e) {}
+    }
+    ['click', 'touchstart', 'pointerdown'].forEach(function(ev) {
+      document.body.addEventListener(ev, function once() {
+        tryUnlockAudio();
+        document.body.removeEventListener(ev, once);
+      }, { once: true, passive: true });
+    });
+
+    
+    // منع السحب الأفقي للصفحة
+    (function lockHorizontalScroll() {
+      try {
+        document.documentElement.style.overflowX = 'hidden';
+        document.body.style.overflowX = 'hidden';
+        let lastY = 0;
+        document.addEventListener('touchstart', function(e) {
+          if (e.touches && e.touches.length === 1) lastY = e.touches[0].clientY;
+        }, { passive: true });
+        document.addEventListener('touchmove', function(e) {
+          if (!e.touches || e.touches.length !== 1) return;
+          // لا نمنع الافتراضي إلا لو الاتجاه أفقي واضح على مستوى الصفحة
+          // touch-action: pan-y في CSS يكفي عادة
+        }, { passive: true });
+      } catch (e) {}
     })();
 
     // Service Worker for offline

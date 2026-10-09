@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v62-ui-fix';
+const CACHE_NAME = 'khalwati-v63-async-fix';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './bible-music.mp3', './sawt-rabina.mp3', './prayer-alarm.mp3',

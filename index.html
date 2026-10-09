@@ -1270,11 +1270,21 @@
 <body>
   <div id="a11yLive" aria-live="polite" aria-atomic="true"></div>
   <a href="#mainContent" class="sr-only" id="skipToContent">تخطى إلى المحتوى</a>
-  <audio id="hymnAudio" src="hymn.m4a" preload="auto" playsinline webkit-playsinline></audio>
+  <audio id="hymnAudio" src="hymn.m4a" preload="auto" playsinline webkit-playsinline autoplay></audio>
   <audio id="prayerAlarmAudio" preload="auto" src="./prayer-alarm.mp3" playsinline webkit-playsinline></audio>
   <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto" playsinline webkit-playsinline></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
   <button class="settings-btn" onclick="openSettings()" title="الإعدادات" aria-label="الإعدادات">⚙️</button>
+  
+  <div id="hymnStartGate" onclick="startHymnFromGate()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(62,47,28,0.55);align-items:center;justify-content:center;flex-direction:column;padding:24px;text-align:center;">
+    <div style="background:#fffdf8;border:2px solid #c9a227;border-radius:20px;padding:28px 22px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+      <div style="font-size:42px;margin-bottom:10px;">🎵</div>
+      <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#3e2f1c;">ترنيمة البداية</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#8a7a60;line-height:1.6;">اضغطي هنا لتشغيل الترنيمة<br><span style="font-size:12px;">(الموبايل يمنع التشغيل التلقائي للصوت)</span></p>
+      <button type="button" style="background:linear-gradient(135deg,#c9a227,#a67c00);color:#fff;border:none;border-radius:25px;padding:12px 28px;font-size:16px;font-family:inherit;font-weight:700;cursor:pointer;">▶ تشغيل</button>
+    </div>
+  </div>
+
   <div class="mute-banner" id="muteBanner">
     <span id="audioStatus">🎵 الترنيمة شغالة</span>
     <button onclick="toggleMute()">كتم / تشغيل</button>
@@ -5438,23 +5448,96 @@
           applyTypography();
         }
       }, 50);
-      setTimeout(function(){ try { playHymn(); } catch(e) { console.log(e); } }, 800);
+      // تشغيل الترنيمة فور فتح التطبيق
+      setTimeout(function(){ try { attemptHymnAutoplay(true); } catch(e) { console.log(e); } }, 300);
+      setTimeout(function(){ try { attemptHymnAutoplay(false); } catch(e) {} }, 1000);
+      setTimeout(function(){ try { attemptHymnAutoplay(false); } catch(e) {} }, 2500);
     });
-    // تشغيل عند أول لمسة (متصفحات تمنع autoplay)
-    function tryUnlockAudio() {
-      try {
-        const audio = document.getElementById('hymnAudio');
-        if (!audio) return;
-        if (!isMuted() && (audio.paused || audio.currentTime < 0.5)) {
-          playHymn();
-        }
-      } catch(e) {}
+
+    function showHymnStartGate() {
+      const gate = document.getElementById('hymnStartGate');
+      if (!gate || isMuted()) return;
+      gate.style.display = 'flex';
     }
+    function hideHymnStartGate() {
+      const gate = document.getElementById('hymnStartGate');
+      if (gate) gate.style.display = 'none';
+    }
+    function startHymnFromGate() {
+      hideHymnStartGate();
+      if (typeof setMuted === 'function') setMuted(false);
+      try { playHymn(); } catch(e) {}
+    }
+    function attemptHymnAutoplay(showGateIfBlocked) {
+      if (isMuted()) { hideHymnStartGate(); return; }
+      const audio = document.getElementById('hymnAudio');
+      if (!audio) return;
+      // لو شغالة خلاص
+      if (!audio.paused && audio.currentTime > 0.2) {
+        hideHymnStartGate();
+        return;
+      }
+      try {
+        audio.muted = false;
+        audio.volume = 1;
+        if (audio.readyState < 2) { try { audio.load(); } catch(e) {} }
+      } catch(e) {}
+      const p = audio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function() {
+          hideHymnStartGate();
+          window._hymnEndedOnce = false;
+          const banner = document.getElementById('muteBanner');
+          if (banner) {
+            banner.classList.add('show');
+            const st = document.getElementById('audioStatus');
+            if (st) st.textContent = '🎵 الترنيمة شغالة';
+          }
+          // تجهيز نهاية الترنيمة بدون إعادة من الأول
+          audio.onended = function() {
+            if (window._hymnEndedOnce) return;
+            window._hymnEndedOnce = true;
+            if (banner) banner.classList.remove('show');
+            try { armJesusVoiceTwoMinutesAfterHymn(); } catch(e) {}
+          };
+          if (window._hymnEndPoll) clearInterval(window._hymnEndPoll);
+          window._hymnEndPoll = setInterval(function() {
+            try {
+              if (audio.ended || (audio.duration > 0 && !isNaN(audio.duration) && audio.currentTime >= audio.duration - 0.4)) {
+                clearInterval(window._hymnEndPoll);
+                window._hymnEndPoll = null;
+                if (window._hymnEndedOnce) return;
+                window._hymnEndedOnce = true;
+                if (banner) banner.classList.remove('show');
+                try { armJesusVoiceTwoMinutesAfterHymn(); } catch(e) {}
+              }
+            } catch(e) {}
+          }, 1000);
+        }).catch(function() {
+          if (showGateIfBlocked) showHymnStartGate();
+        });
+      } else {
+        try { playHymn(); } catch(e) {}
+      }
+    }
+    // أي لمسة على الصفحة تشغّل الترنيمة لو لسه واقفة
     ['click', 'touchstart', 'pointerdown'].forEach(function(ev) {
-      document.body.addEventListener(ev, function once() {
-        tryUnlockAudio();
-        document.body.removeEventListener(ev, once);
-      }, { once: true, passive: true });
+      document.addEventListener(ev, function hymnGestureUnlock() {
+        try {
+          const audio = document.getElementById('hymnAudio');
+          if (isMuted()) return;
+          if (audio && audio.paused) {
+            hideHymnStartGate();
+            playHymn();
+          }
+        } catch(e) {}
+      }, { passive: true });
+    });
+    // عند الرجوع للتطبيق من الخلفية
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        setTimeout(function(){ attemptHymnAutoplay(false); }, 200);
+      }
     });
 
     

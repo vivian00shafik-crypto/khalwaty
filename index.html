@@ -1303,7 +1303,7 @@
       <div class="logo">
         <img src="logo.png?v=106" alt="خلوتي" onerror="this.style.display='none'; this.parentElement.textContent='خلوتي';">
       </div>
-      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v68</div>
+      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v69</div>
     </div>
 
     <main id="mainContent">
@@ -1544,18 +1544,16 @@
 
     const ICON3D = {};
     function i3d(name) {
-      const map = {
-        sun:'☀️', sunset:'🌅', moon:'🌙', chalice:'🍷', music:'🎵', leaf:'🍃',
-        silence:'🤫', prayer:'🙏', cross:'✝️', book:'📖', bible:'📜', rosary:'📿',
-        priest:'⛪', books:'📚', hand:'🤲', heart:'💛', star:'⭐', candle:'🕯️',
-        church:'⛪', person:'👤', people:'👥', saint:'😇', altar:'🕊️', progress:'📈',
-        gear:'⚙️', check:'✅', folder:'📂', pen:'✍️', water:'💧', fire:'🔥',
-        eye:'👁️', clock:'🕐', home:'🏠', mass:'🍞', jesus:'✝️', agpeya:'📿',
-        confess:'🕊️', read:'📖', qatamarus:'📕', fathers:'📜', silenceHour:'🤫',
-        level:'📈', serve:'🤝', interpret:'📘', faith:'✨', evening:'🌅'
+      // أيقونات زجاجية ذهبية من مجلد icons3d (ملفات خفيفة منفصلة)
+      const aliases = {
+        pray: 'pray', beads: 'beads', prayhand: 'prayhand', openbible: 'openbible',
+        katameros: 'katameros', letter: 'letter', duo: 'duo',
+        progress_boy: 'progress_boy', progress_girl: 'progress_girl',
+        progress: 'progress_girl'
       };
-      const e = map[name] || '✦';
-      return '<span class="i3d-emoji" style="font-size:28px;line-height:1;display:block;">' + e + '</span>';
+      const file = aliases[name] || name;
+      const src = 'icons3d/' + file + '.png';
+      return '<img class="i3d" src="' + src + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.parentElement.insertAdjacentHTML(\'beforeend\',\'<span style=font-size:22px>✦</span>\');">';
     }
 
 
@@ -5666,7 +5664,7 @@
     
     // FORCE clear old broken cache once (v65)
     (function forceClearOldCache() {
-      var KEY = 'khalwati_force_v68';
+      var KEY = 'khalwati_force_v69';
       if (localStorage.getItem(KEY)) return;
       localStorage.setItem(KEY, '1');
       if (!('serviceWorker' in navigator)) return;

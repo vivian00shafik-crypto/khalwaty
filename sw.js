@@ -1,5 +1,5 @@
-const CACHE = 'khalwati-v68-debug';
-const ASSETS = ['./', './index.html', './manifest.json', './sw.js', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png'];
+const CACHE = 'khalwati-v69-icons';
+const ASSETS = ['./', './index.html', './manifest.json', './sw.js', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png', './icons3d/sun.png', './icons3d/moon.png', './icons3d/bible.png', './icons3d/church.png', './icons3d/beads.png', './icons3d/chalice.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();

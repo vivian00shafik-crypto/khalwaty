@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v58-fix-audio-lock';
+const CACHE_NAME = 'khalwati-v59-scroll-fix';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3', './prayer-alarm.mp3',

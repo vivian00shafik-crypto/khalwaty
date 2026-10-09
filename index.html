@@ -273,8 +273,10 @@
 
     html, body {
       overflow-x: hidden;
+      overflow-y: auto;
       max-width: 100vw;
       width: 100%;
+      height: auto;
     }
 
 
@@ -1233,28 +1235,35 @@
     }
 
   
-    /* تثبيت الواجهة — منع الحركة يمين/شمال */
-    html, body {
+    /* تثبيت أفقي مع السماح بالتمرير لأعلى/أسفل */
+    html {
       overflow-x: hidden !important;
-      max-width: 100vw !important;
-      width: 100% !important;
-      overscroll-behavior-x: none;
-      overscroll-behavior-y: contain;
-      touch-action: pan-y;
-      position: relative;
+      overflow-y: auto !important;
+      max-width: 100%;
+      width: 100%;
+      height: auto;
     }
-    #app, .container, main, #mainContent {
+    body {
       overflow-x: hidden !important;
+      overflow-y: auto !important;
       max-width: 100% !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 100%;
+      position: relative;
+      overscroll-behavior-x: none;
+      /* لا نضع touch-action هنا — كانت تمنع التمرير الرأسي على بعض الموبايلات */
+    }
+    .container, main, #mainContent {
+      overflow-x: hidden;
+      overflow-y: visible;
+      max-width: 100%;
       width: 100%;
       box-sizing: border-box;
+      height: auto;
     }
-    * {
-      box-sizing: border-box;
-    }
-    img, video, canvas, svg {
-      max-width: 100%;
-    }
+    * { box-sizing: border-box; }
+    img, video, canvas, svg { max-width: 100%; }
 
   </style>
 </head>
@@ -5449,20 +5458,15 @@
     });
 
     
-    // منع السحب الأفقي للصفحة
+    // تثبيت أفقي بدون تعطيل التمرير الرأسي
     (function lockHorizontalScroll() {
       try {
         document.documentElement.style.overflowX = 'hidden';
+        document.documentElement.style.overflowY = 'auto';
         document.body.style.overflowX = 'hidden';
-        let lastY = 0;
-        document.addEventListener('touchstart', function(e) {
-          if (e.touches && e.touches.length === 1) lastY = e.touches[0].clientY;
-        }, { passive: true });
-        document.addEventListener('touchmove', function(e) {
-          if (!e.touches || e.touches.length !== 1) return;
-          // لا نمنع الافتراضي إلا لو الاتجاه أفقي واضح على مستوى الصفحة
-          // touch-action: pan-y في CSS يكفي عادة
-        }, { passive: true });
+        document.body.style.overflowY = 'auto';
+        document.body.style.height = 'auto';
+        document.documentElement.style.height = 'auto';
       } catch (e) {}
     })();
 

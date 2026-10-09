@@ -16,6 +16,8 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=100">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=100">
   <style>
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-gutter: stable; overflow-anchor: none; }
+    body { overscroll-behavior-y: none; }
 
     /* خطوط محلية أوفلاين */
     @font-face {
@@ -2225,7 +2227,14 @@
       } catch (e) {}
     }
 
+    function duckHymn(on) {
+      try {
+        const h = document.getElementById('hymnAudio');
+        if (h) h.volume = on ? 0.12 : 1;
+      } catch (e) {}
+    }
     function bibleStopSpeak() {
+      duckHymn(false);
       window._bibleSpeaking = false;
       window._bibleSpeakQueue = [];
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -2268,6 +2277,7 @@
       try { window.speechSynthesis.getVoices(); } catch (e) {}
       bibleStopSpeak();
       window._bibleSpeaking = true;
+      duckHymn(true);
       startBibleMusic();
 
       const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
@@ -2298,7 +2308,7 @@
           const idx = parseInt(m[1], 10) - 1;
           if (lines[idx]) {
             lines[idx].classList.add('speaking');
-            try { lines[idx].scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            try { lines[idx].scrollIntoView({ block: 'nearest' }); } catch (e) {}
           }
         }
         bibleSpeakText(text, speakNext);
@@ -2315,6 +2325,7 @@
       if (!v) return;
       bibleStopSpeak();
       window._bibleSpeaking = true;
+      duckHymn(true);
       startBibleMusic();
       const lines = document.querySelectorAll('.verse-line');
       if (lines[idx]) lines[idx].classList.add('speaking');
@@ -5381,12 +5392,36 @@
       }, 50);
       setTimeout(playHymn, 1200);
     });
-    // fallback if autoplay blocked
-    document.body.addEventListener('click', function once() {
-      const audio = document.getElementById('hymnAudio');
-      if (audio && audio.paused && !isMuted() && audio.currentTime < 1) playHymn();
-      document.body.removeEventListener('click', once);
-    }, { once: true });
+    // fallback if autoplay blocked: أول لمسة تشغّل الترنيمة وتجهّز صوت يسوع
+    (function setupFirstGestureAudio() {
+      let unlocked = false;
+      function onGesture() {
+        const hymn = document.getElementById('hymnAudio');
+        const sawt = document.getElementById('sawtRabina');
+        try {
+          if (hymn && hymn.paused && !isMuted() && hymn.currentTime < 1 && !hymn.ended) playHymn();
+        } catch (e) {}
+        // فك قفل المتصفح لصوت يسوع عشان يشتغل لوحده بعد الترنيمة
+        if (!unlocked && sawt) {
+          unlocked = true;
+          try {
+            sawt.muted = true;
+            const pr = sawt.play();
+            const done = function() { try { sawt.pause(); sawt.currentTime = 0; sawt.muted = false; } catch (e) {} };
+            if (pr && pr.then) pr.then(done).catch(function() { sawt.muted = false; unlocked = false; });
+            else done();
+          } catch (e) { unlocked = false; }
+        }
+        if (unlocked) {
+          ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function(ev) {
+            document.removeEventListener(ev, onGesture, true);
+          });
+        }
+      }
+      ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(function(ev) {
+        document.addEventListener(ev, onGesture, true);
+      });
+    })();
 
     // Service Worker for offline
     if ('serviceWorker' in navigator) {

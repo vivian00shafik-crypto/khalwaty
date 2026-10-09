@@ -1303,7 +1303,7 @@
       <div class="logo">
         <img src="logo.png?v=106" alt="خلوتي" onerror="this.style.display='none'; this.parentElement.textContent='خلوتي';">
       </div>
-      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v66</div>
+      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v67</div>
     </div>
 
     <main id="mainContent">
@@ -1312,7 +1312,21 @@
         <div class="current-date" id="currentDate" onclick="openDatePicker()" style="cursor:pointer;" title="اضغط لاختيار تاريخ">الإثنين: ...</div>
         <button id="nextDay" aria-label="اليوم التالي" aria-label="اليوم التالي">‹</button>
       </div>
-      <input type="date" id="datePicker" style="display:none;" onchange="setDateFromPicker(this.value)">
+      
+    <script>
+    (function(){
+      try {
+        var el = document.getElementById('currentDate');
+        if (el) {
+          var d = new Date();
+          var days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+          el.textContent = days[d.getDay()] + ': ' + d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
+        }
+      } catch(e) {}
+    })();
+    </script>
+
+    <input type="date" id="datePicker" style="display:none;" onchange="setDateFromPicker(this.value)">
 
     <!-- أهدافى النهاردة -->
     <div class="card">
@@ -4631,10 +4645,14 @@
       return localStorage.getItem('khalwati_a11y_contrast') === '1';
     }
     function applyA11yMode() {
-      const on = isA11yMode();
-      document.body.classList.toggle('a11y-mode', on);
-      document.body.classList.toggle('a11y-high-contrast', on && isA11yContrast());
-      document.documentElement.setAttribute('data-a11y', on ? '1' : '0');
+      try {
+        const on = isA11yMode();
+        if (document.body && document.body.classList) {
+          document.body.classList.toggle('a11y-mode', on);
+          document.body.classList.toggle('a11y-high-contrast', on && isA11yContrast());
+        }
+        if (document.documentElement) document.documentElement.setAttribute('data-a11y', on ? '1' : '0');
+      } catch (e) { console.error('applyA11yMode', e); }
     }
     function setA11yMode(on) {
       localStorage.setItem('khalwati_a11y', on ? '1' : '0');
@@ -4712,7 +4730,7 @@
     if (window.speechSynthesis) {
       try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); }; } catch(e){}
     }
-    applyA11yMode();
+    try { applyA11yMode(); } catch (e) { console.error(e); }
 
 
     function openSettings() {
@@ -5238,21 +5256,38 @@
     }
     function bootApp() {
       try { renderAll(); } catch (e) { console.error('boot renderAll', e); }
-      try { setupPsalmInputs(); } catch (e) {}
-      try { applyTypography(); } catch (e) {}
+      try { if (typeof setupPsalmInputs === 'function') setupPsalmInputs(); } catch (e) {}
+      try { if (typeof applyTypography === 'function') applyTypography(); } catch (e) {}
+      try { if (typeof applyA11yMode === 'function') applyA11yMode(); } catch (e) {}
+    }
+    function scheduleBoot() {
+      bootApp();
+      // محاولات إضافية لو المحتوى فاضي
+      [300, 800, 1500, 3000].forEach(function(ms) {
+        setTimeout(function() {
+          try {
+            var gl = document.getElementById('goalsList');
+            var cd = document.getElementById('currentDate');
+            var empty = gl && gl.children.length === 0;
+            var placeholder = cd && /\.\.\./.test(cd.textContent || '');
+            if (empty || placeholder) bootApp();
+          } catch (e) {}
+        }, ms);
+      });
     }
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootApp);
+      document.addEventListener('DOMContentLoaded', scheduleBoot);
     } else {
-      bootApp();
+      scheduleBoot();
     }
-    // إعادة محاولة بعد نصف ثانية لو العناصر اتأخرت
-    setTimeout(function() {
-      try {
-        const gl = document.getElementById('goalsList');
-        if (gl && !gl.children.length) renderAll();
-      } catch (e) {}
-    }, 500);
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        try {
+          var gl = document.getElementById('goalsList');
+          if (gl && gl.children.length === 0) bootApp();
+        } catch (e) {}
+      }, 100);
+    });
     function timeToMinutes(hhmm) {
       const p = (hhmm || '00:00').split(':');
       return (parseInt(p[0],10)||0) * 60 + (parseInt(p[1],10)||0);
@@ -5603,7 +5638,7 @@
     
     // FORCE clear old broken cache once (v65)
     (function forceClearOldCache() {
-      var KEY = 'khalwati_force_v66';
+      var KEY = 'khalwati_force_v67';
       if (localStorage.getItem(KEY)) return;
       localStorage.setItem(KEY, '1');
       if (!('serviceWorker' in navigator)) return;
@@ -5616,10 +5651,7 @@
         });
       }).then(function() {
         // reload once to get fresh files
-        if (!sessionStorage.getItem('khalwati_reloaded_v66')) {
-          sessionStorage.setItem('khalwati_reloaded_v66', '1');
-          location.reload(true);
-        }
+        /* no auto-reload — slow phones */
       }).catch(function(){});
     })();
 

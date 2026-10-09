@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v48-agpeya-alarms';
+const CACHE_NAME = 'khalwati-v49-preserve-history';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',

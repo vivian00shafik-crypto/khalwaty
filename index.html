@@ -1484,14 +1484,102 @@
 
     function loadData() {
       const key = 'khalwati_' + getDateKey(currentDate);
-      const data = JSON.parse(localStorage.getItem(key) || '{}');
-      return data;
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        return data && typeof data === 'object' ? data : {};
+      } catch (e) {
+        return {};
+      }
     }
 
     function saveData(data) {
       const key = 'khalwati_' + getDateKey(currentDate);
-      localStorage.setItem(key, JSON.stringify(data));
+      try {
+        // لا نمسح مفاتيح الأيام الأخرى أبدًا — الحفظ لليوم الحالي فقط
+        localStorage.setItem(key, JSON.stringify(data || {}));
+      } catch (e) {
+        console.log('saveData', e);
+        if (typeof showToast === 'function') showToast('تعذّر الحفظ — مساحة التخزين ممتلئة ربما');
+      }
     }
+
+    /** كل مفاتيح نشاط الأيام + الإعدادات — للنسخ الاحتياطي */
+    function collectAllKhalwatiData() {
+      const out = { version: 1, exportedAt: new Date().toISOString(), items: {} };
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('khalwati') === 0) {
+          out.items[k] = localStorage.getItem(k);
+        }
+      }
+      return out;
+    }
+
+    function exportKhalwatiBackup() {
+      try {
+        const data = collectAllKhalwatiData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'khalwati-backup-' + getDateKey(new Date()) + '.json';
+        a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+        showToast('تم تنزيل نسخة احتياطية من كل نشاطك والإعدادات');
+      } catch (e) {
+        showToast('تعذّر التصدير');
+      }
+    }
+
+    function importKhalwatiBackupFromFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        try {
+          const data = JSON.parse(reader.result);
+          const items = (data && data.items) ? data.items : data;
+          if (!items || typeof items !== 'object') {
+            showToast('ملف غير صالح');
+            return;
+          }
+          let n = 0;
+          Object.keys(items).forEach(function(k) {
+            if (k.indexOf('khalwati') === 0 && typeof items[k] === 'string') {
+              // دمج: لا نحذف مفاتيح موجودة غير مذكورة في الملف
+              localStorage.setItem(k, items[k]);
+              n++;
+            }
+          });
+          showToast('تم استرجاع ' + n + ' عنصر — الأيام السابقة محفوظة');
+          if (typeof loadDay === 'function') loadDay();
+          else location.reload();
+        } catch (e) {
+          showToast('تعذّر قراءة الملف');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /** عند تحديث التطبيق: لا تمسح نشاط الأيام السابقة */
+    function preserveHistoryOnUpdate() {
+      try {
+        const ver = '48';
+        const prev = localStorage.getItem('khalwati_app_ui_ver');
+        if (prev && prev !== ver) {
+          // ترقية فقط — بدون مسح
+          console.log('Khalwati UI update', prev, '->', ver, '| history preserved');
+        }
+        localStorage.setItem('khalwati_app_ui_ver', ver);
+        // إحصاء أيام مسجّلة
+        let days = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && /^khalwati_\d{4}-\d{2}-\d{2}$/.test(k)) days++;
+        }
+        localStorage.setItem('khalwati_history_days', String(days));
+      } catch (e) {}
+    }
+    preserveHistoryOnUpdate();
+
 
     function updateDateDisplay() {
       const day = dayNames[currentDate.getDay()];
@@ -4240,6 +4328,18 @@
           </select>
           <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
 
+          <p style="margin-top:14px;"><strong>حفظ النشاط والأيام السابقة</strong></p>
+          <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">
+            نشاطك متسجّل على الموبايل لكل يوم على حدة. <b>تحديث ملفات التطبيق لا يمسح الأيام اللي فاتت</b>.
+            يُفضّل أخذ نسخة احتياطية قبل مسح بيانات المتصفح أو تغيير الجهاز.
+          </p>
+          <button class="save-btn" style="margin-bottom:8px;background:#5a7d4a;" onclick="exportKhalwatiBackup()">⬇️ نسخ احتياطي لكل النشاط</button>
+          <label class="save-btn" style="display:block;text-align:center;margin-bottom:8px;background:#8a7a60;cursor:pointer;">
+            ⬆️ استرجاع من ملف
+            <input type="file" accept="application/json,.json" style="display:none" onchange="importKhalwatiBackupFromFile(this.files[0]); this.value='';">
+          </label>
+          <p style="font-size:11px;color:#8a7a60;margin:0 0 12px;">عدد أيام مسجّل نشاطها: <b id="historyDaysCount">…</b></p>
+
           <p style="margin-top:14px;"><strong>أوقات تنبيه صلوات الأجبية</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">فعّلي الساعة وحددي وقتها — هيوصلك تنبيه في الموعد (حتى والتطبيق في الخلفية إن سمحتِ بالإشعارات).</p>
           <div id="agpeyaAlarmsBox" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
@@ -4262,6 +4362,10 @@
           <p style="font-size:12px;color:#8a7a60;margin-top:8px;">ملاحظة: تنبيهات المتصفح تظهر بقوة والتطبيق مفتوح أو في الخلفية القريبة. ثبّتي التطبيق على الشاشة الرئيسية وفعّلي إذن الإشعارات.</p>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
+      try {
+        var el = document.getElementById('historyDaysCount');
+        if (el) el.textContent = localStorage.getItem('khalwati_history_days') || '0';
+      } catch (e) {}
       updateNextConfInfo();
     }
 

@@ -2010,6 +2010,11 @@
         const verses = book.chapters[chapterNum - 1] || [];
         if (!verses.length) return null;
         let h = '<h3 style="text-align:center;margin:8px 0 6px;color:var(--brown);">المزمور ' + agNum + '</h3>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px;padding:8px;background:rgba(245,230,200,0.45);border-radius:12px;">' +
+          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="bibleState.bookIndex=(window._mergedBooks||[]).findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
+          '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="biblePauseSpeak();">⏸</button>' +
+          '<button type="button" class="save-btn" style="margin:0;background:#a65d4a;" onclick="bibleStopSpeak();">⏹</button>' +
+          '<label style="font-size:12px;width:100%;text-align:center;"><input type="checkbox" '+(localStorage.getItem('khalwati_bible_music')==='1'?'checked':'')+' onchange="localStorage.setItem(\'khalwati_bible_music\', this.checked?\'1\':\'0\'); if(!this.checked) stopBibleMusic();"> موسيقى هادئة</label></div>';
         if (chapterNum !== agNum) {
           h += '<p style="text-align:center;margin:0 0 12px;font-size:12px;color:#8a7a60;">ترقيم الأجبية ' + agNum + ' ← نص فاندايك (مزمور ' + chapterNum + ')</p>';
         } else {
@@ -2175,6 +2180,152 @@
       });
     }
 
+    
+    // ===== قارئ الكتاب المقدس الصوتي =====
+    window._bibleSpeakQueue = [];
+    window._bibleSpeaking = false;
+
+    function getArabicVoice() {
+      try {
+        const voices = window.speechSynthesis.getVoices() || [];
+        // تفضيل صوت عربي مصري أو سعودي أو أي عربي
+        const prefer = ['ar-EG', 'ar-SA', 'ar-XA', 'ar'];
+        for (let i = 0; i < prefer.length; i++) {
+          const p = prefer[i];
+          const v = voices.find(function(x){ return x.lang && x.lang.toLowerCase().indexOf(p.toLowerCase()) === 0; });
+          if (v) return v;
+        }
+        return voices.find(function(x){ return x.lang && x.lang.toLowerCase().indexOf('ar') >= 0; }) || null;
+      } catch (e) { return null; }
+    }
+
+    function startBibleMusic() {
+      if (localStorage.getItem('khalwati_bible_music') !== '1') return;
+      if (typeof isMuted === 'function' && isMuted()) return;
+      try {
+        let a = document.getElementById('bibleBgMusic');
+        if (!a) {
+          a = document.createElement('audio');
+          a.id = 'bibleBgMusic';
+          a.loop = true;
+          a.preload = 'auto';
+          // ترنيمة البداية بصوت منخفض كخلفية هادئة
+          a.src = './hymn.m4a';
+          document.body.appendChild(a);
+        }
+        a.volume = 0.12;
+        const p = a.play();
+        if (p && p.catch) p.catch(function(){});
+      } catch (e) {}
+    }
+    function stopBibleMusic() {
+      try {
+        const a = document.getElementById('bibleBgMusic');
+        if (a) { a.pause(); a.currentTime = 0; }
+      } catch (e) {}
+    }
+
+    function bibleStopSpeak() {
+      window._bibleSpeaking = false;
+      window._bibleSpeakQueue = [];
+      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+      stopBibleMusic();
+      // remove highlight
+      document.querySelectorAll('.verse-line.speaking').forEach(function(el){ el.classList.remove('speaking'); });
+    }
+    function biblePauseSpeak() {
+      try {
+        if (window.speechSynthesis) {
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+          else window.speechSynthesis.pause();
+        }
+      } catch (e) {}
+    }
+
+    function bibleSpeakText(text, onEnd) {
+      if (!window.speechSynthesis) {
+        if (typeof showToast === 'function') showToast('الجهاز لا يدعم القراءة الصوتية');
+        if (onEnd) onEnd();
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(String(text).slice(0, 2000));
+      u.lang = 'ar-EG';
+      u.rate = parseFloat(localStorage.getItem('khalwati_bible_rate') || '0.9');
+      u.pitch = 1;
+      const voice = getArabicVoice();
+      if (voice) u.voice = voice;
+      u.onend = function() { if (onEnd) onEnd(); };
+      u.onerror = function() { if (onEnd) onEnd(); };
+      window.speechSynthesis.speak(u);
+    }
+
+    function bibleSpeakChapter() {
+      if (!window.speechSynthesis) {
+        showToast('الجهاز لا يدعم القراءة الصوتية — فعّلي صوت عربي من إعدادات الموبايل');
+        return;
+      }
+      // استعد الأصوات
+      try { window.speechSynthesis.getVoices(); } catch (e) {}
+      bibleStopSpeak();
+      window._bibleSpeaking = true;
+      startBibleMusic();
+
+      const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
+      const book = allBooks[bibleState.bookIndex];
+      if (!book) return;
+      const verses = book.chapters[bibleState.chapter] || [];
+      const intro = book.name + '، الإصحاح ' + (bibleState.chapter + 1);
+      const queue = [intro].concat(verses.map(function(v, i) {
+        return 'آية ' + (i + 1) + '. ' + v;
+      }));
+      window._bibleSpeakQueue = queue;
+
+      function speakNext() {
+        if (!window._bibleSpeaking) return;
+        if (!window._bibleSpeakQueue.length) {
+          window._bibleSpeaking = false;
+          stopBibleMusic();
+          document.querySelectorAll('.verse-line.speaking').forEach(function(el){ el.classList.remove('speaking'); });
+          if (typeof showToast === 'function') showToast('انتهت قراءة الإصحاح');
+          return;
+        }
+        const text = window._bibleSpeakQueue.shift();
+        // highlight verse if "آية N"
+        document.querySelectorAll('.verse-line.speaking').forEach(function(el){ el.classList.remove('speaking'); });
+        const m = /^آية\s+(\d+)/.exec(text);
+        if (m) {
+          const lines = document.querySelectorAll('.verse-line');
+          const idx = parseInt(m[1], 10) - 1;
+          if (lines[idx]) {
+            lines[idx].classList.add('speaking');
+            try { lines[idx].scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+          }
+        }
+        bibleSpeakText(text, speakNext);
+      }
+      speakNext();
+    }
+
+    function bibleSpeakVerse(idx) {
+      const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
+      const book = allBooks[bibleState.bookIndex];
+      if (!book) return;
+      const verses = book.chapters[bibleState.chapter] || [];
+      const v = verses[idx];
+      if (!v) return;
+      bibleStopSpeak();
+      window._bibleSpeaking = true;
+      startBibleMusic();
+      const lines = document.querySelectorAll('.verse-line');
+      if (lines[idx]) lines[idx].classList.add('speaking');
+      bibleSpeakText('آية ' + (idx + 1) + '. ' + v, function() {
+        window._bibleSpeaking = false;
+        stopBibleMusic();
+        if (lines[idx]) lines[idx].classList.remove('speaking');
+      });
+    }
+
+
     function renderBible() {
       const bible = window.BIBLE_SVD;
       if (!bible) return;
@@ -2199,7 +2350,7 @@
       const versesHtml = verses.map((v, i) => {
         const ref = book.name + ' ' + (bibleState.chapter+1) + ':' + (i+1);
         const esc = String(v).replace(/'/g, "\\'");
-        return `<p class="verse-line" data-ref="${ref}" data-text="${esc}" onclick="openVerseMenu(event, this)" style="margin:8px 0;line-height:1.9;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i+1}</span>${v}</p>`;
+        return `<p class="verse-line" data-ref="${ref}" data-text="${esc}" onclick="openVerseMenu(event, this)" style="margin:8px 0;line-height:1.9;position:relative;padding-left:28px;"><span style="color:var(--gold-dark);font-weight:700;margin-left:6px;">${i+1}</span>${v}<button type="button" aria-label="قراءة الآية صوتياً" onclick="event.stopPropagation();bibleSpeakVerse(${i});" style="position:absolute;left:0;top:4px;border:none;background:transparent;font-size:16px;cursor:pointer;padding:2px;">🔊</button></p>`;
       }).join('');
 
       document.getElementById('prayerTitle').textContent = 'الكتاب المقدس — فاندايك';
@@ -2230,6 +2381,20 @@
             </select>
           </div>
           <h3 style="text-align:center;color:var(--brown);margin:8px 0 12px;">${book.name} — إصحاح ${bibleState.chapter+1}</h3>
+          <div id="bibleAudioBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;padding:10px;background:rgba(245,230,200,0.5);border:1px solid #e8d9b5;border-radius:14px;">
+            <button type="button" class="save-btn" style="flex:1;min-width:110px;background:#5a7d4a;margin:0;" onclick="bibleSpeakChapter()" aria-label="قراءة الإصحاح صوتياً">🔊 قراءة</button>
+            <button type="button" class="save-btn" style="flex:1;min-width:90px;background:#8a7a60;margin:0;" onclick="biblePauseSpeak()" aria-label="إيقاف مؤقت">⏸ إيقاف</button>
+            <button type="button" class="save-btn" style="flex:1;min-width:90px;background:#a65d4a;margin:0;" onclick="bibleStopSpeak()" aria-label="إيقاف نهائي">⏹ توقف</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--brown);width:100%;justify-content:center;">
+              <input type="checkbox" id="bibleMusicToggle" ${localStorage.getItem('khalwati_bible_music')==='1'?'checked':''} onchange="localStorage.setItem('khalwati_bible_music', this.checked?'1':'0'); if(!this.checked) stopBibleMusic();">
+              موسيقى هادئة أثناء القراءة
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--brown);width:100%;justify-content:center;">
+              سرعة الصوت
+              <input type="range" min="0.6" max="1.3" step="0.1" value="${localStorage.getItem('khalwati_bible_rate')||'0.9'}" style="flex:1;max-width:160px;" onchange="localStorage.setItem('khalwati_bible_rate', this.value)">
+            </label>
+            <p style="width:100%;margin:0;font-size:11px;color:#8a7a60;text-align:center;">الصوت من قارئ الموبايل العربي (مجاني · يعمل بدون نت بعد تحميل النص)</p>
+          </div>
           <div style="font-size:15px;">${versesHtml}</div>
           <div style="display:flex;gap:8px;margin-top:14px;">
             <button class="save-btn" style="flex:1;background:#8a7a60;" onclick="biblePrevChapter()">→ السابق</button>
@@ -3642,9 +3807,15 @@
       const menu = document.getElementById('verseMenu');
       const ref = el.getAttribute('data-ref') || '';
       const txt = el.getAttribute('data-text') || el.innerText || '';
+      // رقم الآية من قائمة الآيات
+      const lines = Array.from(document.querySelectorAll('.verse-line'));
+      window._verseMenuIndex = Math.max(0, lines.indexOf(el));
+      document.querySelectorAll('.verse-line.active-verse').forEach(function(x){ x.classList.remove('active-verse'); });
+      el.classList.add('active-verse');
       menu.innerHTML = `
         <p style="font-weight:700;color:var(--brown);margin-bottom:8px;font-size:13px;">${ref}</p>
         <p style="font-size:12px;color:#8a7a60;margin-bottom:8px;max-height:60px;overflow:hidden;">${txt.slice(0,120)}…</p>
+        <button onclick="bibleSpeakVerse(window._verseMenuIndex||0); closeVerseMenu();">🔊 قراءة صوتية</button>
         <button onclick="highlightVerse(document.querySelector('.verse-line.active-verse'),'yellow')">🟡 تمييز أصفر</button>
         <button onclick="highlightVerse(document.querySelector('.verse-line.active-verse'),'green')">🟢 تمييز أخضر</button>
         <button onclick="highlightVerse(document.querySelector('.verse-line.active-verse'),'blue')">🔵 تمييز أزرق</button>

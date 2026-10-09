@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta name="theme-color" content="#f5e6c8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1186,14 +1186,62 @@
     .font-opt { padding: 10px; border: 1px solid #e8d9b5; border-radius: 10px; margin: 4px 0; cursor: pointer; background: #fff; }
     .font-opt.active { border-color: var(--gold); background: #f5e6c8; }
 
+  
+    /* وضع المكفوفين / إمكانية الوصول */
+    body.a11y-mode {
+      --a11y-scale: 1.15;
+    }
+    body.a11y-mode .daily-item,
+    body.a11y-mode .service-icon-btn,
+    body.a11y-mode .settings-btn,
+    body.a11y-mode .nav-btn,
+    body.a11y-mode .save-btn {
+      min-height: 52px;
+      min-width: 52px;
+    }
+    body.a11y-mode .daily-label,
+    body.a11y-mode .card-title {
+      font-size: 1.15em !important;
+    }
+    body.a11y-mode .logo {
+      width: 150px;
+      height: 150px;
+    }
+    body.a11y-high-contrast {
+      filter: contrast(1.15);
+    }
+    body.a11y-high-contrast .card,
+    body.a11y-high-contrast .parchment-card {
+      border: 2px solid #3e2f1c !important;
+    }
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      border: 0 !important;
+    }
+    #a11yLive {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
   </style>
 </head>
 <body>
+  <div id="a11yLive" aria-live="polite" aria-atomic="true"></div>
+  <a href="#mainContent" class="sr-only" id="skipToContent">تخطى إلى المحتوى</a>
   <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
   <audio id="prayerAlarmAudio" preload="auto" src="./prayer-alarm.mp3"></audio>
   <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto"></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
-  <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
+  <button class="settings-btn" onclick="openSettings()" title="الإعدادات" aria-label="الإعدادات">⚙️</button>
   <div class="mute-banner" id="muteBanner">
     <span id="audioStatus">🎵 الترنيمة شغالة</span>
     <button onclick="toggleMute()">كتم / تشغيل</button>
@@ -1206,10 +1254,11 @@
         <img src="logo.png?v=100" alt="خلوتي - توتة روحية">
       </div>
 
-      <div class="date-nav">
-        <button id="prevDay" aria-label="اليوم السابق">›</button>
+      <main id="mainContent">
+    <div class="date-nav">
+        <button id="prevDay" aria-label="اليوم السابق" aria-label="اليوم السابق">›</button>
         <div class="current-date" id="currentDate" onclick="openDatePicker()" style="cursor:pointer;" title="اضغط لاختيار تاريخ">الإثنين: ...</div>
-        <button id="nextDay" aria-label="اليوم التالي">‹</button>
+        <button id="nextDay" aria-label="اليوم التالي" aria-label="اليوم التالي">‹</button>
       </div>
       <input type="date" id="datePicker" style="display:none;" onchange="setDateFromPicker(this.value)">
     </div>
@@ -1318,6 +1367,7 @@
   </div>
 
   <!-- Prayer Modal -->
+  </main>
   <div class="modal" id="prayerModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -2360,6 +2410,11 @@
       data[id] = !data[id];
       saveData(data);
       renderDailyIcons();
+      if (typeof isA11yMode === 'function' && isA11yMode()) {
+        const labels = { baker:'باكر', sunset:'غروب', sleep:'نوم', mass:'قداس', service:'خدمة اليوم', silence:'ساعة صمت' };
+        const name = labels[id] || id;
+        speakA11y((data[id] ? 'تم تفعيل ' : 'تم إلغاء ') + name);
+      }
     }
 
     function handleDailyClick(id) {
@@ -4291,6 +4346,102 @@
     }
 
 
+    
+    // ===== وضع المكفوفين / إمكانية الوصول =====
+    function isA11yMode() {
+      return localStorage.getItem('khalwati_a11y') === '1';
+    }
+    function isA11ySpeak() {
+      return localStorage.getItem('khalwati_a11y_speak') !== '0'; // default on when a11y on
+    }
+    function isA11yContrast() {
+      return localStorage.getItem('khalwati_a11y_contrast') === '1';
+    }
+    function applyA11yMode() {
+      const on = isA11yMode();
+      document.body.classList.toggle('a11y-mode', on);
+      document.body.classList.toggle('a11y-high-contrast', on && isA11yContrast());
+      document.documentElement.setAttribute('data-a11y', on ? '1' : '0');
+    }
+    function setA11yMode(on) {
+      localStorage.setItem('khalwati_a11y', on ? '1' : '0');
+      applyA11yMode();
+      if (on) {
+        speakA11y('تم تفعيل وضع المكفوفين. يمكنك استخدام قارئ الشاشة، أو النطق الصوتي لقراءة المحتوى.');
+      } else {
+        stopA11ySpeak();
+        speakA11y('تم إيقاف وضع المكفوفين');
+      }
+    }
+    function setA11ySpeak(on) {
+      localStorage.setItem('khalwati_a11y_speak', on ? '1' : '0');
+      if (on) speakA11y('تم تفعيل النطق الصوتي');
+      else { stopA11ySpeak(); announceA11y('تم إيقاف النطق الصوتي'); }
+    }
+    function setA11yContrast(on) {
+      localStorage.setItem('khalwati_a11y_contrast', on ? '1' : '0');
+      applyA11yMode();
+      speakA11y(on ? 'تم تفعيل التباين العالي' : 'تم إيقاف التباين العالي');
+    }
+    function stopA11ySpeak() {
+      try {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    function announceA11y(text) {
+      const el = document.getElementById('a11yLive');
+      if (el) {
+        el.textContent = '';
+        setTimeout(function() { el.textContent = text; }, 50);
+      }
+    }
+    function speakA11y(text, opts) {
+      opts = opts || {};
+      announceA11y(text);
+      if (!isA11yMode() && !opts.force) return;
+      if (!isA11ySpeak() && !opts.force) return;
+      if (!window.speechSynthesis) {
+        showToast('الجهاز لا يدعم النطق الصوتي');
+        return;
+      }
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(String(text).slice(0, 1500));
+        u.lang = 'ar-EG';
+        u.rate = parseFloat(localStorage.getItem('khalwati_a11y_rate') || '0.9');
+        u.pitch = 1;
+        // pick Arabic voice if available
+        const voices = window.speechSynthesis.getVoices() || [];
+        const ar = voices.find(function(v){ return v.lang && v.lang.indexOf('ar') === 0; });
+        if (ar) u.voice = ar;
+        window.speechSynthesis.speak(u);
+      } catch (e) { console.log('tts', e); }
+    }
+    function speakCurrentScreen() {
+      const parts = [];
+      parts.push('خلوتي');
+      const dateEl = document.getElementById('dateLabel') || document.querySelector('.date-label');
+      if (dateEl) parts.push(dateEl.textContent.trim());
+      const goals = document.querySelectorAll('#goalsList input[type="text"], #goalsList textarea');
+      let gCount = 0;
+      goals.forEach(function(g){ if (g.value && g.value.trim()) gCount++; });
+      parts.push('أهداف اليوم: ' + gCount + ' هدف مكتوب');
+      const checked = document.querySelectorAll('#dailyIcons .daily-item.checked, #dailyIcons input:checked');
+      parts.push('أنشطة مفعّلة: ' + checked.length);
+      speakA11y(parts.join('. '), { force: true });
+    }
+    function a11yReadText(text, title) {
+      if (!text) return;
+      const t = (title ? title + '. ' : '') + String(text).replace(/\s+/g, ' ').trim();
+      speakA11y(t);
+    }
+    // preload voices (Chrome needs this)
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); }; } catch(e){}
+    }
+    applyA11yMode();
+
+
     function openSettings() {
       document.getElementById('prayerTitle').textContent = 'إعدادات التطبيق';
       const muted = isMuted();
@@ -4389,6 +4540,29 @@
             <option value="30" ${confEvery==='30'?'selected':''}>كل شهر (30 يوم)</option>
           </select>
           <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
+
+          <p style="margin-top:14px;"><strong>♿ وضع المكفوفين وإمكانية الوصول</strong></p>
+          <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">
+            يساعد المكفوفين وضعاف البصر: أزرار أكبر، دعم قارئ الشاشة (TalkBack / VoiceOver)، ونطق صوتي للمحتوى بالعربية.
+          </p>
+          <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
+            <input type="checkbox" id="a11yMode" ${isA11yMode()?'checked':''} onchange="setA11yMode(this.checked); openSettings();">
+            تفعيل وضع المكفوفين
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
+            <input type="checkbox" id="a11ySpeak" ${isA11ySpeak()?'checked':''} onchange="setA11ySpeak(this.checked)">
+            نطق صوتي للمحتوى
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
+            <input type="checkbox" id="a11yContrast" ${isA11yContrast()?'checked':''} onchange="setA11yContrast(this.checked)">
+            تباين أعلى للنصوص
+          </label>
+          <label style="display:block;margin:8px 0;font-size:13px;">سرعة النطق
+            <input type="range" min="0.6" max="1.2" step="0.1" value="${localStorage.getItem('khalwati_a11y_rate')||'0.9'}"
+              style="width:100%;" onchange="localStorage.setItem('khalwati_a11y_rate', this.value); speakA11y('هذه سرعة النطق', {force:true});">
+          </label>
+          <button type="button" class="save-btn" style="margin:8px 0;background:#5a7d4a;" onclick="speakCurrentScreen()">🔊 اقرأ ملخص الشاشة الحالية</button>
+          <button type="button" class="save-btn" style="margin:0 0 12px;background:#8a7a60;" onclick="stopA11ySpeak()">⏹ إيقاف النطق</button>
 
           <p style="margin-top:14px;"><strong>حفظ النشاط والأيام السابقة</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">

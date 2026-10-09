@@ -1,4 +1,4 @@
-const CACHE_NAME = 'khalwati-v47-psalm-bible-ui';
+const CACHE_NAME = 'khalwati-v48-agpeya-alarms';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',
@@ -92,15 +92,25 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   const data = event.notification.data || {};
   event.waitUntil((async function() {
+    let openUrl = './index.html';
+    if (data.type === 'agpeya' && data.hour) {
+      openUrl = './index.html?open=agpeya&hour=' + encodeURIComponent(data.hour);
+    } else if (data.type === 'jesus' || data.play) {
+      openUrl = './index.html?jesusVoice=1&play=1';
+    }
     const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const c of all) {
       if (c.url && c.url.indexOf(self.registration.scope) !== -1) {
         await c.focus();
-        c.postMessage({ type: 'JESUS_VOICE_FROM_NOTIFICATION', data: data, play: true });
+        if (data.type === 'agpeya' && data.hour) {
+          c.postMessage({ type: 'notification-open', data: data });
+        } else {
+          c.postMessage({ type: 'JESUS_VOICE_FROM_NOTIFICATION', data: data, play: true });
+        }
         return;
       }
     }
-    await clients.openWindow('./index.html?jesusVoice=1&play=1');
+    await clients.openWindow(openUrl);
   })());
 });
 

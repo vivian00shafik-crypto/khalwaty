@@ -4037,6 +4037,110 @@
     });
 
 
+    
+    const AGPEYA_ALARM_DEFAULTS = [
+      { id: 'باكر', time: '06:00', enabled: true, emoji: '☀️' },
+      { id: 'الثالثة', time: '09:00', enabled: true, emoji: '🕒' },
+      { id: 'السادسة', time: '12:00', enabled: true, emoji: '🕛' },
+      { id: 'التاسعة', time: '15:00', enabled: true, emoji: '🕒' },
+      { id: 'الغروب', time: '17:00', enabled: true, emoji: '🌅' },
+      { id: 'النوم', time: '20:00', enabled: true, emoji: '🌙' },
+      { id: 'نصف الليل', time: '23:30', enabled: true, emoji: '🕛' },
+      { id: 'الستار', time: '21:00', enabled: false, emoji: '🕯️' }
+    ];
+
+    function getAgpeyaAlarms() {
+      try {
+        const raw = localStorage.getItem('khalwati_agpeya_alarms');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // merge with defaults so new hours appear
+          return AGPEYA_ALARM_DEFAULTS.map(function(d) {
+            const p = parsed.find ? parsed.find(function(x){ return x.id === d.id; }) : (parsed[d.id] || null);
+            if (!p) return Object.assign({}, d);
+            return {
+              id: d.id,
+              emoji: d.emoji,
+              time: p.time || d.time,
+              enabled: (typeof p.enabled === 'boolean') ? p.enabled : d.enabled
+            };
+          });
+        }
+      } catch (e) {}
+      // migrate old single pray time
+      const old = localStorage.getItem('khalwati_pray_time');
+      return AGPEYA_ALARM_DEFAULTS.map(function(d) {
+        const copy = Object.assign({}, d);
+        if (old && d.id === 'باكر') copy.time = old;
+        return copy;
+      });
+    }
+
+    function saveAgpeyaAlarms(list) {
+      localStorage.setItem('khalwati_agpeya_alarms', JSON.stringify(list));
+    }
+
+    function updateAgpeyaAlarm(id, field, value) {
+      const list = getAgpeyaAlarms();
+      list.forEach(function(a) {
+        if (a.id === id) {
+          if (field === 'enabled') a.enabled = !!value;
+          if (field === 'time') a.time = value;
+        }
+      });
+      saveAgpeyaAlarms(list);
+      scheduleAgpeyaNotifications();
+    }
+
+    function timeToMinutes(t) {
+      if (!t || t.indexOf(':') < 0) return -1;
+      const p = t.split(':');
+      return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+    }
+
+    async function scheduleAgpeyaNotifications() {
+      try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        if (!navigator.serviceWorker) return;
+        const reg = await navigator.serviceWorker.ready;
+        const list = getAgpeyaAlarms().filter(function(a){ return a.enabled; });
+        // close old agpeya tags
+        try {
+          const old = await reg.getNotifications({ includeTriggered: true });
+          old.forEach(function(n) {
+            if (n.tag && n.tag.indexOf('khalwati-agpeya-') === 0) n.close();
+          });
+        } catch (e) {}
+        for (let i = 0; i < list.length; i++) {
+          const a = list[i];
+          const when = (typeof nextTimeTodayOrTomorrow === 'function')
+            ? nextTimeTodayOrTomorrow(a.time)
+            : null;
+          if (!when) continue;
+          const options = {
+            body: 'حان وقت صلاة ' + a.id + ' — افتحي الأجبية من خلوتي 🙏',
+            icon: './icon-192.png',
+            badge: './icon-192.png',
+            dir: 'rtl',
+            lang: 'ar',
+            tag: 'khalwati-agpeya-' + a.id,
+            renotify: true,
+            requireInteraction: false,
+            silent: false,
+            vibrate: [200, 100, 200],
+            data: { type: 'agpeya', hour: a.id }
+          };
+          if (typeof TimestampTrigger !== 'undefined') {
+            options.showTrigger = new TimestampTrigger(when.getTime());
+          }
+          try {
+            await reg.showNotification('خلوتي — ' + a.emoji + ' ' + a.id, options);
+          } catch (e) {}
+        }
+      } catch (e) { console.log('agpeya schedule', e); }
+    }
+
+
     function openSettings() {
       document.getElementById('prayerTitle').textContent = 'إعدادات التطبيق';
       const muted = isMuted();
@@ -4136,9 +4240,19 @@
           </select>
           <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
 
-          <p style="margin-top:14px;"><strong>أوقات التنبيه (تذكير محلي)</strong></p>
-          <label>تنبيه الصلاة</label>
-          <input type="time" id="prayTime" value="${prayTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_pray_time', this.value)">
+          <p style="margin-top:14px;"><strong>أوقات تنبيه صلوات الأجبية</strong></p>
+          <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">فعّلي الساعة وحددي وقتها — هيوصلك تنبيه في الموعد (حتى والتطبيق في الخلفية إن سمحتِ بالإشعارات).</p>
+          <div id="agpeyaAlarmsBox" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+            ${getAgpeyaAlarms().map(function(a) {
+              return '<div style="display:flex;align-items:center;gap:8px;background:rgba(245,230,200,0.45);border:1px solid #e8d9b5;border-radius:12px;padding:8px 10px;">' +
+                '<label style="display:flex;align-items:center;gap:6px;flex:1;margin:0;font-size:13px;font-weight:600;color:var(--brown);">' +
+                  '<input type="checkbox" ' + (a.enabled ? 'checked' : '') + ' onchange="updateAgpeyaAlarm(\'' + a.id + '\', \'enabled\', this.checked)">' +
+                  a.emoji + ' ' + a.id +
+                '</label>' +
+                '<input type="time" value="' + a.time + '" style="padding:6px 8px;border-radius:8px;border:1px solid #d4c4a0;font-family:inherit;" onchange="updateAgpeyaAlarm(\'' + a.id + '\', \'time\', this.value)">' +
+              '</div>';
+            }).join('')}
+          </div>
           <label>صوت يسوع اليومي (آية كتابية)</label>
           <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value); scheduleJesusNotificationForUserTime();">
           <p style="font-size:12px;color:#8a7a60;">والتطبيق مقفول: يوصلك إشعار بصوت نظام الموبايل + نص الآية. صوت يسوع الخاص يشتغل لما تضغطي الإشعار (قيود أندرويد/آيفون تمنع تشغيل ملف صوتي والتطبيق مقفول تمامًا). فعّلي الإشعارات وارفعي صوت الإعلامات من إعدادات الموبايل.</p>
@@ -4188,6 +4302,7 @@
         if (p === 'granted') {
           showToast('تم تفعيل إشعارات النظام ✓ — هتوصلك في الوقت المحدد حتى والتطبيق مقفول');
           scheduleJesusNotificationForUserTime();
+          if (typeof scheduleAgpeyaNotifications === 'function') scheduleAgpeyaNotifications();
         } else {
           showToast('لم يُسمح بإشعارات النظام — التنبيه عند فتح التطبيق');
         }
@@ -4622,11 +4737,26 @@
         }
       }
 
-      // تنبيه الصلاة: من وقت المحدد حتى +90 دقيقة، مرة في اليوم
-      if ((forceTest === 'pray') || (mins >= prayMins && mins <= prayMins + 90 && localStorage.getItem('khalwati_pray_notified_' + todayKey) !== '1')) {
-        showAppNotification('خلوتي', 'وقت الصلاة والخلوة 🙏');
-        localStorage.setItem('khalwati_pray_notified_' + todayKey, '1');
-      }
+      // تنبيهات صلوات الأجبية (كل ساعة مفعّلة)
+      const agAlarms = (typeof getAgpeyaAlarms === 'function') ? getAgpeyaAlarms() : [];
+      agAlarms.forEach(function(a) {
+        if (!a.enabled) return;
+        const aMins = timeToMinutes(a.time);
+        if (aMins < 0) return;
+        const flag = 'khalwati_agpeya_notified_' + a.id + '_' + todayKey;
+        // نافذة 20 دقيقة بعد الموعد، مرة واحدة في اليوم لكل ساعة
+        const inWindow = (mins >= aMins && mins <= aMins + 20);
+        // دعم عبور منتصف الليل لنصف الليل/الستار
+        const inWindowNight = (aMins >= 22 * 60 && mins < 60 && mins <= (aMins + 20) % (24 * 60));
+        if ((forceTest === 'pray' || forceTest === a.id) || ((inWindow || inWindowNight) && localStorage.getItem(flag) !== '1')) {
+          showAppNotification(
+            'خلوتي — ' + (a.emoji || '') + ' ' + a.id,
+            'حان وقت صلاة ' + a.id + ' 🙏',
+            { tag: 'khalwati-agpeya-' + a.id, data: { type: 'agpeya', hour: a.id } }
+          );
+          localStorage.setItem(flag, '1');
+        }
+      });
 
       // صوت يسوع اليومي + آية — في الوقت المحدد
       if ((forceTest === 'verse') || (mins >= msgMins && localStorage.getItem('khalwati_msg_notified_' + todayKey) !== '1' && localStorage.getItem('khalwati_jesus_day_' + todayKey) !== '1')) {
@@ -4642,6 +4772,28 @@
         }
       }
     }
+
+    
+    // فتح من إشعار الأجبية
+    (function handleNotifyDeepLink() {
+      try {
+        const q = new URLSearchParams(location.search);
+        if (q.get('open') === 'agpeya' && q.get('hour')) {
+          const hour = q.get('hour');
+          setTimeout(function() {
+            if (typeof openAgpeyaHour === 'function') openAgpeyaHour(hour);
+          }, 600);
+        }
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.addEventListener('message', function(ev) {
+            const d = (ev.data && ev.data.data) || {};
+            if (ev.data && ev.data.type === 'notification-open' && d.type === 'agpeya' && d.hour) {
+              if (typeof openAgpeyaHour === 'function') openAgpeyaHour(d.hour);
+            }
+          });
+        }
+      } catch (e) {}
+    })();
 
     function testJesusVoiceNow() {
       const todayKey = getDateKey(new Date());

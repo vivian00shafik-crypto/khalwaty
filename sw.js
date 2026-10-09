@@ -1,5 +1,5 @@
-const CACHE = 'khalwati-v76-glass';
-const ASSETS = ['./', './index.html', './manifest.json', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+const CACHE = 'khalwati-v77-glass';
+const ASSETS = ['./', './index.html', './manifest.json', './logo.png', './parchment-bg.jpg', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -21,7 +21,7 @@ self.addEventListener('message', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (req.mode === 'navigate' || /\.(html|js)$/.test(req.url) || req.url.includes('sw.js')) {
+  if (req.mode === 'navigate' || /\.(html|js|json)(\?|$)/.test(req.url) || req.url.includes('sw.js')) {
     e.respondWith(
       fetch(req).then((res) => {
         const copy = res.clone();

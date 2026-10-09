@@ -1,39 +1,20 @@
 {
-  "name": "خلوتي",
+  "id": "./",
+  "name": "خلوتي - نوتة روحية",
   "short_name": "خلوتي",
-  "description": "تطبيق روحي يومي للصلاة والتأمل والمزامير",
-  "start_url": "./index.html",
-  "scope": "./",
-  "display": "standalone",
-  "background_color": "#f8f1e3",
-  "theme_color": "#c9a227",
-  "orientation": "portrait",
+  "description": "نوتة روحية للخلوة اليومية",
   "lang": "ar",
   "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f1e4",
+  "theme_color": "#f7f1e4",
   "icons": [
-    {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-192-maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "./icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icon-v76-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-v76-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-v76-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-v76-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

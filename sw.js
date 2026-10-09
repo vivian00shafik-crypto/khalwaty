@@ -1,8 +1,8 @@
-const CACHE_NAME = 'khalwati-v54-icon-pad';
+const CACHE_NAME = 'khalwati-v55-icon-safe';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3', './prayer-alarm.mp3',
-  './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-mass.png',
+  './icon-192.png', './icon-512.png', './icon-512-maskable.png', './icon-192-maskable.png', './apple-touch-icon.png', './icon-mass.png',
   './bible-svd.js', './bible-deutero.js', './psalms.js', './agpeya-texts.js', './cross-center.png', './parchment-bg.jpg',
   './progress-boy-final.jpg', './progress-boy-high.jpg', './progress-boy-low.jpg',
   './progress-girl-final.jpg', './progress-girl-high.jpg', './progress-girl-low.jpg',

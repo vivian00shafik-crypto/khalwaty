@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v65-clean';
+const CACHE = 'khalwati-v66-light';
 const ASSETS = ['./', './index.html', './manifest.json', './sw.js', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

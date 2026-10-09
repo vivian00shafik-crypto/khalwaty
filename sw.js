@@ -1,9 +1,9 @@
-const CACHE = 'khalwati-v71-glass';
-const ASSETS = ['./', './index.html', './manifest.json', './sw.js', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png', './icons3d/sun.png', './icons3d/moon.png', './icons3d/bible.png', './icons3d/church.png', './icons3d/beads.png', './icons3d/chalice.png'];
+const CACHE = 'khalwati-v72-glass';
+const ASSETS = ['./', './index.html', './manifest.json', './logo.png', './parchment-bg.jpg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS).catch(()=>{})));
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(ASSETS.map((a) => c.add(a)))));
 });
 
 self.addEventListener('activate', (e) => {

@@ -1187,6 +1187,7 @@
 </head>
 <body>
   <audio id="hymnAudio" src="hymn.m4a" preload="auto"></audio>
+  <audio id="prayerAlarmAudio" preload="auto" src="./prayer-alarm.mp3"></audio>
   <audio id="sawtRabina" src="sawt-rabina.mp3" preload="auto"></audio>
   <div id="verseMenu" class="verse-menu" style="display:none;"></div>
   <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
@@ -4262,17 +4263,17 @@
             : null;
           if (!when) continue;
           const options = {
-            body: 'حان وقت صلاة ' + a.id + ' — افتحي الأجبية من خلوتي 🙏',
+            body: 'حان وقت صلاة ' + a.id + ' — افتحي الأجبية واستمعي للنغمة 🔔',
             icon: './icon-192.png',
             badge: './icon-192.png',
             dir: 'rtl',
             lang: 'ar',
             tag: 'khalwati-agpeya-' + a.id,
             renotify: true,
-            requireInteraction: false,
+            requireInteraction: true,
             silent: false,
-            vibrate: [200, 100, 200],
-            data: { type: 'agpeya', hour: a.id }
+            vibrate: [300, 100, 300, 100, 500],
+            data: { type: 'agpeya', hour: a.id, playAlarm: true, sound: 'prayer-alarm' }
           };
           if (typeof TimestampTrigger !== 'undefined') {
             options.showTrigger = new TimestampTrigger(when.getTime());
@@ -4791,7 +4792,23 @@
       return (parseInt(p[0],10)||0) * 60 + (parseInt(p[1],10)||0);
     }
 
-    async function showAppNotification(title, body, opts) {
+    async 
+    function playPrayerAlarmSound() {
+      try {
+        if (typeof isMuted === 'function' && isMuted()) return;
+        let a = document.getElementById('prayerAlarmAudio');
+        if (!a) {
+          a = new Audio('./prayer-alarm.mp3');
+          a.id = 'prayerAlarmAudio';
+          document.body.appendChild(a);
+        }
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && p.catch) p.catch(function(){});
+      } catch (e) {}
+    }
+
+    function showAppNotification(title, body, opts) {
       opts = opts || {};
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
@@ -4822,6 +4839,14 @@
       } catch (e) { console.log('notify err', e); }
       // دائمًا: تنبيه داخل التطبيق (يظهر حتى لو الإذن مرفوض)
       showToast(title + ': ' + (body || '').slice(0, 80));
+      // صوت تنبيه الصلاة (يشتغل والتطبيق مفتوح؛ عند الإغلاق يشتغل صوت النظام + النغمة عند فتح الإشعار)
+      try {
+        const d = (opts && opts.data) || {};
+        if (d.type === 'agpeya' || (opts && opts.playAlarm)) {
+          playPrayerAlarmSound();
+        }
+      } catch (e) {}
+
     }
 
     function showVerseInApp(verse) {
@@ -4941,6 +4966,7 @@
         if (q.get('open') === 'agpeya' && q.get('hour')) {
           const hour = q.get('hour');
           setTimeout(function() {
+            if (typeof playPrayerAlarmSound === 'function') playPrayerAlarmSound();
             if (typeof openAgpeyaHour === 'function') openAgpeyaHour(hour);
           }, 600);
         }
@@ -4948,6 +4974,7 @@
           navigator.serviceWorker.addEventListener('message', function(ev) {
             const d = (ev.data && ev.data.data) || {};
             if (ev.data && ev.data.type === 'notification-open' && d.type === 'agpeya' && d.hour) {
+              if (typeof playPrayerAlarmSound === 'function') playPrayerAlarmSound();
               if (typeof openAgpeyaHour === 'function') openAgpeyaHour(d.hour);
             }
           });

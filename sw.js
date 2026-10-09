@@ -1,7 +1,7 @@
-const CACHE_NAME = 'khalwati-v50-deutero';
+const CACHE_NAME = 'khalwati-v51-prayer-alarm';
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
-  './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3',
+  './logo.png', './jesus.jpg', './jesus-prayer-bg.jpg', './hymn.m4a', './sawt-rabina.mp3', './prayer-alarm.mp3',
   './icon-192.png', './icon-512.png', './icon-mass.png',
   './bible-svd.js', './bible-deutero.js', './psalms.js', './agpeya-texts.js', './cross-center.png', './parchment-bg.jpg',
   './progress-boy-final.jpg', './progress-boy-high.jpg', './progress-boy-low.jpg',
@@ -103,6 +103,7 @@ self.addEventListener('notificationclick', function(event) {
       if (c.url && c.url.indexOf(self.registration.scope) !== -1) {
         await c.focus();
         if (data.type === 'agpeya' && data.hour) {
+          data.playAlarm = true;
           c.postMessage({ type: 'notification-open', data: data });
         } else {
           c.postMessage({ type: 'JESUS_VOICE_FROM_NOTIFICATION', data: data, play: true });

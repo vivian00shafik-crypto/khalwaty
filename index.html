@@ -1297,6 +1297,7 @@
       <div class="logo">
         <img src="logo.png?v=106" alt="خلوتي" onerror="this.style.display='none'; this.parentElement.textContent='خلوتي';">
       </div>
+      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v65</div>
     </div>
 
     <main id="mainContent">
@@ -5608,10 +5609,40 @@
     })();
 
     // Service Worker for offline
+    
+    // FORCE clear old broken cache once (v65)
+    (function forceClearOldCache() {
+      var KEY = 'khalwati_force_v65';
+      if (localStorage.getItem(KEY)) return;
+      localStorage.setItem(KEY, '1');
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        return Promise.all(regs.map(function(r){ return r.unregister(); }));
+      }).then(function() {
+        if (!window.caches) return;
+        return caches.keys().then(function(keys) {
+          return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+        });
+      }).then(function() {
+        // reload once to get fresh files
+        if (!sessionStorage.getItem('khalwati_reloaded_v65')) {
+          sessionStorage.setItem('khalwati_reloaded_v65', '1');
+          location.reload(true);
+        }
+      }).catch(function(){});
+    })();
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+      navigator.serviceWorker.register('./sw.js?v=64').then(function(reg) {
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         reg.update();
+        // فرض تحديث الكاش القديم
+        if (!sessionStorage.getItem('khalwati_sw64')) {
+          sessionStorage.setItem('khalwati_sw64', '1');
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r){ try { r.update(); } catch(e){} });
+          });
+        }
         // تأكد من تحميل الصوتيات في الكاش وأنتِ أونلاين
         navigator.serviceWorker.ready.then(function() {
           ['hymn.m4a', 'sawt-rabina.mp3', 'prayer-alarm.mp3', 'parchment-bg.jpg', 'bible-svd.js', 'psalms.js', 'bible-deutero.js'].forEach(function(f) {

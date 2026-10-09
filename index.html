@@ -1303,7 +1303,7 @@
       <div class="logo">
         <img src="logo.png?v=106" alt="خلوتي" onerror="this.style.display='none'; this.parentElement.textContent='خلوتي';">
       </div>
-      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v67</div>
+      <div id="appVersionBadge" style="text-align:center;font-size:11px;color:#8a7a60;margin:-4px 0 8px;">خلوتي v68</div>
     </div>
 
     <main id="mainContent">
@@ -1323,6 +1323,19 @@
           el.textContent = days[d.getDay()] + ': ' + d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
         }
       } catch(e) {}
+      // محاولة تشغيل الرسم بعد تحميل السكربت الرئيسي
+      function tryBoot(n) {
+        n = n || 0;
+        if (typeof renderAll === 'function') {
+          try { renderAll(); } catch (e) {
+            var el = document.getElementById('currentDate');
+            if (el) el.textContent = 'renderAll: ' + (e.message || e);
+          }
+          return;
+        }
+        if (n < 20) setTimeout(function(){ tryBoot(n+1); }, 250);
+      }
+      setTimeout(function(){ tryBoot(0); }, 400);
     })();
     </script>
 
@@ -1473,6 +1486,21 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    window.onerror = function(msg, src, line, col, err) {
+      try {
+        var el = document.getElementById('currentDate');
+        if (el) el.textContent = 'خطأ: ' + msg + ' (سطر ' + line + ')';
+        var badge = document.getElementById('appVersionBadge');
+        if (badge) badge.textContent = 'ERR L' + line + ': ' + String(msg).slice(0,40);
+      } catch(e) {}
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(ev) {
+      try {
+        var el = document.getElementById('currentDate');
+        if (el) el.textContent = 'Promise: ' + String(ev.reason && (ev.reason.message||ev.reason)).slice(0,60);
+      } catch(e) {}
+    });
     // تحميل الكتاب عند الحاجة فقط (يقلل تهنيج البداية)
     window._bibleLoading = false;
     function ensureBibleLoaded(cb) {
@@ -5638,7 +5666,7 @@
     
     // FORCE clear old broken cache once (v65)
     (function forceClearOldCache() {
-      var KEY = 'khalwati_force_v67';
+      var KEY = 'khalwati_force_v68';
       if (localStorage.getItem(KEY)) return;
       localStorage.setItem(KEY, '1');
       if (!('serviceWorker' in navigator)) return;

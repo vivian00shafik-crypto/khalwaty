@@ -1,9 +1,9 @@
 {
-  "name": "خلوتي - توتة روحية",
+  "name": "خلوتي",
   "short_name": "خلوتي",
   "description": "تطبيق روحي يومي للصلاة والتأمل والمزامير",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f8f1e3",
   "theme_color": "#c9a227",
@@ -12,13 +12,13 @@
   "dir": "rtl",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

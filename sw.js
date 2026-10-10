@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v85-dl';
+const CACHE = 'khalwati-v86-agpeya-music';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v78-glass';
+const CACHE = 'khalwati-v79-glass';
 const ASSETS = ['./', './index.html', './manifest.json', './logo.png', './parchment-bg.jpg', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png'];
 
 self.addEventListener('install', (e) => {

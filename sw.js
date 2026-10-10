@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v78-persist';
+const CACHE = 'khalwati-v79-export';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

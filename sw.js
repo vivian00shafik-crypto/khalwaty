@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v76-tts';
+const CACHE = 'khalwati-v77-music';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',
@@ -24,43 +24,26 @@ self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-async function rangeResponse(req) {
-  const cache = await caches.open(CACHE);
-  let full = await cache.match(req.url);
-  if (!full) {
-    try {
-      const res = await fetch(req.url);
-      if (!res.ok) return fetch(req);
-      cache.put(req.url, res.clone());
-      full = res;
-    } catch (err) { return fetch(req); }
-  }
-  const buf = await full.arrayBuffer();
-  const size = buf.byteLength;
-  const m = /bytes=(\d*)-(\d*)/.exec(req.headers.get('range') || '');
-  let start = m && m[1] ? parseInt(m[1], 10) : 0;
-  let end = m && m[2] ? parseInt(m[2], 10) : size - 1;
-  if (end >= size) end = size - 1;
-  if (start > end) start = 0;
-  return new Response(buf.slice(start, end + 1), {
-    status: 206,
-    headers: {
-      'Content-Type': full.headers.get('Content-Type') || 'audio/mpeg',
-      'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
-      'Content-Length': String(end - start + 1),
-      'Accept-Ranges': 'bytes'
-    }
-  });
-}
-
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (req.headers.has('range') && /\.(mp3|m4a)(\?|$)/i.test(req.url)) {
-    e.respondWith(rangeResponse(req));
+  const url = req.url;
+
+  // الصوت: شبكة أولاً ثم كاش (عشان الملفات الجديدة تظهر فورًا)
+  if (/\.(mp3|m4a|wav|ogg)(\?|$)/i.test(url)) {
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
+        }
+        return res;
+      }).catch(() => caches.match(req).then(r => r || caches.match(url.split('?')[0])))
+    );
     return;
   }
-  if (req.mode === 'navigate' || /\.(html|js|json)(\?|$)/.test(req.url) || req.url.includes('sw.js')) {
+
+  if (req.mode === 'navigate' || /\.(html|js|json)(\?|$)/.test(url) || url.includes('sw.js')) {
     e.respondWith(
       fetch(req).then((res) => {
         const copy = res.clone();
@@ -70,6 +53,7 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
+
   e.respondWith(
     caches.match(req).then((cached) => cached || fetch(req).then((res) => {
       const copy = res.clone();
@@ -79,7 +63,6 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// عند الضغط على الإشعار: افتح التطبيق وشغّل الصوت المناسب
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const data = (e.notification && e.notification.data) || {};
@@ -92,7 +75,7 @@ self.addEventListener('notificationclick', (e) => {
       try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=73';
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=77';
     await clients.openWindow(url);
   })());
 });

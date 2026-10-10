@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v92-howstart';
+const CACHE = 'khalwati-v93-goal-marks';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

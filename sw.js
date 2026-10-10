@@ -1,9 +1,15 @@
-const CACHE = 'khalwati-v72-audio';
-const ASSETS = ['./', './index.html', './manifest.json', './logo.png', './parchment-bg.jpg', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png'];
+const CACHE = 'khalwati-v73-notif';
+const ASSETS = [
+  './', './index.html', './manifest.json', './sw.js',
+  './logo.png', './parchment-bg.jpg',
+  './icon-192.png', './icon-512.png',
+  './hymn.m4a', './prayer-alarm.mp3', './sawt-rabina.mp3',
+  './bible-music.mp3', './bible-music-1.mp3', './bible-music-2.mp3', './bible-music-3.mp3'
+];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(ASSETS.map((a) => c.add(a)))));
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(ASSETS.map((a) => c.add(a).catch(()=>{})))));
 });
 
 self.addEventListener('activate', (e) => {
@@ -50,7 +56,7 @@ async function rangeResponse(req) {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (req.headers.has('range') && /bible-music[^/]*\.mp3(\?|$)/.test(req.url)) {
+  if (req.headers.has('range') && /\.(mp3|m4a)(\?|$)/i.test(req.url)) {
     e.respondWith(rangeResponse(req));
     return;
   }
@@ -73,7 +79,20 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
+// عند الضغط على الإشعار: افتح التطبيق وشغّل الصوت المناسب
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  e.waitUntil(clients.openWindow('./'));
+  const data = (e.notification && e.notification.data) || {};
+  const playType = data.type === 'agpeya' ? 'agpeya' : (data.type === 'jesus' ? 'jesus' : (data.playAlarm ? 'agpeya' : ''));
+  e.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (all && all.length) {
+      const client = all[0];
+      try { await client.focus(); } catch (err) {}
+      try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
+      return;
+    }
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=73';
+    await clients.openWindow(url);
+  })());
 });

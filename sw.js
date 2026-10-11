@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v107-missed-queue';
+const CACHE = 'khalwati-v108-pdf-compact';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

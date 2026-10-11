@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v110-raphael';
+const CACHE = 'khalwati-v111-mina';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

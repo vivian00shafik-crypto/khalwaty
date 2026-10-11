@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v115-tamav-batch';
+const CACHE = 'khalwati-v117-remove-two';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

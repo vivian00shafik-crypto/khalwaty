@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v97-saints-sort';
+const CACHE = 'khalwati-v98-prepare-pages';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v104-notif-schedule';
+const CACHE = 'khalwati-v105-perm';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

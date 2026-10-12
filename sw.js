@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v122-meaning-ai-menu';
+const CACHE = 'khalwati-v123-real-meaning-tafsir';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

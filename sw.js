@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v117-remove-two';
+const CACHE = 'khalwati-v118-augustine';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

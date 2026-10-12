@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v128-story-scenes';
+const CACHE = 'khalwati-v129-prep-infographic';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

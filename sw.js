@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v125-real-ai-images';
+const CACHE = 'khalwati-v126-ai-text-style';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

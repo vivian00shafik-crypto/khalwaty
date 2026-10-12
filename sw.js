@@ -1,7 +1,7 @@
-const CACHE = 'khalwati-v134-fix-getAgpeyaAlarms';
+const CACHE = 'khalwati-v135-prep-poster-designer';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
-  './logo.png', './parchment-bg.jpg',
+  './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-512.png',
   './hymn.m4a', './prayer-alarm.mp3', './sawt-rabina.mp3',
   './bible-music.mp3', './bible-music-1.mp3', './bible-music-2.mp3', './bible-music-3.mp3'

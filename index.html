@@ -4059,7 +4059,8 @@ function openSaintsPraises() {
       h += '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="exportPrepareAllPagesPdf()">📄 PDF كل الصفحات</button>';
       h += '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="exportPrepareEachPagePdf()">📄 PDF صفحة بصفحة</button>' +
       '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="exportPrepareDesignPdf()">✨ ملصق إيضاح كامل</button>' +
-      '<button type="button" class="save-btn" style="margin:0;background:#6b8f5a;" onclick="exportPrepareDesignPdfChoose()">✨ تنسيقات لكل صفحة</button>';
+      '<button type="button" class="save-btn" style="margin:0;background:#6b8f5a;" onclick="exportPrepareDesignPdfChoose()">✨ تنسيقات لكل صفحة</button>' +
+'<button type="button" class="save-btn" style="margin:0;background:#7a5a9a;" onclick="openPrepPosterDesigner()">🎨 بوستر برموزك وألوانك</button>';
       h += '<button type="button" class="save-btn" style="margin:0;background:#4a6a8a;" onclick="openPrepareLessonArchive()">📚 دروس سابقة</button>';
       if (browsing) {
         h += '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="prepareBrowseDateKey=null;openPreparePages();">اليوم الحالي</button>';
@@ -4605,6 +4606,21 @@ function openSaintsPraises() {
       if (!pages.length) { showToast('لا توجد صفحات'); return; }
       showToast('جاري تجهيز التنسيقات…');
       generatePrepareStoryDesigns(pages, getPrepareLessonTitle(), null, { mode: 'choose', variants: 3 });
+    }
+
+    function openPrepPosterDesigner() {
+      try {
+        if (!window.KhalwatyPoster) { showToast('جاري تحميل مصمم البوستر… جرّبي بعد لحظة'); return; }
+        var pages = (getPreparePages() || []).filter(function(p) { return p && String(p.text || '').trim(); });
+        if (!pages.length) { showToast('أضيفي نصوصًا في صفحات التحضير أولًا'); return; }
+        var items = pages.map(function(p, i) {
+          return { heading: String(p.title || ('نقطة ' + (i + 1))).trim(), text: String(p.text).replace(/\r\n/g, '\n').trim() };
+        });
+        window.KhalwatyPoster.open({ title: getPrepareLessonTitle() || 'تحضير الدرس', items: items });
+      } catch (err) {
+        console.log('openPrepPosterDesigner', err);
+        showToast('تعذر فتح مصمم البوستر: ' + (err && err.message ? err.message : err));
+      }
     }
 
     function exportPrepareDesignOnePage(idx) {
@@ -9942,5 +9958,6 @@ function requestNotifyPermission() {
       else setTimeout(run, 4000);
     });
   </script>
+  <script src="khalwaty-poster.js"></script>
 </body>
 </html>

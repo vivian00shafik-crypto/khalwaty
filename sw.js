@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v133-fix-design-open';
+const CACHE = 'khalwati-v134-fix-getAgpeyaAlarms';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './logo.png', './parchment-bg.jpg',

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v141-baker-tafsir-long';
+const CACHE = 'khalwati-v142-poster-clear-images';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

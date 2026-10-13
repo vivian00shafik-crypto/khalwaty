@@ -115,24 +115,41 @@
 
   /* ---------- رسم صفحة ---------- */
   function drawScene(ctx, img, x, y, w, h, theme, emojis) {
+    // صورة واضحة وكاملة — بدون تدرج يخفي نصفها
     ctx.save();
-    rrect(ctx, x, y, w, h, 34); ctx.clip();
-    if (img) {
-      var t = document.createElement('canvas'); t.width = w; t.height = h;
-      var tc = t.getContext('2d');
-      var sc = Math.max(w / img.width, h / img.height), nw = img.width * sc, nh = img.height * sc;
-      tc.drawImage(img, (w - nw) / 2, (h - nh) / 2, nw, nh);
-      tc.globalCompositeOperation = 'destination-in';
-      var g = tc.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.4, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,1)');
-      tc.fillStyle = g; tc.fillRect(0, 0, w, h);
-      ctx.drawImage(t, x, y);
+    ctx.shadowColor = 'rgba(0,0,0,0.14)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#ffffff';
+    rrect(ctx, x, y, w, h, 28);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.beginPath();
+    rrect(ctx, x, y, w, h, 28);
+    ctx.clip();
+    if (img && img.width) {
+      // cover كامل للإطار
+      var sc = Math.max(w / img.width, h / img.height);
+      var nw = img.width * sc, nh = img.height * sc;
+      ctx.drawImage(img, x + (w - nw) / 2, y + (h - nh) / 2, nw, nh);
     } else {
-      ctx.fillStyle = hsl(theme.hues[1], 60, 91); ctx.fillRect(x, y, w, h);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '80px ' + EMOJI_FONT;
-      var step = Math.min(170, w / (emojis.length + 1));
-      emojis.forEach(function (e, k) { ctx.fillText(e, x + w / 2 + (k - (emojis.length - 1) / 2) * step, y + h / 2); });
+      ctx.fillStyle = hsl(theme.hues[1], 55, 92);
+      ctx.fillRect(x, y, w, h);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '90px ' + EMOJI_FONT;
+      var list = (emojis && emojis.length) ? emojis : ['✝', '📖', '🕊'];
+      var step = Math.min(160, w / (list.length + 1));
+      list.slice(0, 4).forEach(function (e, k) {
+        ctx.fillText(e, x + w / 2 + (k - (Math.min(list.length, 4) - 1) / 2) * step, y + h / 2);
+      });
     }
+    ctx.restore();
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = hsl(theme.hues[0], 45, 72);
+    rrect(ctx, x, y, w, h, 28);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -165,10 +182,26 @@
       /* صورة الغلاف المرسومة بالذكاء الاصطناعي */
       var hx = M, hy = 40, hs = 300;
       if (art && art.hero) {
-        ctx.save(); ctx.globalCompositeOperation = 'multiply';
-        var sc = Math.max(hs / art.hero.width, hs / art.hero.height), nw = art.hero.width * sc, nh = art.hero.height * sc;
-        ctx.beginPath(); ctx.rect(hx, hy, hs, hs); ctx.clip();
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.12)';
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = '#fff';
+        rrect(ctx, hx, hy, hs, hs, 28);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.beginPath();
+        rrect(ctx, hx, hy, hs, hs, 28);
+        ctx.clip();
+        var sc = Math.max(hs / art.hero.width, hs / art.hero.height);
+        var nw = art.hero.width * sc, nh = art.hero.height * sc;
         ctx.drawImage(art.hero, hx + (hs - nw) / 2, hy + (hs - nh) / 2, nw, nh);
+        ctx.restore();
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = hsl(hb, 45, 70);
+        rrect(ctx, hx, hy, hs, hs, 28);
+        ctx.stroke();
         ctx.restore();
       } else {
         ctx.fillStyle = hsl(hb, 65, 88);
@@ -247,7 +280,7 @@
       else if (art.pages && art.pages.length) sceneImg = art.pages[pi % art.pages.length];
       else sceneImg = (pi % 2 === 0 ? art.a : art.b);
     }
-    drawScene(ctx, sceneImg, M, H - 320, W - 2 * M, 210, theme, emojis);
+    drawScene(ctx, sceneImg, M, H - 420, W - 2 * M, 300, theme, emojis);
 
     /* رقم الصفحة */
     var label = ar(pi + 1) + ' من ' + ar(total);
@@ -360,7 +393,7 @@
     var steps = [];
     steps.push({
       key: 'hero',
-      url: artUrl('holy bible golden cross olive branches ' + col + ' ' + style + (el ? ' ' + el : '') + (extra || ''), 768, 768, seed)
+      url: artUrl('holy bible golden cross olive branches ' + col + ' ' + style + (el ? ' ' + el : '') + (extra || ''), 1024, 1024, seed)
     });
     for (var i = 0; i < pageCount; i++) {
       var hint = '';
@@ -373,7 +406,7 @@
       steps.push({
         key: 'p' + i,
         pageIndex: i,
-        url: artUrl(base + ' ' + col + ' ' + style + (el ? ' ' + el : '') + (hint || '') + (extra || ''), 1024, 512, seed + 3 + i)
+        url: artUrl(base + ' ' + col + ' ' + style + (el ? ' ' + el : '') + (hint || '') + (extra || ''), 1280, 720, seed + 3 + i)
       });
     }
     return steps;

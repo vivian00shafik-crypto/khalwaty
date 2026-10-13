@@ -340,42 +340,123 @@ var EMOJI_WORDS = {
 
   /* ---------- الرسم بالذكاء الاصطناعي (Pollinations بدون مفتاح، زي بقية التطبيق) ---------- */
   function loadImg(url, ms) {
-    // جلب كـ blob ثم ObjectURL حتى لا يتلوّث الـ canvas ويتعطل الحفظ/PDF
+    // 1) fetch blob (canvas غير ملوّث)  2) Image+crossOrigin  3) null
     return new Promise(function (res) {
       var done = false;
-      var timer = setTimeout(function () { if (!done) { done = true; res(null); } }, ms || 60000);
+      var timer = setTimeout(function () { if (!done) { done = true; res(null); } }, ms || 50000);
       function finish(im) { if (!done) { done = true; clearTimeout(timer); res(im); } }
-      function fromBlob(blob) {
-        if (!blob) { finish(null); return; }
-        var obj = URL.createObjectURL(blob);
-        var im = new Image();
-        im.onload = function () { finish(im); };
-        im.onerror = function () { try { URL.revokeObjectURL(obj); } catch (e) {} finish(null); };
-        im.src = obj;
+
+      function viaImage() {
+        try {
+          var im = new Image();
+          im.crossOrigin = 'anonymous';
+          im.onload = function () {
+            if (im.width > 0) finish(im); else finish(null);
+          };
+          im.onerror = function () { finish(null); };
+          im.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+        } catch (e) { finish(null); }
       }
+
       if (typeof fetch === 'function') {
-        var ctrl = null, ft;
-        try { ctrl = new AbortController(); ft = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, ms || 60000); } catch (e) {}
-        fetch(url, { mode: 'cors', credentials: 'omit', signal: ctrl ? ctrl.signal : undefined })
-          .then(function (r) { if (ft) clearTimeout(ft); return r.ok ? r.blob() : Promise.reject(); })
-          .then(fromBlob)
-          .catch(function () {
-            // fallback: Image + crossOrigin
-            var im = new Image();
-            im.crossOrigin = 'anonymous';
-            im.onload = function () { finish(im); };
-            im.onerror = function () { finish(null); };
-            im.src = url;
-          });
+        var ctrl = null;
+        try { ctrl = new AbortController(); } catch (e) {}
+        var opts = { mode: 'cors', credentials: 'omit', cache: 'no-store' };
+        if (ctrl) opts.signal = ctrl.signal;
+        var ft = setTimeout(function () { try { if (ctrl) ctrl.abort(); } catch (e) {} }, (ms || 50000) - 500);
+        fetch(url, opts).then(function (r) {
+          clearTimeout(ft);
+          if (!r || !r.ok) { viaImage(); return; }
+          return r.blob();
+        }).then(function (blob) {
+          if (!blob || done) return;
+          if (blob.size < 800) { viaImage(); return; }
+          var obj = URL.createObjectURL(blob);
+          var im = new Image();
+          im.onload = function () { finish(im); };
+          im.onerror = function () { try { URL.revokeObjectURL(obj); } catch (e) {} viaImage(); };
+          im.src = obj;
+        }).catch(function () {
+          clearTimeout(ft);
+          viaImage();
+        });
       } else {
-        var im2 = new Image();
-        im2.crossOrigin = 'anonymous';
-        im2.onload = function () { finish(im2); };
-        im2.onerror = function () { finish(null); };
-        im2.src = url;
+        viaImage();
       }
     });
   }
+
+  function makeLocalArt(w, h, theme, emojis, label, seed) {
+    // رسم محلي جميل إن فشل الذكاء الاصطناعي — حتى لا تفشل كل الصفحات
+    w = w || 896; h = h || 512;
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    var h0 = (theme && theme.hues && theme.hues[0]) || 200;
+    var h1 = (theme && theme.hues && theme.hues[1]) || 160;
+    var g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, 'hsl(' + h0 + ',55%,88%)');
+    g.addColorStop(0.55, 'hsl(' + h1 + ',45%,92%)');
+    g.addColorStop(1, 'hsl(' + ((h0 + 40) % 360) + ',50%,82%)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // دوائر زخرفية
+    for (var i = 0; i < 6; i++) {
+      var x = (seed * (i + 3) * 47) % w;
+      var y = (seed * (i + 5) * 31) % h;
+      var r = 40 + (seed + i * 13) % 90;
+      ctx.beginPath();
+      ctx.fillStyle = 'hsla(' + ((h0 + i * 25) % 360) + ',50%,70%,' + (0.12 + (i % 3) * 0.04) + ')';
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // شريط سفلي
+    var lg = ctx.createLinearGradient(0, h * 0.55, 0, h);
+    lg.addColorStop(0, 'rgba(255,255,255,0)');
+    lg.addColorStop(1, 'rgba(255,255,255,0.35)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(0, 0, w, h);
+    // إيموجي كبيرة
+    var list = (emojis && emojis.length) ? emojis : ['✝', '📖', '🕊', '🌿'];
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = Math.floor(Math.min(w, h) * 0.22) + 'px serif';
+    var n = Math.min(4, list.length);
+    for (var k = 0; k < n; k++) {
+      var px = w * (0.2 + k * 0.2);
+      var py = h * (0.38 + (k % 2) * 0.08);
+      ctx.globalAlpha = 0.92;
+      ctx.fillText(list[k], px, py);
+    }
+    ctx.globalAlpha = 1;
+    // صليب بسيط في الوسط
+    ctx.strokeStyle = 'hsla(' + h0 + ',40%,40%,0.35)';
+    ctx.lineWidth = Math.max(6, w * 0.012);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, h * 0.22);
+    ctx.lineTo(w * 0.5, h * 0.72);
+    ctx.moveTo(w * 0.38, h * 0.38);
+    ctx.lineTo(w * 0.62, h * 0.38);
+    ctx.stroke();
+    // إطار
+    ctx.strokeStyle = 'hsla(' + h0 + ',35%,55%,0.5)';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(12, 12, w - 24, h - 24);
+    var im = new Image();
+    // نستخدم toDataURL — مسموح لأن الرسم محلي
+    im.src = c.toDataURL('image/jpeg', 0.92);
+    return new Promise(function (resolve) {
+      if (im.complete && im.width) resolve(im);
+      else {
+        im.onload = function () { resolve(im); };
+        im.onerror = function () { resolve(null); };
+        setTimeout(function () { resolve(im.width ? im : null); }, 2000);
+      }
+    });
+  }
+
+
   function artUrl(prompt, w, h, seed, variant) {
     // prompts قصيرة + عدة مسارات لتقليل فشل التوليد المتتالي
     var p = String(prompt || '').replace(/\s+/g, ' ').trim().slice(0, 160);
@@ -542,9 +623,9 @@ var EMOJI_WORDS = {
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
       state.art = { hero: null, pages: [] };
       var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
-      var total = steps.length, failed = 0, doneN = 0;
+      var total = steps.length, failed = 0, doneN = 0, aiOk = 0;
       if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري توليد ' + ar(total) + ' صورة… قد يستغرق دقيقة (يلزم نت)';
+      stat.textContent = '🤖 جاري تجهيز ' + ar(total) + ' صورة…';
       redraw();
       function saveStep(step, im) {
         if (step.key === 'hero') state.art.hero = im;
@@ -552,48 +633,54 @@ var EMOJI_WORDS = {
       }
       function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
       function loadOne(step) {
-        var list = (step.urls && step.urls.length) ? step.urls.slice() : [step.url];
-        // أعد خلط البذور على المحاولات
-        list = list.concat([
-          artUrl(step.prompt || 'peaceful christian scene', step.key === 'hero' ? 768 : 896, step.key === 'hero' ? 768 : 512, seed + 99 + doneN, 0),
-          artUrl(step.prompt || 'peaceful christian scene', step.key === 'hero' ? 768 : 896, step.key === 'hero' ? 768 : 512, seed + 199 + doneN, 1)
-        ]);
+        var w = step.key === 'hero' ? 768 : 896;
+        var h = step.key === 'hero' ? 768 : 512;
+        var list = [];
+        if (step.urls && step.urls.length) list = step.urls.slice();
+        else if (step.url) list = [step.url];
+        // محاولات إضافية ببذور مختلفة
+        var base = step.prompt || 'peaceful christian cross sunrise olive';
+        list.push(artUrl(base, w, h, seed + 50 + doneN, 0));
+        list.push(artUrl(base, w, h, seed + 80 + doneN, 1));
+        list.push(artUrl('soft watercolor cross bible light', w, h, seed + 120 + doneN, 0));
         var i = 0;
         function tryNext() {
-          if (i >= list.length) return Promise.resolve(null);
+          if (i >= list.length) {
+            // بديل محلي مضمون
+            return makeLocalArt(w, h, state.theme, emojisNow(), step.key, seed + doneN).then(function (im) {
+              return { im: im, ai: false };
+            });
+          }
           var u = list[i++];
-          return loadImg(u, 28000).then(function (im) {
-            if (im) return im;
-            return wait(900).then(tryNext);
+          return loadImg(u, 35000).then(function (im) {
+            if (im && im.width > 10) return { im: im, ai: true };
+            return wait(600).then(tryNext);
           });
         }
         return tryNext();
       }
-      // تحميل متوازٍ محدود (2) — أسرع وأقل حظرًا من التسلسل الطويل
-      var idx = 0;
-      function runWorker() {
-        if (id !== state.genId || !ov.isConnected) return Promise.resolve();
-        if (idx >= steps.length) return Promise.resolve();
-        var my = idx++;
-        var step = steps[my];
-        return loadOne(step).then(function (im) {
-          if (id !== state.genId || !ov.isConnected) return;
-          saveStep(step, im);
-          if (!im) failed++;
-          doneN++;
-          stat.textContent = '🤖 توليد الصور… ' + ar(doneN) + '/' + ar(total) + (im ? '' : ' (تعذرت واحدة — نكمل)');
-          redraw();
-          return runWorker();
-        });
-      }
-      Promise.all([runWorker(), runWorker()]).then(function () {
+      // تسلسلي مع فاصل — أنسب للجوال ويقلل حظر الشبكة
+      (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
-        var ok = total - failed;
-        if (failed === 0) stat.textContent = '✅ تم توليد كل الصور (' + ar(ok) + ')';
-        else if (ok > 0) stat.textContent = '✅ تم ' + ar(ok) + ' من ' + ar(total) + ' — اضغطي «ارسمي صور» لإعادة الباقي';
-        else stat.textContent = '⚠️ تعذّر التوليد — تأكد من الإنترنت وحاولي مرة أخرى';
-        redraw();
-      });
+        if (k >= steps.length) {
+          if (failed === 0 && aiOk === total) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(total) + ')';
+          else if (aiOk > 0) stat.textContent = '✅ تم تجهيز ' + ar(total) + ' صورة (' + ar(aiOk) + ' ذكاء اصطناعي + محلي)';
+          else stat.textContent = '✅ تم تجهيز الصور محليًا (الشبكة لم تسمح بالذكاء الاصطناعي)';
+          redraw();
+          return;
+        }
+        stat.textContent = '🤖 تجهيز الصورة ' + ar(k + 1) + ' من ' + ar(total) + '…';
+        loadOne(steps[k]).then(function (res) {
+          if (id !== state.genId || !ov.isConnected) return;
+          var im = res && res.im;
+          saveStep(steps[k], im);
+          if (!im) failed++;
+          else if (res.ai) aiOk++;
+          doneN++;
+          redraw();
+          wait(k + 1 < steps.length ? 1200 : 0).then(function () { next(k + 1); });
+        });
+      })(0);
     }
 
     lbl('عنوان البوستر');

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v146-poster-parallel-takla-tafsir';
+const CACHE = 'khalwati-v147-poster-local-fallback';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',
@@ -25,6 +25,11 @@ self.addEventListener('message', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  try {
+    const u = new URL(e.request.url);
+    if (u.hostname.indexOf('pollinations') >= 0) { e.respondWith(fetch(e.request)); return; }
+  } catch (err) {}
+
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = req.url;

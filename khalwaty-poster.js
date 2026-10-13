@@ -834,9 +834,9 @@ var EMOJI_WORDS = {
       if (existing) existing.remove();
       var box = document.createElement('div');
       box.id = 'stockPicker';
-      box.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;justify-content:center;';
+      box.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,0.55);display:flex;align-items:flex-end;justify-content:center;';
       var panel = document.createElement('div');
-      panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:85vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;';
+      panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:85vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;box-shadow:0 -8px 30px rgba(0,0,0,0.25);position:relative;z-index:1;';
       var names = ['نور وسلام','غروب ذهبي','مخطوطات','شموع وصلاة','افخارستيا','بحر وسلام','جبال','زهور','نجوم','شعلة','شجرة حياة','كنوز'];
       var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><b style="color:#5a4a2a;">مخزون الصور — اختاري الصفحة ثم النمط</b><button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:6px 12px;">إغلاق</button></div>';
       html += '<label style="display:block;margin-bottom:8px;color:#6a5a40;">تعيين إلى: <select id="stockTarget" style="padding:8px;border-radius:10px;border:1px solid #d4c4a0;">';

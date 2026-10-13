@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v137-poster-save-ai-fix';
+const CACHE = 'khalwati-v138-per-page-art';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

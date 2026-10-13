@@ -147,12 +147,15 @@
     g.addColorStop(1, hsl(theme.hues[1], 45, 94));
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
+    var hasPageArt = art && ((art.pages && art.pages[pi]) || art.hero || art.a || art.b);
     var rnd = seeded(11 + emojis.length * 7 + pi * 31);
     ctx.textAlign = 'center';
-    for (var n = 0; n < 16; n++) {
-      ctx.save(); ctx.globalAlpha = 0.09;
+    // قلل الرموز المتكررة جدًا — خاصة عند وجود صور مولّدة
+    var decorN = hasPageArt ? 3 : 8;
+    for (var n = 0; n < decorN; n++) {
+      ctx.save(); ctx.globalAlpha = hasPageArt ? 0.05 : 0.08;
       ctx.translate(rnd() * W, rnd() * H); ctx.rotate((rnd() - 0.5) * 0.9);
-      ctx.font = (50 + rnd() * 50) + 'px ' + EMOJI_FONT;
+      ctx.font = (40 + rnd() * 40) + 'px ' + EMOJI_FONT;
       ctx.fillText(emojis[Math.floor(rnd() * emojis.length)], 0, 0);
       ctx.restore();
     }
@@ -200,9 +203,11 @@
       ctx.fillStyle = hsl(hb, 70, 84); rrect(ctx, (W - tw) / 2, 56, tw, 88, 44); ctx.fill();
       ctx.fillStyle = hsl(hb, 45, 22); ctx.textAlign = 'center';
       ctx.fillText(title, W / 2, 101);
-      ctx.font = '70px ' + EMOJI_FONT;
-      ctx.fillText(emojis[0], M + 50, 100);
-      ctx.fillText(emojis[1 % emojis.length], W - M - 50, 100);
+      if (!(art && art.pages && art.pages[pi])) {
+        ctx.font = '70px ' + EMOJI_FONT;
+        ctx.fillText(emojis[0], M + 50, 100);
+        ctx.fillText(emojis[Math.min(1, emojis.length - 1)], W - M - 50, 100);
+      }
     }
 
     /* البطاقات */
@@ -235,8 +240,13 @@
       f.lines.forEach(function (ln) { ctx.fillText(ln, W - M - INNER, ty); ty += d.LH; });
     });
 
-    /* المشهد السفلي (رسم بالذكاء الاصطناعي) */
-    var sceneImg = art ? (pi % 2 === 0 ? art.a : art.b) : null;
+    /* المشهد السفلي — صورة خاصة بكل صفحة عند توفرها */
+    var sceneImg = null;
+    if (art) {
+      if (art.pages && art.pages[pi]) sceneImg = art.pages[pi];
+      else if (art.pages && art.pages.length) sceneImg = art.pages[pi % art.pages.length];
+      else sceneImg = (pi % 2 === 0 ? art.a : art.b);
+    }
     drawScene(ctx, sceneImg, M, H - 320, W - 2 * M, 210, theme, emojis);
 
     /* رقم الصفحة */
@@ -327,16 +337,45 @@
     return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
       '?width=' + w + '&height=' + h + '&nologo=true&enhance=true&model=flux&seed=' + seed;
   }
-  function artSteps(theme, emojis, seed, extra) {
-    var style = 'soft pastel watercolor illustration for a Christian Sunday school lesson, clean white background, ' +
-      'no text, no letters, no words, no captions';
+  function artSteps(theme, emojis, seed, extra, pageCount, contentItems) {
+    var style = 'soft pastel watercolor illustration for a Christian Sunday school lesson, clean composition, ' +
+      'no text, no letters, no words, no captions, high quality';
     var el = elementsFor(emojis), col = theme.word;
     extra = extra || '';
-    return [
-      { key: 'hero', url: artUrl('closed holy bible with a golden cross on a dark navy cover, olive branches around it' + (el ? ', ' + el : '') + extra + ', ' + col + ' accents, ' + style, 768, 768, seed) },
-      { key: 'a',    url: artUrl('open bible resting on a grassy hill with three wooden crosses at sunrise, soft mountains, wide panoramic scene' + (el ? ', ' + el : '') + extra + ', ' + col + ' sky, ' + style, 1024, 512, seed + 1) },
-      { key: 'b',    url: artUrl('peaceful valley with olive trees, a calm river and golden sunrise, a white dove flying, wide panoramic scene' + (el ? ', ' + el : '') + extra + ', ' + col + ' tones, ' + style, 1024, 512, seed + 2) }
+    pageCount = Math.max(1, Math.min(10, pageCount || 1));
+    contentItems = contentItems || [];
+    var scenes = [
+      'open holy bible on a wooden desk with soft morning window light and olive leaves',
+      'three wooden crosses on a green hill at golden sunrise with soft clouds',
+      'white dove flying above a calm river and olive trees in peaceful valley',
+      'ancient parchment scroll and quill beside a glowing candle in warm light',
+      'small stone church with a cross on the roof among trees at sunset',
+      'praying hands silhouette before a bright soft cross of light',
+      'mountain path toward a radiant sunrise symbolizing hope and faith',
+      'children listening to a teacher under a tree with open bible, gentle scene',
+      'still lake reflecting soft sky with a single wooden cross on the shore',
+      'garden of lilies and olive branches with soft rays of heavenly light'
     ];
+    var steps = [];
+    steps.push({
+      key: 'hero',
+      url: artUrl('closed holy bible with a golden cross on the cover, olive branches, soft light' + (el ? ', ' + el : '') + extra + ', ' + col + ' accents, ' + style, 768, 768, seed)
+    });
+    for (var i = 0; i < pageCount; i++) {
+      var hint = '';
+      var it = contentItems[i % Math.max(contentItems.length, 1)];
+      if (it) {
+        var t = String(it.heading || it.title || it.text || '').replace(/\s+/g, ' ').trim().slice(0, 70);
+        if (t) hint = ', mood inspired by lesson idea: ' + t;
+      }
+      var base = scenes[i % scenes.length];
+      steps.push({
+        key: 'p' + i,
+        pageIndex: i,
+        url: artUrl(base + (el ? ', ' + el : '') + hint + extra + ', ' + col + ' tones, wide panoramic scene, ' + style, 1024, 512, seed + 3 + i)
+      });
+    }
+    return steps;
   }
 
   /* ---------- الواجهة ---------- */
@@ -432,22 +471,45 @@
 
     function genArt() {
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
-      state.art = { hero: null, a: null, b: null };
-      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra()), failed = 0;
-      if (!steps.length) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري رسم الصور بالذكاء الاصطناعي… ١/٣ (قد يستغرق حوالي دقيقة — يلزم إنترنت)';
+      state.art = { hero: null, pages: [] };
+      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items);
+      var total = steps.length, failed = 0, doneN = 0;
+      if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
+      stat.textContent = '🤖 جاري رسم ' + ar(total) + ' صورة مناسبة للصفحات… ١/' + ar(total) + ' (يلزم إنترنت)';
       redraw();
+      function saveStep(step, im) {
+        if (step.key === 'hero') state.art.hero = im;
+        else if (typeof step.pageIndex === 'number') state.art.pages[step.pageIndex] = im;
+      }
+      function loadWithRetry(step, tries) {
+        return loadImg(step.url, 45000).then(function (im) {
+          if (im) return im;
+          if (tries > 0) {
+            // إعادة بمحاولة وبذرة مختلفة
+            var retryUrl = step.url.replace(/seed=\d+/, 'seed=' + (Math.floor(Math.random() * 90000) + 1));
+            return loadImg(retryUrl, 45000);
+          }
+          return null;
+        });
+      }
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
-          stat.textContent = failed ? '⚠️ تعذّر رسم ' + ar(failed) + ' من ' + ar(state.pages) + ' (يلزم إنترنت) — استخدمت زخارف بديلة مكانها.' : '✅ تم رسم الصور بالذكاء الاصطناعي';
+          var ok = total - failed;
+          if (failed === 0) stat.textContent = '✅ تم رسم كل الصور (' + ar(ok) + ') بنجاح';
+          else if (ok > 0) stat.textContent = '✅ تم رسم ' + ar(ok) + ' صورة — تعذّر ' + ar(failed) + ' (اتصلي بالنت وأعيدي المحاولة للباقي)';
+          else stat.textContent = '⚠️ تعذّر تحميل الصور — تأكد من الإنترنت ثم اضغطي «ارسمي صور» مرة أخرى';
+          redraw();
           return;
         }
-        loadImg(steps[k].url, 60000).then(function (im) {
+        loadWithRetry(steps[k], 1).then(function (im) {
           if (id !== state.genId || !ov.isConnected) return;
-          state.art[steps[k].key] = im; if (!im) failed++;
-          if (k + 1 < steps.length) stat.textContent = '🤖 جاري رسم الصور بالذكاء الاصطناعي… ' + ar(k + 2) + '/٣';
-          redraw(); next(k + 1);
+          saveStep(steps[k], im);
+          if (!im) failed++;
+          doneN++;
+          if (k + 1 < steps.length) stat.textContent = '🤖 جاري رسم الصور… ' + ar(doneN + 1) + '/' + ar(total);
+          redraw();
+          next(k + 1);
         });
       })(0);
     }

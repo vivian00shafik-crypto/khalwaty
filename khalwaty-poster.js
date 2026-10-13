@@ -29,7 +29,17 @@
     { id: 'world',  name: 'عالم',  list: ['🌍', '🌊', '⛰️', '🌅'] },
     { id: 'study',  name: 'دراسة', list: ['📜', '🔍', '💡', '✏️'] }
   ];
-  var EMOJI_WORDS = {
+
+  var ART_STYLES = [
+    { id: 'watercolor', name: 'مرسومة مائية', prompt: 'soft pastel watercolor illustration, hand-painted look, gentle brush strokes' },
+    { id: 'sketch', name: 'رسم خطّي', prompt: 'clean ink line art illustration, soft paper texture, minimal shading, storybook drawing' },
+    { id: 'print', name: 'طباعة كلاسيكية', prompt: 'vintage book engraving print style, classic lithograph, warm paper tones' },
+    { id: 'icon', name: 'أيقوني', prompt: 'inspired by soft Christian icon style, gold accents, reverent composition, no text' },
+    { id: 'pastel', name: 'باستيل مطبوع', prompt: 'soft pastel print poster, matte colors, clean educational design' },
+    { id: 'realistic', name: 'شبه واقعي', prompt: 'soft realistic illustration, natural light, cinematic calm, no text' }
+  ];
+
+var EMOJI_WORDS = {
     '✝': 'wooden cross', '📖': 'open book', '🕊': 'white dove', '🌿': 'olive branch', '🙏': 'praying hands',
     '⛪': 'small church', '🕯': 'candle', '✨': 'gentle sparkles', '🌸': 'blossoms', '🦋': 'butterfly',
     '☀': 'sun rays', '👑': 'golden crown', '⭐': 'stars', '🔥': 'flame', '🛡': 'shield',
@@ -372,47 +382,63 @@
     return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) +
       '?width=' + w + '&height=' + h + '&nologo=true&model=flux&seed=' + seed + '&safe=true';
   }
-  function artSteps(theme, emojis, seed, extra, pageCount, contentItems) {
-    var style = 'pastel watercolor, Christian lesson art, no text';
+  function textToVisualHint(arText) {
+    var n = String(arText || '');
+    var bits = [];
+    if (/كتاب|مقدس|إنجيل|آية|مزمور/.test(n)) bits.push('open bible');
+    if (/صليب|مسيح|يسوع|فداء|خلاص/.test(n)) bits.push('wooden cross with soft light');
+    if (/صلاه|صلّ|تضرع|اذكر/.test(n)) bits.push('person praying peacefully');
+    if (/نور|اضاء|اشرق/.test(n)) bits.push('golden sunrise light rays');
+    if (/سلام|لا تخف|اطمئ/.test(n)) bits.push('calm lake at dawn');
+    if (/محب|احب|رحمة|غفر/.test(n)) bits.push('warm embracing light and olive branches');
+    if (/كنيسة|قداس|هيكل/.test(n)) bits.push('small church among trees');
+    if (/خلق|سماوات|أرض/.test(n)) bits.push('creation sky and earth soft panorama');
+    if (/ماء|نهر|بحر|عماد/.test(n)) bits.push('clear living water stream');
+    if (/خبز|شبع|مائدة/.test(n)) bits.push('simple bread on wooden table');
+    if (/فرح|ابتهج|ترنيم/.test(n)) bits.push('joyful morning meadow');
+    if (/توب|خطي|رجوع/.test(n)) bits.push('path returning toward light');
+    if (/راع|خروف|قطيع/.test(n)) bits.push('shepherd with sheep on green hill');
+    if (/حرب|عدو|نصرة|صمود/.test(n)) bits.push('banner of hope on a hill after storm');
+    if (/حق|صدق|أمانة/.test(n)) bits.push('straight path of light through trees');
+    if (/روح|قدس/.test(n)) bits.push('gentle dove and soft flame of light');
+    if (!bits.length) bits.push('peaceful Christian Sunday school scene');
+    return bits.slice(0, 3).join(', ');
+  }
+  function artSteps(theme, emojis, seed, extra, pageCount, contentItems, artStyle) {
+    artStyle = artStyle || ART_STYLES[0];
+    var style = artStyle.prompt + ', Christian lesson art, no text, no letters, no watermark';
     var el = elementsFor(emojis), col = theme.word;
     extra = extra || '';
     pageCount = Math.max(1, Math.min(10, pageCount || 1));
     contentItems = contentItems || [];
-    var scenes = [
-      'open bible on wood desk morning light',
-      'three crosses on a hill at sunrise',
-      'white dove over olive trees and river',
-      'scroll and candle warm light',
-      'small church among trees at sunset',
-      'praying hands soft cross light',
-      'mountain path toward sunrise',
-      'children with open bible under tree',
-      'lake reflecting sky wooden cross',
-      'lilies and olive branches soft light'
-    ];
     var steps = [];
+    var titleHint = textToVisualHint(String((contentItems[0] && (contentItems[0].heading || contentItems[0].text)) || ''));
     steps.push({
       key: 'hero',
-      url: artUrl('holy bible golden cross olive branches ' + col + ' ' + style + (el ? ' ' + el : '') + (extra || ''), 1024, 1024, seed)
+      url: artUrl('cover illustration for a Sunday school lesson, ' + titleHint + ', ' + col + ' tones, ' + style + (el ? ', ' + el : '') + (extra || ''), 1024, 1024, seed)
     });
     for (var i = 0; i < pageCount; i++) {
-      var hint = '';
-      var it = contentItems[i % Math.max(contentItems.length, 1)];
-      if (it) {
-        var t = String(it.heading || it.title || it.text || '').replace(/\s+/g, ' ').trim().slice(0, 70);
-        if (t) hint = ', mood inspired by lesson idea: ' + t;
-      }
-      var base = scenes[i % scenes.length];
+      var it = contentItems[i] || contentItems[i % Math.max(contentItems.length, 1)] || {};
+      var pageText = String(it.heading || '') + ' ' + String(it.text || '');
+      var visual = textToVisualHint(pageText);
+      // جزء من النص للسياق (بدون حروف عربية طويلة في البرومبت — نترجم بالمفاتيح البصرية)
+      var topic = String(it.heading || it.title || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      var prompt = 'illustration matching this lesson page content: ' + visual +
+        (topic ? ', theme: ' + topic : '') +
+        ', ' + col + ' color mood, wide scene, ' + style +
+        (el ? ', ' + el : '') + (extra || '');
       steps.push({
         key: 'p' + i,
         pageIndex: i,
-        url: artUrl(base + ' ' + col + ' ' + style + (el ? ' ' + el : '') + (hint || '') + (extra || ''), 1280, 720, seed + 3 + i)
+        prompt: prompt,
+        url: artUrl(prompt, 1280, 720, seed + 3 + i)
       });
     }
     return steps;
   }
 
   /* ---------- الواجهة ---------- */
+/* ---------- الواجهة ---------- */
   var cssDone = false;
   function injectCSS() {
     if (cssDone) return; cssDone = true;
@@ -441,7 +467,7 @@
     injectCSS();
     data = data || { items: [] };
     var items = (data.items || []).filter(function (it) { return it && String(it.text || '').trim(); });
-    var state = { theme: THEMES[0], set: EMOJI_SETS[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [] };
+    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [] };
 
     var ov = document.createElement('div'); ov.className = 'kp-ov';
     var box = document.createElement('div'); box.className = 'kp-box'; ov.appendChild(box);
@@ -506,55 +532,47 @@
     function genArt() {
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
       state.art = { hero: null, pages: [] };
-      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items);
+      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
       var total = steps.length, failed = 0, doneN = 0;
       if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري تجهيز ' + ar(total) + ' صورة للصفحات… ١/' + ar(total);
+      stat.textContent = '🤖 جاري توليد ' + ar(total) + ' صورة من سياق النص بنمط «' + (state.artStyle && state.artStyle.name || '') + '»… ١/' + ar(total);
       redraw();
       function saveStep(step, im) {
         if (step.key === 'hero') state.art.hero = im;
         else if (typeof step.pageIndex === 'number') state.art.pages[step.pageIndex] = im;
       }
-      function localBg(idx) {
-        var n = 11 + (Math.abs(idx) % 9);
-        return loadImg('./bg-' + n + '.jpg', 12000);
-      }
       function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
       function loadWithRetry(step, triesLeft) {
-        return loadImg(step.url, 35000).then(function (im) {
-          if (im) return { im: im, ai: true };
+        var url = step.url;
+        if (triesLeft < 2 && step.prompt) {
+          url = artUrl(step.prompt, 1280, 720, Math.floor(Math.random() * 90000) + 1);
+        }
+        return loadImg(url, 40000).then(function (im) {
+          if (im) return im;
           if (triesLeft > 0) {
-            var retryUrl = step.url.replace(/seed=\d+/, 'seed=' + (Math.floor(Math.random() * 90000) + 11));
-            return wait(1200).then(function () { return loadImg(retryUrl, 35000); }).then(function (im2) {
-              if (im2) return { im: im2, ai: true };
-              return loadWithRetry(step, triesLeft - 1);
-            });
+            return wait(1800).then(function () { return loadWithRetry(step, triesLeft - 1); });
           }
-          // بديل محلي مختلف لكل صفحة حتى لا تبقى فارغة
-          var idx = (typeof step.pageIndex === 'number') ? step.pageIndex : (step.key === 'hero' ? 0 : doneN);
-          return localBg(idx + seed).then(function (lim) { return { im: lim, ai: false }; });
+          return null;
         });
       }
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
           var ok = total - failed;
-          if (failed === 0) stat.textContent = '✅ تم تجهيز كل الصور (' + ar(ok) + ')';
-          else stat.textContent = '✅ تم تجهيز ' + ar(ok) + ' صورة (بعضها من مكتبة التطبيق بعد تعذّر التوليد)';
+          if (failed === 0) stat.textContent = '✅ تم توليد كل الصور من سياق النص (' + ar(ok) + ')';
+          else if (ok > 0) stat.textContent = '✅ تم توليد ' + ar(ok) + ' — تعذّر ' + ar(failed) + ' (اتصلي بالنت وأعيدي «ارسمي صور»)';
+          else stat.textContent = '⚠️ تعذّر التوليد — يلزم إنترنت مستقر ثم أعيدي المحاولة';
           redraw();
           return;
         }
-        // تأخير بسيط بين الطلبات لتقليل الحظر من خدمة التوليد
-        wait(k === 0 ? 0 : 1500).then(function () {
-          return loadWithRetry(steps[k], 2);
-        }).then(function (res) {
+        wait(k === 0 ? 0 : 1600).then(function () {
+          return loadWithRetry(steps[k], 3);
+        }).then(function (im) {
           if (id !== state.genId || !ov.isConnected) return;
-          var im = res && res.im ? res.im : null;
           saveStep(steps[k], im);
           if (!im) failed++;
-          else if (res && res.ai === false) { /* محلي */ }
           doneN++;
-          if (k + 1 < steps.length) stat.textContent = '🤖 جاري تجهيز الصور… ' + ar(doneN + 1) + '/' + ar(total);
+          if (k + 1 < steps.length) stat.textContent = '🤖 توليد من سياق الصفحة… ' + ar(doneN + 1) + '/' + ar(total);
           redraw();
           next(k + 1);
         });
@@ -590,6 +608,16 @@
       });
     }
     drawT();
+
+    lbl('نمط الصورة');
+    var rowS = document.createElement('div'); rowS.className = 'kp-row'; box.appendChild(rowS);
+    function drawS() {
+      rowS.innerHTML = '';
+      ART_STYLES.forEach(function (st) {
+        chip(rowS, st.name, st === state.artStyle, function () { state.artStyle = st; drawS(); });
+      });
+    }
+    drawS();
 
     lbl('الرموز التعبيرية');
     var rowE = document.createElement('div'); rowE.className = 'kp-row'; box.appendChild(rowE);

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v140-tafsir-unique';
+const CACHE = 'khalwati-v141-baker-tafsir-long';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

@@ -572,6 +572,31 @@ var EMOJI_WORDS = {
   /* ---------- الواجهة ---------- */
 /* ---------- الواجهة ---------- */
   var cssDone = false;
+  function playPosterClick() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!window.__kpAudioCtx) window.__kpAudioCtx = new AC();
+      var ctx = window.__kpAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.06);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + 0.1);
+    } catch (e) {}
+  }
+  function hapticTap() {
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+  }
+  function feedbackTap() { playPosterClick(); hapticTap(); }
+
   function injectCSS() {
     if (cssDone) return; cssDone = true;
     var s = document.createElement('style');
@@ -591,7 +616,14 @@ var EMOJI_WORDS = {
       '.kp-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}' +
       '.kp-btn{flex:1 1 40%;border:0;border-radius:14px;padding:13px;font:800 15px ' + FONT + ';cursor:pointer;background:#4f8a3c;color:#fff}' +
       '.kp-btn.ai{flex-basis:100%;background:#7a5a9a}' +
-      '.kp-btn.alt{background:#e9e4d6;color:#333}';
+      '.kp-btn.alt{background:#e9e4d6;color:#333}' +
+      '.kp-btn.ai2{flex-basis:100%;background:#6a7a9a}' +
+      '.kp-btn.fill{flex-basis:100%;background:#3d7a5c}' +
+      '.kp-controls{background:#f7f1e4;border:1px solid rgba(180,150,80,0.3);border-radius:16px;padding:12px;margin-top:10px;box-sizing:border-box;max-width:100%}' +
+      '.kp-controls .kp-lbl{margin-top:10px}' +
+      '.kp-controls .kp-lbl:first-child{margin-top:0}' +
+      '.kp-row{display:flex;flex-wrap:wrap;gap:8px;max-width:100%}' +
+      '.kp-chip.on{border-color:#4f8a3c;background:#eef7e8;box-shadow:0 0 0 2px rgba(79,138,60,0.22)}';
     document.head.appendChild(s);
   }
 
@@ -824,6 +856,7 @@ var EMOJI_WORDS = {
       box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
       panel.querySelectorAll('.stock-item').forEach(function (btn) {
         btn.onclick = function () {
+          feedbackTap();
           var sid = parseInt(btn.getAttribute('data-s'), 10);
           var tgt = document.getElementById('stockTarget').value;
           var w = tgt === 'hero' ? 512 : 640;
@@ -846,9 +879,10 @@ var EMOJI_WORDS = {
     function uploadUserImage() {
       var inp = document.createElement('input');
       inp.type = 'file';
-      inp.accept = 'image/*';
-      // موبايل: اختيار من المعرض
-      try { inp.setAttribute('capture', 'environment'); } catch (e) {}
+      // بدون capture حتى يفتح ملفات/المعرض وليس الكاميرا
+      inp.accept = 'image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif';
+      try { inp.removeAttribute('capture'); } catch (e) {}
+      inp.multiple = false;
       inp.style.display = 'none';
       document.body.appendChild(inp);
       // اختيار الهدف
@@ -902,46 +936,53 @@ lbl('عنوان البوستر');
     function drawP() {
       rowP.innerHTML = '';
       [1,2,3,4,5,6,7,8,9,10].forEach(function (n) {
-        chip(rowP, pageLabel(n), state.pages === n, function () { state.pages = n; drawP(); redraw(); });
+        chip(rowP, pageLabel(n), state.pages === n, function () { feedbackTap(); state.pages = n; drawP(); redraw(); });
       });
     }
     drawP();
 
-    lbl('الألوان');
-    var rowT = document.createElement('div'); rowT.className = 'kp-row'; box.appendChild(rowT);
+    var controls = document.createElement('div');
+    controls.className = 'kp-controls';
+    box.appendChild(controls);
+    function clbl(t) {
+      var d = document.createElement('div'); d.className = 'kp-lbl'; d.textContent = t; controls.appendChild(d);
+    }
+
+    clbl('الألوان');
+    var rowT = document.createElement('div'); rowT.className = 'kp-row'; controls.appendChild(rowT);
     function drawT() {
       rowT.innerHTML = '';
       THEMES.forEach(function (th) {
         chip(rowT, '<span class="kp-dot" style="background:' + hsl(th.hues[0], 65, 70) + '"></span>' + th.name, th === state.theme,
-          function () { state.theme = th; drawT(); redraw(); });
+          function () { feedbackTap(); state.theme = th; drawT(); redraw(); });
       });
     }
     drawT();
 
-    lbl('نمط الصورة');
-    var rowS = document.createElement('div'); rowS.className = 'kp-row'; box.appendChild(rowS);
+    clbl('نمط الصورة (مرسومة / طباعة / أيقوني…)');
+    var rowS = document.createElement('div'); rowS.className = 'kp-row'; controls.appendChild(rowS);
     function drawS() {
       rowS.innerHTML = '';
       ART_STYLES.forEach(function (st) {
-        chip(rowS, st.name, st === state.artStyle, function () { state.artStyle = st; drawS(); });
+        chip(rowS, st.name, st === state.artStyle, function () { feedbackTap(); state.artStyle = st; drawS(); redraw(); });
       });
     }
     drawS();
 
-    lbl('الرموز التعبيرية');
-    var rowE = document.createElement('div'); rowE.className = 'kp-row'; box.appendChild(rowE);
+    clbl('الرموز التعبيرية');
+    var rowE = document.createElement('div'); rowE.className = 'kp-row'; controls.appendChild(rowE);
     var ci = document.createElement('input'); ci.className = 'kp-in'; ci.placeholder = 'أو اكتبي رموزك بنفسك: 🌹🕊️✝️🙏'; ci.style.marginTop = '8px';
     function drawE() {
       rowE.innerHTML = '';
       EMOJI_SETS.forEach(function (s) {
-        chip(rowE, s.list.join(' '), !state.custom && s === state.set, function () { state.set = s; state.custom = ''; ci.value = ''; drawE(); redraw(); });
+        chip(rowE, s.list.join(' '), !state.custom && s === state.set, function () { feedbackTap(); state.set = s; state.custom = ''; ci.value = ''; drawE(); redraw(); });
       });
     }
     ci.oninput = function () { state.custom = ci.value; drawE(); redraw(); };
-    drawE(); box.appendChild(ci);
+    drawE(); controls.appendChild(ci);
 
     var act = document.createElement('div'); act.className = 'kp-act'; box.appendChild(act);
-    function btn(cls, text, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'kp-btn ' + cls; b.textContent = text; b.onclick = fn; act.appendChild(b); return b; }
+    function btn(cls, text, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'kp-btn ' + cls; b.textContent = text; b.onclick = function (e) { feedbackTap(); if (fn) fn(e); }; act.appendChild(b); return b; }
     function download(blob, name) {
       if (!blob) { stat.textContent = 'لا يوجد ملف للحفظ'; return Promise.resolve(false); }
       var file;

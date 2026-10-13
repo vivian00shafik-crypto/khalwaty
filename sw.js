@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v145-art-styles-fathers-tafsir';
+const CACHE = 'khalwati-v146-poster-parallel-takla-tafsir';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

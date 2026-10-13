@@ -620,15 +620,33 @@ var EMOJI_WORDS = {
       }, 150);
     }
 
-    function genArt() {
+    function genArt(opts) {
+      opts = opts || {};
+      var retryLocalOnly = !!opts.retryLocalOnly;
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
-      state.art = { hero: null, pages: [] };
-      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
-      var total = steps.length, aiOk = 0, localOk = 0;
-      if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري توليد الصور بالذكاء الاصطناعي… ١/' + ar(total);
+      if (!retryLocalOnly) state.art = { hero: null, pages: [] };
+      else if (!state.art) state.art = { hero: null, pages: [] };
+      var stepsAll = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
+      var steps = stepsAll;
+      if (retryLocalOnly) {
+        steps = stepsAll.filter(function (st) {
+          if (st.key === 'hero') return !state.art.hero || state.art.hero.__local;
+          if (typeof st.pageIndex === 'number') {
+            var im = state.art.pages[st.pageIndex];
+            return !im || im.__local;
+          }
+          return true;
+        });
+      }
+      var total = steps.length, aiOk = 0, localOk = 0, doneN = 0;
+      if (!total) {
+        stat.textContent = retryLocalOnly ? '✅ كل الصور بالذكاء الاصطناعي بالفعل' : 'تعذر تجهيز طلب الرسم';
+        return;
+      }
+      stat.textContent = '🤖 توليد بالذكاء الاصطناعي… ١/' + ar(total) + ' — قد يستغرق ' + ar(Math.max(1, total * 6)) + ' ثانية';
       redraw();
-      function saveStep(step, im) {
+      function saveStep(step, im, isLocal) {
+        if (im) im.__local = !!isLocal;
         if (step.key === 'hero') state.art.hero = im;
         else if (typeof step.pageIndex === 'number') state.art.pages[step.pageIndex] = im;
       }
@@ -636,23 +654,16 @@ var EMOJI_WORDS = {
       function loadAI(step) {
         var w = step.key === 'hero' ? 512 : 640;
         var h = step.key === 'hero' ? 512 : 384;
-        var list = (step.urls && step.urls.length) ? step.urls.slice() : [];
-        var base = step.prompt || 'christian cross soft light';
-        list = list.concat([
-          artUrl(base, w, h, seed + 3 + step.pageIndex, 0),
-          artUrl(base, w, h, seed + 50 + step.pageIndex, 1),
-          artUrl(base, w, h, seed + 90 + step.pageIndex, 2)
-        ]);
-        // إزالة تكرار
-        var seen = {}, uniq = [];
-        list.forEach(function (u) { if (u && !seen[u]) { seen[u] = 1; uniq.push(u); } });
+        var base = step.prompt || 'christian soft watercolor cross bible light';
+        var list = [];
+        for (var t = 0; t < 6; t++) list.push(artUrl(base, w, h, seed + doneN * 19 + t * 53, t % 3));
         var i = 0;
         function tryNext() {
-          if (i >= uniq.length) return Promise.resolve(null);
-          var u = uniq[i++];
-          return loadImg(u, 45000).then(function (im) {
-            if (im && im.width > 8) return im;
-            return wait(1500).then(tryNext);
+          if (i >= list.length) return Promise.resolve(null);
+          var u = list[i++];
+          return loadImg(u, 55000).then(function (im) {
+            if (im && im.width >= 64 && im.height >= 64) return im;
+            return wait(2200).then(tryNext);
           });
         }
         return tryNext();
@@ -660,33 +671,46 @@ var EMOJI_WORDS = {
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
-          if (aiOk === total) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(total) + ')';
-          else if (aiOk > 0) stat.textContent = '✅ ذكاء اصطناعي: ' + ar(aiOk) + ' — محلي: ' + ar(localOk) + ' (أعيدي «ارسمي» للباقي مع نت أقوى)';
-          else stat.textContent = '✅ صور محلية جاهزة — الشبكة منعت الذكاء الاصطناعي، أعيدي المحاولة لاحقًا';
+          var allAi = true;
+          if (state.art.hero && state.art.hero.__local) allAi = false;
+          (state.art.pages || []).forEach(function (im) { if (im && im.__local) allAi = false; if (!im) allAi = false; });
+          // تأكد من عدد الصفحات
+          var need = state.pages + 1;
+          var haveAi = (state.art.hero && !state.art.hero.__local ? 1 : 0);
+          for (var pi = 0; pi < state.pages; pi++) {
+            if (state.art.pages[pi] && !state.art.pages[pi].__local) haveAi++;
+          }
+          if (haveAi >= need) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(haveAi) + ')';
+          else if (aiOk > 0) stat.textContent = '✅ ذكاء اصطناعي: ' + ar(haveAi) + ' — اضغطي «أعد الذكي فقط» للباقي مع نت مستقر';
+          else stat.textContent = '⚠️ تعذّر الذكاء الاصطناعي — أعيدي المحاولة مع نت أقوى';
           redraw();
           return;
         }
         var step = steps[k];
-        stat.textContent = '🤖 ذكاء اصطناعي… ' + ar(k + 1) + '/' + ar(total) + ' (انتظري قليلاً بين كل صورة)';
-        // فاصل أطول بين الطلبات حتى لا يحظر السيرفر باقي الصور
-        var gap = k === 0 ? 0 : 3500;
+        stat.textContent = '🤖 ذكاء اصطناعي ' + ar(k + 1) + '/' + ar(total) + ' — لا تغلقي النافذة…';
+        var gap = k === 0 ? 400 : 5500;
         wait(gap).then(function () { return loadAI(step); }).then(function (im) {
           if (id !== state.genId || !ov.isConnected) return;
           if (im) {
-            saveStep(step, im);
+            saveStep(step, im, false);
             aiOk++;
+            doneN++;
             redraw();
             next(k + 1);
-          } else {
+          } else if (!retryLocalOnly) {
             var w = step.key === 'hero' ? 512 : 640;
             var h = step.key === 'hero' ? 512 : 384;
             return makeLocalArt(w, h, state.theme, emojisNow(), step.key, seed + k).then(function (loc) {
               if (id !== state.genId || !ov.isConnected) return;
-              saveStep(step, loc);
+              saveStep(step, loc, true);
               if (loc) localOk++;
+              doneN++;
               redraw();
               next(k + 1);
             });
+          } else {
+            doneN++;
+            next(k + 1);
           }
         });
       })(0);
@@ -789,7 +813,8 @@ var EMOJI_WORDS = {
         }
       });
     }
-    btn('ai', '🤖 ارسمي صور جديدة بالذكاء الاصطناعي (بالألوان والرموز المختارة)', genArt);
+    btn('ai', '🤖 ارسمي صور جديدة بالذكاء الاصطناعي (بالألوان والرموز المختارة)', function () { genArt({}); });
+    btn('ai2', '🔁 أعد الذكي فقط (للصور المحلية/الناقصة)', function () { genArt({ retryLocalOnly: true }); });
     btn('', '📄 حفظ PDF (A4)', function () {
       if (!state.canvases.length) { stat.textContent = 'لا توجد صفحات للبوستر بعد'; return; }
       stat.textContent = 'جاري تجهيز PDF…';

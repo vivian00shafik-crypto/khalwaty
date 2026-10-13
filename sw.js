@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v150-share-refs';
+const CACHE = 'khalwati-v151-ai-commentary';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

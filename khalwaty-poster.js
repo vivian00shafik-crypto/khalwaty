@@ -340,7 +340,7 @@
     injectCSS();
     data = data || { items: [] };
     var items = (data.items || []).filter(function (it) { return it && String(it.text || '').trim(); });
-    var state = { theme: THEMES[0], set: EMOJI_SETS[0], custom: '', pages: 3, title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [] };
+    var state = { theme: THEMES[0], set: EMOJI_SETS[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [] };
 
     var ov = document.createElement('div'); ov.className = 'kp-ov';
     var box = document.createElement('div'); box.className = 'kp-box'; ov.appendChild(box);
@@ -395,7 +395,7 @@
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
-          stat.textContent = failed ? '⚠️ تعذّر رسم ' + ar(failed) + ' من ٣ (يلزم إنترنت) — استخدمت زخارف بديلة مكانها.' : '✅ تم رسم الصور بالذكاء الاصطناعي';
+          stat.textContent = failed ? '⚠️ تعذّر رسم ' + ar(failed) + ' من ' + ar(state.pages) + ' (يلزم إنترنت) — استخدمت زخارف بديلة مكانها.' : '✅ تم رسم الصور بالذكاء الاصطناعي';
           return;
         }
         loadImg(steps[k].url, 60000).then(function (im) {
@@ -411,12 +411,17 @@
     var ti = document.createElement('input'); ti.className = 'kp-in'; ti.value = state.title;
     ti.oninput = function () { state.title = ti.value; redraw(); }; box.appendChild(ti);
 
-    lbl('عدد الصفحات (A4)');
+    lbl('عدد الصفحات (A4) — حتى ١٠');
     var rowP = document.createElement('div'); rowP.className = 'kp-row'; box.appendChild(rowP);
+    function pageLabel(n) {
+      if (n === 1) return 'صفحة';
+      if (n === 2) return 'صفحتان';
+      return ar(n) + ' صفحات';
+    }
     function drawP() {
       rowP.innerHTML = '';
-      [2, 3].forEach(function (n) {
-        chip(rowP, n === 2 ? 'صفحتان' : 'ثلاث صفحات', state.pages === n, function () { state.pages = n; drawP(); redraw(); });
+      [1,2,3,4,5,6,7,8,9,10].forEach(function (n) {
+        chip(rowP, pageLabel(n), state.pages === n, function () { state.pages = n; drawP(); redraw(); });
       });
     }
     drawP();

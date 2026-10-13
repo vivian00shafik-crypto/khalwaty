@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v147-poster-local-fallback';
+const CACHE = 'khalwati-v148-katameros-ai';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

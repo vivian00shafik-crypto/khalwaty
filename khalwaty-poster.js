@@ -458,21 +458,22 @@ var EMOJI_WORDS = {
 
 
   function artUrl(prompt, w, h, seed, variant) {
-    // prompts قصيرة + عدة مسارات لتقليل فشل التوليد المتتالي
-    var p = String(prompt || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    var p = String(prompt || 'peaceful cross sunrise').replace(/\s+/g, ' ').trim().slice(0, 120);
     var enc = encodeURIComponent(p);
-    w = w || 768; h = h || 512; seed = seed || 1;
+    w = w || 512; h = h || 512; seed = (seed || 1) | 0;
     variant = variant || 0;
+    // مسارات متعددة — أصغر حجم = نجاح أعلى على الموبايل
     if (variant === 0) {
-      return 'https://image.pollinations.ai/prompt/' + enc + '?width=' + w + '&height=' + h + '&nologo=true&seed=' + seed + '&safe=true';
+      return 'https://image.pollinations.ai/prompt/' + enc + '?width=' + w + '&height=' + h + '&nologo=true&seed=' + seed;
     }
     if (variant === 1) {
-      return 'https://image.pollinations.ai/prompt/' + enc + '?width=' + w + '&height=' + h + '&nologo=true&model=flux&seed=' + (seed + 7) + '&safe=true';
+      return 'https://image.pollinations.ai/prompt/' + enc + '?width=' + w + '&height=' + h + '&nologo=true&model=flux&seed=' + (seed + 17);
     }
-    return 'https://gen.pollinations.ai/image/' + enc + '?width=' + w + '&height=' + h + '&nologo=true&seed=' + (seed + 13);
+    // مسار بديل
+    return 'https://image.pollinations.ai/prompt/' + enc + '?width=' + w + '&height=' + h + '&seed=' + (seed + 33) + '&nologo=true';
   }
   function artUrlsFor(prompt, w, h, seed) {
-    return [0, 1, 2].map(function (v) { return artUrl(prompt, w, h, seed, v); });
+    return [0, 1, 2].map(function (v) { return artUrl(prompt, w, h, seed + v * 11, v); });
   }
   function textToVisualHint(arText) {
     var n = String(arText || '');
@@ -508,8 +509,8 @@ var EMOJI_WORDS = {
     steps.push({
       key: 'hero',
       prompt: heroPrompt,
-      url: artUrl(heroPrompt, 768, 768, seed, 0),
-      urls: artUrlsFor(heroPrompt, 768, 768, seed)
+      url: artUrl(heroPrompt, 512, 512, seed, 0),
+      urls: artUrlsFor(heroPrompt, 512, 512, seed)
     });
     for (var i = 0; i < pageCount; i++) {
       var it = contentItems[i] || contentItems[i % Math.max(contentItems.length, 1)] || {};
@@ -520,8 +521,8 @@ var EMOJI_WORDS = {
         key: 'p' + i,
         pageIndex: i,
         prompt: prompt,
-        url: artUrl(prompt, 896, 512, seed + 3 + i, 0),
-        urls: artUrlsFor(prompt, 896, 512, seed + 3 + i)
+        url: artUrl(prompt, 640, 384, seed + 3 + i, 0),
+        urls: artUrlsFor(prompt, 640, 384, seed + 3 + i)
       });
     }
     return steps;
@@ -623,62 +624,70 @@ var EMOJI_WORDS = {
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
       state.art = { hero: null, pages: [] };
       var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
-      var total = steps.length, failed = 0, doneN = 0, aiOk = 0;
+      var total = steps.length, aiOk = 0, localOk = 0;
       if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري تجهيز ' + ar(total) + ' صورة…';
+      stat.textContent = '🤖 جاري توليد الصور بالذكاء الاصطناعي… ١/' + ar(total);
       redraw();
       function saveStep(step, im) {
         if (step.key === 'hero') state.art.hero = im;
         else if (typeof step.pageIndex === 'number') state.art.pages[step.pageIndex] = im;
       }
       function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-      function loadOne(step) {
-        var w = step.key === 'hero' ? 768 : 896;
-        var h = step.key === 'hero' ? 768 : 512;
-        var list = [];
-        if (step.urls && step.urls.length) list = step.urls.slice();
-        else if (step.url) list = [step.url];
-        // محاولات إضافية ببذور مختلفة
-        var base = step.prompt || 'peaceful christian cross sunrise olive';
-        list.push(artUrl(base, w, h, seed + 50 + doneN, 0));
-        list.push(artUrl(base, w, h, seed + 80 + doneN, 1));
-        list.push(artUrl('soft watercolor cross bible light', w, h, seed + 120 + doneN, 0));
+      function loadAI(step) {
+        var w = step.key === 'hero' ? 512 : 640;
+        var h = step.key === 'hero' ? 512 : 384;
+        var list = (step.urls && step.urls.length) ? step.urls.slice() : [];
+        var base = step.prompt || 'christian cross soft light';
+        list = list.concat([
+          artUrl(base, w, h, seed + 3 + step.pageIndex, 0),
+          artUrl(base, w, h, seed + 50 + step.pageIndex, 1),
+          artUrl(base, w, h, seed + 90 + step.pageIndex, 2)
+        ]);
+        // إزالة تكرار
+        var seen = {}, uniq = [];
+        list.forEach(function (u) { if (u && !seen[u]) { seen[u] = 1; uniq.push(u); } });
         var i = 0;
         function tryNext() {
-          if (i >= list.length) {
-            // بديل محلي مضمون
-            return makeLocalArt(w, h, state.theme, emojisNow(), step.key, seed + doneN).then(function (im) {
-              return { im: im, ai: false };
-            });
-          }
-          var u = list[i++];
-          return loadImg(u, 35000).then(function (im) {
-            if (im && im.width > 10) return { im: im, ai: true };
-            return wait(600).then(tryNext);
+          if (i >= uniq.length) return Promise.resolve(null);
+          var u = uniq[i++];
+          return loadImg(u, 45000).then(function (im) {
+            if (im && im.width > 8) return im;
+            return wait(1500).then(tryNext);
           });
         }
         return tryNext();
       }
-      // تسلسلي مع فاصل — أنسب للجوال ويقلل حظر الشبكة
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
-          if (failed === 0 && aiOk === total) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(total) + ')';
-          else if (aiOk > 0) stat.textContent = '✅ تم تجهيز ' + ar(total) + ' صورة (' + ar(aiOk) + ' ذكاء اصطناعي + محلي)';
-          else stat.textContent = '✅ تم تجهيز الصور محليًا (الشبكة لم تسمح بالذكاء الاصطناعي)';
+          if (aiOk === total) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(total) + ')';
+          else if (aiOk > 0) stat.textContent = '✅ ذكاء اصطناعي: ' + ar(aiOk) + ' — محلي: ' + ar(localOk) + ' (أعيدي «ارسمي» للباقي مع نت أقوى)';
+          else stat.textContent = '✅ صور محلية جاهزة — الشبكة منعت الذكاء الاصطناعي، أعيدي المحاولة لاحقًا';
           redraw();
           return;
         }
-        stat.textContent = '🤖 تجهيز الصورة ' + ar(k + 1) + ' من ' + ar(total) + '…';
-        loadOne(steps[k]).then(function (res) {
+        var step = steps[k];
+        stat.textContent = '🤖 ذكاء اصطناعي… ' + ar(k + 1) + '/' + ar(total) + ' (انتظري قليلاً بين كل صورة)';
+        // فاصل أطول بين الطلبات حتى لا يحظر السيرفر باقي الصور
+        var gap = k === 0 ? 0 : 3500;
+        wait(gap).then(function () { return loadAI(step); }).then(function (im) {
           if (id !== state.genId || !ov.isConnected) return;
-          var im = res && res.im;
-          saveStep(steps[k], im);
-          if (!im) failed++;
-          else if (res.ai) aiOk++;
-          doneN++;
-          redraw();
-          wait(k + 1 < steps.length ? 1200 : 0).then(function () { next(k + 1); });
+          if (im) {
+            saveStep(step, im);
+            aiOk++;
+            redraw();
+            next(k + 1);
+          } else {
+            var w = step.key === 'hero' ? 512 : 640;
+            var h = step.key === 'hero' ? 512 : 384;
+            return makeLocalArt(w, h, state.theme, emojisNow(), step.key, seed + k).then(function (loc) {
+              if (id !== state.genId || !ov.isConnected) return;
+              saveStep(step, loc);
+              if (loc) localOk++;
+              redraw();
+              next(k + 1);
+            });
+          }
         });
       })(0);
     }

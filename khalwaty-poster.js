@@ -334,32 +334,33 @@
     });
   }
   function artUrl(prompt, w, h, seed) {
-    return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
-      '?width=' + w + '&height=' + h + '&nologo=true&enhance=true&model=flux&seed=' + seed;
+    // prompt أقصر = نجاح أعلى؛ بدون enhance لتقليل الفشل
+    var p = String(prompt || '').slice(0, 220);
+    return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) +
+      '?width=' + w + '&height=' + h + '&nologo=true&model=flux&seed=' + seed + '&safe=true';
   }
   function artSteps(theme, emojis, seed, extra, pageCount, contentItems) {
-    var style = 'soft pastel watercolor illustration for a Christian Sunday school lesson, clean composition, ' +
-      'no text, no letters, no words, no captions, high quality';
+    var style = 'pastel watercolor, Christian lesson art, no text';
     var el = elementsFor(emojis), col = theme.word;
     extra = extra || '';
     pageCount = Math.max(1, Math.min(10, pageCount || 1));
     contentItems = contentItems || [];
     var scenes = [
-      'open holy bible on a wooden desk with soft morning window light and olive leaves',
-      'three wooden crosses on a green hill at golden sunrise with soft clouds',
-      'white dove flying above a calm river and olive trees in peaceful valley',
-      'ancient parchment scroll and quill beside a glowing candle in warm light',
-      'small stone church with a cross on the roof among trees at sunset',
-      'praying hands silhouette before a bright soft cross of light',
-      'mountain path toward a radiant sunrise symbolizing hope and faith',
-      'children listening to a teacher under a tree with open bible, gentle scene',
-      'still lake reflecting soft sky with a single wooden cross on the shore',
-      'garden of lilies and olive branches with soft rays of heavenly light'
+      'open bible on wood desk morning light',
+      'three crosses on a hill at sunrise',
+      'white dove over olive trees and river',
+      'scroll and candle warm light',
+      'small church among trees at sunset',
+      'praying hands soft cross light',
+      'mountain path toward sunrise',
+      'children with open bible under tree',
+      'lake reflecting sky wooden cross',
+      'lilies and olive branches soft light'
     ];
     var steps = [];
     steps.push({
       key: 'hero',
-      url: artUrl('closed holy bible with a golden cross on the cover, olive branches, soft light' + (el ? ', ' + el : '') + extra + ', ' + col + ' accents, ' + style, 768, 768, seed)
+      url: artUrl('holy bible golden cross olive branches ' + col + ' ' + style + (el ? ' ' + el : '') + (extra || ''), 768, 768, seed)
     });
     for (var i = 0; i < pageCount; i++) {
       var hint = '';
@@ -372,7 +373,7 @@
       steps.push({
         key: 'p' + i,
         pageIndex: i,
-        url: artUrl(base + (el ? ', ' + el : '') + hint + extra + ', ' + col + ' tones, wide panoramic scene, ' + style, 1024, 512, seed + 3 + i)
+        url: artUrl(base + ' ' + col + ' ' + style + (el ? ' ' + el : '') + (hint || '') + (extra || ''), 1024, 512, seed + 3 + i)
       });
     }
     return steps;
@@ -475,39 +476,52 @@
       var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items);
       var total = steps.length, failed = 0, doneN = 0;
       if (!total) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
-      stat.textContent = '🤖 جاري رسم ' + ar(total) + ' صورة مناسبة للصفحات… ١/' + ar(total) + ' (يلزم إنترنت)';
+      stat.textContent = '🤖 جاري تجهيز ' + ar(total) + ' صورة للصفحات… ١/' + ar(total);
       redraw();
       function saveStep(step, im) {
         if (step.key === 'hero') state.art.hero = im;
         else if (typeof step.pageIndex === 'number') state.art.pages[step.pageIndex] = im;
       }
-      function loadWithRetry(step, tries) {
-        return loadImg(step.url, 45000).then(function (im) {
-          if (im) return im;
-          if (tries > 0) {
-            // إعادة بمحاولة وبذرة مختلفة
-            var retryUrl = step.url.replace(/seed=\d+/, 'seed=' + (Math.floor(Math.random() * 90000) + 1));
-            return loadImg(retryUrl, 45000);
+      function localBg(idx) {
+        var n = 11 + (Math.abs(idx) % 9);
+        return loadImg('./bg-' + n + '.jpg', 12000);
+      }
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      function loadWithRetry(step, triesLeft) {
+        return loadImg(step.url, 35000).then(function (im) {
+          if (im) return { im: im, ai: true };
+          if (triesLeft > 0) {
+            var retryUrl = step.url.replace(/seed=\d+/, 'seed=' + (Math.floor(Math.random() * 90000) + 11));
+            return wait(1200).then(function () { return loadImg(retryUrl, 35000); }).then(function (im2) {
+              if (im2) return { im: im2, ai: true };
+              return loadWithRetry(step, triesLeft - 1);
+            });
           }
-          return null;
+          // بديل محلي مختلف لكل صفحة حتى لا تبقى فارغة
+          var idx = (typeof step.pageIndex === 'number') ? step.pageIndex : (step.key === 'hero' ? 0 : doneN);
+          return localBg(idx + seed).then(function (lim) { return { im: lim, ai: false }; });
         });
       }
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
           var ok = total - failed;
-          if (failed === 0) stat.textContent = '✅ تم رسم كل الصور (' + ar(ok) + ') بنجاح';
-          else if (ok > 0) stat.textContent = '✅ تم رسم ' + ar(ok) + ' صورة — تعذّر ' + ar(failed) + ' (اتصلي بالنت وأعيدي المحاولة للباقي)';
-          else stat.textContent = '⚠️ تعذّر تحميل الصور — تأكد من الإنترنت ثم اضغطي «ارسمي صور» مرة أخرى';
+          if (failed === 0) stat.textContent = '✅ تم تجهيز كل الصور (' + ar(ok) + ')';
+          else stat.textContent = '✅ تم تجهيز ' + ar(ok) + ' صورة (بعضها من مكتبة التطبيق بعد تعذّر التوليد)';
           redraw();
           return;
         }
-        loadWithRetry(steps[k], 1).then(function (im) {
+        // تأخير بسيط بين الطلبات لتقليل الحظر من خدمة التوليد
+        wait(k === 0 ? 0 : 1500).then(function () {
+          return loadWithRetry(steps[k], 2);
+        }).then(function (res) {
           if (id !== state.genId || !ov.isConnected) return;
+          var im = res && res.im ? res.im : null;
           saveStep(steps[k], im);
           if (!im) failed++;
+          else if (res && res.ai === false) { /* محلي */ }
           doneN++;
-          if (k + 1 < steps.length) stat.textContent = '🤖 جاري رسم الصور… ' + ar(doneN + 1) + '/' + ar(total);
+          if (k + 1 < steps.length) stat.textContent = '🤖 جاري تجهيز الصور… ' + ar(doneN + 1) + '/' + ar(total);
           redraw();
           next(k + 1);
         });

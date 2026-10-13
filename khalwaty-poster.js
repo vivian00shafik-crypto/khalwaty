@@ -390,111 +390,117 @@ var EMOJI_WORDS = {
     w = w || 896; h = h || 512;
     seed = (seed || 1) | 0;
     styleId = (styleId == null ? seed % 12 : styleId) | 0;
+    var names = ['نور وسلام','غروب ذهبي','مخطوطات','شموع وصلاة','افخارستيا','بحر وسلام','جبال','زهور','نجوم','شعلة','شجرة حياة','كنوز'];
+    var emojiSets = [
+      ['✝','📖','🕊'], ['🌅','✝','✨'], ['📜','✝','🕯'], ['🕯','🙏','✝'],
+      ['🍇','🍞','✝'], ['🌊','🕊','✝'], ['🏔','✝','🌅'], ['🌸','✝','🌿'],
+      ['⭐','✝','🌙'], ['🔥','✝','📖'], ['🌳','🕊','✝'], ['💎','✝','📜']
+    ];
+    var pals = [
+      [210, 45, 88], [25, 70, 82], [35, 30, 88], [40, 50, 86],
+      [280, 35, 88], [195, 55, 84], [150, 25, 82], [330, 40, 90],
+      [230, 40, 86], [15, 75, 80], [120, 40, 84], [45, 55, 86]
+    ];
     var c = document.createElement('canvas');
     c.width = w; c.height = h;
     var ctx = c.getContext('2d');
-    var palettes = [
-      [210, 175, 45], [280, 320, 40], [150, 180, 50], [30, 10, 200],
-      [200, 220, 30], [340, 20, 160], [120, 90, 50], [260, 300, 20],
-      [190, 140, 55], [15, 40, 25], [230, 250, 180], [100, 60, 35]
-    ];
-    var pal = palettes[styleId % palettes.length];
-    var h0 = (theme && theme.hues && theme.hues[0]) || pal[0];
-    var h1 = (theme && theme.hues && theme.hues[1]) || pal[1];
-    // خلفية حسب النمط
-    if (styleId % 4 === 0) {
+    var pal = pals[styleId % pals.length];
+    var h0 = pal[0], sat = pal[1], light = pal[2];
+
+    // خلفيات مختلفة بوضوح
+    if (styleId === 0) {
       var g = ctx.createLinearGradient(0, 0, w, h);
-      g.addColorStop(0, 'hsl(' + h0 + ',55%,88%)');
-      g.addColorStop(0.5, 'hsl(' + h1 + ',45%,92%)');
-      g.addColorStop(1, 'hsl(' + ((h0 + 40) % 360) + ',50%,82%)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-    } else if (styleId % 4 === 1) {
-      ctx.fillStyle = 'hsl(' + h0 + ',40%,93%)';
-      ctx.fillRect(0, 0, w, h);
-      for (var yy = 0; yy < h; yy += 18) {
-        ctx.fillStyle = 'hsla(' + h1 + ',30%,80%,' + (0.04 + (yy % 36) / 400) + ')';
-        ctx.fillRect(0, yy, w, 9);
+      g.addColorStop(0, '#d6eaff'); g.addColorStop(1, '#fff8e8');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    } else if (styleId === 1) {
+      var g1 = ctx.createLinearGradient(0, 0, 0, h);
+      g1.addColorStop(0, '#ffb347'); g1.addColorStop(0.55, '#ff7e5f'); g1.addColorStop(1, '#4a2c6a');
+      ctx.fillStyle = g1; ctx.fillRect(0, 0, w, h);
+    } else if (styleId === 2) {
+      ctx.fillStyle = '#f3e4c8'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(120,90,40,0.15)';
+      for (var ly = 0; ly < h; ly += 14) { ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(w, ly); ctx.stroke(); }
+    } else if (styleId === 3) {
+      ctx.fillStyle = '#2a1f3d'; ctx.fillRect(0, 0, w, h);
+      for (var i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255,200,80,' + (0.15 + i * 0.08) + ')';
+        ctx.arc(w * (0.2 + i * 0.15), h * 0.7, 20 + i * 8, 0, Math.PI * 2); ctx.fill();
       }
-    } else if (styleId % 4 === 2) {
-      var rg = ctx.createRadialGradient(w * 0.5, h * 0.4, 10, w * 0.5, h * 0.5, Math.max(w, h) * 0.7);
-      rg.addColorStop(0, 'hsl(' + h1 + ',60%,95%)');
-      rg.addColorStop(1, 'hsl(' + h0 + ',45%,78%)');
-      ctx.fillStyle = rg;
-      ctx.fillRect(0, 0, w, h);
-    } else {
+    } else if (styleId === 4) {
+      ctx.fillStyle = '#f8f0ff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(160,80,180,0.2)';
+      ctx.beginPath(); ctx.arc(w * 0.5, h * 0.5, Math.min(w, h) * 0.35, 0, Math.PI * 2); ctx.fill();
+    } else if (styleId === 5) {
       var g2 = ctx.createLinearGradient(0, 0, 0, h);
-      g2.addColorStop(0, 'hsl(' + h0 + ',50%,90%)');
-      g2.addColorStop(1, 'hsl(' + h1 + ',40%,85%)');
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, w, h);
-      // جبال بسيطة
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.7);
-      for (var mx = 0; mx <= w; mx += 40) {
-        var mh = h * (0.45 + ((seed + mx) % 30) / 100);
-        ctx.lineTo(mx, mh);
+      g2.addColorStop(0, '#87ceeb'); g2.addColorStop(0.5, '#4db8c9'); g2.addColorStop(1, '#0b3d5c');
+      ctx.fillStyle = g2; ctx.fillRect(0, 0, w, h);
+    } else if (styleId === 6) {
+      ctx.fillStyle = '#cfe8d5'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(60,100,70,0.35)';
+      ctx.beginPath(); ctx.moveTo(0, h * 0.7); ctx.lineTo(w * 0.3, h * 0.35); ctx.lineTo(w * 0.55, h * 0.65); ctx.lineTo(w, h * 0.3); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+    } else if (styleId === 7) {
+      ctx.fillStyle = '#ffe8f0'; ctx.fillRect(0, 0, w, h);
+      for (var f = 0; f < 8; f++) {
+        ctx.font = (28 + (seed + f) % 24) + 'px serif';
+        ctx.globalAlpha = 0.7;
+        ctx.fillText('🌸', (seed * (f + 3) * 37) % w, (seed * (f + 5) * 29) % h);
       }
-      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-      ctx.fillStyle = 'hsla(' + h0 + ',35%,70%,0.35)';
-      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (styleId === 8) {
+      ctx.fillStyle = '#0b1a3a'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#fff8b0';
+      for (var st = 0; st < 30; st++) {
+        var sx = (seed * (st + 2) * 53) % w, sy = (seed * (st + 7) * 41) % h;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    } else if (styleId === 9) {
+      var g3 = ctx.createRadialGradient(w * 0.5, h * 0.55, 10, w * 0.5, h * 0.5, Math.max(w, h) * 0.6);
+      g3.addColorStop(0, '#ffe066'); g3.addColorStop(0.4, '#ff6b00'); g3.addColorStop(1, '#3a0a0a');
+      ctx.fillStyle = g3; ctx.fillRect(0, 0, w, h);
+    } else if (styleId === 10) {
+      ctx.fillStyle = '#e8f5e0'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(40,100,50,0.45)'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(w * 0.5, h * 0.85); ctx.lineTo(w * 0.5, h * 0.35); ctx.stroke();
+      ctx.fillStyle = 'rgba(40,120,50,0.35)';
+      ctx.beginPath(); ctx.arc(w * 0.5, h * 0.32, 70, 0, Math.PI * 2); ctx.fill();
+    } else {
+      var g4 = ctx.createLinearGradient(0, 0, w, h);
+      g4.addColorStop(0, '#fff3c4'); g4.addColorStop(1, '#d4af37');
+      ctx.fillStyle = g4; ctx.fillRect(0, 0, w, h);
     }
-    // دوائر زخرفية
-    for (var i2 = 0; i2 < 7; i2++) {
-      var x = (seed * (i2 + 3) * 47 + styleId * 13) % w;
-      var y = (seed * (i2 + 5) * 31 + styleId * 19) % h;
-      var r = 35 + (seed + i2 * 13) % 100;
-      ctx.beginPath();
-      ctx.fillStyle = 'hsla(' + ((h0 + i2 * 25) % 360) + ',50%,70%,' + (0.1 + (i2 % 3) * 0.04) + ')';
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // شريط سفلي
-    var lg = ctx.createLinearGradient(0, h * 0.5, 0, h);
-    lg.addColorStop(0, 'rgba(255,255,255,0)');
-    lg.addColorStop(1, 'rgba(255,255,255,0.4)');
-    ctx.fillStyle = lg;
-    ctx.fillRect(0, 0, w, h);
-    // إيموجي
-    var list = (emojis && emojis.length) ? emojis.slice() : ['✝', '📖', '🕊', '🌿'];
-    var stockEmoji = [
-      ['✝', '📖', '🕊'], ['🌅', '✝', '🌿'], ['📜', '✨', '✝'], ['🕯', '📖', '🙏'],
-      ['🍇', '✝', '🍞'], ['🌊', '✝', '🕊'], ['🏔', '✝', '🌅'], ['🌸', '✝', '📖'],
-      ['⭐', '✝', '🌙'], ['🔥', '✝', '📖'], ['🌳', '🕊', '✝'], ['💎', '✝', '📜']
-    ];
-    if (styleId >= 0 && stockEmoji[styleId % stockEmoji.length]) {
-      list = stockEmoji[styleId % stockEmoji.length].concat(list).slice(0, 4);
-    }
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = Math.floor(Math.min(w, h) * 0.2) + 'px serif';
-    var n = Math.min(4, list.length);
-    for (var k = 0; k < n; k++) {
-      var px = w * (0.2 + k * 0.2);
-      var py = h * (0.4 + (k % 2) * 0.1);
-      ctx.globalAlpha = 0.93;
-      ctx.fillText(list[k], px, py);
+
+    // إيموجي كبيرة واضحة
+    var list = emojiSets[styleId % emojiSets.length];
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = Math.floor(Math.min(w, h) * 0.22) + 'px serif';
+    for (var k = 0; k < list.length; k++) {
+      ctx.globalAlpha = 0.95;
+      ctx.fillText(list[k], w * (0.25 + k * 0.25), h * 0.42);
     }
     ctx.globalAlpha = 1;
+
     // صليب
-    ctx.strokeStyle = 'hsla(' + h0 + ',40%,35%,0.4)';
-    ctx.lineWidth = Math.max(4, w * 0.012);
+    ctx.strokeStyle = 'rgba(80,60,20,0.45)';
+    ctx.lineWidth = Math.max(5, w * 0.012);
     ctx.lineCap = 'round';
-    var cx = w * 0.5, cy = h * 0.72, cl = Math.min(w, h) * 0.12;
+    var cx = w * 0.5, cy = h * 0.72, cl = Math.min(w, h) * 0.11;
     ctx.beginPath();
     ctx.moveTo(cx, cy - cl); ctx.lineTo(cx, cy + cl);
-    ctx.moveTo(cx - cl * 0.7, cy - cl * 0.25); ctx.lineTo(cx + cl * 0.7, cy - cl * 0.25);
+    ctx.moveTo(cx - cl * 0.7, cy - cl * 0.2); ctx.lineTo(cx + cl * 0.7, cy - cl * 0.2);
     ctx.stroke();
-    // إطار
-    ctx.strokeStyle = 'hsla(' + h0 + ',30%,50%,0.25)';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(10, 10, w - 20, h - 20);
-    return new Promise(function (res) {
-      var im = new Image();
-      im.onload = function () { im.__local = true; im.__stock = styleId; res(im); };
-      im.onerror = function () { res(null); };
-      im.src = c.toDataURL('image/jpeg', 0.92);
-    });
+
+    // اسم النمط مكتوب على الصورة عشان يبان التغيير
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, h - 44, w, 44);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.max(16, Math.floor(h * 0.06)) + 'px sans-serif';
+    ctx.fillText(names[styleId % names.length], w / 2, h - 22);
+
+    // نرجع الكانفس مباشرة (أضمن من Image+dataURL)
+    c.__local = true;
+    c.__stock = styleId;
+    return Promise.resolve(c);
   }
 
 
@@ -836,47 +842,87 @@ var EMOJI_WORDS = {
       box.id = 'stockPicker';
       box.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,0.55);display:flex;align-items:flex-end;justify-content:center;';
       var panel = document.createElement('div');
-      panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:85vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;box-shadow:0 -8px 30px rgba(0,0,0,0.25);position:relative;z-index:1;';
+      panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;box-shadow:0 -8px 30px rgba(0,0,0,0.25);position:relative;z-index:1;';
       var names = ['نور وسلام','غروب ذهبي','مخطوطات','شموع وصلاة','افخارستيا','بحر وسلام','جبال','زهور','نجوم','شعلة','شجرة حياة','كنوز'];
-      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><b style="color:#5a4a2a;">مخزون الصور — اختاري الصفحة ثم النمط</b><button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:6px 12px;">إغلاق</button></div>';
-      html += '<label style="display:block;margin-bottom:8px;color:#6a5a40;">تعيين إلى: <select id="stockTarget" style="padding:8px;border-radius:10px;border:1px solid #d4c4a0;">';
-      html += '<option value="hero">الصورة الرئيسية</option>';
-      for (var i = 0; i < state.pages; i++) html += '<option value="' + i + '">الصفحة ' + (i + 1) + '</option>';
+      var html = '';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">';
+      html += '<b style="color:#5a4a2a;flex:1;">مخزون الصور — اختاري الهدف ثم النمط</b>';
+      html += '<button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:8px 12px;">إغلاق</button></div>';
+      html += '<label style="display:block;margin-bottom:10px;color:#6a5a40;font-weight:600;">تعيين إلى:<br/>';
+      html += '<select id="stockTarget" style="margin-top:6px;width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;font-size:15px;box-sizing:border-box;">';
+      html += '<option value="hero">الصورة الرئيسية (غلاف)</option>';
+      html += '<option value="all">كل الصفحات + الغلاف</option>';
+      for (var pi = 0; pi < state.pages; pi++) {
+        html += '<option value="' + pi + '">الصفحة ' + (pi + 1) + ' فقط</option>';
+      }
       html += '</select></label>';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
       for (var s = 0; s < 12; s++) {
-        html += '<button type="button" class="stock-item" data-s="' + s + '" style="padding:14px;border-radius:14px;border:1px solid rgba(180,140,60,0.35);background:linear-gradient(135deg,#fff,#f5e6c8);color:#4a3a18;font-weight:700;cursor:pointer;">' + names[s] + '</button>';
+        html += '<button type="button" class="stock-item" data-s="' + s + '" style="padding:14px 10px;border-radius:14px;border:2px solid rgba(180,140,60,0.4);background:linear-gradient(135deg,#fff,#f5e6c8);color:#4a3a18;font-weight:700;cursor:pointer;font-size:15px;">' + names[s] + '</button>';
       }
       html += '</div>';
-      html += '<p style="margin-top:12px;font-size:0.85em;color:#8a7a60;text-align:center;">أو ارفعي صورة من موبايلك من الزر بالأسفل في شاشة البوستر</p>';
+      html += '<p id="stockMsg" style="margin-top:12px;font-size:0.9em;color:#5a7d4a;text-align:center;font-weight:700;min-height:1.4em;"></p>';
       panel.innerHTML = html;
       box.appendChild(panel);
       document.body.appendChild(box);
-      document.getElementById('stockClose').onclick = function () { box.remove(); };
-      box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
-      panel.querySelectorAll('.stock-item').forEach(function (btn) {
-        btn.onclick = function () {
-          feedbackTap();
-          var sid = parseInt(btn.getAttribute('data-s'), 10);
-          var tgt = document.getElementById('stockTarget').value;
-          var w = tgt === 'hero' ? 512 : 640;
-          var h = tgt === 'hero' ? 512 : 384;
-          var seed = Math.floor(Math.random() * 90000) + 1;
-          stat.textContent = 'جاري تطبيق صورة المخزون…';
-          makeLocalArt(w, h, state.theme, emojisNow(), tgt, seed, sid).then(function (im) {
-            if (!im) { stat.textContent = 'تعذر إنشاء الصورة'; return; }
-            if (!state.art) state.art = { hero: null, pages: [] };
-            if (tgt === 'hero') state.art.hero = im;
-            else state.art.pages[parseInt(tgt, 10)] = im;
-            stat.textContent = '✅ تم تعيين صورة المخزون';
-            redraw();
-            box.remove();
+      function close() { try { box.remove(); } catch (e) {} }
+      document.getElementById('stockClose').onclick = function (e) { e.preventDefault(); e.stopPropagation(); close(); };
+      box.addEventListener('click', function (e) { if (e.target === box) close(); });
+
+      function applyStock(sid, target) {
+        var msg = document.getElementById('stockMsg');
+        if (msg) msg.textContent = 'جاري التطبيق…';
+        if (!state.art) state.art = { hero: null, pages: [] };
+        if (!state.art.pages) state.art.pages = [];
+        var seed = Math.floor(Math.random() * 90000) + 1 + sid * 17;
+        var jobs = [];
+        function putHero() {
+          return makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, sid).then(function (im) {
+            if (im) state.art.hero = im;
           });
-        };
+        }
+        function putPage(p) {
+          return makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + p, seed + p + 1, sid).then(function (im) {
+            if (im) state.art.pages[p] = im;
+          });
+        }
+        if (target === 'hero') {
+          jobs.push(putHero());
+        } else if (target === 'all') {
+          jobs.push(putHero());
+          for (var p = 0; p < state.pages; p++) jobs.push(putPage(p));
+        } else {
+          var idx = parseInt(target, 10);
+          if (isNaN(idx)) idx = 0;
+          jobs.push(putPage(idx));
+        }
+        return Promise.all(jobs).then(function () {
+          redraw();
+          if (typeof feedbackTap === 'function') feedbackTap();
+          if (msg) msg.textContent = '✅ تم تطبيق: ' + names[sid] + (target === 'all' ? ' على الكل' : '');
+          if (stat) stat.textContent = '✅ تم تطبيق نمط «' + names[sid] + '» من المخزون';
+          setTimeout(close, 450);
+        }).catch(function (err) {
+          if (msg) msg.textContent = 'تعذر التطبيق';
+          if (stat) stat.textContent = 'تعذر تطبيق المخزون';
+        });
+      }
+
+      panel.querySelectorAll('.stock-item').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof feedbackTap === 'function') feedbackTap();
+          var sid = parseInt(btn.getAttribute('data-s'), 10);
+          var sel = document.getElementById('stockTarget');
+          var target = sel ? sel.value : 'all';
+          btn.style.opacity = '0.6';
+          applyStock(sid, target);
+        });
       });
     }
 
-    function uploadUserImage() {
+function uploadUserImage() {
       var inp = document.createElement('input');
       inp.type = 'file';
       // بدون capture حتى يفتح ملفات/المعرض وليس الكاميرا

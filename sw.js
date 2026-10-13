@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v156-stock-z';
+const CACHE = 'khalwati-v157-stock-apply';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

@@ -1,7 +1,7 @@
-const CACHE = 'khalwati-v143-baker-tafsir-meaning';
+const CACHE = 'khalwati-v144-deutero-tafsir';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
-  './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',
+  './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-512.png',
   './hymn.m4a', './prayer-alarm.mp3', './sawt-rabina.mp3',
   './bible-music.mp3', './bible-music-1.mp3', './bible-music-2.mp3', './bible-music-3.mp3', './bg-11.jpg', './bg-12.jpg', './bg-13.jpg', './bg-14.jpg', './bg-15.jpg', './bg-16.jpg', './bg-17.jpg', './bg-18.jpg', './bg-19.jpg'

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v136-prep-poster-a4-ai';
+const CACHE = 'khalwati-v135-prep-10-pages';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

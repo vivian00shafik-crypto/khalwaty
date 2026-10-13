@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v152-inapp-browser';
+const CACHE = 'khalwati-v153-stock-upload';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

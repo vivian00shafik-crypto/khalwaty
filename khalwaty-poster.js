@@ -386,73 +386,114 @@ var EMOJI_WORDS = {
     });
   }
 
-  function makeLocalArt(w, h, theme, emojis, label, seed) {
-    // رسم محلي جميل إن فشل الذكاء الاصطناعي — حتى لا تفشل كل الصفحات
+  function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
     w = w || 896; h = h || 512;
+    seed = (seed || 1) | 0;
+    styleId = (styleId == null ? seed % 12 : styleId) | 0;
     var c = document.createElement('canvas');
     c.width = w; c.height = h;
     var ctx = c.getContext('2d');
-    var h0 = (theme && theme.hues && theme.hues[0]) || 200;
-    var h1 = (theme && theme.hues && theme.hues[1]) || 160;
-    var g = ctx.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, 'hsl(' + h0 + ',55%,88%)');
-    g.addColorStop(0.55, 'hsl(' + h1 + ',45%,92%)');
-    g.addColorStop(1, 'hsl(' + ((h0 + 40) % 360) + ',50%,82%)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-    // دوائر زخرفية
-    for (var i = 0; i < 6; i++) {
-      var x = (seed * (i + 3) * 47) % w;
-      var y = (seed * (i + 5) * 31) % h;
-      var r = 40 + (seed + i * 13) % 90;
+    var palettes = [
+      [210, 175, 45], [280, 320, 40], [150, 180, 50], [30, 10, 200],
+      [200, 220, 30], [340, 20, 160], [120, 90, 50], [260, 300, 20],
+      [190, 140, 55], [15, 40, 25], [230, 250, 180], [100, 60, 35]
+    ];
+    var pal = palettes[styleId % palettes.length];
+    var h0 = (theme && theme.hues && theme.hues[0]) || pal[0];
+    var h1 = (theme && theme.hues && theme.hues[1]) || pal[1];
+    // خلفية حسب النمط
+    if (styleId % 4 === 0) {
+      var g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, 'hsl(' + h0 + ',55%,88%)');
+      g.addColorStop(0.5, 'hsl(' + h1 + ',45%,92%)');
+      g.addColorStop(1, 'hsl(' + ((h0 + 40) % 360) + ',50%,82%)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    } else if (styleId % 4 === 1) {
+      ctx.fillStyle = 'hsl(' + h0 + ',40%,93%)';
+      ctx.fillRect(0, 0, w, h);
+      for (var yy = 0; yy < h; yy += 18) {
+        ctx.fillStyle = 'hsla(' + h1 + ',30%,80%,' + (0.04 + (yy % 36) / 400) + ')';
+        ctx.fillRect(0, yy, w, 9);
+      }
+    } else if (styleId % 4 === 2) {
+      var rg = ctx.createRadialGradient(w * 0.5, h * 0.4, 10, w * 0.5, h * 0.5, Math.max(w, h) * 0.7);
+      rg.addColorStop(0, 'hsl(' + h1 + ',60%,95%)');
+      rg.addColorStop(1, 'hsl(' + h0 + ',45%,78%)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      var g2 = ctx.createLinearGradient(0, 0, 0, h);
+      g2.addColorStop(0, 'hsl(' + h0 + ',50%,90%)');
+      g2.addColorStop(1, 'hsl(' + h1 + ',40%,85%)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+      // جبال بسيطة
       ctx.beginPath();
-      ctx.fillStyle = 'hsla(' + ((h0 + i * 25) % 360) + ',50%,70%,' + (0.12 + (i % 3) * 0.04) + ')';
+      ctx.moveTo(0, h * 0.7);
+      for (var mx = 0; mx <= w; mx += 40) {
+        var mh = h * (0.45 + ((seed + mx) % 30) / 100);
+        ctx.lineTo(mx, mh);
+      }
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      ctx.fillStyle = 'hsla(' + h0 + ',35%,70%,0.35)';
+      ctx.fill();
+    }
+    // دوائر زخرفية
+    for (var i2 = 0; i2 < 7; i2++) {
+      var x = (seed * (i2 + 3) * 47 + styleId * 13) % w;
+      var y = (seed * (i2 + 5) * 31 + styleId * 19) % h;
+      var r = 35 + (seed + i2 * 13) % 100;
+      ctx.beginPath();
+      ctx.fillStyle = 'hsla(' + ((h0 + i2 * 25) % 360) + ',50%,70%,' + (0.1 + (i2 % 3) * 0.04) + ')';
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
     }
     // شريط سفلي
-    var lg = ctx.createLinearGradient(0, h * 0.55, 0, h);
+    var lg = ctx.createLinearGradient(0, h * 0.5, 0, h);
     lg.addColorStop(0, 'rgba(255,255,255,0)');
-    lg.addColorStop(1, 'rgba(255,255,255,0.35)');
+    lg.addColorStop(1, 'rgba(255,255,255,0.4)');
     ctx.fillStyle = lg;
     ctx.fillRect(0, 0, w, h);
-    // إيموجي كبيرة
-    var list = (emojis && emojis.length) ? emojis : ['✝', '📖', '🕊', '🌿'];
+    // إيموجي
+    var list = (emojis && emojis.length) ? emojis.slice() : ['✝', '📖', '🕊', '🌿'];
+    var stockEmoji = [
+      ['✝', '📖', '🕊'], ['🌅', '✝', '🌿'], ['📜', '✨', '✝'], ['🕯', '📖', '🙏'],
+      ['🍇', '✝', '🍞'], ['🌊', '✝', '🕊'], ['🏔', '✝', '🌅'], ['🌸', '✝', '📖'],
+      ['⭐', '✝', '🌙'], ['🔥', '✝', '📖'], ['🌳', '🕊', '✝'], ['💎', '✝', '📜']
+    ];
+    if (styleId >= 0 && stockEmoji[styleId % stockEmoji.length]) {
+      list = stockEmoji[styleId % stockEmoji.length].concat(list).slice(0, 4);
+    }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = Math.floor(Math.min(w, h) * 0.22) + 'px serif';
+    ctx.font = Math.floor(Math.min(w, h) * 0.2) + 'px serif';
     var n = Math.min(4, list.length);
     for (var k = 0; k < n; k++) {
       var px = w * (0.2 + k * 0.2);
-      var py = h * (0.38 + (k % 2) * 0.08);
-      ctx.globalAlpha = 0.92;
+      var py = h * (0.4 + (k % 2) * 0.1);
+      ctx.globalAlpha = 0.93;
       ctx.fillText(list[k], px, py);
     }
     ctx.globalAlpha = 1;
-    // صليب بسيط في الوسط
-    ctx.strokeStyle = 'hsla(' + h0 + ',40%,40%,0.35)';
-    ctx.lineWidth = Math.max(6, w * 0.012);
+    // صليب
+    ctx.strokeStyle = 'hsla(' + h0 + ',40%,35%,0.4)';
+    ctx.lineWidth = Math.max(4, w * 0.012);
     ctx.lineCap = 'round';
+    var cx = w * 0.5, cy = h * 0.72, cl = Math.min(w, h) * 0.12;
     ctx.beginPath();
-    ctx.moveTo(w * 0.5, h * 0.22);
-    ctx.lineTo(w * 0.5, h * 0.72);
-    ctx.moveTo(w * 0.38, h * 0.38);
-    ctx.lineTo(w * 0.62, h * 0.38);
+    ctx.moveTo(cx, cy - cl); ctx.lineTo(cx, cy + cl);
+    ctx.moveTo(cx - cl * 0.7, cy - cl * 0.25); ctx.lineTo(cx + cl * 0.7, cy - cl * 0.25);
     ctx.stroke();
     // إطار
-    ctx.strokeStyle = 'hsla(' + h0 + ',35%,55%,0.5)';
-    ctx.lineWidth = 8;
-    ctx.strokeRect(12, 12, w - 24, h - 24);
-    var im = new Image();
-    // نستخدم toDataURL — مسموح لأن الرسم محلي
-    im.src = c.toDataURL('image/jpeg', 0.92);
-    return new Promise(function (resolve) {
-      if (im.complete && im.width) resolve(im);
-      else {
-        im.onload = function () { resolve(im); };
-        im.onerror = function () { resolve(null); };
-        setTimeout(function () { resolve(im.width ? im : null); }, 2000);
-      }
+    ctx.strokeStyle = 'hsla(' + h0 + ',30%,50%,0.25)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(10, 10, w - 20, h - 20);
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () { im.__local = true; im.__stock = styleId; res(im); };
+      im.onerror = function () { res(null); };
+      im.src = c.toDataURL('image/jpeg', 0.92);
     });
   }
 
@@ -620,12 +661,65 @@ var EMOJI_WORDS = {
       }, 150);
     }
 
+    function fillAllLocalNow() {
+      var id = ++state.genId;
+      var seed = Math.floor(Math.random() * 90000) + 1;
+      state.art = { hero: null, pages: [] };
+      var total = state.pages + 1;
+      stat.textContent = '🎨 جاري ملء كل الصفحات بصور جاهزة…';
+      redraw();
+      var chain = Promise.resolve();
+      // hero
+      chain = chain.then(function () {
+        if (id !== state.genId) return;
+        return makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, 0).then(function (im) {
+          state.art.hero = im;
+          redraw();
+        });
+      });
+      for (var p = 0; p < state.pages; p++) {
+        (function (pi) {
+          chain = chain.then(function () {
+            if (id !== state.genId) return;
+            return makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + pi, seed + pi + 1, (pi + 1) % 12).then(function (im) {
+              state.art.pages[pi] = im;
+              stat.textContent = '🎨 صورة ' + ar(pi + 2) + '/' + ar(total);
+              redraw();
+            });
+          });
+        })(p);
+      }
+      return chain.then(function () {
+        if (id !== state.genId) return;
+        stat.textContent = '✅ تم ملء كل الصفحات (' + ar(total) + ') — يمكنكِ اختيار مخزون أو رفع صورة أو تجربة الذكاء الاصطناعي';
+        redraw();
+      });
+    }
+
     function genArt(opts) {
       opts = opts || {};
       var retryLocalOnly = !!opts.retryLocalOnly;
-      var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
-      if (!retryLocalOnly) state.art = { hero: null, pages: [] };
-      else if (!state.art) state.art = { hero: null, pages: [] };
+      var id = ++state.genId;
+      var seed = Math.floor(Math.random() * 90000) + 1;
+      if (!state.art) state.art = { hero: null, pages: [] };
+      // أولًا: املأ أي فراغات بالمحلي فورًا حتى لا تبقى صفحات بلا صورة
+      var fillJobs = [];
+      if (!state.art.hero) {
+        fillJobs.push(makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, 0).then(function (im) {
+          if (im) state.art.hero = im;
+        }));
+      }
+      for (var p0 = 0; p0 < state.pages; p0++) {
+        (function (pi) {
+          if (!state.art.pages[pi]) {
+            fillJobs.push(makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + pi, seed + pi + 3, (pi + 1) % 12).then(function (im) {
+              if (im) state.art.pages[pi] = im;
+            }));
+          }
+        })(p0);
+      }
+      Promise.all(fillJobs).then(function () { redraw(); });
+
       var stepsAll = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
       var steps = stepsAll;
       if (retryLocalOnly) {
@@ -638,12 +732,13 @@ var EMOJI_WORDS = {
           return true;
         });
       }
-      var total = steps.length, aiOk = 0, localOk = 0, doneN = 0;
+      var total = steps.length, aiOk = 0, doneN = 0;
       if (!total) {
-        stat.textContent = retryLocalOnly ? '✅ كل الصور بالذكاء الاصطناعي بالفعل' : 'تعذر تجهيز طلب الرسم';
+        stat.textContent = '✅ كل الصور جاهزة';
+        redraw();
         return;
       }
-      stat.textContent = '🤖 توليد بالذكاء الاصطناعي… ١/' + ar(total) + ' — قد يستغرق ' + ar(Math.max(1, total * 6)) + ' ثانية';
+      stat.textContent = '🤖 ترقية بالذكاء الاصطناعي ' + ar(total) + ' صورة — المحلي يبقى لو فشل النت';
       redraw();
       function saveStep(step, im, isLocal) {
         if (im) im.__local = !!isLocal;
@@ -655,15 +750,18 @@ var EMOJI_WORDS = {
         var w = step.key === 'hero' ? 512 : 640;
         var h = step.key === 'hero' ? 512 : 384;
         var base = step.prompt || 'christian soft watercolor cross bible light';
-        var list = [];
-        for (var t = 0; t < 6; t++) list.push(artUrl(base, w, h, seed + doneN * 19 + t * 53, t % 3));
+        // محاولتان فقط سريعتان حتى نكمّل باقي الصفحات
+        var list = [
+          artUrl(base, w, h, seed + doneN * 19, 0),
+          artUrl(base, w, h, seed + doneN * 19 + 7, 1)
+        ];
         var i = 0;
         function tryNext() {
           if (i >= list.length) return Promise.resolve(null);
           var u = list[i++];
-          return loadImg(u, 55000).then(function (im) {
+          return loadImg(u, 18000).then(function (im) {
             if (im && im.width >= 64 && im.height >= 64) return im;
-            return wait(2200).then(tryNext);
+            return wait(1500).then(tryNext);
           });
         }
         return tryNext();
@@ -671,52 +769,126 @@ var EMOJI_WORDS = {
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
         if (k >= steps.length) {
-          var allAi = true;
-          if (state.art.hero && state.art.hero.__local) allAi = false;
-          (state.art.pages || []).forEach(function (im) { if (im && im.__local) allAi = false; if (!im) allAi = false; });
-          // تأكد من عدد الصفحات
-          var need = state.pages + 1;
           var haveAi = (state.art.hero && !state.art.hero.__local ? 1 : 0);
           for (var pi = 0; pi < state.pages; pi++) {
             if (state.art.pages[pi] && !state.art.pages[pi].__local) haveAi++;
           }
-          if (haveAi >= need) stat.textContent = '✅ تم توليد كل الصور بالذكاء الاصطناعي (' + ar(haveAi) + ')';
-          else if (aiOk > 0) stat.textContent = '✅ ذكاء اصطناعي: ' + ar(haveAi) + ' — اضغطي «أعد الذكي فقط» للباقي مع نت مستقر';
-          else stat.textContent = '⚠️ تعذّر الذكاء الاصطناعي — أعيدي المحاولة مع نت أقوى';
+          var need = state.pages + 1;
+          if (haveAi >= need) stat.textContent = '✅ كل الصور بالذكاء الاصطناعي (' + ar(haveAi) + ')';
+          else if (aiOk > 0) stat.textContent = '✅ ذكاء اصطناعي: ' + ar(haveAi) + '/' + ar(need) + ' — الباقي من المخزون المحلي (اضغطي أعد الذكي أو اختاري من المخزون)';
+          else stat.textContent = '✅ الصور جاهزة من المخزون المحلي — الذكاء الاصطناعي لم يتوفر (نت/حظر). اختاري مخزون أو ارفعي صورًا';
           redraw();
           return;
         }
         var step = steps[k];
-        stat.textContent = '🤖 ذكاء اصطناعي ' + ar(k + 1) + '/' + ar(total) + ' — لا تغلقي النافذة…';
-        var gap = k === 0 ? 400 : 5500;
+        stat.textContent = '🤖 ذكاء اصطناعي ' + ar(k + 1) + '/' + ar(total) + '…';
+        var gap = k === 0 ? 300 : 4000;
         wait(gap).then(function () { return loadAI(step); }).then(function (im) {
           if (id !== state.genId || !ov.isConnected) return;
           if (im) {
             saveStep(step, im, false);
             aiOk++;
-            doneN++;
-            redraw();
-            next(k + 1);
-          } else if (!retryLocalOnly) {
-            var w = step.key === 'hero' ? 512 : 640;
-            var h = step.key === 'hero' ? 512 : 384;
-            return makeLocalArt(w, h, state.theme, emojisNow(), step.key, seed + k).then(function (loc) {
-              if (id !== state.genId || !ov.isConnected) return;
-              saveStep(step, loc, true);
-              if (loc) localOk++;
-              doneN++;
-              redraw();
-              next(k + 1);
-            });
-          } else {
-            doneN++;
-            next(k + 1);
           }
+          // لو فشل: المحلي موجود أصلًا من fill — لا تستبدله بفراغ
+          doneN++;
+          redraw();
+          next(k + 1);
         });
       })(0);
     }
 
-    lbl('عنوان البوستر');
+    function openStockPicker() {
+      var existing = document.getElementById('stockPicker');
+      if (existing) existing.remove();
+      var box = document.createElement('div');
+      box.id = 'stockPicker';
+      box.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;justify-content:center;';
+      var panel = document.createElement('div');
+      panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:85vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;';
+      var names = ['نور وسلام','غروب ذهبي','مخطوطات','شموع وصلاة','افخارستيا','بحر وسلام','جبال','زهور','نجوم','شعلة','شجرة حياة','كنوز'];
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><b style="color:#5a4a2a;">مخزون الصور — اختاري الصفحة ثم النمط</b><button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:6px 12px;">إغلاق</button></div>';
+      html += '<label style="display:block;margin-bottom:8px;color:#6a5a40;">تعيين إلى: <select id="stockTarget" style="padding:8px;border-radius:10px;border:1px solid #d4c4a0;">';
+      html += '<option value="hero">الصورة الرئيسية</option>';
+      for (var i = 0; i < state.pages; i++) html += '<option value="' + i + '">الصفحة ' + (i + 1) + '</option>';
+      html += '</select></label>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+      for (var s = 0; s < 12; s++) {
+        html += '<button type="button" class="stock-item" data-s="' + s + '" style="padding:14px;border-radius:14px;border:1px solid rgba(180,140,60,0.35);background:linear-gradient(135deg,#fff,#f5e6c8);color:#4a3a18;font-weight:700;cursor:pointer;">' + names[s] + '</button>';
+      }
+      html += '</div>';
+      html += '<p style="margin-top:12px;font-size:0.85em;color:#8a7a60;text-align:center;">أو ارفعي صورة من موبايلك من الزر بالأسفل في شاشة البوستر</p>';
+      panel.innerHTML = html;
+      box.appendChild(panel);
+      document.body.appendChild(box);
+      document.getElementById('stockClose').onclick = function () { box.remove(); };
+      box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+      panel.querySelectorAll('.stock-item').forEach(function (btn) {
+        btn.onclick = function () {
+          var sid = parseInt(btn.getAttribute('data-s'), 10);
+          var tgt = document.getElementById('stockTarget').value;
+          var w = tgt === 'hero' ? 512 : 640;
+          var h = tgt === 'hero' ? 512 : 384;
+          var seed = Math.floor(Math.random() * 90000) + 1;
+          stat.textContent = 'جاري تطبيق صورة المخزون…';
+          makeLocalArt(w, h, state.theme, emojisNow(), tgt, seed, sid).then(function (im) {
+            if (!im) { stat.textContent = 'تعذر إنشاء الصورة'; return; }
+            if (!state.art) state.art = { hero: null, pages: [] };
+            if (tgt === 'hero') state.art.hero = im;
+            else state.art.pages[parseInt(tgt, 10)] = im;
+            stat.textContent = '✅ تم تعيين صورة المخزون';
+            redraw();
+            box.remove();
+          });
+        };
+      });
+    }
+
+    function uploadUserImage() {
+      var inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'image/*';
+      // موبايل: اختيار من المعرض
+      try { inp.setAttribute('capture', 'environment'); } catch (e) {}
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+      // اختيار الهدف
+      var tgt = prompt('اكتبي رقم الصفحة (1-' + state.pages + ') أو اتركيها فارغة للصورة الرئيسية:', '');
+      var target = 'hero';
+      if (tgt !== null && String(tgt).trim() !== '') {
+        var n = parseInt(tgt, 10);
+        if (!isNaN(n) && n >= 1 && n <= state.pages) target = String(n - 1);
+      }
+      inp.onchange = function () {
+        var f = inp.files && inp.files[0];
+        inp.remove();
+        if (!f) return;
+        if (!/^image\//.test(f.type)) {
+          stat.textContent = 'الملف ليس صورة';
+          return;
+        }
+        stat.textContent = 'جاري تحميل الصورة…';
+        var reader = new FileReader();
+        reader.onload = function () {
+          var im = new Image();
+          im.onload = function () {
+            im.__local = false;
+            im.__upload = true;
+            if (!state.art) state.art = { hero: null, pages: [] };
+            if (target === 'hero') state.art.hero = im;
+            else state.art.pages[parseInt(target, 10)] = im;
+            stat.textContent = '✅ تم رفع الصورة وتعيينها';
+            redraw();
+          };
+          im.onerror = function () { stat.textContent = 'تعذر قراءة الصورة'; };
+          im.src = reader.result;
+        };
+        reader.onerror = function () { stat.textContent = 'تعذر قراءة الملف'; };
+        reader.readAsDataURL(f);
+      };
+      inp.click();
+    }
+
+lbl('عنوان البوستر');
     var ti = document.createElement('input'); ti.className = 'kp-in'; ti.value = state.title;
     ti.oninput = function () { state.title = ti.value; redraw(); }; box.appendChild(ti);
 
@@ -813,8 +985,11 @@ var EMOJI_WORDS = {
         }
       });
     }
-    btn('ai', '🤖 ارسمي صور جديدة بالذكاء الاصطناعي (بالألوان والرموز المختارة)', function () { genArt({}); });
-    btn('ai2', '🔁 أعد الذكي فقط (للصور المحلية/الناقصة)', function () { genArt({ retryLocalOnly: true }); });
+    btn('fill', '🎨 املأ كل الصفحات الآن (مخزون محلي — مضمونة)', function () { fillAllLocalNow(); });
+    btn('stock', '🖼️ مخزون صور — اختاري نمط لكل صفحة', function () { openStockPicker(); });
+    btn('up', '📤 رفع صورة من الموبايل', function () { uploadUserImage(); });
+    btn('ai', '🤖 رقِّ بالذكاء الاصطناعي (اختياري — يحتاج نت)', function () { genArt({}); });
+    btn('ai2', '🔁 أعد الذكي فقط للناقص', function () { genArt({ retryLocalOnly: true }); });
     btn('', '📄 حفظ PDF (A4)', function () {
       if (!state.canvases.length) { stat.textContent = 'لا توجد صفحات للبوستر بعد'; return; }
       stat.textContent = 'جاري تجهيز PDF…';
@@ -857,7 +1032,7 @@ var EMOJI_WORDS = {
     ov.addEventListener('click', function (e) { if (e.target === ov) { state.genId++; ov.remove(); } });
     document.body.appendChild(ov);
     redraw();
-    genArt();           // أول مرة: يبدأ الرسم تلقائيًا
+    fillAllLocalNow(); // أول مرة: املأ كل الصفحات فورًا
   }
 
   function attachButton(container, getData, label) {

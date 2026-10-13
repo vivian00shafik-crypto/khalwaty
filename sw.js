@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v148-katameros-ai';
+const CACHE = 'khalwati-v149-synax-refs';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',

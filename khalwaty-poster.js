@@ -287,27 +287,55 @@
 
   /* ---------- الرسم بالذكاء الاصطناعي (Pollinations بدون مفتاح، زي بقية التطبيق) ---------- */
   function loadImg(url, ms) {
+    // جلب كـ blob ثم ObjectURL حتى لا يتلوّث الـ canvas ويتعطل الحفظ/PDF
     return new Promise(function (res) {
-      var im = new Image(), done = false;
-      im.crossOrigin = 'anonymous';
-      var t = setTimeout(function () { if (!done) { done = true; res(null); } }, ms);
-      im.onload = function () { if (!done) { done = true; clearTimeout(t); res(im); } };
-      im.onerror = function () { if (!done) { done = true; clearTimeout(t); res(null); } };
-      im.src = url;
+      var done = false;
+      var timer = setTimeout(function () { if (!done) { done = true; res(null); } }, ms || 60000);
+      function finish(im) { if (!done) { done = true; clearTimeout(timer); res(im); } }
+      function fromBlob(blob) {
+        if (!blob) { finish(null); return; }
+        var obj = URL.createObjectURL(blob);
+        var im = new Image();
+        im.onload = function () { finish(im); };
+        im.onerror = function () { try { URL.revokeObjectURL(obj); } catch (e) {} finish(null); };
+        im.src = obj;
+      }
+      if (typeof fetch === 'function') {
+        var ctrl = null, ft;
+        try { ctrl = new AbortController(); ft = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, ms || 60000); } catch (e) {}
+        fetch(url, { mode: 'cors', credentials: 'omit', signal: ctrl ? ctrl.signal : undefined })
+          .then(function (r) { if (ft) clearTimeout(ft); return r.ok ? r.blob() : Promise.reject(); })
+          .then(fromBlob)
+          .catch(function () {
+            // fallback: Image + crossOrigin
+            var im = new Image();
+            im.crossOrigin = 'anonymous';
+            im.onload = function () { finish(im); };
+            im.onerror = function () { finish(null); };
+            im.src = url;
+          });
+      } else {
+        var im2 = new Image();
+        im2.crossOrigin = 'anonymous';
+        im2.onload = function () { finish(im2); };
+        im2.onerror = function () { finish(null); };
+        im2.src = url;
+      }
     });
   }
   function artUrl(prompt, w, h, seed) {
     return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
       '?width=' + w + '&height=' + h + '&nologo=true&enhance=true&model=flux&seed=' + seed;
   }
-  function artSteps(theme, emojis, seed) {
+  function artSteps(theme, emojis, seed, extra) {
     var style = 'soft pastel watercolor illustration for a Christian Sunday school lesson, clean white background, ' +
       'no text, no letters, no words, no captions';
     var el = elementsFor(emojis), col = theme.word;
+    extra = extra || '';
     return [
-      { key: 'hero', url: artUrl('closed holy bible with a golden cross on a dark navy cover, olive branches around it' + (el ? ', ' + el : '') + ', ' + col + ' accents, ' + style, 768, 768, seed) },
-      { key: 'a',    url: artUrl('open bible resting on a grassy hill with three wooden crosses at sunrise, soft mountains, wide panoramic scene' + (el ? ', ' + el : '') + ', ' + col + ' sky, ' + style, 1024, 512, seed + 1) },
-      { key: 'b',    url: artUrl('peaceful valley with olive trees, a calm river and golden sunrise, a white dove flying, wide panoramic scene' + (el ? ', ' + el : '') + ', ' + col + ' tones, ' + style, 1024, 512, seed + 2) }
+      { key: 'hero', url: artUrl('closed holy bible with a golden cross on a dark navy cover, olive branches around it' + (el ? ', ' + el : '') + extra + ', ' + col + ' accents, ' + style, 768, 768, seed) },
+      { key: 'a',    url: artUrl('open bible resting on a grassy hill with three wooden crosses at sunrise, soft mountains, wide panoramic scene' + (el ? ', ' + el : '') + extra + ', ' + col + ' sky, ' + style, 1024, 512, seed + 1) },
+      { key: 'b',    url: artUrl('peaceful valley with olive trees, a calm river and golden sunrise, a white dove flying, wide panoramic scene' + (el ? ', ' + el : '') + extra + ', ' + col + ' tones, ' + style, 1024, 512, seed + 2) }
     ];
   }
 
@@ -354,10 +382,26 @@
       b.className = 'kp-chip' + (on ? ' on' : ''); b.innerHTML = html; b.onclick = fn; parent.appendChild(b); return b;
     }
     function emojisNow() {
-      var c = Array.from(state.custom.replace(/\s+/g, '')).filter(Boolean);
-      var l = c.length ? c.slice(0, 6) : state.set.list.slice();
-      while (l.length < 4) l = l.concat(l);
+      var raw = String(state.custom || '').trim();
+      var found = [];
+      try {
+        var m = raw.match(/\p{Extended_Pictographic}/gu);
+        if (m) found = m.slice(0, 6);
+      } catch (e) {
+        // متصفحات قديمة بدون Unicode property
+        Array.from(raw.replace(/\s+/g, '')).forEach(function (ch) {
+          if (found.length < 6 && ch && ch.charCodeAt(0) > 255) found.push(ch);
+        });
+      }
+      var l = found.length ? found.slice() : state.set.list.slice();
+      while (l.length < 4) l = l.concat(state.set.list);
       return l.slice(0, 6);
+    }
+    function customPromptExtra() {
+      var raw = String(state.custom || '').trim();
+      if (!raw) return '';
+      // أضف النص/الرموز التي كتبها المستخدم لطلب الذكاء الاصطناعي
+      return ', also include visual motifs inspired by: ' + raw.slice(0, 120);
     }
 
     var timer;
@@ -389,8 +433,9 @@
     function genArt() {
       var id = ++state.genId, seed = Math.floor(Math.random() * 90000) + 1;
       state.art = { hero: null, a: null, b: null };
-      var steps = artSteps(state.theme, emojisNow(), seed), failed = 0;
-      stat.textContent = '🤖 جاري رسم الصور بالذكاء الاصطناعي… ١/٣ (قد يستغرق حوالي دقيقة)';
+      var steps = artSteps(state.theme, emojisNow(), seed, customPromptExtra()), failed = 0;
+      if (!steps.length) { stat.textContent = 'تعذر تجهيز طلب الرسم'; return; }
+      stat.textContent = '🤖 جاري رسم الصور بالذكاء الاصطناعي… ١/٣ (قد يستغرق حوالي دقيقة — يلزم إنترنت)';
       redraw();
       (function next(k) {
         if (id !== state.genId || !ov.isConnected) return;
@@ -452,24 +497,85 @@
     var act = document.createElement('div'); act.className = 'kp-act'; box.appendChild(act);
     function btn(cls, text, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'kp-btn ' + cls; b.textContent = text; b.onclick = fn; act.appendChild(b); return b; }
     function download(blob, name) {
-      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      if (!blob) { stat.textContent = 'لا يوجد ملف للحفظ'; return Promise.resolve(false); }
+      var file;
+      try { file = new File([blob], name, { type: blob.type || 'application/octet-stream' }); } catch (e) { file = null; }
+      if (file && navigator.canShare) {
+        try {
+          if (navigator.canShare({ files: [file] })) {
+            return navigator.share({ files: [file], title: name }).then(function () { return true; }).catch(function () { return anchorDownload(blob, name); });
+          }
+        } catch (e) {}
+      }
+      return Promise.resolve(anchorDownload(blob, name));
+    }
+    function anchorDownload(blob, name) {
+      try {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { try { a.remove(); URL.revokeObjectURL(a.href); } catch (e) {} }, 4000);
+        return true;
+      } catch (e) {
+        stat.textContent = 'تعذر الحفظ: ' + (e && e.message ? e.message : e);
+        return false;
+      }
+    }
+    function canvasToBlob(cv, type, quality) {
+      return new Promise(function (resolve, reject) {
+        try {
+          if (cv.toBlob) {
+            cv.toBlob(function (b) { b ? resolve(b) : reject(new Error('toBlob فاضي — جربي إعادة رسم الصور بالذكاء الاصطناعي')); }, type || 'image/jpeg', quality || 0.92);
+          } else {
+            var du = cv.toDataURL(type || 'image/jpeg', quality || 0.92);
+            var arr = dataUrlToBytes(du);
+            resolve(new Blob([arr], { type: type || 'image/jpeg' }));
+          }
+        } catch (e) {
+          reject(new Error('تعذر قراءة الصورة (غالبًا بسبب حماية المتصفح بعد رسم الإنترنت). اضغطي «ارسمي صور» ثم الحفظ فورًا.'));
+        }
+      });
     }
     btn('ai', '🤖 ارسمي صور جديدة بالذكاء الاصطناعي (بالألوان والرموز المختارة)', genArt);
     btn('', '📄 حفظ PDF (A4)', function () {
-      if (!state.canvases.length) return;
-      try { download(makePdf(state.canvases), 'khalwaty-lesson.pdf'); } catch (e) { stat.textContent = 'تعذر إنشاء PDF: ' + e.message; }
+      if (!state.canvases.length) { stat.textContent = 'لا توجد صفحات للبوستر بعد'; return; }
+      stat.textContent = 'جاري تجهيز PDF…';
+      try {
+        var blob = makePdf(state.canvases);
+        download(blob, 'khalwaty-lesson.pdf').then(function () { stat.textContent = '✅ تم حفظ / مشاركة PDF'; });
+      } catch (e) {
+        stat.textContent = 'تعذر إنشاء PDF: ' + (e && e.message ? e.message : e) + ' — جرّبي إعادة رسم الصور ثم الحفظ';
+      }
     });
     btn('', '🖼️ حفظ الصور', function () {
+      if (!state.canvases.length) { stat.textContent = 'لا توجد صور للحفظ'; return; }
+      stat.textContent = 'جاري حفظ الصور…';
+      var n = state.canvases.length, ok = 0, fail = 0;
       state.canvases.forEach(function (cv, i) {
-        setTimeout(function () { cv.toBlob(function (b) { download(b, 'khalwaty-lesson-p' + (i + 1) + '.jpg'); }, 'image/jpeg', 0.92); }, i * 500);
+        setTimeout(function () {
+          canvasToBlob(cv, 'image/jpeg', 0.92).then(function (b) {
+            return download(b, 'khalwaty-lesson-p' + (i + 1) + '.jpg');
+          }).then(function () {
+            ok++;
+            if (ok + fail >= n) stat.textContent = fail ? ('⚠️ حُفظ ' + ok + ' وتعذّر ' + fail) : ('✅ تم حفظ ' + ok + ' صورة');
+          }).catch(function (e) {
+            fail++;
+            stat.textContent = 'تعذر حفظ صورة: ' + (e && e.message ? e.message : e);
+          });
+        }, i * 600);
       });
     });
     btn('alt', '📤 مشاركة PDF', function () {
-      if (!state.canvases.length) return;
-      var blob = makePdf(state.canvases), f = new File([blob], 'khalwaty-lesson.pdf', { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: state.title }).catch(function () {});
-      else download(blob, 'khalwaty-lesson.pdf');
+      if (!state.canvases.length) { stat.textContent = 'لا توجد صفحات'; return; }
+      try {
+        var blob = makePdf(state.canvases);
+        download(blob, 'khalwaty-lesson.pdf').then(function () { stat.textContent = '✅ تمت مشاركة / حفظ PDF'; });
+      } catch (e) {
+        stat.textContent = 'تعذر مشاركة PDF: ' + (e && e.message ? e.message : e);
+      }
     });
     btn('alt', 'إغلاق', function () { state.genId++; ov.remove(); });
 

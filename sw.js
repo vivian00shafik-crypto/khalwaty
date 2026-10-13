@@ -1,5 +1,18 @@
-const CACHE = 'khalwati-v157-stock-apply';
+const CACHE = 'khalwati-v159-stock-files';
 const ASSETS = [
+  'stock/bible.jpg',
+  'stock/candle.jpg',
+  'stock/flowers.jpg',
+  'stock/mountains.jpg',
+  'stock/sea.jpg',
+  'stock/church.jpg',
+  'stock/saints.jpg',
+  'stock/christ.jpg',
+  'stock/mary.jpg',
+  'stock/cross.jpg',
+  'stock/dove.jpg',
+  'stock/eucharist.jpg',
+
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-512.png',

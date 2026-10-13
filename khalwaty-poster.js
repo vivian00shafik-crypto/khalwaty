@@ -386,6 +386,68 @@ var EMOJI_WORDS = {
     });
   }
 
+  
+  
+  /* صور مخزنة حقيقية في مجلد stock/ */
+  var STOCK_5D = [
+    { id: 'bible', name: 'الكتاب المقدس', file: 'stock/bible.jpg' },
+    { id: 'candle', name: 'شمعة', file: 'stock/candle.jpg' },
+    { id: 'flowers', name: 'زهور', file: 'stock/flowers.jpg' },
+    { id: 'mountains', name: 'جبال', file: 'stock/mountains.jpg' },
+    { id: 'sea', name: 'بحار', file: 'stock/sea.jpg' },
+    { id: 'church', name: 'كنيسة', file: 'stock/church.jpg' },
+    { id: 'saints', name: 'قديسين', file: 'stock/saints.jpg' },
+    { id: 'christ', name: 'المسيح', file: 'stock/christ.jpg' },
+    { id: 'mary', name: 'العذراء', file: 'stock/mary.jpg' },
+    { id: 'cross', name: 'صليب نور', file: 'stock/cross.jpg' },
+    { id: 'dove', name: 'حمامة سلام', file: 'stock/dove.jpg' },
+    { id: 'eucharist', name: 'خبز وكأس', file: 'stock/eucharist.jpg' }
+  ];
+
+  function stockUrl(file) {
+    try {
+      // مسار نسبي من جذر الموقع
+      var base = '';
+      if (typeof location !== 'undefined' && location.pathname) {
+        // لو التطبيق تحت /khalwaty/
+        var p = location.pathname.replace(/\/[^/]*$/, '/');
+        base = p;
+      }
+      return base + file;
+    } catch (e) {
+      return file;
+    }
+  }
+
+  function loadStockImage(stock, w, h, seed) {
+    return new Promise(function (res) {
+      var im = new Image();
+      // نفس المصدر = لا CORS على GitHub Pages
+      im.onload = function () {
+        im.__local = false;
+        im.__stock = stock.id;
+        im.__stockName = stock.name;
+        res(im);
+      };
+      im.onerror = function () {
+        // احتياطي بسيط بلون فقط لو الملف ناقص
+        var c = document.createElement('canvas');
+        c.width = w || 640; c.height = h || 384;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#e8dcc8';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.fillStyle = '#5a4a2a';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText((stock && stock.name) || '', c.width / 2, c.height / 2);
+        c.__local = true;
+        c.__stock = stock && stock.id;
+        res(c);
+      };
+      im.src = stockUrl(stock.file) + '?v=158';
+    });
+  }
+
   function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
     w = w || 896; h = h || 512;
     seed = (seed || 1) | 0;
@@ -704,13 +766,13 @@ var EMOJI_WORDS = {
       var seed = Math.floor(Math.random() * 90000) + 1;
       state.art = { hero: null, pages: [] };
       var total = state.pages + 1;
-      stat.textContent = '🎨 جاري ملء كل الصفحات بصور جاهزة…';
+      stat.textContent = '🎨 جاري وضع مشاهد المخزون على كل الصفحات…';
       redraw();
       var chain = Promise.resolve();
-      // hero
       chain = chain.then(function () {
         if (id !== state.genId) return;
-        return makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, 0).then(function (im) {
+        var st = STOCK_5D[0];
+        return loadStockImage(st, 512, 512, seed).then(function (im) {
           state.art.hero = im;
           redraw();
         });
@@ -719,9 +781,10 @@ var EMOJI_WORDS = {
         (function (pi) {
           chain = chain.then(function () {
             if (id !== state.genId) return;
-            return makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + pi, seed + pi + 1, (pi + 1) % 12).then(function (im) {
+            var st = STOCK_5D[(pi + 1) % STOCK_5D.length];
+            return loadStockImage(st, 640, 384, seed + pi + 1).then(function (im) {
               state.art.pages[pi] = im;
-              stat.textContent = '🎨 صورة ' + ar(pi + 2) + '/' + ar(total);
+              stat.textContent = '🎨 ' + st.name + ' — ' + ar(pi + 2) + '/' + ar(total);
               redraw();
             });
           });
@@ -729,7 +792,7 @@ var EMOJI_WORDS = {
       }
       return chain.then(function () {
         if (id !== state.genId) return;
-        stat.textContent = '✅ تم ملء كل الصفحات (' + ar(total) + ') — يمكنكِ اختيار مخزون أو رفع صورة أو تجربة الذكاء الاصطناعي';
+        stat.textContent = '✅ تم وضع مشاهد المخزون على كل الصفحات — يمكن تغيير أي صفحة من «مخزون صور»';
         redraw();
       });
     }
@@ -843,12 +906,11 @@ var EMOJI_WORDS = {
       box.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,0.55);display:flex;align-items:flex-end;justify-content:center;';
       var panel = document.createElement('div');
       panel.style.cssText = 'background:#faf6ec;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px;box-shadow:0 -8px 30px rgba(0,0,0,0.25);position:relative;z-index:1;';
-      var names = ['نور وسلام','غروب ذهبي','مخطوطات','شموع وصلاة','افخارستيا','بحر وسلام','جبال','زهور','نجوم','شعلة','شجرة حياة','كنوز'];
       var html = '';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">';
-      html += '<b style="color:#5a4a2a;flex:1;">مخزون الصور — اختاري الهدف ثم النمط</b>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">';
+      html += '<b style="color:#5a4a2a;flex:1;">مخزون مشاهد 5D — اختاري الصفحة ثم الصورة</b>';
       html += '<button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:8px 12px;">إغلاق</button></div>';
-      html += '<label style="display:block;margin-bottom:10px;color:#6a5a40;font-weight:600;">تعيين إلى:<br/>';
+      html += '<label style="display:block;margin-bottom:10px;color:#6a5a40;font-weight:600;">وضع الصورة على:<br/>';
       html += '<select id="stockTarget" style="margin-top:6px;width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;font-size:15px;box-sizing:border-box;">';
       html += '<option value="hero">الصورة الرئيسية (غلاف)</option>';
       html += '<option value="all">كل الصفحات + الغلاف</option>';
@@ -857,11 +919,11 @@ var EMOJI_WORDS = {
       }
       html += '</select></label>';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-      for (var s = 0; s < 12; s++) {
-        html += '<button type="button" class="stock-item" data-s="' + s + '" style="padding:14px 10px;border-radius:14px;border:2px solid rgba(180,140,60,0.4);background:linear-gradient(135deg,#fff,#f5e6c8);color:#4a3a18;font-weight:700;cursor:pointer;font-size:15px;">' + names[s] + '</button>';
-      }
+      STOCK_5D.forEach(function (st, s) {
+        html += '<button type="button" class="stock-item" data-s="' + s + '" style="padding:14px 10px;border-radius:14px;border:2px solid rgba(180,140,60,0.4);background:linear-gradient(135deg,#fff,#f5e6c8);color:#4a3a18;font-weight:700;cursor:pointer;font-size:15px;">' + st.name + '</button>';
+      });
       html += '</div>';
-      html += '<p id="stockMsg" style="margin-top:12px;font-size:0.9em;color:#5a7d4a;text-align:center;font-weight:700;min-height:1.4em;"></p>';
+      html += '<p id="stockMsg" style="margin-top:12px;font-size:0.9em;color:#5a7d4a;text-align:center;font-weight:700;min-height:1.4em;">صور مخزّنة داخل التطبيق — اختاري الصفحة ثم الصورة</p>';
       panel.innerHTML = html;
       box.appendChild(panel);
       document.body.appendChild(box);
@@ -869,42 +931,42 @@ var EMOJI_WORDS = {
       document.getElementById('stockClose').onclick = function (e) { e.preventDefault(); e.stopPropagation(); close(); };
       box.addEventListener('click', function (e) { if (e.target === box) close(); });
 
-      function applyStock(sid, target) {
+      function applyStock(idx, target) {
+        var stock = STOCK_5D[idx];
+        if (!stock) return;
         var msg = document.getElementById('stockMsg');
-        if (msg) msg.textContent = 'جاري التطبيق…';
+        if (msg) msg.textContent = 'جاري تحميل «' + stock.name + '»…';
         if (!state.art) state.art = { hero: null, pages: [] };
         if (!state.art.pages) state.art.pages = [];
-        var seed = Math.floor(Math.random() * 90000) + 1 + sid * 17;
+        var seed = Math.floor(Math.random() * 90000) + 1 + idx * 23;
         var jobs = [];
         function putHero() {
-          return makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, sid).then(function (im) {
+          return loadStockImage(stock, 512, 512, seed).then(function (im) {
             if (im) state.art.hero = im;
           });
         }
         function putPage(p) {
-          return makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + p, seed + p + 1, sid).then(function (im) {
+          return loadStockImage(stock, 640, 384, seed + p + 1).then(function (im) {
             if (im) state.art.pages[p] = im;
           });
         }
-        if (target === 'hero') {
-          jobs.push(putHero());
-        } else if (target === 'all') {
+        if (target === 'hero') jobs.push(putHero());
+        else if (target === 'all') {
           jobs.push(putHero());
           for (var p = 0; p < state.pages; p++) jobs.push(putPage(p));
         } else {
-          var idx = parseInt(target, 10);
-          if (isNaN(idx)) idx = 0;
-          jobs.push(putPage(idx));
+          var pidx = parseInt(target, 10);
+          if (isNaN(pidx)) pidx = 0;
+          jobs.push(putPage(pidx));
         }
         return Promise.all(jobs).then(function () {
           redraw();
           if (typeof feedbackTap === 'function') feedbackTap();
-          if (msg) msg.textContent = '✅ تم تطبيق: ' + names[sid] + (target === 'all' ? ' على الكل' : '');
-          if (stat) stat.textContent = '✅ تم تطبيق نمط «' + names[sid] + '» من المخزون';
-          setTimeout(close, 450);
-        }).catch(function (err) {
-          if (msg) msg.textContent = 'تعذر التطبيق';
-          if (stat) stat.textContent = 'تعذر تطبيق المخزون';
+          if (msg) msg.textContent = '✅ تم وضع «' + stock.name + '»';
+          if (stat) stat.textContent = '✅ صورة المخزون: ' + stock.name;
+          setTimeout(close, 500);
+        }).catch(function () {
+          if (msg) msg.textContent = 'تعذر التحميل — حاولي مرة أخرى';
         });
       }
 
@@ -916,8 +978,8 @@ var EMOJI_WORDS = {
           var sid = parseInt(btn.getAttribute('data-s'), 10);
           var sel = document.getElementById('stockTarget');
           var target = sel ? sel.value : 'all';
-          btn.style.opacity = '0.6';
-          applyStock(sid, target);
+          btn.style.opacity = '0.55';
+          applyStock(sid, target).then(function () { btn.style.opacity = '1'; });
         });
       });
     }

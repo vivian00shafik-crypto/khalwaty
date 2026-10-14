@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v174-spiritual-readings';
+const CACHE = 'khalwati-v175-sp-loading';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/candle.jpg',
@@ -29,7 +29,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v174-spiritual-readings') return caches.delete(k);
+        if (k !== 'khalwati-v175-sp-loading') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

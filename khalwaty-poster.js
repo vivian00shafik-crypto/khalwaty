@@ -99,58 +99,62 @@ var EMOJI_WORDS = {
 
   function paginate(items, s, m) {
     var d = dims(s);
-    // عرض النص داخل البطاقة (مع مساحة لصورة جانبية صغيرة أحيانًا)
-    var innerW = W - 2 * M - 2 * INNER - 20;
+    var fullW = W - 2 * M - 2 * INNER - 20;
+    var sideW = Math.round(fullW * 0.30); // عمود صورة جانبية محجوز
     var PADB = d.CARD_PAD * 2;
     var pages = [[]], pi = 0, y = topOf(0);
     m.direction = 'rtl';
-    m.font = '400 ' + d.BODY + 'px ' + FONT;
     function next() { pages.push([]); pi++; y = topOf(pi); }
     items.forEach(function (it, i) {
       var raw = String(it.text || '').trim();
       if (!raw) return;
-      // فصل العنوان الفرعي إن وُجد في أول سطر قصير
       var linesAll = raw.split(/\n/);
       var head = '';
       var body = raw;
-      if (linesAll.length > 1 && linesAll[0].trim().length > 0 && linesAll[0].trim().length <= 48) {
+      if (linesAll.length > 1 && linesAll[0].trim().length > 0 && linesAll[0].trim().length <= 52) {
         head = linesAll[0].trim();
         body = linesAll.slice(1).join('\n').trim() || raw;
       }
+      // صورة جانبية لأقسام فردية طويلة فقط — والنص يُلفّ على العرض المتبقي فقط
+      var useSide = (i % 2 === 1);
+      var textColW = useSide ? (fullW - sideW - 16) : fullW;
       m.font = '400 ' + d.BODY + 'px ' + FONT;
-      var lines = wrap(m, body, innerW);
-      var idx = 0;
+      var lines = wrap(m, body, textColW);
       if (!lines.length) lines = [''];
-      var n = lines.length;
-      var headH = head ? d.HEAD_H : Math.round(d.HEAD_H * 0.45);
-      var over = headH + PADB + 8;
-      function place(k, isCont) {
-        var h = over + k * d.LH + (isCont ? 0 : 4);
+      var idx = 0, n = lines.length;
+      var headH = head ? d.HEAD_H : Math.round(d.HEAD_H * 0.4);
+      var over = headH + PADB + 10;
+      function place(k) {
+        var hh = over + k * d.LH;
+        // ارتفاع أدنى لو فيه صورة جانبية
+        if (useSide) hh = Math.max(hh, sideW * 0.7 + PADB);
         pages[pi].push({
-          it: it, i: i, lines: lines.slice(idx, idx + k),
-          cont: !!isCont || idx > 0, y: y, h: h,
-          head: (idx === 0 ? head : (isCont || idx > 0 ? '' : head)),
-          hasSide: (i % 2 === 1) && k >= 3
+          it: it, i: i,
+          lines: lines.slice(idx, idx + k),
+          cont: idx > 0,
+          y: y, h: hh,
+          head: idx === 0 ? head : '',
+          hasSide: useSide && idx === 0, // الصورة مرة واحدة مع بداية القسم
+          textColW: textColW,
+          sideW: useSide ? sideW : 0
         });
-        return h;
+        return hh;
       }
       while (idx < n) {
         var cap = Math.floor((BOTTOM - y - over) / d.LH), rem = n - idx;
         if (cap < 1) { next(); continue; }
         if (cap >= rem) {
-          var hh = place(rem, idx > 0);
+          var hh = place(rem);
           y += hh + GAP;
           idx = n;
         } else {
-          var take = Math.min(cap, Math.max(1, rem - 1));
+          var take = Math.min(cap, Math.max(2, rem - 1));
           var fresh = (y === topOf(pi));
           if (take >= 2 || fresh) {
-            place(take, idx > 0);
+            place(take);
             idx += take;
             next();
-          } else {
-            next();
-          }
+          } else next();
         }
       }
     });
@@ -216,189 +220,196 @@ function layout(items, N, m) {
     ctx.textBaseline = 'middle';
     var theme = opt.theme, emojis = opt.emojis || ['✝'], hb = theme.hues[0];
 
-    // خلفية ورقية هادئة
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, hsl(theme.bg[0], Math.min(40, theme.bg[1]), 97));
-    g.addColorStop(1, hsl(theme.hues[1], 25, 94));
-    ctx.fillStyle = g;
+    // خلفية ورقية
+    var bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, hsl(theme.bg[0], Math.min(35, theme.bg[1]), 98));
+    bg.addColorStop(1, hsl(theme.hues[1], 20, 95));
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
-
-    // شريط علوي رفيع للهوية
     ctx.fillStyle = hsl(hb, 45, 42);
-    ctx.fillRect(0, 0, W, 8);
+    ctx.fillRect(0, 0, W, 7);
 
     var title = data.title || 'تحضير الدرس';
 
-    // رأس الصفحة
+    // رأس
     if (pi === 0) {
-      var hx = M, hy = 28, hs = 150;
-      var hero = art && art.hero;
-      if (hero) {
+      var hx = M, hy = 22, hs = 130;
+      var hero = art && (art.hero || (art.pages && art.pages[0]));
+      if (hero && hero.width) {
         ctx.save();
-        ctx.beginPath();
-        rrect(ctx, hx, hy, hs, hs, 20);
-        ctx.clip();
+        ctx.beginPath(); rrect(ctx, hx, hy, hs, hs, 16); ctx.clip();
         var sc = Math.max(hs / hero.width, hs / hero.height);
         ctx.drawImage(hero, hx + (hs - hero.width * sc) / 2, hy + (hs - hero.height * sc) / 2, hero.width * sc, hero.height * sc);
         ctx.restore();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = hsl(hb, 40, 70);
-        rrect(ctx, hx, hy, hs, hs, 20);
-        ctx.stroke();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = hsl(hb, 40, 70);
+        rrect(ctx, hx, hy, hs, hs, 16); ctx.stroke();
+      } else {
+        ctx.fillStyle = hsl(hb, 40, 90);
+        rrect(ctx, hx, hy, hs, hs, 16); ctx.fill();
+        ctx.font = '64px ' + EMOJI_FONT;
+        ctx.textAlign = 'center';
+        ctx.fillText(emojis[0] || '📖', hx + hs / 2, hy + hs / 2 + 4);
       }
-      var titleX = hero ? hx + hs + 20 : M;
-      var titleW = W - M - titleX;
+      var titleX0 = hx + hs + 18;
+      var titleW = W - M - titleX0;
       ctx.textAlign = 'right';
-      ctx.fillStyle = hsl(hb, 50, 28);
-      var tf = 48;
-      var tlines;
+      ctx.fillStyle = hsl(hb, 50, 26);
+      var tf = 44, tlines;
       do {
         ctx.font = '700 ' + tf + 'px ' + FONT;
         tlines = wrap(ctx, title, titleW);
         tf -= 2;
-      } while (tlines.length > 3 && tf > 30);
-      var ty = hy + 40;
-      tlines.forEach(function (ln) {
-        ctx.fillText(ln, W - M, ty);
-        ty += tf + 8;
-      });
-      if (data.subtitle) {
-        ctx.font = '400 22px ' + FONT;
-        ctx.fillStyle = hsl(hb, 30, 40);
-        ctx.fillText(String(data.subtitle).slice(0, 80), W - M, ty + 8);
-      }
+      } while (tlines.length > 3 && tf > 28);
+      var ty = hy + 36;
+      tlines.forEach(function (ln) { ctx.fillText(ln, W - M, ty); ty += tf + 6; });
     } else {
       ctx.textAlign = 'right';
-      ctx.font = '700 28px ' + FONT;
-      ctx.fillStyle = hsl(hb, 40, 35);
-      ctx.fillText(title, W - M, 56);
-      ctx.strokeStyle = hsl(hb, 35, 80);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(M, 80);
-      ctx.lineTo(W - M, 80);
-      ctx.stroke();
+      ctx.font = '700 26px ' + FONT;
+      ctx.fillStyle = hsl(hb, 40, 32);
+      ctx.fillText(title, W - M, 48);
+      ctx.strokeStyle = hsl(hb, 30, 82);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(M, 70); ctx.lineTo(W - M, 70); ctx.stroke();
     }
 
-    // البطاقات التحريرية
-    var cardColors = [
-      [hb, 35, 97],
-      [(hb + 40) % 360, 30, 97],
-      [(hb + 20) % 360, 28, 96]
+    var cardTints = [
+      [hb, 28, 97],
+      [(hb + 28) % 360, 22, 97],
+      [(hb + 50) % 360, 20, 96]
     ];
 
     pg.forEach(function (f, fi) {
-      var y = f.y;
-      var h = f.h;
-      var col = cardColors[fi % cardColors.length];
-      var x = M;
-      var w = W - 2 * M;
+      var y = f.y, h = f.h;
+      var tint = cardTints[fi % cardTints.length];
+      var x = M, w = W - 2 * M;
 
-      // ظل خفيف + بطاقة
+      // بطاقة
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.08)';
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 3;
-      ctx.fillStyle = hsl(col[0], col[1], col[2]);
-      rrect(ctx, x, y, w, h, 18);
+      ctx.shadowColor = 'rgba(0,0,0,0.07)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = hsl(tint[0], tint[1], tint[2]);
+      rrect(ctx, x, y, w, h, 16);
       ctx.fill();
       ctx.restore();
-
-      // شريط تمييز يمين (RTL)
-      ctx.fillStyle = hsl(hb, 50, 48);
-      rrect(ctx, x + w - d.ACCENT - 2, y + 12, d.ACCENT, h - 24, 4);
-      ctx.fill();
-
-      // إطار خفيف
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = hsl(hb, 25, 82);
-      rrect(ctx, x, y, w, h, 18);
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = hsl(hb, 22, 84);
+      rrect(ctx, x, y, w, h, 16);
       ctx.stroke();
 
-      var textRight = x + w - d.ACCENT - 16;
-      var textWidth = w - d.ACCENT - 36;
-      var sideImg = null;
-      if (f.hasSide && art) {
-        if (art.pages && art.pages[pi]) sideImg = art.pages[pi];
-        else if (art.pages && art.pages.length) sideImg = art.pages[(pi + fi) % art.pages.length];
-        else sideImg = art.hero;
-      }
+      // شريط تمييز على يمين البطاقة
+      ctx.fillStyle = hsl(hb, 48, 50);
+      rrect(ctx, x + w - 7, y + 10, 5, h - 20, 3);
+      ctx.fill();
 
-      var imgW = 0;
-      if (sideImg && sideImg.width) {
-        imgW = Math.min(200, Math.round(w * 0.28));
-        var imgH = Math.min(h - 24, Math.round(imgW * 0.75));
-        var ix = x + 14;
-        var iy = y + (h - imgH) / 2;
-        ctx.save();
-        ctx.beginPath();
-        rrect(ctx, ix, iy, imgW, imgH, 14);
-        ctx.clip();
-        var sc2 = Math.max(imgW / sideImg.width, imgH / sideImg.height);
-        ctx.drawImage(sideImg, ix + (imgW - sideImg.width * sc2) / 2, iy + (imgH - sideImg.height * sc2) / 2, sideImg.width * sc2, sideImg.height * sc2);
-        ctx.restore();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = hsl(hb, 30, 75);
-        rrect(ctx, ix, iy, imgW, imgH, 14);
+      // ===== عمودان: نص يمين | صورة يسار (بدون تداخل) =====
+      var pad = d.CARD_PAD;
+      var gapCol = 14;
+      var sideW = f.sideW || 0;
+      var hasImg = f.hasSide && sideW > 0;
+      var imgColW = hasImg ? sideW : 0;
+
+      // حدود عمود النص (من اليمين)
+      var textRight = x + w - 14;
+      var textLeft = x + pad + (hasImg ? imgColW + gapCol : 0);
+      var textColW = Math.max(80, textRight - textLeft);
+
+      // صورة في العمود الأيسر فقط
+      if (hasImg) {
+        var sideImg = null;
+        if (art) {
+          if (art.pages && art.pages.length) sideImg = art.pages[(pi + fi) % art.pages.length];
+          else sideImg = art.hero || art.a || art.b;
+        }
+        var ix = x + pad;
+        var iy = y + pad;
+        var ih = h - pad * 2;
+        var iw = imgColW;
+        ctx.fillStyle = hsl(hb, 20, 92);
+        rrect(ctx, ix, iy, iw, ih, 12);
+        ctx.fill();
+        if (sideImg && sideImg.width) {
+          ctx.save();
+          ctx.beginPath(); rrect(ctx, ix, iy, iw, ih, 12); ctx.clip();
+          var sc2 = Math.max(iw / sideImg.width, ih / sideImg.height);
+          var dw = sideImg.width * sc2, dh = sideImg.height * sc2;
+          ctx.drawImage(sideImg, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh);
+          ctx.restore();
+        } else {
+          ctx.font = Math.min(48, iw * 0.35) + 'px ' + EMOJI_FONT;
+          ctx.textAlign = 'center';
+          ctx.fillText(emojis[fi % emojis.length] || '🕯', ix + iw / 2, iy + ih / 2);
+        }
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = hsl(hb, 25, 78);
+        rrect(ctx, ix, iy, iw, ih, 12);
         ctx.stroke();
-        textWidth = w - d.ACCENT - 36 - imgW - 12;
       }
 
-      var cursorY = y + d.CARD_PAD + 6;
+      // نص داخل عمود النص فقط (clip يمنع أي تداخل)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(textLeft - 2, y + 4, textColW + 8, h - 8);
+      ctx.clip();
 
-      // عنوان فرعي
+      var cursorY = y + pad + 4;
+      ctx.textAlign = 'right';
+
       if (f.head) {
-        ctx.textAlign = 'right';
         ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT;
-        ctx.fillStyle = hsl(hb, 55, 32);
-        var hl = wrap(ctx, f.head, textWidth);
+        ctx.fillStyle = hsl(hb, 55, 30);
+        var hl = wrap(ctx, f.head, textColW - 4);
         hl.forEach(function (ln) {
           cursorY += d.HEAD_F * 0.55;
           ctx.fillText(ln, textRight, cursorY);
-          cursorY += d.HEAD_F * 0.55 + 4;
+          cursorY += d.HEAD_F * 0.55 + 3;
         });
-        // خط تحت العنوان
-        ctx.strokeStyle = hsl(hb, 40, 78);
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = hsl(hb, 35, 78);
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(textRight - Math.min(textWidth, 220), cursorY);
-        ctx.lineTo(textRight, cursorY);
+        ctx.moveTo(textRight - Math.min(textColW, 200), cursorY + 2);
+        ctx.lineTo(textRight, cursorY + 2);
         ctx.stroke();
-        cursorY += 10;
+        cursorY += 12;
       } else if (f.cont) {
-        ctx.textAlign = 'right';
-        ctx.font = '400 18px ' + FONT;
+        ctx.font = '400 17px ' + FONT;
         ctx.fillStyle = hsl(hb, 20, 55);
-        cursorY += 10;
+        cursorY += 12;
         ctx.fillText('… تتمة', textRight, cursorY);
-        cursorY += 16;
+        cursorY += 14;
       } else {
-        cursorY += 8;
+        cursorY += 6;
       }
 
-      // المتن
-      ctx.textAlign = 'right';
+      // إعادة لفّ على عرض العمود الفعلي لضمان عدم تجاوز الصورة
       ctx.font = '400 ' + d.BODY + 'px ' + FONT;
-      ctx.fillStyle = hsl(hb, 25, 18);
-      ctx.textBaseline = 'middle';
-      (f.lines || []).forEach(function (ln) {
+      ctx.fillStyle = hsl(hb, 22, 16);
+      var bodyText = (f.lines || []).join(' ');
+      // استخدم السطور المخزّنة إن عُرضت بنفس العرض، وإلا أعد اللف
+      var drawLines = f.lines || [];
+      if (f.textColW && Math.abs(f.textColW - textColW) > 8) {
+        drawLines = wrap(ctx, bodyText, textColW - 4);
+      }
+      drawLines.forEach(function (ln) {
         cursorY += d.LH * 0.5;
+        if (cursorY > y + h - pad) return;
         ctx.fillText(ln, textRight, cursorY);
         cursorY += d.LH * 0.5;
       });
+      ctx.restore();
     });
 
-    // تذييل رقم الصفحة — تحريري بسيط
+    // تذييل
     var label = ar(pi + 1) + ' / ' + ar(total);
     ctx.textAlign = 'center';
-    ctx.font = '600 22px ' + FONT;
-    ctx.fillStyle = hsl(hb, 30, 45);
-    ctx.fillText(label, W / 2, H - 40);
-    ctx.strokeStyle = hsl(hb, 25, 80);
+    ctx.font = '600 20px ' + FONT;
+    ctx.fillStyle = hsl(hb, 28, 42);
+    ctx.fillText(label, W / 2, H - 36);
+    ctx.strokeStyle = hsl(hb, 20, 82);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(W / 2 - 80, H - 58);
-    ctx.lineTo(W / 2 + 80, H - 58);
+    ctx.moveTo(W / 2 - 70, H - 52);
+    ctx.lineTo(W / 2 + 70, H - 52);
     ctx.stroke();
   }
 

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v168-editorial';
+const CACHE = 'khalwati-v169-no-overlap';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/candle.jpg',
@@ -29,7 +29,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v168-editorial') return caches.delete(k);
+        if (k !== 'khalwati-v169-no-overlap') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

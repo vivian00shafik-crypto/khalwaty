@@ -6,10 +6,13 @@
  */
 (function () {
   'use strict';
+  /* بوستر التحضير — تصميم A4 احترافي للطباعة:
+     دقة النص أولًا، خط مقروء، هوامش آمنة، تقسيم صفحات منطقي، صورة داعمة دون تغطية النص */
 
-  var W = 1240, H = 1754, M = 56;          // A4 عند 150dpi تقريبًا
-  var INNER = 28, GAP = 26;
-  var TOP_FIRST = 372, TOP_NEXT = 180, BOTTOM = H - 344;
+  var W = 1240, H = 1754, M = 68;          // A4 عمودي 210×297مم @ ~150dpi — هوامش طباعة آمنة
+  var INNER = 24, GAP = 22;
+  // مساحة نص أكبر + صورة داعمة أسفل الصفحة دون ازدحام
+  var TOP_FIRST = 340, TOP_NEXT = 150, BOTTOM = H - 300;
   var FONT = 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif';
   var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji"';
 
@@ -81,8 +84,10 @@ var EMOJI_WORDS = {
 
   /* ---------- تقسيم المحتوى على الصفحات ---------- */
   function dims(s) {
-    var BODY = Math.round(34 * s);
-    return { BODY: BODY, LH: Math.round(BODY * 1.75), HEAD_F: Math.round(26 + 10 * s), HEAD_H: Math.round(64 + 22 * s) };
+    // حد أدنى لحجم الخط للطباعة على A4 — وضوح أولوية على الحشر
+    var BODY = Math.max(28, Math.round(36 * s));
+    var LH = Math.round(BODY * 1.85); // تباعد عربي مريح
+    return { BODY: BODY, LH: LH, HEAD_F: Math.max(22, Math.round(28 + 10 * s)), HEAD_H: Math.round(58 + 20 * s) };
   }
   function topOf(pi) { return pi === 0 ? TOP_FIRST : TOP_NEXT; }
 
@@ -114,8 +119,9 @@ var EMOJI_WORDS = {
     return pages;
   }
   function layout(items, N, m) {
+    // نفضّل خطًا مقروءًا على A4؛ إن لم يتسع زد عدد الصفحات بدل تصغير مفرط
     var last = null;
-    for (var s = 1.5; s >= 0.5; s -= 0.05) {
+    for (var s = 1.4; s >= 0.82; s -= 0.04) {
       var p = paginate(items, s, m);
       last = { pages: p, s: s, fits: p.length <= N };
       if (last.fits) return last;

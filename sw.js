@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v170-full-sticker-a4';
+const CACHE = 'khalwati-v171-force';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/candle.jpg',
@@ -29,7 +29,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v170-full-sticker-a4') return caches.delete(k);
+        if (k !== 'khalwati-v171-force') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

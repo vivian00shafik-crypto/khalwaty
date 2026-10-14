@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v160-stock-embed';
+const CACHE = 'khalwati-v161-user-stock';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/candle.jpg',

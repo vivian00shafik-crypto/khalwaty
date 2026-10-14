@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v180-poster-edit';
+const CACHE = 'khalwati-v181-align-gesture';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/candle.jpg',
@@ -29,7 +29,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v180-poster-edit') return caches.delete(k);
+        if (k !== 'khalwati-v181-align-gesture') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

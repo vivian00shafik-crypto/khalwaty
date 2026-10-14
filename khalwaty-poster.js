@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  // build v180
+  // build v181
   /* بوستر التحضير — تصميم A4 احترافي للطباعة:
      دقة النص أولًا، خط مقروء، هوامش آمنة، تقسيم صفحات منطقي، صورة داعمة دون تغطية النص */
 
@@ -357,7 +357,15 @@ function layout(items, N, m) {
       ctx.clip();
 
       var cursorY = y + pad + 4;
-      ctx.textAlign = 'right';
+      var align = (opt && opt.textAlign) || 'right';
+      if (align !== 'left' && align !== 'center' && align !== 'right') align = 'right';
+      ctx.textAlign = align;
+      var textX = textRight;
+      if (align === 'center') textX = (textLeft + textRight) / 2;
+      else if (align === 'left') textX = textLeft;
+      var lhMul = (opt && opt.lineHeight) ? (opt.lineHeight / 1.8) : 1;
+      var bodyLH = d.LH * lhMul;
+      var paraMul = (opt && opt.paraGap) ? opt.paraGap : 1;
 
       if (f.head) {
         ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT_USE;
@@ -365,40 +373,51 @@ function layout(items, N, m) {
         var hl = wrap(ctx, f.head, textColW - 4);
         hl.forEach(function (ln) {
           cursorY += d.HEAD_F * 0.55;
-          ctx.fillText(ln, textRight, cursorY);
+          ctx.fillText(ln, textX, cursorY);
           cursorY += d.HEAD_F * 0.55 + 3;
         });
         ctx.strokeStyle = hsl(hb, 35, 78);
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(textRight - Math.min(textColW, 200), cursorY + 2);
-        ctx.lineTo(textRight, cursorY + 2);
+        if (align === 'center') {
+          var mid = (textLeft + textRight) / 2;
+          var half = Math.min(textColW, 200) / 2;
+          ctx.moveTo(mid - half, cursorY + 2);
+          ctx.lineTo(mid + half, cursorY + 2);
+        } else if (align === 'left') {
+          ctx.moveTo(textLeft, cursorY + 2);
+          ctx.lineTo(textLeft + Math.min(textColW, 200), cursorY + 2);
+        } else {
+          ctx.moveTo(textRight - Math.min(textColW, 200), cursorY + 2);
+          ctx.lineTo(textRight, cursorY + 2);
+        }
         ctx.stroke();
-        cursorY += 12;
+        cursorY += 12 * paraMul;
       } else if (f.cont) {
         ctx.font = '400 17px ' + FONT_USE;
         ctx.fillStyle = hsl(hb, 20, 55);
         cursorY += 12;
-        ctx.fillText('… تتمة', textRight, cursorY);
+        ctx.fillText('… تتمة', textX, cursorY);
         cursorY += 14;
       } else {
-        cursorY += 6;
+        cursorY += 6 * paraMul;
       }
 
       // إعادة لفّ على عرض العمود الفعلي لضمان عدم تجاوز الصورة
       ctx.font = '400 ' + d.BODY + 'px ' + FONT_USE;
       ctx.fillStyle = hsl(hb, 22, 16);
       var bodyText = (f.lines || []).join(' ');
-      // استخدم السطور المخزّنة إن عُرضت بنفس العرض، وإلا أعد اللف
       var drawLines = f.lines || [];
       if (f.textColW && Math.abs(f.textColW - textColW) > 8) {
         drawLines = wrap(ctx, bodyText, textColW - 4);
       }
-      drawLines.forEach(function (ln) {
-        cursorY += d.LH * 0.5;
+      drawLines.forEach(function (ln, li) {
+        cursorY += bodyLH * 0.5;
         if (cursorY > y + h - pad) return;
-        ctx.fillText(ln, textRight, cursorY);
-        cursorY += d.LH * 0.5;
+        ctx.fillText(ln, textX, cursorY);
+        cursorY += bodyLH * 0.5;
+        // فراغ بسيط بين الفقرات عند سطر فارغ
+        if (!String(ln || '').trim()) cursorY += 6 * paraMul;
       });
       ctx.restore();
     });
@@ -784,7 +803,7 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
     injectCSS();
     data = data || { items: [] };
     var items = (data.items || []).filter(function (it) { return it && String(it.text || '').trim(); });
-    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [], fontScale: 1, fontFamily: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif', imgScale: 1, imgOffX: 0, imgOffY: 0 };
+    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [], fontScale: 1, fontFamily: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif', imgScale: 1, imgOffX: 0, imgOffY: 0, textAlign: 'right', lineHeight: 1.8, paraGap: 1 };
 
     var ov = document.createElement('div'); ov.className = 'kp-ov';
     var box = document.createElement('div'); box.className = 'kp-box'; ov.appendChild(box);
@@ -850,44 +869,85 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
             imgScale: state.imgScale || 1,
             imgOffX: state.imgOffX || 0,
             imgOffY: state.imgOffY || 0,
-            fontFamily: state.fontFamily || FONT
+            fontFamily: state.fontFamily || FONT,
+            textAlign: state.textAlign || 'right',
+            lineHeight: state.lineHeight || 1.8,
+            paraGap: state.paraGap || 1
           };
           var d2 = { title: state.title, subtitle: data.subtitle };
           lay.pages.forEach(function (pg, i) {
             var cv = document.createElement('canvas');
             drawPage(cv, pg, i, lay.pages.length, d2, opt, state.art, d);
-            // تحريك/تكبير تفاعلي بالسحب على الصورة (تقريبي على المعاينة)
+            // تحكم مباشر على الصورة: سحب للتحريك + إصبعين للتكبير
             cv.style.touchAction = 'none';
             cv.style.cursor = 'grab';
+            cv.title = 'اسحبي لتحريك الصورة · إصبعين للتكبير/التصغير';
             (function (canvasEl) {
-              var dragging = false, lx = 0, ly = 0;
-              function pos(ev) {
-                if (ev.touches && ev.touches[0]) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+              var dragging = false, pinching = false, lx = 0, ly = 0, lastDist = 0;
+              function pos(ev, idx) {
+                idx = idx || 0;
+                if (ev.touches && ev.touches[idx]) return { x: ev.touches[idx].clientX, y: ev.touches[idx].clientY };
                 return { x: ev.clientX, y: ev.clientY };
               }
+              function dist(ev) {
+                if (!ev.touches || ev.touches.length < 2) return 0;
+                var a = ev.touches[0], b = ev.touches[1];
+                var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+              }
+              function scheduleRedraw() {
+                clearTimeout(timer);
+                timer = setTimeout(function () { redraw(); }, 20);
+              }
               function down(ev) {
-                dragging = true; canvasEl.style.cursor = 'grabbing';
+                if (ev.touches && ev.touches.length >= 2) {
+                  pinching = true; dragging = false;
+                  lastDist = dist(ev);
+                  ev.preventDefault();
+                  return;
+                }
+                dragging = true; pinching = false;
+                canvasEl.style.cursor = 'grabbing';
                 var p = pos(ev); lx = p.x; ly = p.y;
                 ev.preventDefault();
               }
               function move(ev) {
+                if (pinching && ev.touches && ev.touches.length >= 2) {
+                  var dnow = dist(ev);
+                  if (lastDist > 0) {
+                    var ratio = dnow / lastDist;
+                    state.imgScale = Math.max(0.6, Math.min(2.8, (state.imgScale || 1) * ratio));
+                    scheduleRedraw();
+                  }
+                  lastDist = dnow;
+                  ev.preventDefault();
+                  return;
+                }
                 if (!dragging) return;
                 var p = pos(ev);
-                state.imgOffX += (p.x - lx) * 1.6;
-                state.imgOffY += (p.y - ly) * 1.6;
+                state.imgOffX += (p.x - lx) * 2.2;
+                state.imgOffY += (p.y - ly) * 2.2;
                 lx = p.x; ly = p.y;
-                // إعادة رسم سريعة بدون تأخير طويل
-                clearTimeout(timer);
-                timer = setTimeout(function () { redraw(); }, 30);
+                scheduleRedraw();
                 ev.preventDefault();
               }
-              function up() { dragging = false; canvasEl.style.cursor = 'grab'; }
+              function up() {
+                dragging = false; pinching = false; lastDist = 0;
+                canvasEl.style.cursor = 'grab';
+              }
+              function wheel(ev) {
+                var delta = ev.deltaY > 0 ? -0.08 : 0.08;
+                state.imgScale = Math.max(0.6, Math.min(2.8, (state.imgScale || 1) + delta));
+                scheduleRedraw();
+                ev.preventDefault();
+              }
               canvasEl.addEventListener('mousedown', down);
               canvasEl.addEventListener('mousemove', move);
               window.addEventListener('mouseup', up);
               canvasEl.addEventListener('touchstart', down, { passive: false });
               canvasEl.addEventListener('touchmove', move, { passive: false });
               canvasEl.addEventListener('touchend', up);
+              canvasEl.addEventListener('wheel', wheel, { passive: false });
             })(cv);
             prev.appendChild(cv); state.canvases.push(cv);
           });
@@ -1236,21 +1296,59 @@ lbl('عنوان البوستر');
     updateFS(); rowFS.appendChild(fsLbl);
     chip(rowFS, 'نص أكبر +', false, function () { feedbackTap(); state.fontScale = Math.min(1.6, (state.fontScale || 1) + 0.08); redraw(); updateFS(); });
 
-    clbl('الصورة: تكبير وتحريك');
+    clbl('الصورة (تحكم على المعاينة نفسها)');
     var rowI = document.createElement('div'); rowI.className = 'kp-row'; controls.appendChild(rowI);
-    chip(rowI, 'تصغير صورة', false, function () { feedbackTap(); state.imgScale = Math.max(0.6, (state.imgScale || 1) - 0.1); redraw(); updateIS(); });
+    chip(rowI, 'تصغير', false, function () { feedbackTap(); state.imgScale = Math.max(0.6, (state.imgScale || 1) - 0.1); redraw(); updateIS(); });
     var isLbl = document.createElement('span'); isLbl.className = 'kp-chip'; isLbl.style.cursor = 'default';
     function updateIS() { isLbl.textContent = 'تكبير ' + Math.round((state.imgScale || 1) * 100) + '%'; }
     updateIS(); rowI.appendChild(isLbl);
-    chip(rowI, 'تكبير صورة', false, function () { feedbackTap(); state.imgScale = Math.min(2.5, (state.imgScale || 1) + 0.1); redraw(); updateIS(); });
-    var rowM = document.createElement('div'); rowM.className = 'kp-row'; controls.appendChild(rowM);
-    chip(rowM, '←', false, function () { feedbackTap(); state.imgOffX -= 18; redraw(); });
-    chip(rowM, '→', false, function () { feedbackTap(); state.imgOffX += 18; redraw(); });
-    chip(rowM, '↑', false, function () { feedbackTap(); state.imgOffY -= 18; redraw(); });
-    chip(rowM, '↓', false, function () { feedbackTap(); state.imgOffY += 18; redraw(); });
-    chip(rowM, 'تصفير', false, function () { feedbackTap(); state.imgOffX = 0; state.imgOffY = 0; state.imgScale = 1; redraw(); updateIS(); });
-    var tip = document.createElement('div'); tip.className = 'kp-note'; tip.style.margin = '6px 0 0'; tip.textContent = '💡 اسحبي على صورة المعاينة لتحريكها، أو استخدمي الأسهم.';
+    chip(rowI, 'تكبير', false, function () { feedbackTap(); state.imgScale = Math.min(2.8, (state.imgScale || 1) + 0.1); redraw(); updateIS(); });
+    chip(rowI, 'إعادة ضبط الصورة', false, function () { feedbackTap(); state.imgOffX = 0; state.imgOffY = 0; state.imgScale = 1; redraw(); updateIS(); });
+    var tip = document.createElement('div'); tip.className = 'kp-note'; tip.style.margin = '6px 0 0';
+    tip.textContent = '💡 اسحبي بإصبع واحد على صورة المعاينة لتحريكها · إصبعين للتكبير · عجلة الماوس للتكبير';
     controls.appendChild(tip);
+
+    clbl('محاذاة النص');
+    var rowA = document.createElement('div'); rowA.className = 'kp-row'; controls.appendChild(rowA);
+    function drawAlign() {
+      rowA.innerHTML = '';
+      [
+        { id: 'right', n: 'يمين' },
+        { id: 'center', n: 'وسط' },
+        { id: 'left', n: 'يسار' }
+      ].forEach(function (a) {
+        chip(rowA, a.n, state.textAlign === a.id, function () {
+          feedbackTap(); state.textAlign = a.id; drawAlign(); redraw();
+        });
+      });
+    }
+    drawAlign();
+
+    clbl('تنسيق الفقرة');
+    var rowP = document.createElement('div'); rowP.className = 'kp-row'; controls.appendChild(rowP);
+    chip(rowP, 'تباعد أقل', false, function () {
+      feedbackTap();
+      state.lineHeight = Math.max(1.25, (state.lineHeight || 1.8) - 0.1);
+      state.paraGap = Math.max(0.5, (state.paraGap || 1) - 0.15);
+      redraw(); updatePara();
+    });
+    var paraLbl = document.createElement('span'); paraLbl.className = 'kp-chip'; paraLbl.style.cursor = 'default';
+    function updatePara() {
+      paraLbl.textContent = 'ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
+    }
+    updatePara(); rowP.appendChild(paraLbl);
+    chip(rowP, 'تباعد أكبر', false, function () {
+      feedbackTap();
+      state.lineHeight = Math.min(2.6, (state.lineHeight || 1.8) + 0.1);
+      state.paraGap = Math.min(2, (state.paraGap || 1) + 0.15);
+      redraw(); updatePara();
+    });
+    chip(rowP, 'فقرة مريحة', false, function () {
+      feedbackTap(); state.lineHeight = 1.9; state.paraGap = 1.15; redraw(); updatePara();
+    });
+    chip(rowP, 'فقرة مضغوطة', false, function () {
+      feedbackTap(); state.lineHeight = 1.4; state.paraGap = 0.7; redraw(); updatePara();
+    });
 
     clbl('الرموز التعبيرية');
     var rowE = document.createElement('div'); rowE.className = 'kp-row'; controls.appendChild(rowE);

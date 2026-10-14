@@ -9,10 +9,10 @@
   /* بوستر التحضير — تصميم A4 احترافي للطباعة:
      دقة النص أولًا، خط مقروء، هوامش آمنة، تقسيم صفحات منطقي، صورة داعمة دون تغطية النص */
 
-  var W = 1240, H = 1754, M = 68;          // A4 عمودي 210×297مم @ ~150dpi — هوامش طباعة آمنة
-  var INNER = 24, GAP = 22;
-  // مساحة نص أكبر + صورة داعمة أسفل الصفحة دون ازدحام
-  var TOP_FIRST = 340, TOP_NEXT = 150, BOTTOM = H - 300;
+  var W = 1240, H = 1754, M = 56;          // A4 عمودي 210×297مم @ ~150dpi
+  var INNER = 22, GAP = 18;
+  // تخطيط تحريري: بطاقات نصية + صور جانبية (بدون شريط صورة سفلي ضخم)
+  var TOP_FIRST = 200, TOP_NEXT = 120, BOTTOM = H - 100;
   var FONT = 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif';
   var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji"';
 
@@ -84,41 +84,81 @@ var EMOJI_WORDS = {
 
   /* ---------- تقسيم المحتوى على الصفحات ---------- */
   function dims(s) {
-    // حد أدنى لحجم الخط للطباعة على A4 — وضوح أولوية على الحشر
-    var BODY = Math.max(28, Math.round(36 * s));
-    var LH = Math.round(BODY * 1.85); // تباعد عربي مريح
-    return { BODY: BODY, LH: LH, HEAD_F: Math.max(22, Math.round(28 + 10 * s)), HEAD_H: Math.round(58 + 20 * s) };
+    var BODY = Math.max(27, Math.round(34 * s));
+    var LH = Math.round(BODY * 1.8);
+    return {
+      BODY: BODY,
+      LH: LH,
+      HEAD_F: Math.max(20, Math.round(24 + 8 * s)),
+      HEAD_H: Math.round(48 + 14 * s),
+      CARD_PAD: 18,
+      ACCENT: 8
+    };
   }
   function topOf(pi) { return pi === 0 ? TOP_FIRST : TOP_NEXT; }
 
   function paginate(items, s, m) {
-    var d = dims(s), innerW = W - 2 * M - 2 * INNER, PADB = 24;
+    var d = dims(s);
+    // عرض النص داخل البطاقة (مع مساحة لصورة جانبية صغيرة أحيانًا)
+    var innerW = W - 2 * M - 2 * INNER - 20;
+    var PADB = d.CARD_PAD * 2;
     var pages = [[]], pi = 0, y = topOf(0);
     m.direction = 'rtl';
     m.font = '400 ' + d.BODY + 'px ' + FONT;
     function next() { pages.push([]); pi++; y = topOf(pi); }
     items.forEach(function (it, i) {
-      var lines = wrap(m, it.text, innerW), idx = 0;
+      var raw = String(it.text || '').trim();
+      if (!raw) return;
+      // فصل العنوان الفرعي إن وُجد في أول سطر قصير
+      var linesAll = raw.split(/\n/);
+      var head = '';
+      var body = raw;
+      if (linesAll.length > 1 && linesAll[0].trim().length > 0 && linesAll[0].trim().length <= 48) {
+        head = linesAll[0].trim();
+        body = linesAll.slice(1).join('\n').trim() || raw;
+      }
+      m.font = '400 ' + d.BODY + 'px ' + FONT;
+      var lines = wrap(m, body, innerW);
+      var idx = 0;
       if (!lines.length) lines = [''];
-      var n = lines.length, over = d.HEAD_H + 20 + PADB;
-      function place(k) {
-        pages[pi].push({ it: it, i: i, lines: lines.slice(idx, idx + k), cont: idx > 0, y: y, h: over + k * d.LH });
+      var n = lines.length;
+      var headH = head ? d.HEAD_H : Math.round(d.HEAD_H * 0.45);
+      var over = headH + PADB + 8;
+      function place(k, isCont) {
+        var h = over + k * d.LH + (isCont ? 0 : 4);
+        pages[pi].push({
+          it: it, i: i, lines: lines.slice(idx, idx + k),
+          cont: !!isCont || idx > 0, y: y, h: h,
+          head: (idx === 0 ? head : (isCont || idx > 0 ? '' : head)),
+          hasSide: (i % 2 === 1) && k >= 3
+        });
+        return h;
       }
       while (idx < n) {
         var cap = Math.floor((BOTTOM - y - over) / d.LH), rem = n - idx;
-        if (cap >= rem) { place(rem); y += over + rem * d.LH + GAP; idx = n; }
-        else {
-          var take = Math.min(cap, rem - 2), fresh = (y === topOf(pi));
-          if (take >= 3 || (fresh && take >= 1)) { place(take); idx += take; next(); }
-          else if (fresh) { place(1); idx += 1; next(); }
-          else next();
+        if (cap < 1) { next(); continue; }
+        if (cap >= rem) {
+          var hh = place(rem, idx > 0);
+          y += hh + GAP;
+          idx = n;
+        } else {
+          var take = Math.min(cap, Math.max(1, rem - 1));
+          var fresh = (y === topOf(pi));
+          if (take >= 2 || fresh) {
+            place(take, idx > 0);
+            idx += take;
+            next();
+          } else {
+            next();
+          }
         }
       }
     });
     if (pages.length > 1 && !pages[pages.length - 1].length) pages.pop();
     return pages;
   }
-  function layout(items, N, m) {
+
+function layout(items, N, m) {
     // نفضّل خطًا مقروءًا على A4؛ إن لم يتسع زد عدد الصفحات بدل تصغير مفرط
     var last = null;
     for (var s = 1.4; s >= 0.82; s -= 0.04) {
@@ -172,146 +212,197 @@ var EMOJI_WORDS = {
   function drawPage(cv, pg, pi, total, data, opt, art, d) {
     cv.width = W; cv.height = H;
     var ctx = cv.getContext('2d');
-    ctx.direction = 'rtl'; ctx.textBaseline = 'middle';
-    var theme = opt.theme, emojis = opt.emojis, hb = theme.hues[0];
+    ctx.direction = 'rtl';
+    ctx.textBaseline = 'middle';
+    var theme = opt.theme, emojis = opt.emojis || ['✝'], hb = theme.hues[0];
 
+    // خلفية ورقية هادئة
     var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, hsl(theme.bg[0], theme.bg[1], theme.bg[2] + 2));
-    g.addColorStop(1, hsl(theme.hues[1], 45, 94));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    g.addColorStop(0, hsl(theme.bg[0], Math.min(40, theme.bg[1]), 97));
+    g.addColorStop(1, hsl(theme.hues[1], 25, 94));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
 
-    var hasPageArt = art && ((art.pages && art.pages[pi]) || art.hero || art.a || art.b);
-    var rnd = seeded(11 + emojis.length * 7 + pi * 31);
-    ctx.textAlign = 'center';
-    // قلل الرموز المتكررة جدًا — خاصة عند وجود صور مولّدة
-    var decorN = hasPageArt ? 3 : 8;
-    for (var n = 0; n < decorN; n++) {
-      ctx.save(); ctx.globalAlpha = hasPageArt ? 0.05 : 0.08;
-      ctx.translate(rnd() * W, rnd() * H); ctx.rotate((rnd() - 0.5) * 0.9);
-      ctx.font = (40 + rnd() * 40) + 'px ' + EMOJI_FONT;
-      ctx.fillText(emojis[Math.floor(rnd() * emojis.length)], 0, 0);
-      ctx.restore();
-    }
+    // شريط علوي رفيع للهوية
+    ctx.fillStyle = hsl(hb, 45, 42);
+    ctx.fillRect(0, 0, W, 8);
 
     var title = data.title || 'تحضير الدرس';
+
+    // رأس الصفحة
     if (pi === 0) {
-      /* صورة الغلاف المرسومة بالذكاء الاصطناعي */
-      var hx = M, hy = 40, hs = 300;
-      if (art && art.hero) {
+      var hx = M, hy = 28, hs = 150;
+      var hero = art && art.hero;
+      if (hero) {
         ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.12)';
-        ctx.shadowBlur = 14;
-        ctx.shadowOffsetY = 4;
-        ctx.fillStyle = '#fff';
-        rrect(ctx, hx, hy, hs, hs, 28);
-        ctx.fill();
-        ctx.shadowColor = 'transparent';
         ctx.beginPath();
-        rrect(ctx, hx, hy, hs, hs, 28);
+        rrect(ctx, hx, hy, hs, hs, 20);
         ctx.clip();
-        var sc = Math.max(hs / art.hero.width, hs / art.hero.height);
-        var nw = art.hero.width * sc, nh = art.hero.height * sc;
-        ctx.drawImage(art.hero, hx + (hs - nw) / 2, hy + (hs - nh) / 2, nw, nh);
+        var sc = Math.max(hs / hero.width, hs / hero.height);
+        ctx.drawImage(hero, hx + (hs - hero.width * sc) / 2, hy + (hs - hero.height * sc) / 2, hero.width * sc, hero.height * sc);
         ctx.restore();
-        ctx.save();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = hsl(hb, 45, 70);
-        rrect(ctx, hx, hy, hs, hs, 28);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = hsl(hb, 40, 70);
+        rrect(ctx, hx, hy, hs, hs, 20);
         ctx.stroke();
-        ctx.restore();
-      } else {
-        ctx.fillStyle = hsl(hb, 65, 88);
-        ctx.beginPath(); ctx.arc(hx + hs / 2, hy + hs / 2, hs / 2 - 10, 0, Math.PI * 2); ctx.fill();
-        ctx.textAlign = 'center'; ctx.font = '150px ' + EMOJI_FONT;
-        ctx.fillText(emojis[0], hx + hs / 2, hy + hs / 2 + 6);
       }
-      /* العنوان */
-      var rx = W - M, lw = rx - (hx + hs + 24), tf = 74, lines;
+      var titleX = hero ? hx + hs + 20 : M;
+      var titleW = W - M - titleX;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = hsl(hb, 50, 28);
+      var tf = 48;
+      var tlines;
       do {
         ctx.font = '700 ' + tf + 'px ' + FONT;
-        lines = wrap(ctx, title, lw - 70); tf -= 4;
-      } while (lines.length > 2 && tf > 38);
-      tf += 4;
-      var lh = tf * 1.35, ph = lines.length * lh + 36, pcy = 40 + hs / 2 - (data.subtitle ? 30 : 0);
-      ctx.fillStyle = hsl(hb, 70, 84); rrect(ctx, hx + hs + 24, pcy - ph / 2, lw, ph, 44); ctx.fill();
-      ctx.fillStyle = hsl(hb, 45, 22); ctx.textAlign = 'center';
-      lines.forEach(function (ln, k) { ctx.fillText(ln, hx + hs + 24 + lw / 2, pcy - ph / 2 + 18 + lh * (k + 0.5)); });
+        tlines = wrap(ctx, title, titleW);
+        tf -= 2;
+      } while (tlines.length > 3 && tf > 30);
+      var ty = hy + 40;
+      tlines.forEach(function (ln) {
+        ctx.fillText(ln, W - M, ty);
+        ty += tf + 8;
+      });
       if (data.subtitle) {
-        ctx.font = '700 38px ' + FONT;
-        var sw = Math.min(lw, ctx.measureText(data.subtitle).width + 70);
-        ctx.fillStyle = hsl(theme.hues[2], 75, 88);
-        rrect(ctx, hx + hs + 24 + (lw - sw) / 2, pcy + ph / 2 + 18, sw, 62, 31); ctx.fill();
-        ctx.fillStyle = hsl(theme.hues[2], 50, 26);
-        ctx.fillText(data.subtitle, hx + hs + 24 + lw / 2, pcy + ph / 2 + 49);
+        ctx.font = '400 22px ' + FONT;
+        ctx.fillStyle = hsl(hb, 30, 40);
+        ctx.fillText(String(data.subtitle).slice(0, 80), W - M, ty + 8);
       }
     } else {
-      var tf2 = 48;
-      ctx.font = '700 ' + tf2 + 'px ' + FONT;
-      while (ctx.measureText(title).width > W - 2 * M - 300 && tf2 > 28) { tf2 -= 2; ctx.font = '700 ' + tf2 + 'px ' + FONT; }
-      var tw = ctx.measureText(title).width + 80;
-      ctx.fillStyle = hsl(hb, 70, 84); rrect(ctx, (W - tw) / 2, 56, tw, 88, 44); ctx.fill();
-      ctx.fillStyle = hsl(hb, 45, 22); ctx.textAlign = 'center';
-      ctx.fillText(title, W / 2, 101);
-      if (!(art && art.pages && art.pages[pi])) {
-        ctx.font = '70px ' + EMOJI_FONT;
-        ctx.fillText(emojis[0], M + 50, 100);
-        ctx.fillText(emojis[Math.min(1, emojis.length - 1)], W - M - 50, 100);
-      }
+      ctx.textAlign = 'right';
+      ctx.font = '700 28px ' + FONT;
+      ctx.fillStyle = hsl(hb, 40, 35);
+      ctx.fillText(title, W - M, 56);
+      ctx.strokeStyle = hsl(hb, 35, 80);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(M, 80);
+      ctx.lineTo(W - M, 80);
+      ctx.stroke();
     }
 
-    /* البطاقات */
-    var x = M, w = W - 2 * M;
-    pg.forEach(function (f) {
-      var hue = theme.hues[f.i % theme.hues.length], y = f.y, h = f.h;
+    // البطاقات التحريرية
+    var cardColors = [
+      [hb, 35, 97],
+      [(hb + 40) % 360, 30, 97],
+      [(hb + 20) % 360, 28, 96]
+    ];
+
+    pg.forEach(function (f, fi) {
+      var y = f.y;
+      var h = f.h;
+      var col = cardColors[fi % cardColors.length];
+      var x = M;
+      var w = W - 2 * M;
+
+      // ظل خفيف + بطاقة
       ctx.save();
-      ctx.shadowColor = hsl(hue, 40, 40, 0.18); ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
-      ctx.fillStyle = hsl(hue, 80, 97, 0.96); rrect(ctx, x, y, w, h, 30); ctx.fill();
+      ctx.shadowColor = 'rgba(0,0,0,0.08)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 3;
+      ctx.fillStyle = hsl(col[0], col[1], col[2]);
+      rrect(ctx, x, y, w, h, 18);
+      ctx.fill();
       ctx.restore();
-      ctx.lineWidth = 2.5; ctx.strokeStyle = hsl(hue, 60, 80); rrect(ctx, x, y, w, h, 30); ctx.stroke();
 
-      ctx.fillStyle = hsl(hue, 70, 86); rrect(ctx, x + 10, y + 10, w - 20, d.HEAD_H, 24); ctx.fill();
-      var r = d.HEAD_H / 2 - 6, cx = W - M - 10 - r - 10, cy = y + 10 + d.HEAD_H / 2;
-      ctx.fillStyle = hsl(hue, 55, 42); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 ' + (d.HEAD_F - 2) + 'px ' + FONT;
-      ctx.fillText(ar(f.i + 1), cx, cy + 2);
-      ctx.font = (d.HEAD_H - 22) + 'px ' + EMOJI_FONT;
-      ctx.fillText(emojis[f.i % emojis.length], x + 10 + d.HEAD_H / 2 + 8, cy + 2);
+      // شريط تمييز يمين (RTL)
+      ctx.fillStyle = hsl(hb, 50, 48);
+      rrect(ctx, x + w - d.ACCENT - 2, y + 12, d.ACCENT, h - 24, 4);
+      ctx.fill();
 
-      var hs = (f.it.heading || '') + (f.cont ? ' (تابع)' : ''), hf = d.HEAD_F;
-      ctx.font = '700 ' + hf + 'px ' + FONT;
-      var avail = w - 20 - (r * 2 + 36) - (d.HEAD_H + 20);
-      while (ctx.measureText(hs).width > avail && hf > 18) { hf -= 2; ctx.font = '700 ' + hf + 'px ' + FONT; }
-      ctx.textAlign = 'right'; ctx.fillStyle = hsl(hue, 50, 22);
-      ctx.fillText(hs, cx - r - 16, cy + 2);
+      // إطار خفيف
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = hsl(hb, 25, 82);
+      rrect(ctx, x, y, w, h, 18);
+      ctx.stroke();
 
-      ctx.fillStyle = hsl(hue, 25, 16); ctx.font = '400 ' + d.BODY + 'px ' + FONT;
-      var ty = y + 10 + d.HEAD_H + 20 + d.LH / 2;
-      f.lines.forEach(function (ln) { ctx.fillText(ln, W - M - INNER, ty); ty += d.LH; });
+      var textRight = x + w - d.ACCENT - 16;
+      var textWidth = w - d.ACCENT - 36;
+      var sideImg = null;
+      if (f.hasSide && art) {
+        if (art.pages && art.pages[pi]) sideImg = art.pages[pi];
+        else if (art.pages && art.pages.length) sideImg = art.pages[(pi + fi) % art.pages.length];
+        else sideImg = art.hero;
+      }
+
+      var imgW = 0;
+      if (sideImg && sideImg.width) {
+        imgW = Math.min(200, Math.round(w * 0.28));
+        var imgH = Math.min(h - 24, Math.round(imgW * 0.75));
+        var ix = x + 14;
+        var iy = y + (h - imgH) / 2;
+        ctx.save();
+        ctx.beginPath();
+        rrect(ctx, ix, iy, imgW, imgH, 14);
+        ctx.clip();
+        var sc2 = Math.max(imgW / sideImg.width, imgH / sideImg.height);
+        ctx.drawImage(sideImg, ix + (imgW - sideImg.width * sc2) / 2, iy + (imgH - sideImg.height * sc2) / 2, sideImg.width * sc2, sideImg.height * sc2);
+        ctx.restore();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = hsl(hb, 30, 75);
+        rrect(ctx, ix, iy, imgW, imgH, 14);
+        ctx.stroke();
+        textWidth = w - d.ACCENT - 36 - imgW - 12;
+      }
+
+      var cursorY = y + d.CARD_PAD + 6;
+
+      // عنوان فرعي
+      if (f.head) {
+        ctx.textAlign = 'right';
+        ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT;
+        ctx.fillStyle = hsl(hb, 55, 32);
+        var hl = wrap(ctx, f.head, textWidth);
+        hl.forEach(function (ln) {
+          cursorY += d.HEAD_F * 0.55;
+          ctx.fillText(ln, textRight, cursorY);
+          cursorY += d.HEAD_F * 0.55 + 4;
+        });
+        // خط تحت العنوان
+        ctx.strokeStyle = hsl(hb, 40, 78);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(textRight - Math.min(textWidth, 220), cursorY);
+        ctx.lineTo(textRight, cursorY);
+        ctx.stroke();
+        cursorY += 10;
+      } else if (f.cont) {
+        ctx.textAlign = 'right';
+        ctx.font = '400 18px ' + FONT;
+        ctx.fillStyle = hsl(hb, 20, 55);
+        cursorY += 10;
+        ctx.fillText('… تتمة', textRight, cursorY);
+        cursorY += 16;
+      } else {
+        cursorY += 8;
+      }
+
+      // المتن
+      ctx.textAlign = 'right';
+      ctx.font = '400 ' + d.BODY + 'px ' + FONT;
+      ctx.fillStyle = hsl(hb, 25, 18);
+      ctx.textBaseline = 'middle';
+      (f.lines || []).forEach(function (ln) {
+        cursorY += d.LH * 0.5;
+        ctx.fillText(ln, textRight, cursorY);
+        cursorY += d.LH * 0.5;
+      });
     });
 
-    /* المشهد السفلي — صورة خاصة بكل صفحة عند توفرها */
-    var sceneImg = null;
-    if (art) {
-      if (art.pages && art.pages[pi]) sceneImg = art.pages[pi];
-      else if (art.pages && art.pages.length) sceneImg = art.pages[pi % art.pages.length];
-      else sceneImg = (pi % 2 === 0 ? art.a : art.b);
-    }
-    drawScene(ctx, sceneImg, M, H - 420, W - 2 * M, 300, theme, emojis);
-
-    /* رقم الصفحة */
-    var label = ar(pi + 1) + ' من ' + ar(total);
-    ctx.textAlign = 'center'; ctx.font = '700 30px ' + FONT;
-    var lw2 = ctx.measureText(label).width + 80;
-    ctx.fillStyle = hsl(hb, 60, 92); rrect(ctx, (W - lw2) / 2, H - 96, lw2, 56, 28); ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = hsl(hb, 50, 75); rrect(ctx, (W - lw2) / 2, H - 96, lw2, 56, 28); ctx.stroke();
-    ctx.fillStyle = hsl(hb, 45, 28); ctx.fillText(label, W / 2, H - 67);
-    ctx.font = '40px ' + EMOJI_FONT;
-    ctx.fillText(emojis[2 % emojis.length], W / 2 - lw2 / 2 - 44, H - 66);
-    ctx.fillText(emojis[3 % emojis.length], W / 2 + lw2 / 2 + 44, H - 66);
+    // تذييل رقم الصفحة — تحريري بسيط
+    var label = ar(pi + 1) + ' / ' + ar(total);
+    ctx.textAlign = 'center';
+    ctx.font = '600 22px ' + FONT;
+    ctx.fillStyle = hsl(hb, 30, 45);
+    ctx.fillText(label, W / 2, H - 40);
+    ctx.strokeStyle = hsl(hb, 25, 80);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 80, H - 58);
+    ctx.lineTo(W / 2 + 80, H - 58);
+    ctx.stroke();
   }
 
-  /* ---------- PDF بسيط (A4) من صور JPEG ---------- */
-  function dataUrlToBytes(u) {
+function dataUrlToBytes(u) {
     var b = atob(u.split(',')[1]), a = new Uint8Array(b.length);
     for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
     return a;

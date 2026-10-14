@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  // build v181
+  // build v182
   /* بوستر التحضير — تصميم A4 احترافي للطباعة:
      دقة النص أولًا، خط مقروء، هوامش آمنة، تقسيم صفحات منطقي، صورة داعمة دون تغطية النص */
 
@@ -775,8 +775,8 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
     s.textContent =
       '.kp-ov{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;direction:rtl;font-family:' + FONT + '}' +
       '.kp-box{background:#fffdf8;width:100%;max-width:600px;max-height:95vh;overflow:auto;border-radius:22px 22px 0 0;padding:14px 14px 22px;box-sizing:border-box}' +
-      '.kp-prev{background:#e9e6df;border-radius:14px;padding:8px;max-height:48vh;overflow:auto}' +
-      '.kp-prev canvas{width:100%;height:auto;border-radius:6px;display:block;margin-bottom:10px;box-shadow:0 3px 10px rgba(0,0,0,.18);background:#fff}' +
+      '.kp-prev{background:#e9e6df;border-radius:14px;padding:10px;max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch}' +
+      '.kp-prev canvas{width:100%;height:auto;border-radius:8px;display:block;margin:0 0 6px;box-shadow:0 3px 10px rgba(0,0,0,.18);background:#fff}.kp-page-wrap{margin-bottom:14px;border:1px solid rgba(0,0,0,.08);border-radius:10px;overflow:hidden;background:#fff}.kp-page-tag{display:block;text-align:center;font:700 13px Cairo,sans-serif;color:#5a4a2a;background:#f0e6d0;padding:6px 8px}' +
       '.kp-note{font-size:13px;color:#a65d4a;margin:8px 2px 0}' +
       '.kp-stat{font-size:13px;color:#5a7d4a;margin:8px 2px 0;font-weight:700}' +
       '.kp-lbl{font-weight:700;font-size:14px;margin:14px 2px 6px;color:#444}' +
@@ -866,9 +866,9 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
           var opt = {
             theme: state.theme,
             emojis: emojisNow(),
-            imgScale: state.imgScale || 1,
-            imgOffX: state.imgOffX || 0,
-            imgOffY: state.imgOffY || 0,
+            imgScale: 1,
+            imgOffX: 0,
+            imgOffY: 0,
             fontFamily: state.fontFamily || FONT,
             textAlign: state.textAlign || 'right',
             lineHeight: state.lineHeight || 1.8,
@@ -878,82 +878,21 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
           lay.pages.forEach(function (pg, i) {
             var cv = document.createElement('canvas');
             drawPage(cv, pg, i, lay.pages.length, d2, opt, state.art, d);
-            // تحكم مباشر على الصورة: سحب للتحريك + إصبعين للتكبير
-            cv.style.touchAction = 'none';
-            cv.style.cursor = 'grab';
-            cv.title = 'اسحبي لتحريك الصورة · إصبعين للتكبير/التصغير';
-            (function (canvasEl) {
-              var dragging = false, pinching = false, lx = 0, ly = 0, lastDist = 0;
-              function pos(ev, idx) {
-                idx = idx || 0;
-                if (ev.touches && ev.touches[idx]) return { x: ev.touches[idx].clientX, y: ev.touches[idx].clientY };
-                return { x: ev.clientX, y: ev.clientY };
-              }
-              function dist(ev) {
-                if (!ev.touches || ev.touches.length < 2) return 0;
-                var a = ev.touches[0], b = ev.touches[1];
-                var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
-                return Math.sqrt(dx * dx + dy * dy);
-              }
-              function scheduleRedraw() {
-                clearTimeout(timer);
-                timer = setTimeout(function () { redraw(); }, 20);
-              }
-              function down(ev) {
-                if (ev.touches && ev.touches.length >= 2) {
-                  pinching = true; dragging = false;
-                  lastDist = dist(ev);
-                  ev.preventDefault();
-                  return;
-                }
-                dragging = true; pinching = false;
-                canvasEl.style.cursor = 'grabbing';
-                var p = pos(ev); lx = p.x; ly = p.y;
-                ev.preventDefault();
-              }
-              function move(ev) {
-                if (pinching && ev.touches && ev.touches.length >= 2) {
-                  var dnow = dist(ev);
-                  if (lastDist > 0) {
-                    var ratio = dnow / lastDist;
-                    state.imgScale = Math.max(0.6, Math.min(2.8, (state.imgScale || 1) * ratio));
-                    scheduleRedraw();
-                  }
-                  lastDist = dnow;
-                  ev.preventDefault();
-                  return;
-                }
-                if (!dragging) return;
-                var p = pos(ev);
-                state.imgOffX += (p.x - lx) * 2.2;
-                state.imgOffY += (p.y - ly) * 2.2;
-                lx = p.x; ly = p.y;
-                scheduleRedraw();
-                ev.preventDefault();
-              }
-              function up() {
-                dragging = false; pinching = false; lastDist = 0;
-                canvasEl.style.cursor = 'grab';
-              }
-              function wheel(ev) {
-                var delta = ev.deltaY > 0 ? -0.08 : 0.08;
-                state.imgScale = Math.max(0.6, Math.min(2.8, (state.imgScale || 1) + delta));
-                scheduleRedraw();
-                ev.preventDefault();
-              }
-              canvasEl.addEventListener('mousedown', down);
-              canvasEl.addEventListener('mousemove', move);
-              window.addEventListener('mouseup', up);
-              canvasEl.addEventListener('touchstart', down, { passive: false });
-              canvasEl.addEventListener('touchmove', move, { passive: false });
-              canvasEl.addEventListener('touchend', up);
-              canvasEl.addEventListener('wheel', wheel, { passive: false });
-            })(cv);
-            prev.appendChild(cv); state.canvases.push(cv);
+            var wrap = document.createElement('div');
+            wrap.className = 'kp-page-wrap';
+            var tag = document.createElement('div');
+            tag.className = 'kp-page-tag';
+            tag.textContent = 'صفحة ' + (i + 1) + ' من ' + lay.pages.length;
+            wrap.appendChild(tag);
+            wrap.appendChild(cv);
+            prev.appendChild(wrap);
+            state.canvases.push(cv);
           });
           note.textContent = !items.length ? 'لا توجد نصوص في صفحات التحضير.'
-            : !lay.fits ? 'النص أطول من ' + ar(state.pages) + ' صفحات حتى بأصغر خط — اختاري عدد صفحات أكبر أو اختصري النص.'
-            : lay.pages.length < state.pages ? 'النص يكفي ' + ar(lay.pages.length) + ' صفحة فقط، فتم ضبط البوستر عليها.' : '';
+            : '📄 المعاينة تعرض كل الصفحات — مرري لأسفل لرؤية الصفحة 2 و 3 … (' + ar(lay.pages.length) + ' صفحة). ' + (
+              !lay.fits ? 'النص طويل؛ زِدي عدد الصفحات أو صغّري الخط.' :
+              (lay.pages.length < state.pages ? 'النص يكفي ' + ar(lay.pages.length) + ' صفحة فقط.' : '')
+            );
         });
       }, 150);
     }
@@ -1295,18 +1234,6 @@ lbl('عنوان البوستر');
     function updateFS() { fsLbl.textContent = 'حجم الخط ' + Math.round((state.fontScale || 1) * 100) + '%'; }
     updateFS(); rowFS.appendChild(fsLbl);
     chip(rowFS, 'نص أكبر +', false, function () { feedbackTap(); state.fontScale = Math.min(1.6, (state.fontScale || 1) + 0.08); redraw(); updateFS(); });
-
-    clbl('الصورة (تحكم على المعاينة نفسها)');
-    var rowI = document.createElement('div'); rowI.className = 'kp-row'; controls.appendChild(rowI);
-    chip(rowI, 'تصغير', false, function () { feedbackTap(); state.imgScale = Math.max(0.6, (state.imgScale || 1) - 0.1); redraw(); updateIS(); });
-    var isLbl = document.createElement('span'); isLbl.className = 'kp-chip'; isLbl.style.cursor = 'default';
-    function updateIS() { isLbl.textContent = 'تكبير ' + Math.round((state.imgScale || 1) * 100) + '%'; }
-    updateIS(); rowI.appendChild(isLbl);
-    chip(rowI, 'تكبير', false, function () { feedbackTap(); state.imgScale = Math.min(2.8, (state.imgScale || 1) + 0.1); redraw(); updateIS(); });
-    chip(rowI, 'إعادة ضبط الصورة', false, function () { feedbackTap(); state.imgOffX = 0; state.imgOffY = 0; state.imgScale = 1; redraw(); updateIS(); });
-    var tip = document.createElement('div'); tip.className = 'kp-note'; tip.style.margin = '6px 0 0';
-    tip.textContent = '💡 اسحبي بإصبع واحد على صورة المعاينة لتحريكها · إصبعين للتكبير · عجلة الماوس للتكبير';
-    controls.appendChild(tip);
 
     clbl('محاذاة النص');
     var rowA = document.createElement('div'); rowA.className = 'kp-row'; controls.appendChild(rowA);

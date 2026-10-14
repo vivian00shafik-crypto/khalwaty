@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  // build v171
+  // build v180
   /* بوستر التحضير — تصميم A4 احترافي للطباعة:
      دقة النص أولًا، خط مقروء، هوامش آمنة، تقسيم صفحات منطقي، صورة داعمة دون تغطية النص */
 
@@ -220,6 +220,7 @@ function layout(items, N, m) {
     ctx.direction = 'rtl';
     ctx.textBaseline = 'middle';
     var theme = opt.theme, emojis = opt.emojis || ['✝'], hb = theme.hues[0];
+    var FONT_USE = (opt && opt.fontFamily) || (d && d.FONT) || FONT;
 
     // خلفية ورقية
     var bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -239,8 +240,8 @@ function layout(items, N, m) {
       if (hero && hero.width) {
         ctx.save();
         ctx.beginPath(); rrect(ctx, hx, hy, hs, hs, 16); ctx.clip();
-        var sc = Math.max(hs / hero.width, hs / hero.height);
-        ctx.drawImage(hero, hx + (hs - hero.width * sc) / 2, hy + (hs - hero.height * sc) / 2, hero.width * sc, hero.height * sc);
+        var sc = Math.max(hs / hero.width, hs / hero.height) * (opt.imgScale || 1);
+        ctx.drawImage(hero, hx + (hs - hero.width * sc) / 2 + (opt.imgOffX || 0) * 0.4, hy + (hs - hero.height * sc) / 2 + (opt.imgOffY || 0) * 0.4, hero.width * sc, hero.height * sc);
         ctx.restore();
         ctx.lineWidth = 2.5; ctx.strokeStyle = hsl(hb, 40, 70);
         rrect(ctx, hx, hy, hs, hs, 16); ctx.stroke();
@@ -257,7 +258,7 @@ function layout(items, N, m) {
       ctx.fillStyle = hsl(hb, 50, 26);
       var tf = 44, tlines;
       do {
-        ctx.font = '700 ' + tf + 'px ' + FONT;
+        ctx.font = '700 ' + tf + 'px ' + FONT_USE;
         tlines = wrap(ctx, title, titleW);
         tf -= 2;
       } while (tlines.length > 3 && tf > 28);
@@ -265,7 +266,7 @@ function layout(items, N, m) {
       tlines.forEach(function (ln) { ctx.fillText(ln, W - M, ty); ty += tf + 6; });
     } else {
       ctx.textAlign = 'right';
-      ctx.font = '700 26px ' + FONT;
+      ctx.font = '700 26px ' + FONT_USE;
       ctx.fillStyle = hsl(hb, 40, 32);
       ctx.fillText(title, W - M, 48);
       ctx.strokeStyle = hsl(hb, 30, 82);
@@ -332,9 +333,11 @@ function layout(items, N, m) {
         if (sideImg && sideImg.width) {
           ctx.save();
           ctx.beginPath(); rrect(ctx, ix, iy, iw, ih, 12); ctx.clip();
-          var sc2 = Math.max(iw / sideImg.width, ih / sideImg.height);
+          var sc2 = Math.max(iw / sideImg.width, ih / sideImg.height) * (opt.imgScale || 1);
           var dw = sideImg.width * sc2, dh = sideImg.height * sc2;
-          ctx.drawImage(sideImg, ix + (iw - dw) / 2, iy + (ih - dh) / 2, dw, dh);
+          var ox = (opt.imgOffX || 0);
+          var oy = (opt.imgOffY || 0);
+          ctx.drawImage(sideImg, ix + (iw - dw) / 2 + ox, iy + (ih - dh) / 2 + oy, dw, dh);
           ctx.restore();
         } else {
           ctx.font = Math.min(48, iw * 0.35) + 'px ' + EMOJI_FONT;
@@ -357,7 +360,7 @@ function layout(items, N, m) {
       ctx.textAlign = 'right';
 
       if (f.head) {
-        ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT;
+        ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT_USE;
         ctx.fillStyle = hsl(hb, 55, 30);
         var hl = wrap(ctx, f.head, textColW - 4);
         hl.forEach(function (ln) {
@@ -373,7 +376,7 @@ function layout(items, N, m) {
         ctx.stroke();
         cursorY += 12;
       } else if (f.cont) {
-        ctx.font = '400 17px ' + FONT;
+        ctx.font = '400 17px ' + FONT_USE;
         ctx.fillStyle = hsl(hb, 20, 55);
         cursorY += 12;
         ctx.fillText('… تتمة', textRight, cursorY);
@@ -383,7 +386,7 @@ function layout(items, N, m) {
       }
 
       // إعادة لفّ على عرض العمود الفعلي لضمان عدم تجاوز الصورة
-      ctx.font = '400 ' + d.BODY + 'px ' + FONT;
+      ctx.font = '400 ' + d.BODY + 'px ' + FONT_USE;
       ctx.fillStyle = hsl(hb, 22, 16);
       var bodyText = (f.lines || []).join(' ');
       // استخدم السطور المخزّنة إن عُرضت بنفس العرض، وإلا أعد اللف
@@ -403,7 +406,7 @@ function layout(items, N, m) {
     // تذييل
     var label = ar(pi + 1) + ' / ' + ar(total);
     ctx.textAlign = 'center';
-    ctx.font = '600 20px ' + FONT;
+    ctx.font = '600 20px ' + FONT_USE;
     ctx.fillStyle = hsl(hb, 28, 42);
     ctx.fillText(label, W / 2, H - 36);
     ctx.strokeStyle = hsl(hb, 20, 82);
@@ -781,7 +784,7 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
     injectCSS();
     data = data || { items: [] };
     var items = (data.items || []).filter(function (it) { return it && String(it.text || '').trim(); });
-    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [] };
+    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [], fontScale: 1, fontFamily: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif', imgScale: 1, imgOffX: 0, imgOffY: 0 };
 
     var ov = document.createElement('div'); ov.className = 'kp-ov';
     var box = document.createElement('div'); box.className = 'kp-box'; ov.appendChild(box);
@@ -827,13 +830,65 @@ function makeLocalArt(w, h, theme, emojis, label, seed, styleId) {
         fonts.then(function () {
           if (!ov.isConnected) return;
           var m = document.createElement('canvas').getContext('2d');
-          var lay = layout(items, state.pages, m), d = dims(lay.s);
+          // دمج مقياس الخط الذي يختاره المستخدم مع مقياس التقسيم التلقائي
+          var baseLay = layout(items, state.pages, m);
+          var userS = Math.max(0.7, Math.min(1.6, state.fontScale || 1));
+          var combinedS = Math.max(0.7, Math.min(1.7, (baseLay.s || 1) * userS));
+          var lay = { pages: paginate(items, combinedS, m), s: combinedS, fits: true };
+          // إن زاد عدد الصفحات عن المطلوب بسبب تكبير الخط، أعد مع تصغير طفيف
+          if (lay.pages.length > state.pages) {
+            combinedS = Math.max(0.7, combinedS * 0.92);
+            lay = { pages: paginate(items, combinedS, m), s: combinedS, fits: paginate(items, combinedS, m).length <= state.pages };
+          }
+          var d = dims(lay.s);
+          // خط مخصص
+          d.FONT = state.fontFamily || FONT;
           prev.innerHTML = ''; state.canvases = [];
-          var opt = { theme: state.theme, emojis: emojisNow() };
+          var opt = {
+            theme: state.theme,
+            emojis: emojisNow(),
+            imgScale: state.imgScale || 1,
+            imgOffX: state.imgOffX || 0,
+            imgOffY: state.imgOffY || 0,
+            fontFamily: state.fontFamily || FONT
+          };
           var d2 = { title: state.title, subtitle: data.subtitle };
           lay.pages.forEach(function (pg, i) {
             var cv = document.createElement('canvas');
             drawPage(cv, pg, i, lay.pages.length, d2, opt, state.art, d);
+            // تحريك/تكبير تفاعلي بالسحب على الصورة (تقريبي على المعاينة)
+            cv.style.touchAction = 'none';
+            cv.style.cursor = 'grab';
+            (function (canvasEl) {
+              var dragging = false, lx = 0, ly = 0;
+              function pos(ev) {
+                if (ev.touches && ev.touches[0]) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+                return { x: ev.clientX, y: ev.clientY };
+              }
+              function down(ev) {
+                dragging = true; canvasEl.style.cursor = 'grabbing';
+                var p = pos(ev); lx = p.x; ly = p.y;
+                ev.preventDefault();
+              }
+              function move(ev) {
+                if (!dragging) return;
+                var p = pos(ev);
+                state.imgOffX += (p.x - lx) * 1.6;
+                state.imgOffY += (p.y - ly) * 1.6;
+                lx = p.x; ly = p.y;
+                // إعادة رسم سريعة بدون تأخير طويل
+                clearTimeout(timer);
+                timer = setTimeout(function () { redraw(); }, 30);
+                ev.preventDefault();
+              }
+              function up() { dragging = false; canvasEl.style.cursor = 'grab'; }
+              canvasEl.addEventListener('mousedown', down);
+              canvasEl.addEventListener('mousemove', move);
+              window.addEventListener('mouseup', up);
+              canvasEl.addEventListener('touchstart', down, { passive: false });
+              canvasEl.addEventListener('touchmove', move, { passive: false });
+              canvasEl.addEventListener('touchend', up);
+            })(cv);
             prev.appendChild(cv); state.canvases.push(cv);
           });
           note.textContent = !items.length ? 'لا توجد نصوص في صفحات التحضير.'
@@ -1155,6 +1210,47 @@ lbl('عنوان البوستر');
       });
     }
     drawS();
+
+    clbl('الخط وحجمه');
+    var rowF = document.createElement('div'); rowF.className = 'kp-row'; controls.appendChild(rowF);
+    var fonts = [
+      { n: 'Cairo', v: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif' },
+      { n: 'Amiri', v: 'Amiri, "Noto Naskh Arabic", serif' },
+      { n: 'Tajawal', v: 'Tajawal, Cairo, sans-serif' },
+      { n: 'Noto Naskh', v: '"Noto Naskh Arabic", Amiri, serif' },
+      { n: 'Aref Ruqaa', v: '"Aref Ruqaa", Amiri, serif' }
+    ];
+    function drawF() {
+      rowF.innerHTML = '';
+      fonts.forEach(function (f) {
+        chip(rowF, f.n, state.fontFamily.indexOf(f.n.split(' ')[0]) >= 0 || state.fontFamily === f.v, function () {
+          feedbackTap(); state.fontFamily = f.v; drawF(); redraw();
+        });
+      });
+    }
+    drawF();
+    var rowFS = document.createElement('div'); rowFS.className = 'kp-row'; controls.appendChild(rowFS);
+    chip(rowFS, 'نص أصغر −', false, function () { feedbackTap(); state.fontScale = Math.max(0.7, (state.fontScale || 1) - 0.08); redraw(); updateFS(); });
+    var fsLbl = document.createElement('span'); fsLbl.className = 'kp-chip'; fsLbl.style.cursor = 'default';
+    function updateFS() { fsLbl.textContent = 'حجم الخط ' + Math.round((state.fontScale || 1) * 100) + '%'; }
+    updateFS(); rowFS.appendChild(fsLbl);
+    chip(rowFS, 'نص أكبر +', false, function () { feedbackTap(); state.fontScale = Math.min(1.6, (state.fontScale || 1) + 0.08); redraw(); updateFS(); });
+
+    clbl('الصورة: تكبير وتحريك');
+    var rowI = document.createElement('div'); rowI.className = 'kp-row'; controls.appendChild(rowI);
+    chip(rowI, 'تصغير صورة', false, function () { feedbackTap(); state.imgScale = Math.max(0.6, (state.imgScale || 1) - 0.1); redraw(); updateIS(); });
+    var isLbl = document.createElement('span'); isLbl.className = 'kp-chip'; isLbl.style.cursor = 'default';
+    function updateIS() { isLbl.textContent = 'تكبير ' + Math.round((state.imgScale || 1) * 100) + '%'; }
+    updateIS(); rowI.appendChild(isLbl);
+    chip(rowI, 'تكبير صورة', false, function () { feedbackTap(); state.imgScale = Math.min(2.5, (state.imgScale || 1) + 0.1); redraw(); updateIS(); });
+    var rowM = document.createElement('div'); rowM.className = 'kp-row'; controls.appendChild(rowM);
+    chip(rowM, '←', false, function () { feedbackTap(); state.imgOffX -= 18; redraw(); });
+    chip(rowM, '→', false, function () { feedbackTap(); state.imgOffX += 18; redraw(); });
+    chip(rowM, '↑', false, function () { feedbackTap(); state.imgOffY -= 18; redraw(); });
+    chip(rowM, '↓', false, function () { feedbackTap(); state.imgOffY += 18; redraw(); });
+    chip(rowM, 'تصفير', false, function () { feedbackTap(); state.imgOffX = 0; state.imgOffY = 0; state.imgScale = 1; redraw(); updateIS(); });
+    var tip = document.createElement('div'); tip.className = 'kp-note'; tip.style.margin = '6px 0 0'; tip.textContent = '💡 اسحبي على صورة المعاينة لتحريكها، أو استخدمي الأسهم.';
+    controls.appendChild(tip);
 
     clbl('الرموز التعبيرية');
     var rowE = document.createElement('div'); rowE.className = 'kp-row'; controls.appendChild(rowE);

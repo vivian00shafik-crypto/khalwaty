@@ -1,24 +1,20 @@
-const CACHE = 'khalwati-v182-all-pages';
+const CACHE = 'khalwati-v183-stock-new';
 const ASSETS = [
   'stock/bible.jpg',
+  'stock/mary.jpg',
+  'stock/christ.jpg',
+  'stock/forest.jpg',
+  'stock/mountains.jpg',
   'stock/candle.jpg',
   'stock/flowers.jpg',
-  'stock/mountains.jpg',
-  'stock/sea.jpg',
-  'stock/church.jpg',
-  'stock/saints.jpg',
-  'stock/christ.jpg',
-  'stock/mary.jpg',
-  'stock/cross.jpg',
-  'stock/dove.jpg',
-  'stock/eucharist.jpg',
+  'stock/chapel.jpg',
 
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-512.png',
   './hymn.m4a', './prayer-alarm.mp3', './sawt-rabina.mp3',
   './bible-music.mp3', './bible-music-1.mp3', './bible-music-2.mp3', './bible-music-3.mp3', './bg-11.jpg', './bg-12.jpg', './bg-13.jpg', './bg-14.jpg', './bg-15.jpg', './bg-16.jpg', './bg-17.jpg', './bg-18.jpg', './bg-19.jpg'
-];
+
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -29,7 +25,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v182-all-pages') return caches.delete(k);
+        if (k !== 'khalwati-v183-stock-new') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

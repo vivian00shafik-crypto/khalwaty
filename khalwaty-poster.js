@@ -389,20 +389,20 @@ var EMOJI_WORDS = {
   
   
   /* صور مخزنة حقيقية في مجلد stock/ */
-        var STOCK_5D = [
+          var STOCK_5D = [
     { id: 'bible', name: 'الكتاب المقدس', file: 'stock/bible.jpg' },
     { id: 'bible2', name: 'كتاب مضيء', file: 'stock/bible2.jpg' },
     { id: 'candle', name: 'شمعة', file: 'stock/candle.jpg' },
     { id: 'candle2', name: 'شمعة نور', file: 'stock/candle2.jpg' },
-    { id: 'flowers', name: 'زهور', file: 'stock/flowers.jpg' },
-    { id: 'flowers2', name: 'زنابق', file: 'stock/flowers2.jpg' },
-    { id: 'mountains', name: 'جبال', file: 'stock/mountains.jpg' },
-    { id: 'mountains2', name: 'جبال سحاب', file: 'stock/mountains2.jpg' },
-    { id: 'forest', name: 'غابة نور', file: 'stock/forest.jpg' },
-    { id: 'nature', name: 'طبيعة', file: 'stock/nature.jpg' },
     { id: 'christ', name: 'المسيح', file: 'stock/christ.jpg' },
     { id: 'christ2', name: 'وجه المسيح', file: 'stock/christ2.jpg' },
+    { id: 'flowers', name: 'زهور', file: 'stock/flowers.jpg' },
+    { id: 'flowers2', name: 'زنابق', file: 'stock/flowers2.jpg' },
+    { id: 'forest', name: 'غابة نور', file: 'stock/forest.jpg' },
     { id: 'mary', name: 'العذراء', file: 'stock/mary.jpg' },
+    { id: 'mountains', name: 'جبال', file: 'stock/mountains.jpg' },
+    { id: 'mountains2', name: 'جبال سحاب', file: 'stock/mountains2.jpg' },
+    { id: 'nature', name: 'طبيعة', file: 'stock/nature.jpg' },
     { id: 'saints', name: 'قديسين', file: 'stock/saints.jpg' },
   ];
 
@@ -412,9 +412,9 @@ var EMOJI_WORDS = {
       // e.g. /khalwaty/ or /khalwaty/index.html
       if (path.endsWith('.html')) path = path.replace(/\/[^/]*$/, '/');
       if (!path.endsWith('/')) path += '/';
-      return path + file + '?v=163';
+      return path + file + '?v=164';
     } catch (e) {
-      return file + '?v=163';
+      return file + '?v=164';
     }
   }
 

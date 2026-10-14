@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v183-stock-new';
+const CACHE = 'khalwati-v184-stock-embed';
 const ASSETS = [
   'stock/bible.jpg',
   'stock/mary.jpg',
@@ -25,7 +25,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v183-stock-new') return caches.delete(k);
+        if (k !== 'khalwati-v184-stock-embed') return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();

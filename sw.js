@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v192-linguistic';
+const CACHE = 'khalwati-v194-menu-format';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

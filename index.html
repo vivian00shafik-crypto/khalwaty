@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="192" lang="ar" dir="rtl">
+<html data-app-ver="194" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1284,10 +1284,10 @@
     #modalTextarea.hl-blue { background: #d6eaf8; }
     #modalTextarea.hl-pink { background: #f8d7e8; }
     .verse-menu {
-      position: fixed; z-index: 4000; background: #fffdf8; border: 2px solid var(--gold);
-      border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 12px 12px;
+      position: fixed; z-index: 10000; background: #fffdf8; border: 2px solid var(--gold);
+      border-radius: 16px; box-shadow: 0 12px 36px rgba(0,0,0,.28); padding: 8px 12px 12px;
       left: 10px; right: 10px;
-      max-width: none; width: auto; max-height: 65vh; overflow-y: auto; text-align: right;
+      max-width: none; width: auto; max-height: 70vh; overflow-y: auto; text-align: right;
       -webkit-overflow-scrolling: touch;
     }
     .verse-menu button {
@@ -4863,7 +4863,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=192';
+            s.src = 'khalwaty-poster.js?v=194';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7891,7 +7891,7 @@ function openTextModal(type) {
       menu.style.maxWidth = 'none';
       menu.style.maxHeight = '65vh';
       menu.style.overflowY = 'auto';
-      menu.style.zIndex = '4000';
+      menu.style.zIndex = '10000';
       menu.style.webkitOverflowScrolling = 'touch';
 
       // موضع حسب مكان الآية: تحت → القائمة فوق / فوق → القائمة تحت
@@ -9657,153 +9657,305 @@ function openAIVerseDesign() {
       var key = r + '@@' + n;
       for (var i = 0; i < key.length; i++) seed = ((seed << 5) - seed + key.charCodeAt(i)) | 0;
       seed = Math.abs(seed);
-      function pick(arr, k) { return arr[(seed + (k || 0) * 23) % Math.max(arr.length, 1)]; }
       function has(re) { return re.test(n) || re.test(r); }
-      var snippet = t.length > 140 ? t.slice(0, 138) + '…' : t;
+      var snippet = t.length > 160 ? t.slice(0, 158) + '…' : t;
 
-      // هيكل قريب من تفاسير موقع الأنبا تكلا: مقدمة سياقية + شرح + روحي + آبائي + تطبيق
-      var bookLine = '';
-      if (/مزمور|مز\s*\d/.test(r)) bookLine = 'المزمور صلاة الكنيسة؛ يُقرأ كصوت المسيح في شعبه وصوت المؤمن أمام الله.';
-      else if (/متى/.test(r)) bookLine = 'إنجيل متى يقدّم يسوع الملك والمعلّم الذي يكمّل الناموس والأنبياء.';
-      else if (/مرقس/.test(r)) bookLine = 'إنجيل مرقس يبرز قوة المسيح المتألم والخادم.';
-      else if (/لوقا/.test(r)) bookLine = 'إنجيل لوقا يعلن رحمة المسيح للخطاة والفقراء والأمم.';
-      else if (/يوحنا/.test(r) && !/يوحنا\s*الأولى|رسائل/.test(r)) bookLine = 'إنجيل يوحنا يكشف مجد الابن والحياة الأبدية للمؤمن.';
-      else if (/تكوين/.test(r)) bookLine = 'التكوين يفتح تاريخ الخلاص: الخلق والسقوط والوعد.';
-      else if (/خروج/.test(r)) bookLine = 'الخروج يعلن الله المحرّر الذي يخرج شعبه ليعبدوه.';
-      else if (/رومية/.test(r)) bookLine = 'رومية تشرح برّ الله بالإيمان وعمل الروح في المؤمن.';
-      else if (/كورنثوس/.test(r)) bookLine = 'كورنثوس تعالج حياة الكنيسة ومواهبها ومحبة الجسد الواحد.';
-      else if (/أفسس|فيلبي|كولوسي/.test(r)) bookLine = 'الرسالة تبني وحدة الكنيسة وحياة المؤمن «في المسيح».';
-      else if (/عبرانيين/.test(r)) bookLine = 'العبرانيين تعلن كهنوت المسيح الكامل وذبيحته الفائقة.';
-      else if (/يعقوب/.test(r)) bookLine = 'يعقوب يربط الإيمان الحقيقي بالعمل الحي.';
-      else if (/إشعياء/.test(r)) bookLine = 'إشعياء نبي الرجاء المسياني والقداسة والرجاء للأمم.';
-      else if (r) bookLine = 'الآية ضمن «' + r + '»؛ يُفهم معناها من سياق الأصحاح.';
-      else bookLine = 'نبدأ من ألفاظ الآية كما وردت.';
+      // —— تعريف السفر والسياق ——
+      var bookMeta = {
+        'تكوين': { name: 'سفر التكوين', ctx: 'يفتح تاريخ الخلاص: الخلق والسقوط والوعد لإبراهيم ونسله.', testament: 'ot' },
+        'خروج': { name: 'سفر الخروج', ctx: 'يعلن الله المحرّر الذي يُخرج شعبه من العبودية ليعبدوه.', testament: 'ot' },
+        'لاويين': { name: 'سفر اللاويين', ctx: 'يشرح القداسة والذبائح والكهنوت في عبادة إسرائيل.', testament: 'ot' },
+        'عدد': { name: 'سفر العدد', ctx: 'يروي مسيرة الشعب في البرية وعداد الأسباط.', testament: 'ot' },
+        'تثنية': { name: 'سفر التثنية', ctx: 'خطاب موسى الأخير وتجديد العهد قبل دخول الأرض.', testament: 'ot' },
+        'يشوع': { name: 'سفر يشوع', ctx: 'دخول أرض الموعد وتقسيمها تحت قيادة يشوع.', testament: 'ot' },
+        'قضاة': { name: 'سفر القضاة', ctx: 'دورة السقوط والخلاص في أيام القضاة.', testament: 'ot' },
+        'راعوث': { name: 'سفر راعوث', ctx: 'قصة أمانة ورحمة في سلسلة نسب داود.', testament: 'ot' },
+        'صموئيل': { name: 'سفرا صموئيل', ctx: 'انتقال من القضاة إلى الملكية وداود الملك.', testament: 'ot' },
+        'ملوك': { name: 'سفرا الملوك', ctx: 'تاريخ المملكة والانقسام والسبي.', testament: 'ot' },
+        'اخبار': { name: 'سفرا الأخبار', ctx: 'نظرة كهنوتية على تاريخ داود وسليمان والهيكل.', testament: 'ot' },
+        'عزرا': { name: 'سفر عزرا', ctx: 'العودة من السبي وإعادة بناء الهيكل.', testament: 'ot' },
+        'نحميا': { name: 'سفر نحميا', ctx: 'إعادة بناء سور أورشليم وتجديد العهد.', testament: 'ot' },
+        'استير': { name: 'سفر أستير', ctx: 'عناية الله الخفية بشعبه في السبي.', testament: 'ot' },
+        'ايوب': { name: 'سفر أيوب', ctx: 'معاناة البار وسرّ الألم وحكمة الله.', testament: 'ot' },
+        'مزمور': { name: 'المزامير', ctx: 'صلاة الكنيسة؛ صوت المسيح في شعبه وصوت المؤمن أمام الله.', testament: 'ot' },
+        'مز': { name: 'المزامير', ctx: 'صلاة الكنيسة؛ صوت المسيح في شعبه وصوت المؤمن أمام الله.', testament: 'ot' },
+        'امثال': { name: 'سفر الأمثال', ctx: 'حكمة عملية للحياة تحت مخافة الرب.', testament: 'ot' },
+        'جامعة': { name: 'سفر الجامعة', ctx: 'تأمل في باطل تحت الشمس وكمال مخافة الله.', testament: 'ot' },
+        'نشيد': { name: 'نشيد الإنشاد', ctx: 'محبة العهد؛ يُقرأ روحيًا كرمز لمحبة المسيح وكنيسته.', testament: 'ot' },
+        'اشعياء': { name: 'سفر إشعياء', ctx: 'نبي القداسة والرجاء المسياني للأمم.', testament: 'ot' },
+        'إشعياء': { name: 'سفر إشعياء', ctx: 'نبي القداسة والرجاء المسياني للأمم.', testament: 'ot' },
+        'ارميا': { name: 'سفر إرميا', ctx: 'نبي الدينونة والرجاء في العهد الجديد.', testament: 'ot' },
+        'مراثي': { name: 'مراثي إرميا', ctx: 'نحيب على خراب أورشليم ورجاء الرحمة.', testament: 'ot' },
+        'حزقيال': { name: 'سفر حزقيال', ctx: 'مجد الله والهيكل الجديد وقيامة الشعب.', testament: 'ot' },
+        'دانيال': { name: 'سفر دانيال', ctx: 'ملكوت الله فوق الممالك ورؤى الأزمنة.', testament: 'ot' },
+        'هوشع': { name: 'سفر هوشع', ctx: 'محبة الله الوفية لشعب زانٍ.', testament: 'ot' },
+        'يوئيل': { name: 'سفر يوئيل', ctx: 'يوم الرب وانسكاب الروح.', testament: 'ot' },
+        'عاموس': { name: 'سفر عاموس', ctx: 'عدل الله الاجتماعي ودينونة الظلم.', testament: 'ot' },
+        'يونان': { name: 'سفر يونان', ctx: 'رحمة الله للأمم وتوبة نينوى.', testament: 'ot' },
+        'ميخا': { name: 'سفر ميخا', ctx: 'العدل والرحمة وانتظار المخلّص من بيت لحم.', testament: 'ot' },
+        'حبقوق': { name: 'سفر حبقوق', ctx: 'البار بإيمانه يحيا وسط الظلم.', testament: 'ot' },
+        'زكريا': { name: 'سفر زكريا', ctx: 'رؤى الرجاء وبناء الهيكل والملك الآتي.', testament: 'ot' },
+        'ملاخي': { name: 'سفر ملاخي', ctx: 'دعوة للتوبة وانتظار يوم الرب.', testament: 'ot' },
+        'متى': { name: 'إنجيل متى', ctx: 'يسوع الملك والمعلّم الذي يكمّل الناموس والأنبياء.', testament: 'nt' },
+        'مرقس': { name: 'إنجيل مرقس', ctx: 'قوة المسيح المتألم والخادم.', testament: 'nt' },
+        'لوقا': { name: 'إنجيل لوقا', ctx: 'رحمة المسيح للخطاة والفقراء والأمم.', testament: 'nt' },
+        'يوحنا': { name: 'إنجيل يوحنا', ctx: 'مجد الابن والحياة الأبدية للمؤمن.', testament: 'nt' },
+        'اعمال': { name: 'سفر أعمال الرسل', ctx: 'انتشار الإنجيل بالروح القدس من أورشليم إلى أقاصي الأرض.', testament: 'nt' },
+        'رومية': { name: 'رسالة رومية', ctx: 'برّ الله بالإيمان وعمل الروح في المؤمن.', testament: 'nt' },
+        'كورنثوس': { name: 'رسائل كورنثوس', ctx: 'حياة الكنيسة ومواهبها ومحبة الجسد الواحد.', testament: 'nt' },
+        'غلاطية': { name: 'رسالة غلاطية', ctx: 'الحرية في المسيح ضد الناموسية.', testament: 'nt' },
+        'افسس': { name: 'رسالة أفسس', ctx: 'وحدة الكنيسة وحياة المؤمن «في المسيح».', testament: 'nt' },
+        'أفسس': { name: 'رسالة أفسس', ctx: 'وحدة الكنيسة وحياة المؤمن «في المسيح».', testament: 'nt' },
+        'فيلبي': { name: 'رسالة فيلبي', ctx: 'الفرح في المسيح والاتضاع على مثاله.', testament: 'nt' },
+        'كولوسي': { name: 'رسالة كولوسي', ctx: 'سمو المسيح وكمال المؤمن فيه.', testament: 'nt' },
+        'تسالونيكي': { name: 'رسائل تسالونيكي', ctx: 'الرجاء في مجيء الرب والحياة المقدسة.', testament: 'nt' },
+        'تيموثاوس': { name: 'رسائل تيموثاوس', ctx: 'رعاية الكنيسة والتعليم الصحيح.', testament: 'nt' },
+        'تيطس': { name: 'رسالة تيطس', ctx: 'تنظيم الكنيسة والعمل الصالح.', testament: 'nt' },
+        'فيلمون': { name: 'رسالة فليمون', ctx: 'المحبة المسيحية والتحرر من العبودية.', testament: 'nt' },
+        'عبرانيين': { name: 'رسالة العبرانيين', ctx: 'كهنوت المسيح الكامل وذبيحته الفائقة.', testament: 'nt' },
+        'يعقوب': { name: 'رسالة يعقوب', ctx: 'الإيمان الحقيقي يظهر في العمل الحي.', testament: 'nt' },
+        'بطرس': { name: 'رسائل بطرس', ctx: 'الرجاء في الآلام والشهادة المقدسة.', testament: 'nt' },
+        'يوحنا الاولى': { name: 'رسائل يوحنا', ctx: 'المحبة والحق والشهادة للمسيح.', testament: 'nt' },
+        'يهوذا': { name: 'رسالة يهوذا', ctx: 'الجهاد من أجل الإيمان المسلّم مرة.', testament: 'nt' },
+        'رؤيا': { name: 'سفر الرؤيا', ctx: 'انتصار الحمل وملكوت الله النهائي.', testament: 'nt' }
+      };
 
-      // شرح لغوي/مباشر من كلمات الآية (يتغير بتغيّر النص)
-      var lexical = [];
-      var dict = [
-        [/نور|اضاء|اشرق|سراج/, '«النور» في النص يشير إلى حضور الله الذي يكشف الحق ويهب حياة واستقامة طريق.'],
-        [/ظلمه|ظلام/, '«الظُلمة» تكشف غياب شركة النور؛ ليست نهاية القصة إن أشرق الله.'],
-        [/محب|احب|محبه/, '«المحبة» هنا فعل وقرار وعهد، لا مجرد انفعال عابر.'],
-        [/ايمان|يؤمن|امن/, '«الإيمان» ثقة عملية بالمسيح وكلمته، تظهر في الثبات والطاعة.'],
-        [/رحم|غفر|تحنن|رأف/, '«الرحمة/المغفرة» تعلن قلب الله نحو التائب: شفاء لا استخفاف بالشر.'],
-        [/توب|خطي|اثم|شر/, 'ذكر الخطية في الآية كشف للجرح من أجل الرجوع، لا للقضاء اليائس.'],
-        [/صل|صلاه|دعا|سبّح/, 'الصلاة في الآية شركة حية: الإنسان يدخل إلى حضرة الله.'],
-        [/سلام|لا تخف|اطمئ/, '«السلام» و«لا تخف» عطية حضور الرب داخل الضيق.'],
-        [/ملكوت/, '«الملكوت» سيادة الله المتجليّة في المسيح وفي سيرة أبنائه.'],
-        [/روح/, '«الروح» فاعل التجديد: يحيي القلب ويمنح قوة للشهادة.'],
-        [/كلم|قال|يقول|وعد/, '«الكلمة/القول» ذات سلطان: تعد فتفي، وتجرح للشفاء.'],
-        [/صليب|صلب|دم|آلام/, 'البُعد الصليبي يعلن أن الخلاص ثمن محبة مبذولة.'],
-        [/قيام|حيّ|يحيا|حياة/, '«الحياة» شركة مع الحيّ، وقيامة من موت الخطية.'],
-        [/راع|خروف|قطيع/, 'صورة الراعي: معرفة شخصية، حماية، وطلب للتائه.'],
-        [/ماء|نهر|عطش|ينبوع/, '«الماء» يروي العطش إلى الله نفسه.'],
-        [/خبز|شبع|جوع/, '«الخبز» عناية الله، ويكتمل في المسيح خبز الحياة.'],
-        [/فرح|ابتهج|سرور/, '«الفرح» ثمر حضور الله، لا رهينة الظروف.'],
-        [/خلق|بدء|سماوات/, 'الخلق يعلن أن الوجود هبة، والإنسان مدعو للشركة.'],
-        [/عبد|حرر|خلاص|أنقذ|نجّ/, 'الخلاص تحرير لعبادة الله وحياة جديدة.'],
-        [/عدل|حق|دينون/, 'عدل الله قدوس: لا يحابي، ويدعو لفحص الذات.']
-      ];
-      for (var di = 0; di < dict.length; di++) {
-        if (dict[di][0].test(n)) lexical.push(dict[di][1]);
-      }
-      if (!lexical.length) {
-        if (words.length >= 2) {
-          lexical.push('من ألفاظ الآية تتقدّم «' + words[seed % words.length] + '» و«' + words[(seed + 4) % words.length] + '» كعمودَي المعنى في هذا النص تحديدًا.');
-        } else {
-          lexical.push('معنى الآية يتكثّف في قولها: «' + snippet + '».');
+      var bookLine = 'الآية ضمن «' + r + '»؛ يُفهم معناها من سياق الأصحاح.';
+      var bookKey = '';
+      var bookTestament = '';
+      var keys = Object.keys(bookMeta);
+      for (var bi = 0; bi < keys.length; bi++) {
+        if (r.indexOf(keys[bi]) >= 0) {
+          bookKey = keys[bi];
+          bookLine = bookMeta[keys[bi]].name + ': ' + bookMeta[keys[bi]].ctx;
+          bookTestament = bookMeta[keys[bi]].testament;
+          break;
         }
       }
 
-      // شرح متماسك فريد
-      var explanation = 'تقول الآية: «' + snippet + '». ' + lexical[seed % lexical.length];
-      if (lexical.length > 1) explanation += ' ' + lexical[(seed + 1) % lexical.length];
-      if (words.length >= 3) {
-        explanation += ' حركة النص من «' + words[0] + '» إلى «' + words[Math.min(words.length - 1, 2)] + '» توضّح اتجاه الوعد أو الأمر في هذه الآية بعينها.';
+      // —— تحليل كلمات مهمة من المعجم المدمج (المرحلة 1) ——
+      var keyWords = [];
+      var seenW = {};
+      words.slice(0, 12).forEach(function (w) {
+        var clean = w.replace(/[^\u0600-\u06FF]/g, '');
+        if (!clean || clean.length < 2) return;
+        var k = (typeof stripTashkeel === 'function' ? stripTashkeel(clean) : clean);
+        if (seenW[k]) return;
+        seenW[k] = true;
+        var meaning = (typeof lexiconLookup === 'function') ? lexiconLookup(clean) : null;
+        var origin = (typeof originLookup === 'function') ? originLookup(clean) : null;
+        if (meaning || origin) {
+          var line = '«' + clean + '»';
+          if (meaning) line += ' — ' + meaning;
+          if (origin && origin.note) line += ' [أصل ' + (origin.lang || '') + ': ' + origin.note + ']';
+          keyWords.push(line);
+        }
+      });
+
+      // —— المعنى العام (مولّد محلي من الكلمات والسياق) ——
+      var general = '';
+      if (has(/خلق|بدئ|سموات|ارض/) && /تكوين/.test(r)) {
+        general = 'الآية تعلن أن الله وحده مبدأ الخليقة؛ السموات والأرض ليستا أزليتين بل مخلوقتين بكلمة قدرته.';
+      } else if (has(/نور|ظلمه/) && /تكوين/.test(r)) {
+        general = 'الله يفصل النور عن الظلمة ويؤسس نظامًا صالحًا في الخليقة.';
+      } else if (has(/احب|محبه|بذل|وحيد/) && /يوحنا/.test(r)) {
+        general = 'الآية تكشف عمق محبة الله التي بذلت الابن الوحيد ليعطي حياة أبدية لكل من يؤمن.';
+      } else if (has(/ايمان|يؤمن|آمن/)) {
+        general = 'الآية تدعو إلى ثقة حيّة بالله ووعوده، لا إلى معرفة نظرية فحسب.';
+      } else if (has(/توب|غفر|رحم|خطي/)) {
+        general = 'النص يفتح باب الرجوع إلى الله وقبول رحمته للمؤمن التائب.';
+      } else if (has(/ملكوت|ملك/)) {
+        general = 'الآية تتصل بحكم الله الحاضر والآتي في المسيح.';
+      } else if (has(/صل|صلاه|سبّح/)) {
+        general = 'النص يدعو إلى رفع القلب إلى الله والشركة معه.';
+      } else if (has(/سلام|لا تخف/)) {
+        general = 'الآية تمنح سلامًا أعمق من غياب الحرب: حضور الله وعهده.';
+      } else if (has(/روح|قدس/)) {
+        general = 'النص يشير إلى عمل روح الله في الخلق أو التقديس أو التجديد.';
+      } else if (has(/عهد|وعد/)) {
+        general = 'الآية ترتبط بميثاق الله الصادق مع شعبه.';
+      } else if (has(/صليب|قام|قيامه|موت/)) {
+        general = 'النص يتصل بسرّ الصليب والقيامة أساس الخلاص المسيحي.';
+      } else if (has(/محبه|احب/)) {
+        general = 'الآية تدعو إلى محبة عاملة على مثال محبة الله.';
+      } else {
+        general = 'الآية تُقرأ في ضوء سياقها في «' + (r || 'السفر') + '»: ألفاظها تكشف جانبًا من عمل الله أو دعوة الإنسان إلى الإيمان والطاعة.';
       }
 
-      // زاوية مفسّري الأنبا تكلا / الآباء (منهج)
-      var schools = [
-        { who: 'القمص تادرس يعقوب ملطي', how: 'يجمع المعنى الحرفي إلى الرمزي الآبائي ويربط النص بحياة الكنيسة والليتورجيا.' },
-        { who: 'القمص أنطونيوس فكري', how: 'يشرح الآية بلغة مبسطة: خلفية، معنى، ثم ما تطلبه من السامع عمليًا.' },
-        { who: 'البابا شنودة الثالث', how: 'يفتح المعنى رعويًا: إيمان يُعاش في التوبة والمحبة والسلوك اليومي.' },
-        { who: 'البابا أثناسيوس الرسولي', how: 'يركّز القراءة على شخص الكلمة المتجسد وعمل الخلاص في المسيح.' },
-        { who: 'الأب لوقا ماهر', how: 'يقارب النص من جهة القلب والجرح والرجاء والرعاية الروحية.' },
-        { who: 'الأب داود لمعي', how: 'يقرّب التفسير إلى الحياة اليومية وخطوة عملية واضحة.' }
-      ];
-      var s1 = schools[seed % schools.length];
-      var s2 = schools[(seed + 3) % schools.length];
-
-      var spiritual = pick([
-        'روحيًا: الآية لا تُترك للمعرفة؛ إن قُبلت تغيّر ميزان الخوف والرجاء داخل النفس.',
-        'روحيًا: ما تعلنه الآية عن الله يصبح معيارًا لما نطلبه وما نرفضه في اليوم.',
-        'روحيًا: النص يكشف أين نحتاج شفاءً أو طاعة أو ثقة أعمق.'
-      ], 2);
-      if (has(/محب|رحم|غفر/)) spiritual = 'روحيًا: المحبة/الرحمة هنا تدعو لقبول مغفرة الله وبسطها نحو القريب.';
-      if (has(/ايمان|يؤمن/)) spiritual = 'روحيًا: الإيمان المطلوب ليس اعترافًا باردًا، بل اتكالًا يظهر في الثبات.';
-      if (has(/نور/)) spiritual = 'روحيًا: قبول النور يعني ترك ما يُفعَل في الظلمة وطلب صدق السيرة.';
-      if (has(/صل|صلاه/)) spiritual = 'روحيًا: الصلاة استجابة للنص؛ نعيد ألفاظ الآية كحديث مع الله.';
-      if (has(/سلام|لا تخف/)) spiritual = 'روحيًا: السلام يُمسَك في حضرة الرب لا بإنكار الضيق.';
-
-      var points = [];
-      points.push(bookLine);
-      points.push(explanation);
-      points.push('في منهج تفاسير كنيسة الإسكندرية كما تُنشر في مصادر مثل موقع الأنبا تكلا: ' + s1.how + ' (' + s1.who + ').');
-      points.push('ومن زاوية ' + s2.who + ': «' + snippet + '» كلمة موجّهة للكنيسة اليوم؛ ' + (
-        has(/توب|خطي/) ? 'فتفتح باب الرجوع.' :
-        has(/محب/) ? 'فتطلب محبة عاملة.' :
-        has(/ايمان/) ? 'فتطلب ثباتًا عمليًا.' :
-        'فتطلب استجابة من القلب والعمل.'
-      ));
-      points.push(spiritual);
-      if (has(/متى|مرقس|لوقا|يوحنا|رومية|يسوع|المسيح/)) {
-        points.push('اكتمال المعنى في شخص يسوع المسيح: الوعد أو الأمر أو النور في الآية يُفهم في نور تجسده وصليبه وقيامته.');
-      } else if (has(/مزمور|إشعياء|تكوين|خروج/)) {
-        points.push('القراءة الكنسية تحفظ المعنى التاريخي وترى فيه تهيئة لملء الزمن في المسيح.');
-      }
-      if (words.length >= 2) {
-        points.push('خصوصًا في هذا النص: «' + words[seed % words.length] + '» و«' + words[(seed + 6) % words.length] + '» لا تُفهمان ككلمتين عامّتين، بل كما ارتبطتا في جملة الآية نفسها.');
+      // —— سياق الإصحاح/السفر ——
+      var context = bookLine;
+      if (r) {
+        context += '\nالمرجع المحدد: ' + r + '. يُفضَّل قراءة الآيات المجاورة في نفس الأصحاح لفهم التدفق الكامل.';
       }
 
-      var reflection = 'تأمّل النص كما اعتادت التفاسير الرعوية: اقرأ «' + snippet + '» مرتين، ثم اسأل: ماذا تقول عن الله؟ وماذا تكشف عني؟ وماذا تطلب مني الآن؟\n';
-      reflection += pick([
-        'لا تُضف أفكارًا بعيدة عن ألفاظ الآية؛ اثبت عند ما قالته هي.',
-        'إن لمست وعدًا فتقبّليه، وإن لمست أمرًا فاطلب قوة للطاعة، وإن لمست تحذيرًا فارجع.',
-        'الكلمة هنا حيّة: إن قُبلت ببساطة القلب أثمرت سلامًا أو توبة أو رجاءً.'
-      ], 4);
+      // —— شواهد مرتبطة (قائمة موثوقة ثابتة، ليست اختلاقًا) ——
+      var related = [];
+      if (has(/خلق|بدئ/) && /تكوين/.test(r)) {
+        related.push('يوحنا 1: 1-3 (الكلمة في البدء)');
+        related.push('كولوسي 1: 16-17 (كل شيء به وله)');
+        related.push('مزمور 33: 6، 9 (بكلمة الرب صُنعت)');
+      } else if (has(/احب|بذل|وحيد/) && /يوحنا/.test(r)) {
+        related.push('رومية 5: 8 (أظهر الله محبته لنا)');
+        related.push('يوحنا 1: 12-13 (حق البنين)');
+        related.push('1يوحنا 4: 9-10 (المحبة في إرسال الابن)');
+      } else if (has(/ايمان|يؤمن/)) {
+        related.push('عبرانيين 11: 1، 6 (تعريف الإيمان)');
+        related.push('رومية 10: 9-10 (الإيمان بالقلب)');
+        related.push('مرقس 9: 23-24 (أؤمن فأعن عدم إيماني)');
+      } else if (has(/توب|غفر/)) {
+        related.push('لوقا 15: 20-24 (الابن الضال)');
+        related.push('1يوحنا 1: 9 (إن اعترفنا بخطايانا)');
+        related.push('مزمور 51: 1-4 (توبة داود)');
+      } else if (has(/سلام/)) {
+        related.push('يوحنا 14: 27 (سلامي أعطيكم)');
+        related.push('فيلبي 4: 6-7 (سلام الله الذي يفوق كل عقل)');
+        related.push('إشعياء 26: 3 (السلام الكامل)');
+      } else if (has(/روح/)) {
+        related.push('يوحنا 14: 16-17 (المعزي)');
+        related.push('غلاطية 5: 22-23 (ثمر الروح)');
+        related.push('رومية 8: 14-16 (روح التبني)');
+      } else if (has(/ملكوت/)) {
+        related.push('متى 6: 33 (اطلبوا أولًا ملكوت الله)');
+        related.push('لوقا 17: 20-21 (ملكوت الله داخلكم)');
+        related.push('رومية 14: 17 (بر وسلام وفرح في الروح)');
+      } else if (/مزمور|مز\s*\d/.test(r)) {
+        related.push('كولوسي 3: 16 (الترنيم بالروح)');
+        related.push('أفسس 5: 19 (مزمور وتسابيح)');
+      } else if (has(/نور/)) {
+        related.push('يوحنا 8: 12 (أنا نور العالم)');
+        related.push('مزمور 27: 1 (الرب نوري)');
+        related.push('2كورنثوس 4: 6 (نور معرفة مجد الله)');
+      } else {
+        // شواهد عامة موثوقة حسب العهد
+        if (bookTestament === 'nt') {
+          related.push('2تيموثاوس 3: 16-17 (كل الكتاب موحى به)');
+          related.push('يوحنا 5: 39 (فتشوا الكتب)');
+        } else {
+          related.push('مزمور 119: 105 (سراج لرجلي كلامك)');
+          related.push('2تيموثاوس 3: 16-17 (كل الكتاب موحى به)');
+        }
+      }
+
+      // —— تأمل روحي وتطبيق ——
+      var reflection = 'اقرأ الآية مرتين ببطء: «' + snippet + '».\n';
+      reflection += 'اسأل: ماذا تقول عن الله؟ ماذا تكشف عني؟ ماذا تطلب مني الآن؟\n';
+      if (has(/احب|محبه|بذل/)) {
+        reflection += 'المحبة هنا ليست شعورًا عابرًا بل فعل بذل. تأمل كيف استُعلنت محبة الله في المسيح، وكيف تُترجم في علاقاتك اليومية.';
+      } else if (has(/ايمان|يؤمن/)) {
+        reflection += 'الإيمان ثقة حية. أين تدعوك الآية إلى الاتكال بدل الخوف أو الاعتماد على الذات؟';
+      } else if (has(/توب|غفر|رحم/)) {
+        reflection += 'الرجوع إلى الله مفتوح. هل هناك أمر تحتاج أن تعترف به وتنال منه رحمة جديدة؟';
+      } else if (has(/سلام|لا تخف/)) {
+        reflection += 'السلام عطية حضور الله. عند القلق، أعد معنى الآية قبل أي رد فعل.';
+      } else if (has(/خلق|نور|بدئ/)) {
+        reflection += 'الخالق نفسه يرتب حياتك. اطلب أن يبدأ «نورًا» جديدًا في زاوية مظلمة من يومك.';
+      } else {
+        reflection += 'لا تُضف أفكارًا بعيدة عن ألفاظ الآية؛ اثبت عند ما قالته. إن لمست وعدًا فتقبّله، وإن لمست أمرًا فاطلب قوة للطاعة.';
+      }
 
       var practice = [];
-      if (has(/صل|صلاه|سبّح/)) practice.push('صلّي بمعنى الآية لدقيقتين.');
-      else if (has(/غفر|رحم|توب|خطي/)) practice.push('اطلب مغفرة أمر محدد بصدق.');
-      else if (has(/محب|احب/)) practice.push('فعل محبة واحد يوافق روح الآية اليوم.');
-      else if (has(/سلام|لا تخف/)) practice.push('عند القلق: أعد معنى الآية قبل أي رد.');
-      else if (has(/ايمان|يؤمن/)) practice.push('خطوة أمانة صغيرة كمن يصدّق الوعد.');
-      else practice.push('تصرف واحد يوافق معنى هذه الآية.');
-      practice.push('احفظ: «' + (t.length > 50 ? t.slice(0, 48) + '…' : t) + '».');
-      practice.push('للتعمّق: راجع تفسير الأصحاح على موقع الأنبا تكلا (تادرس / أنطونيوس فكري) لنفس السفر.');
+      if (has(/صل|صلاه|سبّح/)) practice.push('صلِّ بمعنى الآية لدقيقتين بهدوء.');
+      else if (has(/غفر|رحم|توب|خطي/)) practice.push('اطلب مغفرة أمر محدد بصدق اليوم.');
+      else if (has(/محب|احب/)) practice.push('فعل محبة واحد يوافق روح الآية (كلمة طيبة، خدمة، مسامحة).');
+      else if (has(/سلام|لا تخف/)) practice.push('عند القلق: أعد نص الآية قبل أي رد.');
+      else if (has(/ايمان|يؤمن/)) practice.push('خطوة أمانة صغيرة كمن يصدّق الوعد (صلاة، خدمة، امتناع عن أمر).');
+      else practice.push('تصرف واحد عملي يوافق معنى هذه الآية اليوم.');
+      practice.push('احفظ جملة قصيرة من الآية: «' + (t.length > 55 ? t.slice(0, 53) + '…' : t) + '».');
+      practice.push('اقرأ الآيات المجاورة في نفس الأصحاح لترى السياق الكامل.');
 
-      var seen = {};
-      function uniq(a) {
-        return a.filter(function (p) {
-          var k = String(p).slice(0, 70);
-          if (!p || seen[k]) return false;
-          seen[k] = true;
-          return true;
-        });
+      // —— روابط تفاسير حقيقية (أصحاح) على الأنبا تكلا ——
+      // نبني رابط فهرس الأصحاح عند إمكانية استخراج اسم السفر ورقم الأصحاح
+      var chapterLinks = [];
+      var chMatch = r.match(/(\d+)\s*[:：]/) || r.match(/اصحاح\s*(\d+)/i) || r.match(/ص\s*(\d+)/i);
+      var chapterNum = chMatch ? chMatch[1] : '';
+      // خريطة مبسطة لصفحات الفهرس المعروفة على st-takla (أصحاح)
+      var taklaChapterIndex = {
+        'تكوين': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/01-Genesis/Genesis-Chapter-',
+        'خروج': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/02-Exodus/Exodus-Chapter-',
+        'متى': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/01-Matthew/Matthew-Chapter-',
+        'مرقس': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/02-Mark/Mark-Chapter-',
+        'لوقا': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/03-Luke/Luke-Chapter-',
+        'يوحنا': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/04-John/John-Chapter-',
+        'رومية': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/06-Romans/Romans-Chapter-',
+        'مزمور': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/19-Psalms/Psalms-Chapter-',
+        'مز': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/19-Psalms/Psalms-Chapter-'
+      };
+      // روابط مباشرة لتفسير تادرس لبعض الأسفار الشائعة (نمط معروف)
+      var tadrosDirect = {
+        'تكوين': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/01-Sefr-El-Takween/Tafseer-Sefr-El-Takwin__01-Chapter-',
+        'يوحنا': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/04-Enjeel-Youhanna/Tafseer-Engeel-Yohanna__01-Chapter-',
+        'متى': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/01-Enjeel-Matta/Tafseer-Engeel-Matta__01-Chapter-',
+        'مرقس': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/02-Enjeel-Morcos/Tafseer-Engeel-Morcos__01-Chapter-',
+        'لوقا': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/03-Enjeel-Luka/Tafseer-Engeel-Luka__01-Chapter-',
+        'رومية': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/06-Risalat-Romya/Tafseer-Romya__01-Chapter-'
+      };
+      if (bookKey && chapterNum) {
+        if (tadrosDirect[bookKey]) {
+          chapterLinks.push({
+            title: 'تفسير الأصحاح ' + chapterNum + ' — القمص تادرس يعقوب ملطي (الأنبا تكلا)',
+            url: tadrosDirect[bookKey] + (chapterNum.length === 1 ? '0' + chapterNum : chapterNum) + '.html'
+          });
+        }
+        if (taklaChapterIndex[bookKey]) {
+          chapterLinks.push({
+            title: 'فهرس تفاسير الأصحاح ' + chapterNum + ' — الأنبا تكلا',
+            url: taklaChapterIndex[bookKey] + (chapterNum.length === 1 ? '0' + chapterNum : chapterNum) + '.html'
+          });
+        }
       }
-      points = uniq(points).slice(0, 8);
-      practice = uniq(practice).slice(0, 4);
+      // روابط عامة دائمًا
+      chapterLinks.push({ title: 'تفاسير القمص تادرس يعقوب ملطي — فهرس', url: 'https://st-takla.org/pub_Bible-Interpretations/Tafseer-Al-Keta-Al-Mokadas-El-3ahd-Al-Adim-02-Abouna-Tadrus-Ya3koob.html' });
+      chapterLinks.push({ title: 'تفاسير القمص أنطونيوس فكري — فهرس', url: 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Antonious-Fekry/' });
+      chapterLinks.push({ title: 'دراسات وتفاسير متنوعة — الأنبا تكلا', url: 'https://st-takla.org/bible/commentary/' });
 
+      // —— بناء النص النهائي ——
       var body = '';
-      body += '【 الآية 】\n' + (r ? r + '\n' : '') + t + '\n\n';
-      body += '【 التفسير 】\n';
-      points.forEach(function (p, idx) { body += (idx + 1) + ') ' + p + '\n\n'; });
-      body += '【 التأمل 】\n' + reflection + '\n\n';
-      body += '【 التطبيق 】\n';
+      body += '【 الآية 】\n';
+      if (r) body += r + '\n';
+      body += t + '\n\n';
+
+      body += '【 المعنى العام 】\n';
+      body += general + '\n\n';
+
+      body += '【 السياق في السفر والإصحاح 】\n';
+      body += context + '\n\n';
+
+      body += '【 كلمات وتعبيرات مهمة 】\n';
+      if (keyWords.length) {
+        keyWords.slice(0, 8).forEach(function (kw) { body += '• ' + kw + '\n'; });
+      } else {
+        body += '• لم تُستخرج مفردات ذات مدخل في المعجم المدمج لهذه الآية. راجعي «المعنى اللغوي» من قائمة الآية لمحاولة أوسع.\n';
+      }
+      body += '\n';
+
+      body += '【 شواهد مرتبطة 】\n';
+      related.forEach(function (rv) { body += '• ' + rv + '\n'; });
+      body += '\n';
+
+      body += '【 تأمل روحي 】\n';
+      body += reflection + '\n\n';
+
+      body += '【 تطبيق عملي 】\n';
       practice.forEach(function (p, idx) { body += (idx + 1) + ') ' + p + '\n'; });
-      body += '\n【 ملاحظة 】\nصياغة مساعدة مستوحاة من منهج تفاسير أرثوذكسية كما تُعرض في مصادر مثل موقع الأنبا تكلا (القمص تادرس، القمص أنطونيوس فكري، وكتابات البابا شنودة وأثناسيوس…) دون نسخ حرفي. للاستزادة: صفحة تفسير السفر على st-takla.org وأب الاعتراف.';
+      body += '\n';
+
+      body += '【 مصادر وروابط 】\n';
+      body += '• هذا النص مولَّد محليًا داخل التطبيق من سياق الآية والمعجم المدمج وقوالب كتابية عامة.\n';
+      body += '• ليس اقتباسًا حرفيًا من مفسّر معيّن، ولا يُنسب إلى القمص تادرس أو القمص أنطونيوس فكري أو البابا شنودة أو غيرهم.\n';
+      body += '• للاستزادة من تفاسير أرثوذكسية منشورة بإذن أصحابها على موقع الأنبا تكلا:\n';
+      chapterLinks.forEach(function (lnk, i) {
+        body += '  ' + (i + 1) + ') ' + lnk.title + '\n     ' + lnk.url + '\n';
+      });
+      body += '• المعجم اللغوي المدمج: معانٍ عربية سياقية + أصول محدودة من Strong\'s 1890 (ملكية عامة) حيث وُجدت.\n';
+      body += '• للاستشارة الرعوية: أب الاعتراف والكنيسة المحلية.\n';
+
+      // خزّن الروابط لاستخدامها في واجهة openVerseTafsir
+      if (typeof window !== 'undefined') {
+        window._lastTafsirLinks = chapterLinks;
+      }
+
       return body;
     }
-
 
     function openVerseTafsir() {
       try {
@@ -9854,6 +10006,28 @@ function openAIVerseDesign() {
           if (!window._lastTafsir) return;
           openVerseDesign(window._lastTafsir.content, 'تأمل — ' + (window._lastTafsir.ref || ''));
         };
+        // أزرار روابط التفاسير الحقيقية على الأنبا تكلا (إن وُجدت)
+        var links = window._lastTafsirLinks || [];
+        if (links.length && typeof openInAppPage === 'function') {
+          var linkBox = document.createElement('div');
+          linkBox.style.cssText = 'margin-top:14px;padding:10px;background:rgba(255,248,230,0.95);border-radius:12px;border:1px solid #e8d9b5;';
+          var linkTitle = document.createElement('div');
+          linkTitle.style.cssText = 'font-weight:700;margin-bottom:8px;color:#5a4a2a;';
+          linkTitle.textContent = 'تفاسير منشورة (الأنبا تكلا) — للقراءة المباشرة:';
+          linkBox.appendChild(linkTitle);
+          links.slice(0, 4).forEach(function (lnk, i) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'save-btn';
+            b.style.cssText = 'display:block;width:100%;margin:6px 0;text-align:right;background:#6a5a3a;font-size:13px;';
+            b.textContent = (i + 1) + ') ' + lnk.title;
+            b.onclick = (function (u, t) {
+              return function () { openInAppPage(u, t); };
+            })(lnk.url, lnk.title);
+            linkBox.appendChild(b);
+          });
+          wrap.appendChild(linkBox);
+        }
         addBackToChapterBtn(document.getElementById('prayerContent'));
       } catch (err) {
         console.log('openVerseTafsir', err);
@@ -11735,7 +11909,7 @@ function dayScore(d) {
     })();
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=192').then(function(reg) {
+      navigator.serviceWorker.register('./sw.js?v=194').then(function(reg) {
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         reg.update();
         // فرض تحديث الكاش القديم
@@ -11785,6 +11959,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=192"></script>
+  <script src="khalwaty-poster.js?v=194"></script>
 </body>
 </html>

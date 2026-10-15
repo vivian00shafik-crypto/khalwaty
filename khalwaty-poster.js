@@ -139,22 +139,24 @@ var EMOJI_WORDS = {
   }
 
   /* ---------- تقسيم المحتوى على الصفحات ---------- */
-  function dims(s) {
+  function dims(s, lhRatio) {
     var BODY = Math.max(27, Math.round(34 * s));
-    var LH = Math.round(BODY * 1.8);
+    var ratio = (typeof lhRatio === 'number' && lhRatio > 0.5) ? lhRatio : 1.8;
+    var LH = Math.round(BODY * ratio);
     return {
       BODY: BODY,
       LH: LH,
       HEAD_F: Math.max(20, Math.round(24 + 8 * s)),
       HEAD_H: Math.round(48 + 14 * s),
       CARD_PAD: 18,
-      ACCENT: 8
+      ACCENT: 8,
+      LH_RATIO: ratio
     };
   }
   function topOf(pi) { return pi === 0 ? TOP_FIRST : TOP_NEXT; }
 
-  function paginate(items, s, m) {
-    var d = dims(s);
+  function paginate(items, s, m, lhRatio) {
+    var d = dims(s, lhRatio);
     var fullW = W - 2 * M - 2 * INNER - 20;
     var sideW = Math.round(fullW * 0.30); // عمود صورة جانبية محجوز
     var PADB = d.CARD_PAD * 2;
@@ -218,11 +220,11 @@ var EMOJI_WORDS = {
     return pages;
   }
 
-function layout(items, N, m) {
+  function layout(items, N, m, lhRatio) {
     // نفضّل خطًا مقروءًا على A4؛ إن لم يتسع زد عدد الصفحات بدل تصغير مفرط
     var last = null;
     for (var s = 1.4; s >= 0.82; s -= 0.04) {
-      var p = paginate(items, s, m);
+      var p = paginate(items, s, m, lhRatio);
       last = { pages: p, s: s, fits: p.length <= N };
       if (last.fits) return last;
     }
@@ -230,10 +232,10 @@ function layout(items, N, m) {
   }
 
   /** توزيع المحتوى على عدد صفحات ثابت يختاره المستخدم */
-  function forcePageCount(items, N, s, m) {
+  function forcePageCount(items, N, s, m, lhRatio) {
     N = Math.max(1, Math.min(10, parseInt(N, 10) || 1));
     s = s || 1;
-    var raw = paginate(items, s, m) || [];
+    var raw = paginate(items, s, m, lhRatio) || [];
     var all = [];
     raw.forEach(function (pg) {
       (pg || []).forEach(function (it) { all.push(it); });
@@ -935,22 +937,22 @@ function dataUrlToBytes(u) {
           var targetPages = parseInt(state.pages, 10);
           if (!(targetPages >= 1 && targetPages <= 10)) targetPages = 3;
           state.pages = targetPages;
-          var baseLay = layout(items, targetPages, m) || { pages: [[]], s: 1 };
+          var baseLay = layout(items, targetPages, m, state.lineHeight || 1.8) || { pages: [[]], s: 1 };
           var userS = Math.max(0.7, Math.min(1.6, state.fontScale || 1));
           var combinedS = Math.max(0.7, Math.min(1.7, (baseLay.s || 1) * userS));
-          var probe = paginate(items, combinedS, m) || [[]];
+          var probe = paginate(items, combinedS, m, state.lineHeight || 1.8) || [[]];
           var guard = 0;
           while (probe.length > targetPages && combinedS > 0.72 && guard < 8) {
             combinedS = Math.max(0.7, combinedS * 0.9);
-            probe = paginate(items, combinedS, m) || [[]];
+            probe = paginate(items, combinedS, m, state.lineHeight || 1.8) || [[]];
             guard++;
           }
-          var forced = forcePageCount(items, targetPages, combinedS, m) || [[]];
+          var forced = forcePageCount(items, targetPages, combinedS, m, state.lineHeight || 1.8) || [[]];
           // ضمان العدد حرفيًا
           while (forced.length < targetPages) forced.push([]);
           if (forced.length > targetPages) forced = forced.slice(0, targetPages);
           var lay = { pages: forced, s: combinedS, fits: (probe.length || 1) <= targetPages };
-          var d = dims(lay.s);
+          var d = dims(lay.s, state.lineHeight || 1.8);
           // خط مخصص
           d.FONT = state.fontFamily || FONT;
           prev.innerHTML = ''; state.canvases = [];
@@ -1373,29 +1375,44 @@ lbl('عنوان البوستر');
 
     clbl('تنسيق الفقرة');
     var rowPara = document.createElement('div'); rowPara.className = 'kp-row'; controls.appendChild(rowPara);
+    var paraLbl = document.createElement('span'); paraLbl.className = 'kp-chip'; paraLbl.style.cursor = 'default';
+    function updatePara() {
+      paraLbl.textContent = 'ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
+      // إعادة رسم الأزرار بحالة التفعيل
+      var buttons = rowPara.querySelectorAll('.kp-chip');
+      buttons.forEach(function (b) {
+        if (b === paraLbl) return;
+        var t = b.textContent || '';
+        var on = false;
+        if (t.indexOf('مريحة') >= 0) on = Math.abs((state.lineHeight || 1.8) - 1.9) < 0.05;
+        if (t.indexOf('مضغوطة') >= 0) on = Math.abs((state.lineHeight || 1.8) - 1.4) < 0.05;
+        b.className = 'kp-chip' + (on ? ' on' : '');
+      });
+    }
     chip(rowPara, 'تباعد أقل', false, function () {
       feedbackTap();
       state.lineHeight = Math.max(1.25, (state.lineHeight || 1.8) - 0.1);
       state.paraGap = Math.max(0.5, (state.paraGap || 1) - 0.15);
-      redraw(); updatePara();
+      updatePara(); redraw();
+      if (stat) stat.textContent = '↕️ تباعد أقل — ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
     });
-    var paraLbl = document.createElement('span'); paraLbl.className = 'kp-chip'; paraLbl.style.cursor = 'default';
-    function updatePara() {
-      paraLbl.textContent = 'ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
-    }
     updatePara(); rowPara.appendChild(paraLbl);
     chip(rowPara, 'تباعد أكبر', false, function () {
       feedbackTap();
       state.lineHeight = Math.min(2.6, (state.lineHeight || 1.8) + 0.1);
       state.paraGap = Math.min(2, (state.paraGap || 1) + 0.15);
-      redraw(); updatePara();
+      updatePara(); redraw();
+      if (stat) stat.textContent = '↕️ تباعد أكبر — ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
     });
     chip(rowPara, 'فقرة مريحة', false, function () {
-      feedbackTap(); state.lineHeight = 1.9; state.paraGap = 1.15; redraw(); updatePara();
+      feedbackTap(); state.lineHeight = 1.9; state.paraGap = 1.15; updatePara(); redraw();
+      if (stat) stat.textContent = '✅ فقرة مريحة مفعّلة';
     });
     chip(rowPara, 'فقرة مضغوطة', false, function () {
-      feedbackTap(); state.lineHeight = 1.4; state.paraGap = 0.7; redraw(); updatePara();
+      feedbackTap(); state.lineHeight = 1.4; state.paraGap = 0.7; updatePara(); redraw();
+      if (stat) stat.textContent = '✅ فقرة مضغوطة مفعّلة';
     });
+    updatePara();
 
     clbl('الرموز التعبيرية');
     var rowE = document.createElement('div'); rowE.className = 'kp-row'; controls.appendChild(rowE);

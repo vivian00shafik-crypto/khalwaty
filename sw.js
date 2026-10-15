@@ -1,31 +1,45 @@
-const CACHE = 'khalwati-v186-justify-stock';
+const CACHE = 'khalwati-v187-offline-persist';
 const ASSETS = [
-  'stock/bible.jpg',
-  'stock/mary.jpg',
-  'stock/christ.jpg',
-  'stock/forest.jpg',
-  'stock/mountains.jpg',
-  'stock/candle.jpg',
-  'stock/flowers.jpg',
-  'stock/chapel.jpg',
+  './',
+  './index.html',
+  './manifest.json',
+  './sw.js',
+  './khalwaty-poster.js',
+  './agpeya-texts.js',
+  './bible-svd.js',
+  './bible-deutero.js',
+  './logo.png',
+  './parchment-bg.jpg',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon.png',
+  './hymn.m4a',
+  './prayer-alarm.mp3',
+  './sawt-rabina.mp3',
+  './bible-music.mp3',
+  './bible-music-1.mp3',
+  './bible-music-2.mp3',
+  './bible-music-3.mp3',
+  './bg-11.jpg', './bg-12.jpg', './bg-13.jpg', './bg-14.jpg',
+  './bg-15.jpg', './bg-16.jpg', './bg-17.jpg', './bg-18.jpg', './bg-19.jpg'
+];
 
-  './', './index.html', './manifest.json', './sw.js',
-  './khalwaty-poster.js', './bible-svd.js', './bible-deutero.js', './logo.png', './parchment-bg.jpg',
-  './icon-192.png', './icon-512.png',
-  './hymn.m4a', './prayer-alarm.mp3', './sawt-rabina.mp3',
-  './bible-music.mp3', './bible-music-1.mp3', './bible-music-2.mp3', './bible-music-3.mp3', './bg-11.jpg', './bg-12.jpg', './bg-13.jpg', './bg-14.jpg', './bg-15.jpg', './bg-16.jpg', './bg-17.jpg', './bg-18.jpg', './bg-19.jpg'
-
-
-self.addEventListener('install', (e) => {
+self.addEventListener('install', function (e) {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(ASSETS.map((a) => c.add(a).catch(()=>{})))));
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) {
+      return Promise.allSettled(ASSETS.map(function (a) {
+        return c.add(a).catch(function () {});
+      }));
+    })
+  );
 });
 
 self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k !== 'khalwati-v186-justify-stock') return caches.delete(k);
+        if (k !== CACHE) return caches.delete(k);
       }));
     }).then(function () {
       return self.clients.claim();
@@ -33,68 +47,56 @@ self.addEventListener('activate', function (event) {
   );
 });
 
-
-self.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
-});
-
-self.addEventListener('fetch', (e) => {
+self.addEventListener('fetch', function (e) {
   try {
-    const u = new URL(e.request.url);
-    if (u.hostname.indexOf('pollinations') >= 0) { e.respondWith(fetch(e.request)); return; }
-  } catch (err) {}
-
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  const url = req.url;
-
-  // الصوت: شبكة أولاً ثم كاش (عشان الملفات الجديدة تظهر فورًا)
-  if (/\.(mp3|m4a|wav|ogg)(\?|$)/i.test(url)) {
-    e.respondWith(
-      fetch(req).then((res) => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
-        }
-        return res;
-      }).catch(() => caches.match(req).then(r => r || caches.match(url.split('?')[0])))
-    );
-    return;
-  }
-
-  if (req.mode === 'navigate' || /\.(html|js|json)(\?|$)/.test(url) || url.includes('sw.js')) {
-    e.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
-        return res;
-      }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
-    );
-    return;
-  }
-
-  e.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
-      return res;
-    }).catch(() => cached))
-  );
-});
-
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  const data = (e.notification && e.notification.data) || {};
-  const playType = data.type === 'agpeya' ? 'agpeya' : (data.type === 'jesus' ? 'jesus' : (data.playAlarm ? 'agpeya' : ''));
-  e.waitUntil((async () => {
-    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-    if (all && all.length) {
-      const client = all[0];
-      try { await client.focus(); } catch (err) {}
-      try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
+    var u = new URL(e.request.url);
+    // لا نخزّن طلبات الذكاء الاصطناعي الخارجية
+    if (u.hostname.indexOf('pollinations') >= 0 || u.hostname.indexOf('google') >= 0) {
+      e.respondWith(fetch(e.request).catch(function () {
+        return new Response('', { status: 503, statusText: 'offline' });
+      }));
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=77';
-    await clients.openWindow(url);
-  })());
+  } catch (err) {}
+
+  var req = e.request;
+  if (req.method !== 'GET') return;
+
+  // تنقّل التطبيق: كاش أولاً ثم شبكة (يعمل بدون نت)
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      caches.match('./index.html').then(function (cached) {
+        return cached || fetch(req).then(function (res) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put('./index.html', copy); }).catch(function () {});
+          return res;
+        }).catch(function () {
+          return caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // باقي الملفات: كاش أولاً، وإن لم يوجد فالشبكة مع التخزين
+  e.respondWith(
+    caches.match(req).then(function (cached) {
+      if (cached) return cached;
+      return fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); }).catch(function () {});
+        }
+        return res;
+      }).catch(function () {
+        // بدون استعلام
+        try {
+          var path = new URL(req.url).pathname;
+          return caches.match(path) || caches.match('.' + path);
+        } catch (e2) {
+          return caches.match(req.url.split('?')[0]);
+        }
+      });
+    })
+  );
 });

@@ -231,13 +231,15 @@ function layout(items, N, m) {
 
   /** توزيع المحتوى على عدد صفحات ثابت يختاره المستخدم */
   function forcePageCount(items, N, s, m) {
-    N = Math.max(1, Math.min(10, N || 1));
+    N = Math.max(1, Math.min(10, parseInt(N, 10) || 1));
     s = s || 1;
     var raw = paginate(items, s, m) || [];
     var all = [];
     raw.forEach(function (pg) {
       (pg || []).forEach(function (it) { all.push(it); });
     });
+    // لو التقسيم الطبيعي أنتج صفحات أكثر، خذها كأساس ثم ادمج/وزّع لـ N
+    if (raw.length === N) return raw;
     var out = [];
     for (var i = 0; i < N; i++) out.push([]);
     if (!all.length) return out;
@@ -445,8 +447,26 @@ var cardTints = [
       if (hasImg) {
         var sideImg = null;
         if (art) {
-          if (art.pages && art.pages.length) sideImg = art.pages[(pi + fi) % art.pages.length];
-          else sideImg = art.hero || art.a || art.b;
+          // صورة مختلفة عن صورة رأس الصفحة وعن باقي الأقسام
+          var pool = [];
+          if (art.pages && art.pages.length) {
+            for (var _si = 0; _si < art.pages.length; _si++) {
+              if (art.pages[_si]) pool.push(art.pages[_si]);
+            }
+          }
+          if (art.hero) pool.push(art.hero);
+          if (pool.length) {
+            // تخطّي صورة الرأس (عادة pages[pi]) باختيار إزاحة
+            var pick = (pi * 5 + fi * 3 + 1) % pool.length;
+            sideImg = pool[pick];
+            // لو نفس صورة الرأس وفيها أكثر من صورة، خذ التالية
+            var headerImg = (art.pages && art.pages[pi]) ? art.pages[pi] : art.hero;
+            if (sideImg === headerImg && pool.length > 1) {
+              sideImg = pool[(pick + 1) % pool.length];
+            }
+          } else {
+            sideImg = art.hero || art.a || art.b || null;
+          }
         }
         var ix = x + pad;
         var iy = y + pad;
@@ -493,13 +513,18 @@ var cardTints = [
       var paraMul = (opt && opt.paraGap) ? opt.paraGap : 1;
 
       if (f.head) {
-        ctx.font = '700 ' + d.HEAD_F + 'px ' + FONT_USE;
-        ctx.fillStyle = hsl(hb, 55, 30);
-        var hl = wrap(ctx, f.head, textColW - 4);
-        hl.forEach(function (ln) {
-          cursorY += d.HEAD_F * 0.55;
+        var emos = (opt && opt.emojis) || emojis || ['✝'];
+        var headEmoji = emos[fi % emos.length] || '✝';
+        var headText = headEmoji + '  ' + String(f.head);
+        var headSize = Math.round((d.HEAD_F || 28) * 1.12);
+        ctx.font = '800 ' + headSize + 'px ' + FONT_USE;
+        ctx.fillStyle = hsl(hb, 60, 26);
+        var hl = wrap(ctx, headText, textColW - 4);
+        hl.forEach(function (ln, li) {
+          cursorY += headSize * 0.55;
+          // أول سطر يحتفظ بالرمز
           ctx.fillText(ln, textX, cursorY);
-          cursorY += d.HEAD_F * 0.55 + 3;
+          cursorY += headSize * 0.55 + 5;
         });
         ctx.strokeStyle = hsl(hb, 35, 78);
         ctx.lineWidth = 1.2;
@@ -919,21 +944,24 @@ function dataUrlToBytes(u) {
           if (!ov.isConnected) return;
           var m = document.createElement('canvas').getContext('2d');
           // دمج مقياس الخط الذي يختاره المستخدم مع مقياس التقسيم التلقائي
-          var targetPages = Math.max(1, Math.min(10, state.pages || 3));
-          var baseLay = layout(items, targetPages, m);
+          var targetPages = parseInt(state.pages, 10);
+          if (!(targetPages >= 1 && targetPages <= 10)) targetPages = 3;
+          state.pages = targetPages;
+          var baseLay = layout(items, targetPages, m) || { pages: [[]], s: 1 };
           var userS = Math.max(0.7, Math.min(1.6, state.fontScale || 1));
           var combinedS = Math.max(0.7, Math.min(1.7, (baseLay.s || 1) * userS));
-          // تقليل الخط لو المحتوى أكبر من عدد الصفحات المطلوب
-          var probe = paginate(items, combinedS, m);
+          var probe = paginate(items, combinedS, m) || [[]];
           var guard = 0;
           while (probe.length > targetPages && combinedS > 0.72 && guard < 8) {
             combinedS = Math.max(0.7, combinedS * 0.9);
-            probe = paginate(items, combinedS, m);
+            probe = paginate(items, combinedS, m) || [[]];
             guard++;
           }
-          // فرض عدد الصفحات الذي اختاره المستخدم
-          var forced = forcePageCount(items, targetPages, combinedS, m);
-          var lay = { pages: forced, s: combinedS, fits: probe.length <= targetPages };
+          var forced = forcePageCount(items, targetPages, combinedS, m) || [[]];
+          // ضمان العدد حرفيًا
+          while (forced.length < targetPages) forced.push([]);
+          if (forced.length > targetPages) forced = forced.slice(0, targetPages);
+          var lay = { pages: forced, s: combinedS, fits: (probe.length || 1) <= targetPages };
           var d = dims(lay.s);
           // خط مخصص
           d.FONT = state.fontFamily || FONT;
@@ -1258,7 +1286,32 @@ lbl('عنوان البوستر');
     function drawP() {
       rowP.innerHTML = '';
       [1,2,3,4,5,6,7,8,9,10].forEach(function (n) {
-        chip(rowP, pageLabel(n), state.pages === n, function () { feedbackTap(); state.pages = n; drawP(); if (!state.art) state.art = { hero: null, pages: [] }; if (!state.art.pages) state.art.pages = []; while (state.art.pages.length < n) state.art.pages.push(null); try { genArt({ forceAll: false, fillMissing: true }); } catch (e) {} redraw(); });
+        chip(rowP, pageLabel(n), parseInt(state.pages, 10) === n, function () {
+          feedbackTap();
+          state.pages = n;
+          drawP();
+          if (stat) stat.textContent = '📄 تم ضبط عدد الصفحات: ' + ar(n);
+          if (!state.art) state.art = { hero: null, pages: [] };
+          if (!state.art.pages) state.art.pages = [];
+          while (state.art.pages.length < n) state.art.pages.push(null);
+          // املأ صور الصفحات الجديدة بصور مختلفة
+          try {
+            var seed = Math.floor(Math.random() * 90000) + 1;
+            var jobs = [];
+            for (var pi = 0; pi < n; pi++) {
+              (function (pidx) {
+                if (!state.art.pages[pidx]) {
+                  var st = STOCK_5D[(pidx + 1) % STOCK_5D.length];
+                  jobs.push(loadStockImage(st).then(function (im) {
+                    if (im) state.art.pages[pidx] = im;
+                  }));
+                }
+              })(pi);
+            }
+            Promise.all(jobs).then(function () { redraw(); });
+          } catch (e) { redraw(); }
+          redraw();
+        });
       });
     }
     drawP();

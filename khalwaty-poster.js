@@ -79,6 +79,61 @@ var EMOJI_WORDS = {
     });
     return out;
   }
+  /** لف مع تعليم السطور التي تُضبط (Justify) ما عدا آخر سطر في كل فقرة */
+  function wrapPara(ctx, text, maxW) {
+    var out = [];
+    String(text || '').split(/\n/).forEach(function (para) {
+      var words = para.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push({ t: '', justify: false }); return; }
+      var lines = [];
+      var line = '';
+      words.forEach(function (w) {
+        var trial = line ? line + ' ' + w : w;
+        if (ctx.measureText(trial).width > maxW && line) { lines.push(line); line = w; }
+        else line = trial;
+      });
+      if (line) lines.push(line);
+      lines.forEach(function (ln, i) {
+        var wc = ln.trim().split(/\s+/).filter(Boolean).length;
+        out.push({ t: ln, justify: i < lines.length - 1 && wc > 1 });
+      });
+    });
+    return out;
+  }
+  /** كتابة سطر مضبوط الحواف (يمين ويسار) للعربية */
+  function fillTextJustify(ctx, text, edgeX, y, maxW, align) {
+    var words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    if (words.length <= 1) {
+      ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
+      var ax = edgeX;
+      if (align === 'center') ax = edgeX; // caller passes center
+      ctx.fillText(text, ax, y);
+      return;
+    }
+    var total = 0;
+    words.forEach(function (w) { total += ctx.measureText(w).width; });
+    var gaps = words.length - 1;
+    var spaceW = Math.max(ctx.measureText(' ').width, (maxW - total) / gaps);
+    align = align || 'right';
+    if (align === 'right') {
+      var cx = edgeX;
+      for (var i = words.length - 1; i >= 0; i--) {
+        ctx.textAlign = 'right';
+        ctx.fillText(words[i], cx, y);
+        if (i > 0) cx -= ctx.measureText(words[i]).width + spaceW;
+      }
+    } else if (align === 'left') {
+      var cx2 = edgeX;
+      ctx.textAlign = 'left';
+      for (var j = 0; j < words.length; j++) {
+        ctx.fillText(words[j], cx2, y);
+        cx2 += ctx.measureText(words[j]).width + spaceW;
+      }
+    } else {
+      ctx.textAlign = 'center';
+      ctx.fillText(text, edgeX, y);
+    }
+  }
   function elementsFor(emojis) {
     return emojis.map(function (e) { return EMOJI_WORDS[e.replace(/\uFE0F/g, '')]; }).filter(Boolean).slice(0, 3).join(', ');
   }
@@ -236,6 +291,7 @@ function layout(items, N, m) {
     var pageImg = null;
     if (art) {
       if (art.pages && art.pages[pi]) pageImg = art.pages[pi];
+      else if (pi === 0 && art.hero) pageImg = art.hero;
       else if (art.pages && art.pages.length) pageImg = art.pages[pi % art.pages.length];
       else pageImg = art.hero || null;
     }
@@ -446,12 +502,28 @@ var cardTints = [
       if (f.textColW && Math.abs(f.textColW - textColW) > 8) {
         drawLines = wrap(ctx, bodyText, textColW - 4);
       }
-      drawLines.forEach(function (ln, li) {
+      // ضبط السطور (Justify) مثل Word ما عدا آخر سطر في الفقرة
+      var paraLines = wrapPara(ctx, bodyText, textColW - 4);
+      if (!paraLines.length && drawLines.length) {
+        paraLines = drawLines.map(function (ln, i) {
+          return { t: ln, justify: i < drawLines.length - 1 && String(ln).trim().split(/\s+/).length > 1 };
+        });
+      }
+      paraLines.forEach(function (item) {
+        var ln = typeof item === 'string' ? item : item.t;
+        var doJ = typeof item === 'object' && item.justify;
         cursorY += bodyLH * 0.5;
         if (cursorY > y + h - pad) return;
-        ctx.fillText(ln, textX, cursorY);
+        if (doJ) {
+          var edge = textRight;
+          if (align === 'left') edge = textLeft;
+          else if (align === 'center') edge = (textLeft + textRight) / 2;
+          fillTextJustify(ctx, ln, edge, cursorY, textColW - 4, align);
+        } else {
+          ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
+          ctx.fillText(ln, textX, cursorY);
+        }
         cursorY += bodyLH * 0.5;
-        // فراغ بسيط بين الفقرات عند سطر فارغ
         if (!String(ln || '').trim()) cursorY += 6 * paraMul;
       });
       ctx.restore();
@@ -997,8 +1069,8 @@ function dataUrlToBytes(u) {
       html += '<button type="button" id="stockClose" style="border:none;background:#eee;border-radius:10px;padding:8px 12px;">إغلاق</button></div>';
       html += '<label style="display:block;margin-bottom:10px;color:#6a5a40;font-weight:600;">وضع الصورة على:<br/>';
       html += '<select id="stockTarget" style="margin-top:6px;width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;font-size:15px;box-sizing:border-box;">';
-      html += '<option value="hero">الصورة الرئيسية (غلاف)</option>';
-      html += '<option value="all">كل الصفحات + الغلاف</option>';
+      html += '<option value="all" selected>كل الصفحات + الغلاف</option>';
+      html += '<option value="hero">الصورة الرئيسية (غلاف) فقط</option>';
       for (var pi = 0; pi < state.pages; pi++) {
         html += '<option value="' + pi + '">الصفحة ' + (pi + 1) + ' فقط</option>';
       }
@@ -1034,14 +1106,18 @@ function dataUrlToBytes(u) {
         function putPage(p) {
           return loadStockImage(stock).then(function (im) { if (im) state.art.pages[p] = im; });
         }
-        if (target === 'hero') jobs.push(putHero());
-        else if (target === 'all') {
+        if (target === 'hero') {
+          // الغلاف + صورة عنوان أول صفحة (عشان التغيير يبان فورًا)
+          jobs.push(putHero());
+          jobs.push(putPage(0));
+        } else if (target === 'all') {
           jobs.push(putHero());
           for (var p = 0; p < state.pages; p++) jobs.push(putPage(p));
         } else {
           var pidx = parseInt(target, 10);
           if (isNaN(pidx)) pidx = 0;
           jobs.push(putPage(pidx));
+          if (pidx === 0) jobs.push(putHero());
         }
         return Promise.all(jobs).then(function () {
           redraw();
@@ -1154,7 +1230,7 @@ lbl('عنوان البوستر');
     function drawS() {
       rowS.innerHTML = '';
       ART_STYLES.forEach(function (st) {
-        chip(rowS, st.name, st === state.artStyle, function () { feedbackTap(); state.artStyle = st; drawS(); redraw(); });
+        chip(rowS, st.name, st === state.artStyle, function () { feedbackTap(); state.artStyle = st; drawS(); try { if (typeof genArt === 'function') genArt({ retryLocalOnly: false }); else redraw(); } catch (e) { redraw(); } });
       });
     }
     drawS();

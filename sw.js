@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v194-menu-format';
+const CACHE = 'khalwati-v195-tafsir-qa';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',

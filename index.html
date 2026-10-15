@@ -11892,60 +11892,87 @@ function dayScore(d) {
 
     // Service Worker for offline
     
-    // FORCE clear old cache once then reload to pick up new index.html
-    (function forceClearOldCache() {
-      var KEY = 'khalwati_force_v191';
-      if (localStorage.getItem(KEY)) return;
-      localStorage.setItem(KEY, '1');
-      var finish = function () {
-        try {
-          // إعادة تحميل مرة واحدة فقط بعد مسح كاش التطبيق
-          var u = new URL(location.href);
-          u.searchParams.set('v', '191');
-          u.searchParams.set('_r', String(Date.now()));
-          location.replace(u.toString());
-        } catch (e) {
-          location.reload();
+    // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
+    (function forceUpgradeCache() {
+      var APP_VER = '195';
+      var KEY = 'khalwati_force_v' + APP_VER;
+      var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
+      // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
+      try {
+        var u0 = new URL(location.href);
+        var qv = u0.searchParams.get('v') || '';
+        // لو الرابط لسه على 191 والكود الجديد اتحمّل، صحّح الرابط بدون مسح كامل متكرر
+        if (qv === '191' && htmlVer === APP_VER) {
+          u0.searchParams.set('v', APP_VER);
+          history.replaceState(null, '', u0.toString());
         }
-      };
-      if (!('serviceWorker' in navigator)) { finish(); return; }
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        return Promise.all(regs.map(function(r){ return r.unregister(); }));
-      }).then(function() {
-        if (!window.caches) return;
-        return caches.keys().then(function(keys) {
-          return Promise.all(keys.map(function(k){ return caches.delete(k); }));
-        });
-      }).then(finish).catch(finish);
-    })();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=195').then(function(reg) {
-        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        reg.update();
-        // فرض تحديث الكاش القديم
-        if (!sessionStorage.getItem('khalwati_sw64')) {
-          sessionStorage.setItem('khalwati_sw64', '1');
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r){ try { r.update(); } catch(e){} });
+      } catch (e) {}
+      if (localStorage.getItem(KEY) === '1') {
+        // سبق الترقية — تأكد فقط من تسجيل SW الجديد
+      } else {
+        localStorage.setItem(KEY, '1');
+        // امسح مفاتيح الترقية القديمة حتى لا تتعارض
+        try {
+          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194'].forEach(function(k){
+            localStorage.removeItem(k);
+          });
+        } catch (e) {}
+        var finish = function () {
+          try {
+            var u = new URL(location.href);
+            u.searchParams.set('v', APP_VER);
+            u.searchParams.set('_r', String(Date.now()));
+            location.replace(u.toString());
+          } catch (e) {
+            location.reload();
+          }
+        };
+        var chain = Promise.resolve();
+        if ('serviceWorker' in navigator) {
+          chain = navigator.serviceWorker.getRegistrations().then(function(regs) {
+            return Promise.all(regs.map(function(r){ return r.unregister(); }));
           });
         }
-        // تحميل خفيف في الخلفية بعد ما الصفحة تهدا (من غير تجاوز الكاش)
-        navigator.serviceWorker.ready.then(function() {
-          setTimeout(function() {
-            ['bible-svd.js', 'bible-deutero.js'].forEach(function(f) {
-              fetch(f).catch(function(){});
-            });
-          }, 15000);
+        chain.then(function() {
+          if (!window.caches) return;
+          return caches.keys().then(function(keys) {
+            return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+          });
+        }).then(finish).catch(finish);
+        return; // لا تسجّل SW قبل إعادة التحميل
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js?v=' + APP_VER).then(function(reg) {
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          try { reg.update(); } catch (e) {}
+          // عند تغيّر المتحكم أعد التحميل مرة واحدة لالتقاط index الجديد
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (refreshing) return;
+            refreshing = true;
+            try {
+              var u = new URL(location.href);
+              u.searchParams.set('v', APP_VER);
+              location.replace(u.toString());
+            } catch (e) { location.reload(); }
+          });
+          navigator.serviceWorker.ready.then(function() {
+            setTimeout(function() {
+              ['bible-svd.js', 'bible-deutero.js'].forEach(function(f) {
+                fetch(f + '?v=' + APP_VER).catch(function(){});
+              });
+            }, 15000);
+          });
+        }).catch(function(err) { console.log('SW error', err); });
+        window.addEventListener('offline', function() {
+          if (typeof showToast === 'function') showToast('وضع بدون إنترنت — من الكاش');
         });
-      }).catch(function(err) { console.log('SW error', err); });
-      window.addEventListener('offline', function() {
-        if (typeof showToast === 'function') showToast('وضع بدون إنترنت — من الكاش');
-      });
-      window.addEventListener('online', function() {
-        if (typeof showToast === 'function') showToast('تم الاتصال بالإنترنت');
-      });
-    }
+        window.addEventListener('online', function() {
+          if (typeof showToast === 'function') showToast('تم الاتصال بالإنترنت');
+        });
+      }
+    })();
   </script>
   <script>
     // الملفات التقيلة بتتحمّل بعد ما الصفحة تظهر وتهدا — مش بتوقف أول فتحة

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v195-tafsir-qa';
+const CACHE = 'khalwati-v195-force';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',
@@ -15,8 +15,13 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
+    // احذف كل كاش قديم (خصوصًا v191) وأبقِ الحالي فقط
     await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
     await self.clients.claim();
+    const clientsList = await self.clients.matchAll({ type: 'window' });
+    clientsList.forEach(function(client) {
+      try { client.postMessage({ type: 'SW_ACTIVATED', cache: CACHE }); } catch (err) {}
+    });
   })());
 });
 

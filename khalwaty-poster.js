@@ -387,19 +387,7 @@ function layout(items, N, m) {
       ctx.fillText((emojis && emojis[0]) || '📖', imgX + imgSize / 2, imgY + imgSize / 2 + 4);
     }
 
-    // شريط رموز تعبيرية يظهر فعليًا على الصفحة
-    var emos = (opt && opt.emojis) || emojis || [];
-    if (emos && emos.length) {
-      var emoY = imgY + imgSize + 28;
-      ctx.font = '36px ' + EMOJI_FONT;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      var emoLine = emos.slice(0, 6).join('  ');
-      ctx.fillText(emoLine, W / 2, emoY);
-    }
-
-    // مسافة بسيطة تحت الرأس (بدون خط ثقيل)
-    // المحتوى يبدأ بعد الرأس
+    // لا رموز في منتصف أعلى الصفحة — الرموز على عناوين الفقرات فقط إن وُجدت
 
 var cardTints = [
       [hb, 28, 97],
@@ -1277,16 +1265,16 @@ lbl('عنوان البوستر');
     ti.oninput = function () { state.title = ti.value; redraw(); }; box.appendChild(ti);
 
     lbl('عدد الصفحات (A4) — حتى ١٠');
-    var rowP = document.createElement('div'); rowP.className = 'kp-row'; box.appendChild(rowP);
+    var rowPages = document.createElement('div'); rowPages.className = 'kp-row'; box.appendChild(rowPages);
     function pageLabel(n) {
       if (n === 1) return 'صفحة';
       if (n === 2) return 'صفحتان';
       return ar(n) + ' صفحات';
     }
     function drawP() {
-      rowP.innerHTML = '';
+      rowPages.innerHTML = '';
       [1,2,3,4,5,6,7,8,9,10].forEach(function (n) {
-        chip(rowP, pageLabel(n), parseInt(state.pages, 10) === n, function () {
+        chip(rowPages, pageLabel(n), parseInt(state.pages, 10) === n, function () {
           feedbackTap();
           state.pages = n;
           drawP();
@@ -1294,9 +1282,7 @@ lbl('عنوان البوستر');
           if (!state.art) state.art = { hero: null, pages: [] };
           if (!state.art.pages) state.art.pages = [];
           while (state.art.pages.length < n) state.art.pages.push(null);
-          // املأ صور الصفحات الجديدة بصور مختلفة
           try {
-            var seed = Math.floor(Math.random() * 90000) + 1;
             var jobs = [];
             for (var pi = 0; pi < n; pi++) {
               (function (pidx) {
@@ -1386,8 +1372,8 @@ lbl('عنوان البوستر');
     drawAlign();
 
     clbl('تنسيق الفقرة');
-    var rowP = document.createElement('div'); rowP.className = 'kp-row'; controls.appendChild(rowP);
-    chip(rowP, 'تباعد أقل', false, function () {
+    var rowPara = document.createElement('div'); rowPara.className = 'kp-row'; controls.appendChild(rowPara);
+    chip(rowPara, 'تباعد أقل', false, function () {
       feedbackTap();
       state.lineHeight = Math.max(1.25, (state.lineHeight || 1.8) - 0.1);
       state.paraGap = Math.max(0.5, (state.paraGap || 1) - 0.15);
@@ -1397,17 +1383,17 @@ lbl('عنوان البوستر');
     function updatePara() {
       paraLbl.textContent = 'ارتفاع السطر ' + (state.lineHeight || 1.8).toFixed(1);
     }
-    updatePara(); rowP.appendChild(paraLbl);
-    chip(rowP, 'تباعد أكبر', false, function () {
+    updatePara(); rowPara.appendChild(paraLbl);
+    chip(rowPara, 'تباعد أكبر', false, function () {
       feedbackTap();
       state.lineHeight = Math.min(2.6, (state.lineHeight || 1.8) + 0.1);
       state.paraGap = Math.min(2, (state.paraGap || 1) + 0.15);
       redraw(); updatePara();
     });
-    chip(rowP, 'فقرة مريحة', false, function () {
+    chip(rowPara, 'فقرة مريحة', false, function () {
       feedbackTap(); state.lineHeight = 1.9; state.paraGap = 1.15; redraw(); updatePara();
     });
-    chip(rowP, 'فقرة مضغوطة', false, function () {
+    chip(rowPara, 'فقرة مضغوطة', false, function () {
       feedbackTap(); state.lineHeight = 1.4; state.paraGap = 0.7; redraw(); updatePara();
     });
 

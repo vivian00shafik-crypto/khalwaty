@@ -13,7 +13,7 @@
   var W = 1240, H = 1754, M = 56;          // A4 عمودي 210×297مم @ ~150dpi
   var INNER = 22, GAP = 18;
   // تخطيط تحريري: بطاقات نصية + صور جانبية (بدون شريط صورة سفلي ضخم)
-  var TOP_FIRST = 200, TOP_NEXT = 200, BOTTOM = H - 70;
+  var TOP_FIRST = 210, TOP_NEXT = 210, BOTTOM = H - 70;
   var FONT = 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif';
   var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji"';
 
@@ -231,68 +231,85 @@ function layout(items, N, m) {
     ctx.fillStyle = hsl(hb, 45, 42);
     ctx.fillRect(0, 0, W, 7);
 
-    var title = data.title || 'تحضير الدرس';
-
-    // رأس موحّد لكل الصفحات: صورة متوسطة بجانب عنوان كبير في المنتصف
-    var headH = 168;
-    var imgSize = 140;
-    var gap = 18;
+    
+    // رأس مثل النموذج: صورة مربعة متوسطة + عنوان كبير داخل شريط دائري بجانبها
     var pageImg = null;
     if (art) {
       if (art.pages && art.pages[pi]) pageImg = art.pages[pi];
       else if (art.pages && art.pages.length) pageImg = art.pages[pi % art.pages.length];
       else pageImg = art.hero || null;
     }
-    // صورة يسار | عنوان في المنتصف (مع مراعاة المساحة)
+
+    var imgSize = 152;          // حجم الصورة كما في النموذج
     var imgX = M;
-    var imgY = 22;
+    var imgY = 28;
+    var gap = 16;
+    var bannerX = imgX + imgSize + gap;
+    var bannerW = W - M - bannerX;
+    var bannerH = imgSize;
+    var bannerY = imgY;
+    var title = data.title || 'تحضير الدرس';
+
+    // شريط العنوان (كريمي مدوّر) — يمين الصورة
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.10)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = '#f3ebda';
+    rrect(ctx, bannerX, bannerY, bannerW, bannerH, 28);
+    ctx.fill();
+    ctx.restore();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(180,150,90,0.35)';
+    rrect(ctx, bannerX, bannerY, bannerW, bannerH, 28);
+    ctx.stroke();
+
+    // نص العنوان كبير وواضح داخل الشريط
+    var padT = 22;
+    var maxTitleW = bannerW - padT * 2;
+    var tf = 52;
+    var tlines;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#4a3a22';
+    do {
+      ctx.font = '800 ' + tf + 'px ' + FONT_USE;
+      tlines = wrap(ctx, title, maxTitleW);
+      tf -= 2;
+    } while ((tlines.length > 2 || tf * tlines.length + 16 > bannerH - 20) && tf > 28);
+    var lineGap = tf + 10;
+    var blockH = tlines.length * lineGap;
+    var ty = bannerY + (bannerH - blockH) / 2 + tf * 0.55;
+    var cx = bannerX + bannerW / 2;
+    tlines.forEach(function (ln) {
+      ctx.fillText(ln, cx, ty);
+      ty += lineGap;
+    });
+
+    // الصورة المربعة بزوايا دائرية — يسار الشريط
     if (pageImg && pageImg.width) {
       ctx.save();
-      ctx.beginPath(); rrect(ctx, imgX, imgY, imgSize, imgSize, 18); ctx.clip();
+      ctx.beginPath(); rrect(ctx, imgX, imgY, imgSize, imgSize, 22); ctx.clip();
       var sc = Math.max(imgSize / pageImg.width, imgSize / pageImg.height);
       var dw = pageImg.width * sc, dh = pageImg.height * sc;
       ctx.drawImage(pageImg, imgX + (imgSize - dw) / 2, imgY + (imgSize - dh) / 2, dw, dh);
       ctx.restore();
-      ctx.lineWidth = 2.5; ctx.strokeStyle = hsl(hb, 40, 70);
-      rrect(ctx, imgX, imgY, imgSize, imgSize, 18); ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(180,150,90,0.45)';
+      rrect(ctx, imgX, imgY, imgSize, imgSize, 22);
+      ctx.stroke();
     } else {
-      ctx.fillStyle = hsl(hb, 40, 92);
-      rrect(ctx, imgX, imgY, imgSize, imgSize, 18); ctx.fill();
-      ctx.font = '56px ' + EMOJI_FONT;
+      ctx.fillStyle = hsl(hb, 35, 92);
+      rrect(ctx, imgX, imgY, imgSize, imgSize, 22);
+      ctx.fill();
+      ctx.font = '58px ' + EMOJI_FONT;
       ctx.textAlign = 'center';
       ctx.fillText((emojis && emojis[0]) || '📖', imgX + imgSize / 2, imgY + imgSize / 2 + 4);
     }
 
-    // عنوان كبير واضح في منتصف المنطقة العليا (يمين الصورة)
-    var titleLeft = imgX + imgSize + gap;
-    var titleRight = W - M;
-    var titleW = titleRight - titleLeft;
-    var tf = 48;
-    var tlines;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = hsl(hb, 55, 24);
-    do {
-      ctx.font = '800 ' + tf + 'px ' + FONT_USE;
-      tlines = wrap(ctx, title, titleW);
-      tf -= 2;
-    } while (tlines.length > 3 && tf > 30);
-    var blockH = tlines.length * (tf + 8);
-    var ty = imgY + (imgSize - blockH) / 2 + tf * 0.55;
-    var cx = titleLeft + titleW / 2;
-    tlines.forEach(function (ln) {
-      ctx.fillText(ln, cx, ty);
-      ty += tf + 8;
-    });
+    // مسافة بسيطة تحت الرأس (بدون خط ثقيل)
+    // المحتوى يبدأ بعد الرأس
 
-    // خط فاصل تحت الرأس
-    ctx.strokeStyle = hsl(hb, 25, 82);
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(M, imgY + imgSize + 14);
-    ctx.lineTo(W - M, imgY + imgSize + 14);
-    ctx.stroke();
-
-    var cardTints = [
+var cardTints = [
       [hb, 28, 97],
       [(hb + 28) % 360, 22, 97],
       [(hb + 50) % 360, 20, 96]

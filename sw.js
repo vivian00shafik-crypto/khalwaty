@@ -1,1 +1,1 @@
-const CACHE = 'khalwati-v188-prep-actions
+const CACHE = 'khalwati-v189-style-pages-emoji

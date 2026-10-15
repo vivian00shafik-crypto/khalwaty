@@ -13,7 +13,7 @@
   var W = 1240, H = 1754, M = 56;          // A4 عمودي 210×297مم @ ~150dpi
   var INNER = 22, GAP = 18;
   // تخطيط تحريري: بطاقات نصية + صور جانبية (بدون شريط صورة سفلي ضخم)
-  var TOP_FIRST = 210, TOP_NEXT = 210, BOTTOM = H - 70;
+  var TOP_FIRST = 248, TOP_NEXT = 248, BOTTOM = H - 70;
   var FONT = 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif';
   var EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji"';
 
@@ -229,6 +229,29 @@ function layout(items, N, m) {
     return last;
   }
 
+  /** توزيع المحتوى على عدد صفحات ثابت يختاره المستخدم */
+  function forcePageCount(items, N, s, m) {
+    N = Math.max(1, Math.min(10, N || 1));
+    s = s || 1;
+    var raw = paginate(items, s, m) || [];
+    var all = [];
+    raw.forEach(function (pg) {
+      (pg || []).forEach(function (it) { all.push(it); });
+    });
+    var out = [];
+    for (var i = 0; i < N; i++) out.push([]);
+    if (!all.length) return out;
+    if (all.length <= N) {
+      all.forEach(function (it, i) { out[i].push(it); });
+      return out;
+    }
+    var per = Math.ceil(all.length / N);
+    for (var j = 0; j < N; j++) {
+      out[j] = all.slice(j * per, Math.min(all.length, (j + 1) * per));
+    }
+    return out;
+  }
+
   /* ---------- رسم صفحة ---------- */
   function drawScene(ctx, img, x, y, w, h, theme, emojis) {
     // صورة واضحة وكاملة — بدون تدرج يخفي نصفها
@@ -360,6 +383,17 @@ function layout(items, N, m) {
       ctx.font = '58px ' + EMOJI_FONT;
       ctx.textAlign = 'center';
       ctx.fillText((emojis && emojis[0]) || '📖', imgX + imgSize / 2, imgY + imgSize / 2 + 4);
+    }
+
+    // شريط رموز تعبيرية يظهر فعليًا على الصفحة
+    var emos = (opt && opt.emojis) || emojis || [];
+    if (emos && emos.length) {
+      var emoY = imgY + imgSize + 28;
+      ctx.font = '36px ' + EMOJI_FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var emoLine = emos.slice(0, 6).join('  ');
+      ctx.fillText(emoLine, W / 2, emoY);
     }
 
     // مسافة بسيطة تحت الرأس (بدون خط ثقيل)
@@ -878,15 +912,21 @@ function dataUrlToBytes(u) {
           if (!ov.isConnected) return;
           var m = document.createElement('canvas').getContext('2d');
           // دمج مقياس الخط الذي يختاره المستخدم مع مقياس التقسيم التلقائي
-          var baseLay = layout(items, state.pages, m);
+          var targetPages = Math.max(1, Math.min(10, state.pages || 3));
+          var baseLay = layout(items, targetPages, m);
           var userS = Math.max(0.7, Math.min(1.6, state.fontScale || 1));
           var combinedS = Math.max(0.7, Math.min(1.7, (baseLay.s || 1) * userS));
-          var lay = { pages: paginate(items, combinedS, m), s: combinedS, fits: true };
-          // إن زاد عدد الصفحات عن المطلوب بسبب تكبير الخط، أعد مع تصغير طفيف
-          if (lay.pages.length > state.pages) {
-            combinedS = Math.max(0.7, combinedS * 0.92);
-            lay = { pages: paginate(items, combinedS, m), s: combinedS, fits: paginate(items, combinedS, m).length <= state.pages };
+          // تقليل الخط لو المحتوى أكبر من عدد الصفحات المطلوب
+          var probe = paginate(items, combinedS, m);
+          var guard = 0;
+          while (probe.length > targetPages && combinedS > 0.72 && guard < 8) {
+            combinedS = Math.max(0.7, combinedS * 0.9);
+            probe = paginate(items, combinedS, m);
+            guard++;
           }
+          // فرض عدد الصفحات الذي اختاره المستخدم
+          var forced = forcePageCount(items, targetPages, combinedS, m);
+          var lay = { pages: forced, s: combinedS, fits: probe.length <= targetPages };
           var d = dims(lay.s);
           // خط مخصص
           d.FONT = state.fontFamily || FONT;
@@ -910,10 +950,7 @@ function dataUrlToBytes(u) {
             state.canvases.push(cv);
           });
           note.textContent = !items.length ? 'لا توجد نصوص في صفحات التحضير.'
-            : '📄 المعاينة تعرض كل الصفحات — مرري لأسفل لرؤية الصفحة 2 و 3 … (' + ar(lay.pages.length) + ' صفحة). ' + (
-              !lay.fits ? 'النص طويل؛ زِدي عدد الصفحات أو صغّري الخط.' :
-              (lay.pages.length < state.pages ? 'النص يكفي ' + ar(lay.pages.length) + ' صفحة فقط.' : '')
-            );
+            : '📄 عدد الصفحات المعروضة: ' + ar(lay.pages.length) + ' (حسب اختيارك). مرري لأسفل لرؤية الباقي.' + (!lay.fits ? ' النص طويل — صغّري الخط أو زِدي الصفحات.' : '');
         });
       }, 150);
     }
@@ -957,26 +994,38 @@ function dataUrlToBytes(u) {
     function genArt(opts) {
       opts = opts || {};
       var retryLocalOnly = !!opts.retryLocalOnly;
+      var forceAll = !!opts.forceAll;
+      var fillMissing = opts.fillMissing !== false;
       var id = ++state.genId;
       var seed = Math.floor(Math.random() * 90000) + 1;
-      if (!state.art) state.art = { hero: null, pages: [] };
-      // أولًا: املأ أي فراغات بالمحلي فورًا حتى لا تبقى صفحات بلا صورة
+      if (!state.art || forceAll) state.art = { hero: null, pages: [] };
+      if (!state.art.pages) state.art.pages = [];
+      // رقم النمط يؤثر على الشكل المحلي
+      var styleIdx = 0;
+      try {
+        for (var si = 0; si < ART_STYLES.length; si++) {
+          if (ART_STYLES[si] === state.artStyle || (state.artStyle && ART_STYLES[si].id === state.artStyle.id)) { styleIdx = si; break; }
+        }
+      } catch (e0) {}
+      // أولًا: املأ / استبدل بالمحلي فورًا حسب النمط والرموز
       var fillJobs = [];
-      if (!state.art.hero) {
-        fillJobs.push(makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed, 0).then(function (im) {
+      if (forceAll || !state.art.hero) {
+        fillJobs.push(makeLocalArt(512, 512, state.theme, emojisNow(), 'hero', seed + styleIdx * 17, styleIdx).then(function (im) {
+          if (id !== state.genId) return;
           if (im) state.art.hero = im;
         }));
       }
       for (var p0 = 0; p0 < state.pages; p0++) {
         (function (pi) {
-          if (!state.art.pages[pi]) {
-            fillJobs.push(makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + pi, seed + pi + 3, (pi + 1) % 12).then(function (im) {
+          if (forceAll || !state.art.pages[pi]) {
+            fillJobs.push(makeLocalArt(640, 384, state.theme, emojisNow(), 'p' + pi, seed + pi + 3 + styleIdx * 13, (styleIdx * 3 + pi) % 12).then(function (im) {
+              if (id !== state.genId) return;
               if (im) state.art.pages[pi] = im;
             }));
           }
         })(p0);
       }
-      Promise.all(fillJobs).then(function () { redraw(); });
+      Promise.all(fillJobs).then(function () { if (id === state.genId) redraw(); });
 
       var stepsAll = artSteps(state.theme, emojisNow(), seed, customPromptExtra(), state.pages, items, state.artStyle);
       var steps = stepsAll;
@@ -1202,7 +1251,7 @@ lbl('عنوان البوستر');
     function drawP() {
       rowP.innerHTML = '';
       [1,2,3,4,5,6,7,8,9,10].forEach(function (n) {
-        chip(rowP, pageLabel(n), state.pages === n, function () { feedbackTap(); state.pages = n; drawP(); redraw(); });
+        chip(rowP, pageLabel(n), state.pages === n, function () { feedbackTap(); state.pages = n; drawP(); if (!state.art) state.art = { hero: null, pages: [] }; if (!state.art.pages) state.art.pages = []; while (state.art.pages.length < n) state.art.pages.push(null); try { genArt({ forceAll: false, fillMissing: true }); } catch (e) {} redraw(); });
       });
     }
     drawP();
@@ -1230,7 +1279,7 @@ lbl('عنوان البوستر');
     function drawS() {
       rowS.innerHTML = '';
       ART_STYLES.forEach(function (st) {
-        chip(rowS, st.name, st === state.artStyle, function () { feedbackTap(); state.artStyle = st; drawS(); try { if (typeof genArt === 'function') genArt({ retryLocalOnly: false }); else redraw(); } catch (e) { redraw(); } });
+        chip(rowS, st.name, st === state.artStyle, function () { feedbackTap(); state.artStyle = st; drawS(); state.art = { hero: null, pages: [] }; try { genArt({ forceAll: true }); } catch (e) { redraw(); } });
       });
     }
     drawS();
@@ -1308,10 +1357,11 @@ lbl('عنوان البوستر');
     function drawE() {
       rowE.innerHTML = '';
       EMOJI_SETS.forEach(function (s) {
-        chip(rowE, s.list.join(' '), !state.custom && s === state.set, function () { feedbackTap(); state.set = s; state.custom = ''; ci.value = ''; drawE(); redraw(); });
+        chip(rowE, s.list.join(' '), !state.custom && s === state.set, function () { feedbackTap(); state.set = s; state.custom = ''; ci.value = ''; drawE(); try { genArt({ forceAll: true }); } catch (e) { redraw(); } });
       });
     }
     ci.oninput = function () { state.custom = ci.value; drawE(); redraw(); };
+    ci.onchange = function () { state.custom = ci.value; drawE(); try { genArt({ forceAll: true }); } catch (e) { redraw(); } };
     drawE(); controls.appendChild(ci);
 
     var act = document.createElement('div'); act.className = 'kp-act'; box.appendChild(act);

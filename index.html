@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="207" lang="ar" dir="rtl">
+<html data-app-ver="208" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4908,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=207';
+            s.src = 'khalwaty-poster.js?v=208';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -8914,11 +8914,33 @@ function openAIVerseDesign() {
         var bgSrc = VERSE_BACKGROUNDS[st.bg] || VERSE_BACKGROUNDS[1];
         if (!bgSrc) { showToast('الخلفية غير متاحة'); return; }
 
-        // مقاس أصغر على الموبايل عشان الصفحة متتقفلش من استهلاك الذاكرة
+        // اقرأ الموضع الفعلي من المعاينة (مركز صندوق النص) قبل الرسم
+        try {
+          var stageEl = document.getElementById('verseDesignPreview');
+          var boxEl = document.getElementById('verseDesignText');
+          if (stageEl && boxEl) {
+            var sr = stageEl.getBoundingClientRect();
+            var br = boxEl.getBoundingClientRect();
+            if (sr.width > 10 && sr.height > 10) {
+              st.posX = ((br.left + br.width / 2) - sr.left) / sr.width * 100;
+              st.posY = ((br.top + br.height / 2) - sr.top) / sr.height * 100;
+              st.posX = Math.max(5, Math.min(95, st.posX));
+              st.posY = Math.max(5, Math.min(95, st.posY));
+            }
+          }
+        } catch (ePos) {}
+
         var mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1);
-        var W = mobile ? 720 : 1080;
-        var H = mobile ? 900 : 1350;
-        var quality = mobile ? 0.82 : 0.92;
+        // نفس نسبة أبعاد المعاينة حتى لا يتحرّك النص بالنسبة للخلفية
+        var stageEl2 = document.getElementById('verseDesignPreview');
+        var pW = (stageEl2 && stageEl2.clientWidth) ? stageEl2.clientWidth : 340;
+        var pH = (stageEl2 && stageEl2.clientHeight) ? stageEl2.clientHeight : 360;
+        var scaleOut = mobile ? 2.4 : 3.2;
+        var W = Math.max(480, Math.round(pW * scaleOut));
+        var H = Math.max(520, Math.round(pH * scaleOut));
+        // حد أقصى للذاكرة
+        if (W > 1080) { var r = 1080 / W; W = 1080; H = Math.round(H * r); scaleOut = W / pW; }
+        var quality = mobile ? 0.84 : 0.92;
 
         showToast(mobile ? 'جاري تجهيز الصورة…' : 'جاري الحفظ…');
 
@@ -8941,96 +8963,125 @@ function openAIVerseDesign() {
             showToast('الصورة فارغة — جرّبي خلفية أخرى');
             return;
           }
-          // احفظي مرجع آخر تصميم
           try {
             var list = JSON.parse(localStorage.getItem('khalwati_designs') || '[]');
-            list.unshift({ ref: st.ref, text: st.text, bg: st.bg, date: new Date().toISOString() });
+            list.unshift({ ref: st.ref, text: st.text, bg: st.bg, posX: st.posX, posY: st.posY, date: new Date().toISOString() });
             localStorage.setItem('khalwati_designs', JSON.stringify(list.slice(0, 40)));
           } catch (e2) {}
-          // اعرضي المعاينة مباشرة — من غير مشاركة تلقائية
           showDesignSavePreview(dataUrl, 'khalwati-design-' + Date.now() + '.jpg', silent, null);
+        }
+
+        function wrapText(ctx, text, maxW) {
+          var out = [];
+          String(text || '').split(/\n/).forEach(function (para) {
+            var words = para.split(/\s+/).filter(Boolean);
+            if (!words.length) { out.push(''); return; }
+            var line = '';
+            words.forEach(function (w) {
+              var trial = line ? line + ' ' + w : w;
+              if (ctx.measureText(trial).width > maxW && line) {
+                out.push(line);
+                line = w;
+              } else line = trial;
+            });
+            if (line) out.push(line);
+          });
+          return out;
         }
 
         function drawDesign(img) {
           try {
-            // خلفية cover
-            var scale = Math.max(W / img.width, H / img.height);
-            var nw = img.width * scale, nh = img.height * scale;
+            // خلفية cover بنفس نسبة المعاينة
+            var cover = Math.max(W / img.width, H / img.height);
+            var nw = img.width * cover, nh = img.height * cover;
             ctx.fillStyle = '#1a1208';
             ctx.fillRect(0, 0, W, H);
             ctx.drawImage(img, (W - nw) / 2, (H - nh) / 2, nw, nh);
             var dark = VERSE_BG_DARK && VERSE_BG_DARK[st.bg];
-            ctx.fillStyle = dark ? 'rgba(0,0,0,0.28)' : 'rgba(255,253,248,0.16)';
+            ctx.fillStyle = dark ? 'rgba(0,0,0,0.22)' : 'rgba(255,253,248,0.12)';
             ctx.fillRect(0, 0, W, H);
 
             var fontName = st.font || 'Cairo';
             var color = st.color || '#3e2f1c';
             var align = st.align || 'center';
-            var maxW = W * 0.80;
-            var targetH = H * 0.44;
-            var fullText = ((st.ref ? st.ref + '\n\n' : '') + (st.text || '')).trim();
-            var footer = 'خلوتي ✝';
-            var scaleF = W / 1080;
-            var bodySize;
-            // استخدم حجم الخط الذي اختارته المستخدمة في المعاينة حتى لا يتحرك النص
-            if (typeof st.size === 'number' && st.size >= 12 && st.size <= 72) {
-              bodySize = st.size * (W / 340); // المعاينة ~340px عرضًا
-              bodySize = Math.max(16, Math.min(72, bodySize));
-            } else {
-              var lo = 22 * scaleF, hi = 64 * scaleF, best = 32 * scaleF;
-              function measure(size) {
-                ctx.font = '600 ' + size + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
-                var lines = layoutLines(ctx, fullText, maxW);
-                return lines.length * size * 1.45;
-              }
-              for (var i = 0; i < 12; i++) {
-                var mid = (lo + hi) / 2;
-                if (measure(mid) <= targetH) { best = mid; lo = mid; }
-                else hi = mid;
-              }
-              bodySize = Math.max(18, Math.min(60 * scaleF, best));
-            }
-            var lines = layoutLines(ctx, fullText, maxW, '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif');
-            var lineH = bodySize * 1.45;
-            var blockH = lines.length * lineH;
-            var posX = (typeof st.posX === 'number') ? st.posX : 50;
-            var posY = (typeof st.posY === 'number') ? st.posY : 42;
-            var y = (posY / 100) * H - blockH / 2;
-            if (y < 24) y = 24;
-            else if (y + blockH > H - 56) y = Math.max(24, H - 56 - blockH);
+            // مقياس مطابق للمعاينة: 1px في المعاينة = scaleOut بكسل في التصدير
+            var bodySize = Math.max(12, (parseInt(st.size, 10) || 18) * scaleOut);
+            var refSize = Math.max(10, (Math.max(12, (parseInt(st.size, 10) || 18) - 4)) * scaleOut);
+            var footSize = 12 * scaleOut;
+            var pad = 12 * scaleOut;
+            var maxW = W * 0.86 - pad * 2;
+            var lineH = bodySize * 1.85;
+            var refLH = refSize * 1.35;
+            var gapRef = 8 * scaleOut;
+            var gapFoot = 12 * scaleOut;
 
-            ctx.fillStyle = color;
             ctx.direction = 'rtl';
-            ctx.textAlign = (align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center'));
-            var x;
-            if (align === 'left') x = (posX / 100) * W - maxW / 2;
-            else if (align === 'right') x = (posX / 100) * W + maxW / 2;
-            else x = (posX / 100) * W;
-            if (align !== 'center') {
-              if (x < 24) x = 24;
-              if (x > W - 24) x = W - 24;
-            }
-            ctx.font = '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            ctx.fillStyle = color;
             ctx.shadowColor = dark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.65)';
             ctx.shadowBlur = dark ? 5 : 3;
-            for (var li = 0; li < lines.length; li++) {
-              var lineStr = lines[li] || '';
-              // حافظي على موضع علامات الترقيم في النص العربي كما هي
-              if (/[؀-ۿ]/.test(lineStr)) {
-                lineStr = '‏' + lineStr + '‏';
-              }
-              ctx.fillText(lineStr, x, y + li * lineH);
-            }
-            ctx.shadowBlur = 0;
-            ctx.font = (20 * scaleF) + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.globalAlpha = 0.85;
-            ctx.fillText(footer, W / 2, H - 40);
-            ctx.globalAlpha = 1;
 
-            // فك مرجع الصورة لتوفير ذاكرة
+            // لفّ النص بنفس عرض صندوق المعاينة (86%)
+            ctx.font = '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            var bodyLines = wrapText(ctx, st.text || '', maxW);
+            ctx.font = '700 ' + refSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            var refLines = st.ref ? wrapText(ctx, st.ref, maxW) : [];
+            var footer = 'خلوتي ✝';
+
+            var blockH = 0;
+            if (refLines.length) blockH += refLines.length * refLH + gapRef;
+            blockH += bodyLines.length * lineH;
+            blockH += gapFoot + footSize;
+            // padding رأسي تقريبي للصندوق
+            blockH += pad;
+
+            var posX = (typeof st.posX === 'number') ? st.posX : 50;
+            var posY = (typeof st.posY === 'number') ? st.posY : 42;
+            var cx = (posX / 100) * W;
+            var cy = (posY / 100) * H;
+            // transform: translate(-50%, -50%) — أعلى الصندوق
+            var top = cy - blockH / 2;
+            if (top < 8) top = 8;
+            if (top + blockH > H - 8) top = Math.max(8, H - 8 - blockH);
+
+            var x;
+            if (align === 'left') {
+              ctx.textAlign = 'left';
+              x = cx - maxW / 2;
+            } else if (align === 'right') {
+              ctx.textAlign = 'right';
+              x = cx + maxW / 2;
+            } else {
+              ctx.textAlign = 'center';
+              x = cx;
+            }
+
+            var y = top + pad * 0.6;
+            if (refLines.length) {
+              ctx.font = '700 ' + refSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+              refLines.forEach(function (ln) {
+                y += refLH * 0.85;
+                ctx.fillText(ln, x, y);
+                y += refLH * 0.15;
+              });
+              y += gapRef;
+            }
+            ctx.font = '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            bodyLines.forEach(function (ln) {
+              y += lineH * 0.75;
+              var lineStr = ln || '';
+              if (/[\u0600-\u06FF]/.test(lineStr)) lineStr = '\u200F' + lineStr;
+              ctx.fillText(lineStr, x, y);
+              y += lineH * 0.25;
+            });
+            y += gapFoot;
+            ctx.globalAlpha = 0.75;
+            ctx.font = footSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(footer, cx, y + footSize * 0.8);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+
             try { img.src = ''; } catch (e3) {}
-            // تأخير خفيف قبل التصدير عشان المتصفح يلحق
             setTimeout(exportNow, 30);
           } catch (err) {
             console.log('drawDesign error', err);
@@ -9047,7 +9098,6 @@ function openAIVerseDesign() {
             }
           } catch (e4) {}
           Promise.resolve(p).then(function() {
-            // timeout حماية لو حصل تعليق
             var done = false;
             var t = setTimeout(function() {
               if (!done) { done = true; drawDesign(img); }
@@ -9075,7 +9125,8 @@ function openAIVerseDesign() {
       }
     }
 
-    function showDesignSavePreview(url, name, silent, blob) {
+    
+function showDesignSavePreview(url, name, silent, blob) {
       try {
         var oldEl = document.getElementById('designSavePreview');
         if (oldEl) oldEl.remove();
@@ -12099,7 +12150,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '207';
+      var APP_VER = '208';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12202,6 +12253,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=207"></script>
+  <script src="khalwaty-poster.js?v=208"></script>
 </body>
 </html>

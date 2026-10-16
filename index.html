@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="205" lang="ar" dir="rtl">
+<html data-app-ver="206" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -2941,6 +2941,33 @@
     }
 
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
+    try {
+      var _bp = JSON.parse(localStorage.getItem('khalwati_bible_pos') || 'null');
+      if (_bp && typeof _bp === 'object') {
+        if (_bp.testament === 'OT' || _bp.testament === 'NT') bibleState.testament = _bp.testament;
+        if (typeof _bp.bookIndex === 'number' && _bp.bookIndex >= 0) bibleState.bookIndex = _bp.bookIndex;
+        if (typeof _bp.chapter === 'number' && _bp.chapter >= 0) bibleState.chapter = _bp.chapter;
+      }
+    } catch (eBp0) {}
+    try {
+      window._pickedVerses = JSON.parse(localStorage.getItem('khalwati_picked_verses') || '{}') || {};
+    } catch (ePk0) { window._pickedVerses = {}; }
+
+    function saveBiblePos() {
+      try {
+        localStorage.setItem('khalwati_bible_pos', JSON.stringify({
+          testament: bibleState.testament || 'OT',
+          bookIndex: bibleState.bookIndex|0,
+          chapter: bibleState.chapter|0
+        }));
+      } catch (e) {}
+    }
+    function savePickedVerses() {
+      try {
+        localStorage.setItem('khalwati_picked_verses', JSON.stringify(window._pickedVerses || {}));
+      } catch (e) {}
+    }
+
 
     setPrayerJesusBg(false);
     
@@ -3013,10 +3040,17 @@
         window._mergedBooks = allBooks;
         const books = allBooks.filter(b => b.t === bibleState.testament);
         if (!books.length) return;
-        const firstId = books[0].id;
-        const fullIndex = allBooks.findIndex(b => b.id === firstId);
-        bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
-        bibleState.chapter = 0;
+        // استعادة آخر موضع محفوظ لنفس العهد، وإلا ابدأ بأول سفر
+        var curBook = allBooks[bibleState.bookIndex];
+        if (!curBook || curBook.t !== bibleState.testament) {
+          const firstId = books[0].id;
+          const fullIndex = allBooks.findIndex(b => b.id === firstId);
+          bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
+          bibleState.chapter = 0;
+        } else {
+          var chCount = (curBook.chapters && curBook.chapters.length) || 1;
+          if (bibleState.chapter >= chCount) bibleState.chapter = 0;
+        }
         renderBible();
       }, function() {
         document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">تعذر تحميل الكتاب المقدس. تأكدي من الإنترنت وارفعي ملف bible-svd.js ثم حاولي مرة أخرى.</p>';
@@ -3425,10 +3459,12 @@ function bibleSpeakText(text, onEnd) {
       document.getElementById('prayerModal').classList.add('active');
       const pc = document.getElementById('prayerContent');
       if (pc) pc.scrollTop = 0;
+      try {
+        applyStoredHighlights(document.getElementById('prayerContent'));
+        applyBibleFontToContent(document.getElementById('prayerContent'));
+      } catch (eHL) {}
+      try { saveBiblePos(); } catch (ePos) {}
     }
-
-          applyStoredHighlights(document.getElementById('prayerContent'));
-      applyBibleFontToContent(document.getElementById('prayerContent'));
 
     function biblePrevChapter() {
       if (bibleState.chapter > 0) {
@@ -4872,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=205';
+            s.src = 'khalwaty-poster.js?v=206';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -6455,6 +6491,18 @@ function openTextModal(type) {
     }
 
     function closeModal() {
+      // حفظ تلقائي لنص آية اليوم / التأمل / القراءات عند الإغلاق
+      try {
+        var ta = document.getElementById('modalTextarea');
+        var modal = document.getElementById('textModal');
+        if (ta && modal && modal.classList.contains('active') && currentTextType &&
+            (currentTextType === 'verse' || currentTextType === 'reflection' || currentTextType === 'likedReadings')) {
+          var data = loadData();
+          data[currentTextType] = ta.value;
+          saveData(data);
+          if (typeof renderTexts === 'function') renderTexts();
+        }
+      } catch (eAuto) {}
       setPrayerJesusBg(false);
       document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
       try { bibleStopSpeak(); } catch(e) {}
@@ -6796,6 +6844,7 @@ function openTextModal(type) {
         if (line) line.classList.toggle('verse-picked', cb.checked);
         const el = document.getElementById('pickedVerseCount');
         if (el) el.textContent = 'المحدد: ' + Object.keys(window._pickedVerses).length;
+        savePickedVerses();
       } catch (e) {}
     }
     function selectAllVersesInChapter() {
@@ -6811,6 +6860,7 @@ function openTextModal(type) {
       const el = document.getElementById('pickedVerseCount');
       if (el) el.textContent = 'المحدد: ' + Object.keys(window._pickedVerses).length;
       if (typeof showToast === 'function') showToast('تم تحديد آيات الإصحاح');
+      savePickedVerses();
     }
     function clearPickedVerses() {
       window._pickedVerses = {};
@@ -6821,6 +6871,7 @@ function openTextModal(type) {
       });
       const el = document.getElementById('pickedVerseCount');
       if (el) el.textContent = 'المحدد: 0';
+      savePickedVerses();
     }
     function copyPickedVerses() {
       const map = window._pickedVerses || {};
@@ -12000,7 +12051,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '205';
+      var APP_VER = '206';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12103,6 +12154,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=205"></script>
+  <script src="khalwaty-poster.js?v=206"></script>
 </body>
 </html>

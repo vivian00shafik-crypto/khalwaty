@@ -95,7 +95,7 @@ var EMOJI_WORDS = {
       if (line) lines.push(line);
       lines.forEach(function (ln, i) {
         var wc = ln.trim().split(/\s+/).filter(Boolean).length;
-        out.push({ t: ln, justify: i < lines.length - 1 && wc > 1 });
+        out.push({ t: ln, justify: false }); // justify معطل للعربية حتى لا يختلط ترتيب الحروف
       });
     });
     return out;
@@ -555,7 +555,7 @@ var cardTints = [
       var paraLines = wrapPara(ctx, bodyText, textColW - 4);
       if (!paraLines.length && drawLines.length) {
         paraLines = drawLines.map(function (ln, i) {
-          return { t: ln, justify: i < drawLines.length - 1 && String(ln).trim().split(/\s+/).length > 1 };
+          return { t: ln, justify: false };
         });
       }
       paraLines.forEach(function (item) {
@@ -570,7 +570,9 @@ var cardTints = [
           fillTextJustify(ctx, ln, edge, cursorY, textColW - 4, align);
         } else {
           ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
-          ctx.fillText(ln, textX, cursorY);
+          var safe = String(ln || '');
+          if (align === 'right' && /[\u0600-\u06FF]/.test(safe)) safe = '\u200F' + safe;
+          ctx.fillText(safe, textX, cursorY);
         }
         cursorY += bodyLH * 0.5;
         if (!String(ln || '').trim()) cursorY += 6 * paraMul;

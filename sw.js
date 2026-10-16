@@ -1,9 +1,9 @@
-const CACHE = 'khalwati-v197';
+const CACHE = 'khalwati-v198';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',
   './icon-v76-192.png', './icon-v76-512.png',
-  './prayer-alarm.mp3', './sawt-rabina.mp3',
+  './prayer-alarm.mp3', './sawt-rabina.mp3', './bible-music-4.mp3',
   './agpeya-texts.js', './psalms.js'
 ];
 
@@ -80,7 +80,7 @@ self.addEventListener('notificationclick', (e) => {
       try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=197';
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=198';
     await clients.openWindow(url);
   })());
 });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="197" lang="ar" dir="rtl">
+<html data-app-ver="198" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -3047,13 +3047,14 @@
       { id: 'm1', label: 'موسيقى ١', src: './bible-music-1.mp3' },
       { id: 'm2', label: 'موسيقى ٢', src: './bible-music-2.mp3' },
       { id: 'm3', label: 'موسيقى ٣', src: './bible-music-3.mp3' },
-      { id: 'flute', label: 'موسيقى الناي', src: './bible-music.mp3' }
+      { id: 'm4', label: 'موسيقى ٤', src: './bible-music-4.mp3' }
     ];
     function getBibleMusicEl() {
       return document.getElementById('bibleBgMusic');
     }
     function bibleMusicTrackId() {
-      const id = localStorage.getItem('khalwati_bible_music_track') || 'm1';
+      var id = localStorage.getItem('khalwati_bible_music_track') || 'm1';
+      if (id === 'flute') { id = 'm4'; try { localStorage.setItem('khalwati_bible_music_track', 'm4'); } catch (e) {} }
       return BIBLE_MUSIC_TRACKS.some(function(t) { return t.id === id; }) ? id : 'm1';
     }
     function bibleMusicVolume() {
@@ -4864,7 +4865,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=197';
+            s.src = 'khalwaty-poster.js?v=198';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -11040,17 +11041,71 @@ function requestNotifyPermission() {
       var wrap = document.createElement('div');
       wrap.id = 'inAppBrowser';
       wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#faf6ec;display:flex;flex-direction:column;';
-      var isImg = (book.type || '').indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp)$/i.test(book.fileName || '');
-      var body = isImg
-        ? '<div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px;"><img src="' + book.dataUrl + '" style="max-width:100%;max-height:100%;" /></div>'
-        : '<iframe src="' + book.dataUrl + '" style="flex:1;width:100%;border:0;background:#fff;"></iframe>';
+      var name = book.name || book.fileName || 'ملف';
+      var isImg = (book.type || '').indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp)$/i.test(book.fileName || book.name || '');
+      var isPdf = (book.type || '').indexOf('pdf') >= 0 || /\.pdf$/i.test(book.fileName || book.name || '') || (String(book.dataUrl || '').indexOf('application/pdf') >= 0);
+      var isTxt = (book.type || '').indexOf('text/') === 0 || /\.txt$/i.test(book.fileName || book.name || '');
+      var body = '';
+      var blobUrl = '';
+      function dataUrlToBlobUrl(dataUrl) {
+        try {
+          var parts = String(dataUrl).split(',');
+          var meta = parts[0] || '';
+          var b64 = parts[1] || '';
+          var mime = (meta.match(/data:([^;]+)/) || [])[1] || 'application/octet-stream';
+          var bin = atob(b64);
+          var arr = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          return URL.createObjectURL(new Blob([arr], { type: mime }));
+        } catch (e) { return ''; }
+      }
+      if (isImg) {
+        body = '<div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px;"><img src="' + book.dataUrl + '" style="max-width:100%;max-height:100%;" /></div>';
+      } else if (isTxt) {
+        body = '<div id="spTxtBody" style="flex:1;overflow:auto;padding:16px;white-space:pre-wrap;line-height:1.8;font-size:16px;color:#3a2a1a;"></div>';
+      } else if (isPdf) {
+        blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
+        body =
+          '<div style="flex:1;display:flex;flex-direction:column;min-height:0;">' +
+            '<div style="padding:8px 12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
+              '<a id="spPdfOpen" href="' + blobUrl + '" target="_blank" rel="noopener" style="padding:10px 14px;border-radius:12px;background:#5a7d4a;color:#fff;text-decoration:none;font-weight:700;">فتح للقراءة</a>' +
+              '<a id="spPdfDl" href="' + blobUrl + '" download="' + spEsc(name).replace(/"/g, '') + '.pdf" style="padding:10px 14px;border-radius:12px;background:#6b5b3e;color:#fff;text-decoration:none;font-weight:700;">تحميل</a>' +
+            '</div>' +
+            '<object data="' + blobUrl + '#toolbar=1&navpanes=0" type="application/pdf" style="flex:1;width:100%;min-height:60vh;border:0;background:#fff;">' +
+              '<embed src="' + blobUrl + '" type="application/pdf" style="width:100%;height:100%;min-height:60vh;border:0;" />' +
+              '<div style="padding:24px;text-align:center;color:#5a4a2a;line-height:1.7;">تعذر عرض PDF داخل الصفحة على هذا الجهاز.<br>اضغطي «فتح للقراءة» أعلاه.</div>' +
+            '</object>' +
+          '</div>';
+      } else {
+        blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
+        body = '<iframe src="' + blobUrl + '" style="flex:1;width:100%;border:0;background:#fff;"></iframe>';
+      }
       wrap.innerHTML =
         '<div style="display:flex;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;align-items:center;">' +
           '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">رجوع</button>' +
-          '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + spEsc(book.name || book.fileName || 'ملف') + '</div>' +
+          '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + spEsc(name) + '</div>' +
         '</div>' + body;
       document.body.appendChild(wrap);
-      document.getElementById('spFileBack').onclick = function () { wrap.remove(); };
+      document.getElementById('spFileBack').onclick = function () {
+        try { if (blobUrl && blobUrl.indexOf('blob:') === 0) URL.revokeObjectURL(blobUrl); } catch (e) {}
+        wrap.remove();
+      };
+      if (isTxt && book.dataUrl) {
+        try {
+          var el = document.getElementById('spTxtBody');
+          if (el) {
+            var raw = String(book.dataUrl);
+            if (raw.indexOf('base64,') >= 0) {
+              el.textContent = decodeURIComponent(escape(atob(raw.split(',')[1] || '')));
+            } else {
+              el.textContent = raw;
+            }
+          }
+        } catch (e2) {
+          var el2 = document.getElementById('spTxtBody');
+          if (el2) el2.textContent = 'تعذر قراءة النص';
+        }
+      }
     }
 
     function openSpiritualNotes() {
@@ -11904,7 +11959,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '197';
+      var APP_VER = '198';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12007,6 +12062,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=197"></script>
+  <script src="khalwaty-poster.js?v=198"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v199';
+const CACHE = 'khalwati-v200';
 const ASSETS = [
   './', './index.html', './manifest.json', './sw.js',
   './khalwaty-poster.js', './logo.png', './parchment-bg.jpg',
@@ -80,7 +80,7 @@ self.addEventListener('notificationclick', (e) => {
       try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=199';
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=200';
     await clients.openWindow(url);
   })());
 });

@@ -95,18 +95,54 @@ var EMOJI_WORDS = {
       if (line) lines.push(line);
       lines.forEach(function (ln, i) {
         var wc = ln.trim().split(/\s+/).filter(Boolean).length;
-        out.push({ t: ln, justify: false }); // justify معطل للعربية حتى لا يختلط ترتيب الحروف
+        // آخر سطر في الفقرة لا يُضبط؛ الباقي يتوزّع على عرض العمود
+        var isLast = (i === lines.length - 1);
+        out.push({ t: ln, justify: !isLast && wc > 1 });
       });
     });
     return out;
   }
   /** كتابة سطر مضبوط الحواف (يمين ويسار) للعربية */
   function fillTextJustify(ctx, text, edgeX, y, maxW, align) {
-    // لا نعكس الكلمات يدويًا — Canvas مع direction:rtl يعرض العربية صحيحة
+    // ضبط السطر: كلمات بنفس الترتيب المنطقي، مع توزيع الفراغ بين الكلمات
+    // حتى تتوازى بدايات ونهايات السطور (ما عدا آخر سطر في الفقرة)
     try { ctx.direction = 'rtl'; } catch (e) {}
     align = align || 'right';
-    ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
-    ctx.fillText(String(text || ''), edgeX, y);
+    var words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    if (words.length === 1 || align === 'center' || !(maxW > 0)) {
+      ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
+      ctx.fillText(String(text || ''), edgeX, y);
+      return;
+    }
+    var total = 0;
+    words.forEach(function (w) { total += ctx.measureText(w).width; });
+    var gaps = words.length - 1;
+    var natural = ctx.measureText(' ').width;
+    var spaceW = (maxW - total) / gaps;
+    // لا تضيّق أقل من نصف مسافة طبيعية، ولا تُفرّط في التوسيع
+    if (!(spaceW > 0) || spaceW < natural * 0.45) {
+      ctx.textAlign = align === 'left' ? 'left' : 'right';
+      ctx.fillText(String(text || ''), edgeX, y);
+      return;
+    }
+    spaceW = Math.min(spaceW, natural * 3.2);
+    if (align === 'left') {
+      var xL = edgeX;
+      ctx.textAlign = 'left';
+      for (var j = 0; j < words.length; j++) {
+        ctx.fillText(words[j], xL, y);
+        xL += ctx.measureText(words[j]).width + spaceW;
+      }
+    } else {
+      // يمين/عربي: أول كلمة منطقيًا على اليمين ثم نتحرك لليسار
+      var xR = edgeX;
+      ctx.textAlign = 'right';
+      for (var i = 0; i < words.length; i++) {
+        ctx.fillText(words[i], xR, y);
+        xR -= ctx.measureText(words[i]).width + spaceW;
+      }
+    }
   }
   function elementsFor(emojis) {
     return emojis.map(function (e) { return EMOJI_WORDS[e.replace(/\uFE0F/g, '')]; }).filter(Boolean).slice(0, 3).join(', ');
@@ -535,7 +571,7 @@ var cardTints = [
       }
       paraLines.forEach(function (item) {
         var ln = typeof item === 'string' ? item : item.t;
-        var doJ = typeof item === 'object' && item.justify;
+        var doJ = (opt && opt.justify !== false) && typeof item === 'object' && item.justify && align !== 'center';
         cursorY += bodyLH * 0.5;
         if (cursorY > y + h - pad) return;
         if (doJ) {
@@ -857,7 +893,7 @@ function dataUrlToBytes(u) {
     injectCSS();
     data = data || { items: [] };
     var items = (data.items || []).filter(function (it) { return it && String(it.text || '').trim(); });
-    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [], fontScale: 1, fontFamily: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif', imgScale: 1, imgOffX: 0, imgOffY: 0, textAlign: 'right', lineHeight: 1.8, paraGap: 1 };
+    var state = { theme: THEMES[0], set: EMOJI_SETS[0], artStyle: ART_STYLES[0], custom: '', pages: Math.min(10, Math.max(1, data.pages || 3)), title: data.title || 'تحضير الدرس', art: null, genId: 0, canvases: [], fontScale: 1, fontFamily: 'Cairo, "Noto Naskh Arabic", Tahoma, sans-serif', imgScale: 1, imgOffX: 0, imgOffY: 0, textAlign: 'right', lineHeight: 1.8, paraGap: 1, justify: true };
 
     // ملء تلقائي لصور المخزون على كل الصفحات عند الفتح
     setTimeout(function () {
@@ -940,7 +976,8 @@ function dataUrlToBytes(u) {
             fontFamily: state.fontFamily || FONT,
             textAlign: state.textAlign || 'right',
             lineHeight: state.lineHeight || 1.8,
-            paraGap: state.paraGap || 1
+            paraGap: state.paraGap || 1,
+            justify: state.justify !== false
           };
           var d2 = { title: state.title, subtitle: data.subtitle };
           lay.pages.forEach(function (pg, i) {
@@ -1387,6 +1424,20 @@ lbl('عنوان البوستر');
       feedbackTap(); state.lineHeight = 1.4; state.paraGap = 0.7; updatePara(); redraw();
       if (stat) stat.textContent = '✅ فقرة مضغوطة مفعّلة';
     });
+    var justChip;
+    function drawJustChip() {
+      if (justChip && justChip.parentNode) justChip.parentNode.removeChild(justChip);
+      justChip = chip(rowPara, state.justify !== false ? '✓ سطور متوازية' : 'سطور متوازية', state.justify !== false, function () {
+        feedbackTap();
+        state.justify = !(state.justify !== false);
+        drawJustChip();
+        redraw();
+        if (stat) stat.textContent = state.justify !== false
+          ? '✅ السطور متوازية (ما عدا آخر سطر في الفقرة)'
+          : 'تم إيقاف توازي السطور';
+      });
+    }
+    drawJustChip();
     updatePara();
 
     clbl('الرموز التعبيرية');

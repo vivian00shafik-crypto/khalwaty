@@ -102,37 +102,11 @@ var EMOJI_WORDS = {
   }
   /** كتابة سطر مضبوط الحواف (يمين ويسار) للعربية */
   function fillTextJustify(ctx, text, edgeX, y, maxW, align) {
-    var words = String(text || '').trim().split(/\s+/).filter(Boolean);
-    if (words.length <= 1) {
-      ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
-      var ax = edgeX;
-      if (align === 'center') ax = edgeX; // caller passes center
-      ctx.fillText(text, ax, y);
-      return;
-    }
-    var total = 0;
-    words.forEach(function (w) { total += ctx.measureText(w).width; });
-    var gaps = words.length - 1;
-    var spaceW = Math.max(ctx.measureText(' ').width, (maxW - total) / gaps);
+    // لا نعكس الكلمات يدويًا — Canvas مع direction:rtl يعرض العربية صحيحة
+    try { ctx.direction = 'rtl'; } catch (e) {}
     align = align || 'right';
-    if (align === 'right') {
-      var cx = edgeX;
-      for (var i = words.length - 1; i >= 0; i--) {
-        ctx.textAlign = 'right';
-        ctx.fillText(words[i], cx, y);
-        if (i > 0) cx -= ctx.measureText(words[i]).width + spaceW;
-      }
-    } else if (align === 'left') {
-      var cx2 = edgeX;
-      ctx.textAlign = 'left';
-      for (var j = 0; j < words.length; j++) {
-        ctx.fillText(words[j], cx2, y);
-        cx2 += ctx.measureText(words[j]).width + spaceW;
-      }
-    } else {
-      ctx.textAlign = 'center';
-      ctx.fillText(text, edgeX, y);
-    }
+    ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
+    ctx.fillText(String(text || ''), edgeX, y);
   }
   function elementsFor(emojis) {
     return emojis.map(function (e) { return EMOJI_WORDS[e.replace(/\uFE0F/g, '')]; }).filter(Boolean).slice(0, 3).join(', ');
@@ -494,6 +468,7 @@ var cardTints = [
       var cursorY = y + pad + 4;
       var align = (opt && opt.textAlign) || 'right';
       if (align !== 'left' && align !== 'center' && align !== 'right') align = 'right';
+      try { ctx.direction = (align === 'left') ? 'ltr' : 'rtl'; } catch (eDir) {}
       ctx.textAlign = align;
       var textX = textRight;
       if (align === 'center') textX = (textLeft + textRight) / 2;
@@ -570,9 +545,7 @@ var cardTints = [
           fillTextJustify(ctx, ln, edge, cursorY, textColW - 4, align);
         } else {
           ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
-          var safe = String(ln || '');
-          if (align === 'right' && /[\u0600-\u06FF]/.test(safe)) safe = '\u200F' + safe;
-          ctx.fillText(safe, textX, cursorY);
+          ctx.fillText(String(ln || ''), textX, cursorY);
         }
         cursorY += bodyLH * 0.5;
         if (!String(ln || '').trim()) cursorY += 6 * paraMul;

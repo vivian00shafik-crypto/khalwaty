@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="204" lang="ar" dir="rtl">
+<html data-app-ver="205" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4872,7 +4872,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=204';
+            s.src = 'khalwaty-poster.js?v=205';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -6728,12 +6728,6 @@ function openTextModal(type) {
         id: "luka_sidarous",
         title: "صلاة أبونا لوقا سيداروس — يا سيدي الرب يسوع",
         text: "يا سيدي الرب يسوع\nأيها الغير الزمني أعطني أن أتحرر من عبودية الزمن فهو مُتغير وكل ما هو زمني مُتغير.\nالزمن خوّان ومُتقلب وفي النهاية يأتي على كل ما للإنسان.\nاليوم يولد الإنسان غدًا يموت\nاليوم يحصل الإنسان على صحة الجسد غدًا مريض\nاليوم في سعة العيش يكون غدًا يفتقر\nيا رب اجعلني أرى بهاء مجدك وأسمع صوتك الحلو الحنون يجذبني إليك فأسير خلفك وأطيع صوتك\nوكما تُجدد وجه الأرض ومن الموت تُخرج الحياة عندما يتغير الزمان من شتاء إلى ربيع،\nأتوسل إليك أن تُحيي موات نفسي وتُجدد عمل روحك في داخلي فتزدهر أيامي بعمل روحك الذي ينعش نفسي كمثل هبوب ريح يوم الخمسين، بل وسنة النار تلهب قلبي بحب من أحبني\nفلا أخشى شيئًا ولا أعمل حساب شيء\nفقط أنِر بوجهك على عبدك، فإشراقك داخلي يغطي على كل ظلمة العقل والحواس وينير الطريق أمامي.\nهب لعبدك بداية جديدة لأنسى ما هو وراء وأمتد إلى ما هو قدام نحو ملكوتك غير الزمني\nوهكذا يقربني الزمن أكثر فأكثر إلى الغرض والجعالة التي وضعت أمامي لأدرك بنعمتك الذي من أجله أدركني المسيح يسوع ربي."
-      },
-
-      {
-        id: 'jesus_prayer',
-        title: 'صلاة يسوع',
-        text: 'يا ربي يسوع المسيح ابن الله ارحمني أنا الخاطئ.\nكيرياليسون يا رب ارحم.\nأيها الآب القدوس الذي يحب رجوع الخطاة ارحمنا وباركنا.'
       },
       {
         id: 'moses_psalm90',
@@ -12006,7 +12000,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '204';
+      var APP_VER = '205';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12109,6 +12103,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=204"></script>
+  <script src="khalwaty-poster.js?v=205"></script>
 </body>
 </html>

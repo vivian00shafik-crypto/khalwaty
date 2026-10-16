@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="201" lang="ar" dir="rtl">
+<html data-app-ver="202" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -3785,7 +3785,6 @@ function bibleSpeakText(text, onEnd) {
     "text": "السلام لك يا مريم\nيا أم ابن الله\nالسلام لك يا مريم\nيا أول الأفراح\nالسلام لك يا مريم\nيا أم الحياة\nالسلام لك يا مريم\nيا باب حزقيال\nالسلام لك يا مريم\nيا بشارة جبرائيل\nالسلام لك يا مريم\nيا تي ثيؤطوكوس\nالسلام لك يا مريم\nيا تابوت العهد\nالسلام لك يا مريم\nيا ثبات الوعد\nالسلام لك يا مريم\nيا جبل صهيون\nالسلام لك يا مريم\nيا حمامة نوح\nالسلام لك يا مريم\nيا حواء الجديدة\nالسلام لك يا مريم\nيا خيمة الاجتماع\nالسلام لك يا مريم\nدائمة البتولية\nالسلام لك يا مريم\nذهبية الثياب\nالسلام لك يا مريم\nيا رفقة الجديدة\nالسلام لك يا مريم\nيا زاهرة في الديار\nالسلام لك يا مريم\nيا سحابة إشعياء\nالسلام لك يا مريم\nيا سماء الابن الوحيد\nالسلام لك يا مريم\nيا سلم يعقوب\nالسلام لك يا مريم\nيا شفيعة في الخطاة\nالسلام لك يا مريم\nيا صديقة الأبرار\nالسلام لك يا مريم\nيا ضامدة الجراح\nالسلام لك يا مريم\nيا طبيبة للنفوس\nالسلام لك يا مريم\nيا ظبية في السوسن\nالسلام لك يا مريم\nيا عليقة موسى\nالسلام لك يا مريم\nيا غالية الأثمان\nالسلام لك يا مريم\nيا فرح كل إنسان\nالسلام لك يا مريم\nيا قسط المَن الجديد\nالسلام لك يا مريم\nيا كمال الفضائل\nالسلام لك يا مريم\nيا لحن البتولية\nالسلام لك يا مريم\nيا مجمرة هارون\nالسلام لك يا مريم\nيا مختارة من الآب\nالسلام لك يا مريم\nمسكّن الروح القدس\nالسلام لك يا مريم\nيا معمل الاتحاد\nالسلام لك يا مريم\nيا منارة ذهبية\nالسلام لك يا مريم\nيا ممتلئة نعمة\nالسلام لك يا مريم\nيا نور يشفي العليل\nالسلام لك يا مريم\nيا هداية للتائهين\nالسلام لك يا مريم\nيا والدة الإله\nالسلام لك يا مريم\nيا ينبوع مختوم\n\nاشفعي فينا\nيا شفيعة نفوسنا\nوكوني معنا معينة\nيوم انتقالنا."
   },
   {
-  {
     "id": "mary_alphabet",
     "name": "العذراء مريم",
     "title": "السلام لك يا مريم يا أم الله القدوس (أبجد)",
@@ -4873,7 +4872,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=201';
+            s.src = 'khalwaty-poster.js?v=202';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -11976,7 +11975,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '201';
+      var APP_VER = '202';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12079,6 +12078,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=201"></script>
+  <script src="khalwaty-poster.js?v=202"></script>
 </body>
 </html>

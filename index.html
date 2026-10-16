@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="206" lang="ar" dir="rtl">
+<html data-app-ver="207" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4908,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=206';
+            s.src = 'khalwaty-poster.js?v=207';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -6873,6 +6873,55 @@ function openTextModal(type) {
       if (el) el.textContent = 'المحدد: 0';
       savePickedVerses();
     }
+    
+    function toArabicDigits(n) {
+      return String(n).replace(/[0-9]/g, function(d) { return '٠١٢٣٤٥٦٧٨٩'[parseInt(d, 10)]; });
+    }
+    /** تجميع الآيات المحددة: النصوص ثم شاهد واحد (متى ٤: ٣ـ٩) */
+    function formatPickedVersesText() {
+      var map = window._pickedVerses || {};
+      var keys = Object.keys(map);
+      if (!keys.length) return '';
+      function parseRef(ref) {
+        var m = String(ref || '').match(/^(.+?)\s+(\d+):(\d+)\s*$/);
+        if (!m) return { book: String(ref || ''), ch: 0, v: 0, raw: ref };
+        return { book: m[1].trim(), ch: parseInt(m[2], 10), v: parseInt(m[3], 10), raw: ref };
+      }
+      var items = keys.map(function(k) {
+        var p = parseRef(k);
+        return { book: p.book, ch: p.ch, v: p.v, text: map[k], raw: k };
+      });
+      items.sort(function(a, b) {
+        if (a.book !== b.book) return a.book.localeCompare(b.book, 'ar');
+        if (a.ch !== b.ch) return a.ch - b.ch;
+        return a.v - b.v;
+      });
+      var groups = [];
+      items.forEach(function(it) {
+        var g = groups.length ? groups[groups.length - 1] : null;
+        if (!g || g.book !== it.book || g.ch !== it.ch) {
+          groups.push({ book: it.book, ch: it.ch, verses: [it] });
+        } else {
+          g.verses.push(it);
+        }
+      });
+      return groups.map(function(g) {
+        var body = g.verses.map(function(v) { return String(v.text || '').trim(); }).filter(Boolean).join('\n');
+        var nums = g.verses.map(function(v) { return v.v; }).filter(function(n) { return n > 0; });
+        var refLine;
+        if (!g.book || !g.ch || !nums.length) {
+          refLine = g.verses.map(function(v) { return v.raw; }).join('، ');
+        } else if (nums.length === 1) {
+          refLine = g.book + ' ' + toArabicDigits(g.ch) + ': ' + toArabicDigits(nums[0]);
+        } else {
+          var mn = Math.min.apply(null, nums);
+          var mx = Math.max.apply(null, nums);
+          refLine = g.book + ' ' + toArabicDigits(g.ch) + ': ' + toArabicDigits(mn) + 'ـ' + toArabicDigits(mx);
+        }
+        return body + '\n(' + refLine + ')';
+      }).join('\n\n');
+    }
+
     function copyPickedVerses() {
       const map = window._pickedVerses || {};
       const keys = Object.keys(map);
@@ -6880,13 +6929,7 @@ function openTextModal(type) {
         if (typeof showToast === 'function') showToast('حددي آية أو أكثر أولاً');
         return;
       }
-      // ترتيب حسب رقم الآية إن أمكن
-      keys.sort(function(a, b) {
-        const na = parseInt((a.split(':')[1] || '0'), 10);
-        const nb = parseInt((b.split(':')[1] || '0'), 10);
-        return na - nb;
-      });
-      const out = keys.map(function(k) { return k + '\n' + map[k]; }).join('\n\n');
+      const out = formatPickedVersesText();
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(out).then(function() {
           if (typeof showToast === 'function') showToast('تم نسخ ' + keys.length + ' آية');
@@ -6918,12 +6961,7 @@ function openTextModal(type) {
       const picked = window._pickedVerses || {};
       const pkeys = Object.keys(picked);
       if (pkeys.length) {
-        pkeys.sort(function(a, b) {
-          const na = parseInt((a.split(':')[1] || '0'), 10);
-          const nb = parseInt((b.split(':')[1] || '0'), 10);
-          return na - nb;
-        });
-        return title + '\n\n' + pkeys.map(function(k) { return k + '\n' + picked[k]; }).join('\n\n');
+        return title + '\n\n' + formatPickedVersesText();
       }
       // كل آيات الإصحاح الظاهرة
       const verses = root.querySelectorAll('.verse-line');
@@ -8456,9 +8494,11 @@ function openAIVerseDesign() {
       var blockH = refSize + 12 + lines.length * lineH;
       var cx = W * posX / 100;
       var cy = H * posY / 100;
+      // مركز كتلة النص = موضع السحب الذي اختارته المستخدمة
       var startY = cy - blockH / 2 + refSize;
-      if (startY < 50) startY = 50;
-      if (startY + blockH > H - 50) startY = H - 50 - blockH;
+      // قصّ خفيف فقط عند الخروج من الإطار دون إعادة توسيط
+      if (startY < 36) startY = 36;
+      else if (startY + blockH > H - 36) startY = Math.max(36, H - 36 - blockH);
 
       ctx.font = 'bold ' + refSize + 'px ' + font + ', Cairo, serif';
       ctx.fillText(ref || 'آية', cx, startY);
@@ -8636,7 +8676,7 @@ function openAIVerseDesign() {
           window._aiTextStyles = window._aiTextStyles || {};
           window._aiTextStyles.posX = p.x;
           window._aiTextStyles.posY = p.y;
-          bindRebuild();
+          // لا نعيد الرسم أثناء السحب حتى لا يقفز النص عن الإصبع
         }
         function onMove(ev) {
           if (!dragging) return;
@@ -8644,11 +8684,13 @@ function openAIVerseDesign() {
           var p = posFromEvent(ev);
           window._aiTextStyles.posX = p.x;
           window._aiTextStyles.posY = p.y;
-          bindRebuild();
         }
         function onEnd() {
+          if (!dragging) return;
           dragging = false;
           try { imgEl.style.cursor = 'grab'; } catch (e) {}
+          // رسم نهائي بالموضع الذي اختارته المستخدمة
+          bindRebuild();
         }
         stage.addEventListener('mousedown', onStart);
         window.addEventListener('mousemove', onMove);
@@ -8929,27 +8971,33 @@ function openAIVerseDesign() {
             var fullText = ((st.ref ? st.ref + '\n\n' : '') + (st.text || '')).trim();
             var footer = 'خلوتي ✝';
             var scaleF = W / 1080;
-            var lo = 22 * scaleF, hi = 64 * scaleF, best = 32 * scaleF;
-
-            function measure(size) {
-              ctx.font = '600 ' + size + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
-              var lines = layoutLines(ctx, fullText, maxW);
-              return lines.length * size * 1.45;
+            var bodySize;
+            // استخدم حجم الخط الذي اختارته المستخدمة في المعاينة حتى لا يتحرك النص
+            if (typeof st.size === 'number' && st.size >= 12 && st.size <= 72) {
+              bodySize = st.size * (W / 340); // المعاينة ~340px عرضًا
+              bodySize = Math.max(16, Math.min(72, bodySize));
+            } else {
+              var lo = 22 * scaleF, hi = 64 * scaleF, best = 32 * scaleF;
+              function measure(size) {
+                ctx.font = '600 ' + size + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+                var lines = layoutLines(ctx, fullText, maxW);
+                return lines.length * size * 1.45;
+              }
+              for (var i = 0; i < 12; i++) {
+                var mid = (lo + hi) / 2;
+                if (measure(mid) <= targetH) { best = mid; lo = mid; }
+                else hi = mid;
+              }
+              bodySize = Math.max(18, Math.min(60 * scaleF, best));
             }
-            for (var i = 0; i < 12; i++) {
-              var mid = (lo + hi) / 2;
-              if (measure(mid) <= targetH) { best = mid; lo = mid; }
-              else hi = mid;
-            }
-            var bodySize = Math.max(18, Math.min(60 * scaleF, best));
             var lines = layoutLines(ctx, fullText, maxW, '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif');
             var lineH = bodySize * 1.45;
             var blockH = lines.length * lineH;
             var posX = (typeof st.posX === 'number') ? st.posX : 50;
             var posY = (typeof st.posY === 'number') ? st.posY : 42;
             var y = (posY / 100) * H - blockH / 2;
-            if (y < 30) y = 30;
-            if (y + blockH > H - 70) y = H - 70 - blockH;
+            if (y < 24) y = 24;
+            else if (y + blockH > H - 56) y = Math.max(24, H - 56 - blockH);
 
             ctx.fillStyle = color;
             ctx.direction = 'rtl';
@@ -12051,7 +12099,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '206';
+      var APP_VER = '207';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12154,6 +12202,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=206"></script>
+  <script src="khalwaty-poster.js?v=207"></script>
 </body>
 </html>

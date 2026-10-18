@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="212" lang="ar" dir="rtl">
+<html data-app-ver="213" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4908,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=212';
+            s.src = 'khalwaty-poster.js?v=213';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -10453,12 +10453,42 @@ function showDesignSavePreview(url, name, silent, blob) {
         extra.innerHTML = '<button type="button" class="save-btn" id="meaningSpeakBtn">🔊 استماع</button> ' +
           '<button type="button" class="save-btn" id="meaningPdfBtn" style="background:#5a7d4a;">📄 PDF</button>';
         wrap.appendChild(extra);
+        // روابط تفاسير الآباء تحت المعنى اللغوي
+        try { wrap.insertBefore(makeCommentaryBox(ref, txt), extra); } catch (e) { console.log('meaning links', e); }
         pc.appendChild(wrap);
         document.getElementById('prayerModal').classList.add('active');
         var sb = document.getElementById('meaningSpeakBtn');
-        if (sb) sb.onclick = function() { speakText(content); };
+        if (sb) sb.onclick = function() { speakText(window._lastMeaning.content); };
         var pb = document.getElementById('meaningPdfBtn');
-        if (pb) pb.onclick = function() { printHTML('معنى لغوي ' + ref, content.replace(/\n/g, '<br>')); };
+        if (pb) pb.onclick = function() { printHTML('معنى لغوي ' + ref, String(window._lastMeaning.content || '').replace(/\n/g, '<br>')); };
+        // المعنى اللغوي بالذكاء الاصطناعي من تفاسير الآباء (الأنبا تكلا) — وإلا يبقى معجم التطبيق
+        if (TAFSIR_WORKER_URL && ref) {
+          var mNote = document.createElement('div');
+          mNote.style.cssText = 'margin-top:10px;font-size:12px;color:#8a7a5a;text-align:right;';
+          mNote.textContent = '⏳ جارٍ استخراج المعنى اللغوي من تفاسير الآباء…';
+          wrap.insertBefore(mNote, extra);
+          var mCtrl = new AbortController();
+          var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 70000);
+          fetch(TAFSIR_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'linguistic', ref: ref, verseText: txt, sources: commentarySources(ref, txt) }),
+            signal: mCtrl.signal
+          }).then(function (res) { return res.json(); }).then(function (data) {
+            clearTimeout(mTm);
+            if (data && data.mode === 'ai' && data.text) {
+              var mc = '【 الآية 】\n' + ref + '\n' + txt + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+              box.textContent = mc;
+              window._lastMeaning.content = mc;
+              mNote.remove();
+            } else {
+              mNote.textContent = 'لم يتوفر نص تفسير من الأنبا تكلا لهذه الآية، فهذا معنى مبسّط من معجم التطبيق.';
+            }
+          }).catch(function () {
+            clearTimeout(mTm);
+            mNote.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا معنى مبسّط من معجم التطبيق.';
+          });
+        }
         addBackToChapterBtn(document.getElementById('prayerContent'));
       } catch (err) {
         console.log('openWordMeaning', err);
@@ -12322,7 +12352,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '212';
+      var APP_VER = '213';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12425,6 +12455,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=212"></script>
+  <script src="khalwaty-poster.js?v=213"></script>
 </body>
 </html>

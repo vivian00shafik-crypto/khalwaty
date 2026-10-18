@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="210" lang="ar" dir="rtl">
+<html data-app-ver="211" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4908,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=210';
+            s.src = 'khalwaty-poster.js?v=211';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -5781,7 +5781,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
             out.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
             go.disabled = true;
             var ctrl2 = new AbortController();
-            var tm2 = setTimeout(function () { try { ctrl2.abort(); } catch (e) {} }, 30000);
+            var tm2 = setTimeout(function () { try { ctrl2.abort(); } catch (e) {} }, 70000);
             fetch(TAFSIR_WORKER_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -10198,6 +10198,80 @@ function showDesignSavePreview(url, name, silent, blob) {
     // ضعي هنا رابط الـ Worker (https://....workers.dev) بين العلامتين
     var TAFSIR_WORKER_URL = 'https://khalwaty-tafsir.vivian00shafik.workers.dev';
 
+
+    // روابط التفاسير الأرثوذكسية (الأنبا تكلا + CCEL) للآية المحددة
+    function buildCommentaryLinks(ref, txt) {
+      function norm(x) {
+        return String(x || '')
+          .replace(/[\u064B-\u0652\u0640]/g, '')
+          .replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); })
+          .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+      }
+      var r = norm(ref);
+      var cv = r.match(/(\d+)\s*[:：]\s*(\d+)/);
+      var chapter = cv ? cv[1] : ((r.match(/(\d+)(?!.*\d)/) || [])[1] || '');
+      var verse = cv ? cv[2] : '';
+      var ord = (/الاول|^\s*1\s/.test(r)) ? 1 : (/الثان|^\s*2\s/.test(r) ? 2 : (/الثالث|^\s*3\s/.test(r) ? 3 : 1));
+      var BOOKS = [
+        ['رؤيا','Revelation'],['مراثي','Lamentations'],['نشيد','Song of Solomon'],['جامعه','Ecclesiastes'],
+        ['تكوين','Genesis'],['خروج','Exodus'],['لاويين','Leviticus'],['عدد','Numbers'],['تثنيه','Deuteronomy'],
+        ['يشوع','Joshua'],['قضاه','Judges'],['راعوث','Ruth'],['صموئيل',['1 Samuel','2 Samuel']],
+        ['ملوك',['1 Kings','2 Kings']],['اخبار',['1 Chronicles','2 Chronicles']],['عزرا','Ezra'],['نحميا','Nehemiah'],
+        ['استير','Esther'],['ايوب','Job'],['مزمور','Psalms'],['مزامير','Psalms'],['امثال','Proverbs'],
+        ['اشعياء','Isaiah'],['ارميا','Jeremiah'],['حزقيال','Ezekiel'],['دانيال','Daniel'],['هوشع','Hosea'],
+        ['يوئيل','Joel'],['عاموس','Amos'],['عوبديا','Obadiah'],['يونان','Jonah'],['ميخا','Micah'],
+        ['ناحوم','Nahum'],['حبقوق','Habakkuk'],['صفنيا','Zephaniah'],['حجي','Haggai'],['زكريا','Zechariah'],
+        ['ملاخي','Malachi'],['متي','Matthew'],['مرقس','Mark'],['لوقا','Luke'],['اعمال','Acts'],
+        ['روميه','Romans'],['كورنثوس',['1 Corinthians','2 Corinthians']],['غلاطيه','Galatians'],['افسس','Ephesians'],
+        ['فيلبي','Philippians'],['كولوسي','Colossians'],['تسالونيكي',['1 Thessalonians','2 Thessalonians']],
+        ['تيموثاوس',['1 Timothy','2 Timothy']],['تيطس','Titus'],['فليمون','Philemon'],['عبرانيين','Hebrews'],
+        ['يعقوب','James'],['بطرس',['1 Peter','2 Peter']],['يهوذا','Jude'],['يوحنا','JOHNX']
+      ];
+      var eng = '';
+      for (var i = 0; i < BOOKS.length; i++) {
+        if (r.indexOf(BOOKS[i][0]) >= 0) {
+          var e = BOOKS[i][1];
+          if (e === 'JOHNX') e = /رساله/.test(r) ? ['1 John','2 John','3 John'][ord - 1] : 'John';
+          else if (Array.isArray(e)) e = e[Math.min(ord, e.length) - 1];
+          eng = e; break;
+        }
+      }
+      // صفحات الفصول المباشرة على الأنبا تكلا (أُكِّد نمطها فقط للأسفار التالية)
+      var TAKLA = {
+        'John': { nt: true, f: '04-Enjeel-Youhanna', s: 'Tafseer-Engeel-Yohanna', tad: true, ant: true },
+        'Acts': { nt: true, f: '05-Sefr-A3mal-El-Rosol', s: 'Tafseer-Sefr-Aamal-Al-Rosul', tad: true, ant: true },
+        'Malachi': { nt: false, f: '44-Sefr-Malakhi', s: 'Tafseer-Sefr-Malakhy', tad: true, ant: true },
+        'Colossians': { nt: true, f: '12-Resalet-Kolosy', s: 'Tafseer-Resalat-Colosy', tad: true, ant: false },
+        '1 John': { nt: true, f: '23-Resalet-Youhanna-1', s: 'Tafseer-Resalat-You7anna-1', tad: false, ant: true }
+      };
+      function direct(author) {
+        var t = TAKLA[eng];
+        if (!t || !chapter) return '';
+        if (author === 'Tadros-Yacoub-Malaty' && !t.tad) return '';
+        if (author === 'Antonious-Fekry' && !t.ant) return '';
+        var ch = ('0' + chapter).slice(-2);
+        return 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-' +
+          (t.nt ? '02-New-Testament' : '01-Old-Testament') + '/Father-' + author + '/' + t.f + '/' + t.s + '__01-Chapter-' + ch + '.html';
+      }
+      function g(q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q); }
+      var label = String(ref || '').trim();
+      if (!label) label = String(txt || '').trim().split(/\s+/).slice(0, 8).join(' ');
+      var out = [];
+      var d1 = direct('Tadros-Yacoub-Malaty');
+      out.push(d1
+        ? { title: 'تفسير القمص تادرس يعقوب ملطي — الأصحاح ' + chapter, url: d1, note: 'يفتح على تفسير الأصحاح الذي فيه الآية (الأنبا تكلا)' }
+        : { title: 'تفسير القمص تادرس يعقوب ملطي', url: g('تفسير ' + label + ' القمص تادرس يعقوب ملطي site:st-takla.org'), note: 'نتائج الأنبا تكلا لهذه الآية — يُفتح في المتصفح' });
+      var d2 = direct('Antonious-Fekry');
+      out.push(d2
+        ? { title: 'تفسير القمص أنطونيوس فكري — الأصحاح ' + chapter, url: d2, note: 'يفتح على تفسير الأصحاح الذي فيه الآية (الأنبا تكلا)' }
+        : { title: 'تفسير القمص أنطونيوس فكري', url: g('تفسير ' + label + ' القمص أنطونيوس فكري site:st-takla.org'), note: 'نتائج الأنبا تكلا لهذه الآية — يُفتح في المتصفح' });
+      out.push({ title: 'دراسات وتفاسير متنوعة', url: g('تفسير ' + label + ' site:st-takla.org'), note: 'مقالات ودراسات أرثوذكسية عن الآية على الأنبا تكلا — يُفتح في المتصفح' });
+      out.push(eng && chapter
+        ? { title: 'آباء الكنيسة — نصوص كلاسيكية', url: g('"' + eng + ' ' + chapter + (verse ? ':' + verse : '') + '" church fathers commentary site:ccel.org'), note: 'نصوص الآباء بالإنجليزية على CCEL — يُفتح في المتصفح' }
+        : { title: 'آباء الكنيسة — أقوال وتفاسير', url: g('تفسير آباء الكنيسة ' + label + ' site:st-takla.org'), note: 'أقوال الآباء عن الآية على الأنبا تكلا — يُفتح في المتصفح' });
+      return out;
+    }
+
     function openVerseTafsir() {
       try {
         var snap = window._verseMenuData || {};
@@ -10247,28 +10321,28 @@ function showDesignSavePreview(url, name, silent, blob) {
           if (!window._lastTafsir) return;
           openVerseDesign(window._lastTafsir.content, 'تأمل — ' + (window._lastTafsir.ref || ''));
         };
-        // أزرار روابط التفاسير الحقيقية على الأنبا تكلا (إن وُجدت)
-        var links = window._lastTafsirLinks || [];
-        if (links.length && typeof openInAppPage === 'function') {
+        // روابط التفاسير الأرثوذكسية تحت التفسير
+        try {
+          var links = buildCommentaryLinks(ref, txt);
           var linkBox = document.createElement('div');
           linkBox.style.cssText = 'margin-top:14px;padding:10px;background:rgba(255,248,230,0.95);border-radius:12px;border:1px solid #e8d9b5;';
           var linkTitle = document.createElement('div');
-          linkTitle.style.cssText = 'font-weight:700;margin-bottom:8px;color:#5a4a2a;';
-          linkTitle.textContent = 'تفاسير منشورة (الأنبا تكلا) — للقراءة المباشرة:';
+          linkTitle.style.cssText = 'font-weight:700;margin-bottom:8px;color:#5a4a2a;text-align:right;';
+          linkTitle.textContent = '📚 تفاسير أرثوذكسية لهذه الآية:';
           linkBox.appendChild(linkTitle);
-          links.slice(0, 4).forEach(function (lnk, i) {
+          links.forEach(function (lnk) {
             var b = document.createElement('button');
             b.type = 'button';
             b.className = 'save-btn';
-            b.style.cssText = 'display:block;width:100%;margin:6px 0;text-align:right;background:#6a5a3a;font-size:13px;';
-            b.textContent = (i + 1) + ') ' + lnk.title;
-            b.onclick = (function (u, t) {
-              return function () { openInAppPage(u, t); };
-            })(lnk.url, lnk.title);
+            b.style.cssText = 'display:block;width:100%;margin:6px 0;text-align:right;background:#6a5a3a;font-size:13px;line-height:1.6;';
+            b.innerHTML = '<span style="display:block;font-weight:700;"></span><span style="display:block;font-size:11px;opacity:0.9;"></span>';
+            b.children[0].textContent = lnk.title;
+            b.children[1].textContent = lnk.note;
+            b.onclick = function () { openInAppPage(lnk.url, lnk.title); };
             linkBox.appendChild(b);
           });
-          wrap.appendChild(linkBox);
-        }
+          wrap.insertBefore(linkBox, actions);
+        } catch (e) { console.log('commentary links', e); }
         // التفسير الذكي (Cloudflare Worker): لو فشل يبقى النص المحلي كما هو
         if (TAFSIR_WORKER_URL) {
           var aiNote = document.createElement('div');
@@ -10276,7 +10350,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           aiNote.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
           wrap.insertBefore(aiNote, actions);
           var ctrl = new AbortController();
-          var tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 30000);
+          var tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 70000);
           fetch(TAFSIR_WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -12206,7 +12280,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '210';
+      var APP_VER = '211';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12309,6 +12383,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=210"></script>
+  <script src="khalwaty-poster.js?v=211"></script>
 </body>
 </html>

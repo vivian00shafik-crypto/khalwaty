@@ -10170,6 +10170,9 @@ function showDesignSavePreview(url, name, silent, blob) {
       return body;
     }
 
+    // ضعي هنا رابط الـ Worker (https://....workers.dev) بين العلامتين
+    var TAFSIR_WORKER_URL = 'https://khalwaty-tafsir.vivian00shafik.workers.dev';
+
     function openVerseTafsir() {
       try {
         var snap = window._verseMenuData || {};
@@ -10240,6 +10243,34 @@ function showDesignSavePreview(url, name, silent, blob) {
             linkBox.appendChild(b);
           });
           wrap.appendChild(linkBox);
+        }
+        // التفسير الذكي (Cloudflare Worker): لو فشل يبقى النص المحلي كما هو
+        if (TAFSIR_WORKER_URL) {
+          var aiNote = document.createElement('div');
+          aiNote.style.cssText = 'margin-top:10px;font-size:12px;color:#8a7a5a;text-align:right;';
+          aiNote.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
+          wrap.insertBefore(aiNote, actions);
+          var ctrl = new AbortController();
+          var tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 30000);
+          fetch(TAFSIR_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ref: ref, verseText: txt }),
+            signal: ctrl.signal
+          }).then(function (res) { return res.json(); }).then(function (data) {
+            clearTimeout(tm);
+            if (data && data.mode === 'ai' && data.text) {
+              var aiContent = '【 الآية 】\n' + (ref ? ref + '\n' : '') + txt + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+              box.textContent = aiContent;
+              if (window._lastTafsir) window._lastTafsir.content = aiContent;
+              aiNote.remove();
+            } else {
+              aiNote.textContent = 'تعذّر التفسير الذكي الآن، هذا تفسير مبسّط من التطبيق.';
+            }
+          }).catch(function () {
+            clearTimeout(tm);
+            aiNote.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا تفسير مبسّط من التطبيق.';
+          });
         }
         addBackToChapterBtn(document.getElementById('prayerContent'));
       } catch (err) {

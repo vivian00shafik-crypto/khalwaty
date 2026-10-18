@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="214" lang="ar" dir="rtl">
+<html data-app-ver="215" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -3022,7 +3022,7 @@
       return books;
     }
 
-    // ===== البحث في الكتاب المقدس (العهدان القديم والجديد) =====
+    // ===== البحث في الكتاب المقدس (العهدان القديم والجديد) — صفحة بحث مستقلة =====
     function bsNormChar(c) {
       switch (c) {
         case 'أ': case 'إ': case 'آ': case 'ٱ': return 'ا';
@@ -3104,15 +3104,52 @@
       });
       return out + bsEsc(orig.slice(pos));
     }
+    function openBibleSearchPage(restore) {
+      var pc = document.getElementById('prayerContent');
+      if (!pc) return;
+      document.getElementById('prayerTitle').textContent = 'البحث في الكتاب المقدس';
+      var scope = window._bibleSearchScope || 'ALL';
+      function chip(val, label) {
+        var on = scope === val;
+        return '<button type="button" data-scope="' + val + '" onclick="bsSetScope(\'' + val + '\')" style="flex:1;min-width:0;padding:10px 4px;border-radius:12px;border:2px solid #c9a227;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;background:' + (on ? '#c9a227' : '#fff') + ';color:' + (on ? '#fff' : '#5a4a2a') + ';">' + label + '</button>';
+      }
+      pc.innerHTML =
+        '<div style="text-align:right;direction:rtl;">' +
+        '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 12px;" onclick="bsBackToBible()">→ رجوع للكتاب المقدس</button>' +
+        '<div style="background:#fff;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,0.12);">' +
+          '<div style="font-weight:800;color:#5a4a2a;font-size:15px;margin-bottom:8px;">🔍 اكتبي الكلمة التي تبحثين عنها</div>' +
+          '<input id="bsInput" type="text" dir="rtl" lang="ar" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="مثال: المحبة" ' +
+            'oninput="window._bibleSearchQ=this.value" onkeydown="if(event.key===\'Enter\'){event.preventDefault();bibleSearchGo();}" ' +
+            'style="display:block;width:100%;box-sizing:border-box;height:54px;padding:0 14px;font-size:19px;font-weight:700;color:#2b1d0e;-webkit-text-fill-color:#2b1d0e;background:#fffdf6;border:2px solid #c9a227;border-radius:14px;direction:rtl;unicode-bidi:plaintext;text-align:right;font-family:inherit;outline:none;-webkit-appearance:none;appearance:none;">' +
+          '<div style="display:flex;gap:6px;margin:10px 0;">' + chip('ALL', 'الكتاب كله') + chip('OT', 'العهد القديم') + chip('NT', 'العهد الجديد') + '</div>' +
+          '<button type="button" class="save-btn" style="width:100%;margin:0;font-size:16px;padding:12px;" onclick="bibleSearchGo()">🔍 بحث</button>' +
+        '</div>' +
+        '<div id="bsResults" style="margin-top:14px;"></div>' +
+        '</div>';
+      document.getElementById('prayerModal').classList.add('active');
+      var inp = document.getElementById('bsInput');
+      if (inp && window._bibleSearchQ) inp.value = window._bibleSearchQ;
+      if (restore && window._bsResults) bsRender(true);
+      else setTimeout(function () { try { if (inp) inp.focus(); } catch (e) {} }, 200);
+    }
+    function bsSetScope(val) {
+      window._bibleSearchScope = val;
+      var chips = document.querySelectorAll('#prayerContent button[data-scope]');
+      for (var i = 0; i < chips.length; i++) {
+        var on = chips[i].getAttribute('data-scope') === val;
+        chips[i].style.background = on ? '#c9a227' : '#fff';
+        chips[i].style.color = on ? '#fff' : '#5a4a2a';
+      }
+    }
     function bibleSearchGo() {
-      var inp = document.getElementById('bibleSearchInput');
-      var sc = document.getElementById('bibleSearchScope');
-      var q = (inp ? inp.value : '').trim();
-      var scope = sc ? sc.value : 'ALL';
+      var inp = document.getElementById('bsInput');
+      var box = document.getElementById('bsResults');
+      var q = (inp ? inp.value : (window._bibleSearchQ || '')).trim();
+      var scope = window._bibleSearchScope || 'ALL';
       if (bsNorm(q).replace(/\s+/g, '').length < 2) { showToast('اكتبي كلمة من حرفين على الأقل'); return; }
       window._bibleSearchQ = q; window._bibleSearchScope = scope;
-      var pc = document.getElementById('prayerContent');
-      if (pc) pc.innerHTML = '<p style="text-align:center;padding:24px;">⏳ جارٍ البحث في الكتاب المقدس…</p>';
+      if (box) box.innerHTML = '<p style="text-align:center;padding:20px;">⏳ جارٍ البحث في الكتاب المقدس…</p>';
+      try { if (inp) inp.blur(); } catch (e) {}
       setTimeout(function () {
         try {
           var idx = bsBuildIndex();
@@ -3133,11 +3170,13 @@
           bsRender(true);
         } catch (err) {
           console.log('bibleSearch', err);
-          if (pc) pc.innerHTML = '<p style="text-align:center;padding:24px;">تعذّر البحث الآن. حاولي مرة أخرى.</p>';
+          if (box) box.innerHTML = '<p style="text-align:center;padding:20px;">تعذّر البحث الآن. حاولي مرة أخرى.</p>';
         }
       }, 30);
     }
     function bsRender(toTop) {
+      var box = document.getElementById('bsResults');
+      if (!box) return;
       var res = window._bsResults || [];
       var books = window._bsBooks || [];
       var shown = Math.min(window._bsShown || 40, res.length);
@@ -3145,18 +3184,13 @@
       var tokens = bsTokens(q);
       var c = window._bsCounts || { OT: 0, NT: 0 };
       var scopeLbl = { ALL: 'الكتاب المقدس كله', OT: 'العهد القديم', NT: 'العهد الجديد' }[window._bibleSearchScope] || 'الكتاب المقدس كله';
-      var pc = document.getElementById('prayerContent');
-      if (!pc) return;
-      var st = pc.scrollTop;
-      var h = '<div style="text-align:right;direction:rtl;">';
-      h += '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 10px;" onclick="bsBackToBible()">→ رجوع للكتاب المقدس</button>';
-      h += '<h3 style="text-align:center;color:var(--brown);margin:6px 0 8px;">🔍 نتائج البحث عن «' + bsEsc(q) + '»</h3>';
+      var h = '';
       if (res.length) {
-        h += '<div style="text-align:center;font-size:13px;color:#6a5a3a;margin-bottom:10px;line-height:1.8;">وُجدت <b>' + res.length + '</b> آية في ' + scopeLbl +
+        h += '<div style="text-align:center;font-size:14px;color:#4a3a1a;margin-bottom:10px;line-height:1.8;background:rgba(255,253,248,0.95);border:1px solid #e8d9b5;border-radius:12px;padding:8px;">وُجدت <b>' + res.length + '</b> آية في ' + scopeLbl +
           '<br>العهد القديم: ' + c.OT + ' · العهد الجديد: ' + c.NT + '</div>';
-        h += '<button type="button" class="save-btn" style="background:#5a7d4a;margin:0 0 10px;" onclick="bsCopyAll()">📋 نسخ كل النتائج بمراجعها</button>';
+        h += '<button type="button" class="save-btn" style="background:#5a7d4a;margin:0 0 10px;width:100%;" onclick="bsCopyAll()">📋 نسخ كل النتائج بمراجعها</button>';
       } else {
-        h += '<div style="text-align:center;padding:16px;color:#6a5a3a;line-height:1.9;">لا توجد آيات تحتوي على هذه الكلمة في ' + scopeLbl + '.<br>جرّبي كلمة أخرى، أو اكتبيها بدون «ال» التعريف.</div>';
+        h += '<div style="text-align:center;padding:16px;color:#4a3a1a;line-height:1.9;background:rgba(255,253,248,0.95);border-radius:12px;">لا توجد آيات تحتوي على هذه الكلمة في ' + scopeLbl + '.<br>جرّبي كلمة أخرى، أو اكتبيها بدون «ال» التعريف.</div>';
       }
       for (var i = 0; i < shown; i++) {
         var it = res[i];
@@ -3164,22 +3198,21 @@
         if (!bk) continue;
         var raw = bsClean(bk.chapters[it.c][it.v]);
         var ref = bk.name + ' ' + (it.c + 1) + ':' + (it.v + 1);
-        h += '<div onclick="bsOpenVerse(' + i + ')" style="cursor:pointer;margin:8px 0;padding:10px 12px;background:rgba(255,253,248,0.95);border:1px solid #e8d9b5;border-radius:12px;">' +
+        h += '<div onclick="bsOpenVerse(' + i + ')" style="cursor:pointer;margin:8px 0;padding:10px 12px;background:rgba(255,253,248,0.97);border:1px solid #e8d9b5;border-radius:12px;">' +
           '<div style="color:var(--gold-dark);font-weight:700;font-size:13px;margin-bottom:4px;">📖 ' + bsEsc(ref) + '</div>' +
           '<div style="line-height:1.95;font-size:15px;color:var(--brown);">' + bsHighlight(raw, tokens) + '</div></div>';
       }
       if (shown < res.length) {
-        h += '<button type="button" class="save-btn" style="margin:10px 0;" onclick="bsMore()">عرض المزيد (' + (res.length - shown) + ' آية متبقية)</button>';
+        h += '<button type="button" class="save-btn" style="margin:10px 0;width:100%;" onclick="bsMore()">عرض المزيد (' + (res.length - shown) + ' آية متبقية)</button>';
       }
-      h += '</div>';
-      pc.innerHTML = h;
-      pc.scrollTop = toTop ? 0 : st;
-      document.getElementById('prayerTitle').textContent = 'البحث في الكتاب المقدس';
-      document.getElementById('prayerModal').classList.add('active');
+      var pc = document.getElementById('prayerContent');
+      var st = pc ? pc.scrollTop : 0;
+      box.innerHTML = h;
+      if (toTop) { try { box.scrollIntoView({ block: 'start' }); } catch (e) {} }
+      else if (pc) pc.scrollTop = st;
     }
     function bsMore() { window._bsShown = (window._bsShown || 40) + 40; bsRender(false); }
     function bsBackToBible() { window._fromSearch = false; renderBible(); }
-    function bsBackToResults() { bsRender(true); }
     function bsOpenVerse(i) {
       var it = (window._bsResults || [])[i];
       var bk = it && (window._bsBooks || [])[it.b];
@@ -3610,16 +3643,8 @@ function bibleSpeakText(text, onEnd) {
       document.getElementById('prayerTitle').textContent = 'الكتاب المقدس — فاندايك';
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;">
-          ${(window._fromSearch && window._bsResults) ? '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 10px;width:100%;" onclick="bsBackToResults()">← العودة لنتائج البحث عن «' + bsEsc(window._bibleSearchQ || '') + '»</button>' : ''}
-          <div style="display:flex;gap:6px;margin:0 0 6px;">
-            <input id="bibleSearchInput" type="search" enterkeyhint="search" autocomplete="off" placeholder="🔍 ابحثي عن كلمة في الكتاب المقدس" value="${bsEsc(window._bibleSearchQ || '')}" onkeydown="if(event.key==='Enter'){event.preventDefault();bibleSearchGo();}" style="flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid #d4c4a0;font-family:inherit;font-size:14px;">
-            <button type="button" class="save-btn" style="margin:0;padding:8px 16px;" onclick="bibleSearchGo()">بحث</button>
-          </div>
-          <select id="bibleSearchScope" style="width:100%;padding:8px;margin:0 0 12px;border-radius:10px;border:1px solid #d4c4a0;font-family:inherit;font-size:13px;">
-            <option value="ALL" ${(window._bibleSearchScope||'ALL')==='ALL'?'selected':''}>البحث في الكتاب المقدس كله</option>
-            <option value="OT" ${window._bibleSearchScope==='OT'?'selected':''}>البحث في العهد القديم فقط</option>
-            <option value="NT" ${window._bibleSearchScope==='NT'?'selected':''}>البحث في العهد الجديد فقط</option>
-          </select>
+          ${(window._fromSearch && window._bsResults) ? '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 10px;width:100%;" onclick="openBibleSearchPage(true)">← العودة لنتائج البحث عن «' + bsEsc(window._bibleSearchQ || '') + '»</button>' : ''}
+          <button type="button" class="save-btn" style="width:100%;margin:0 0 12px;background:#6a5a3a;font-size:15px;" onclick="openBibleSearchPage()">🔍 بحث في الكتاب المقدس (القديم والجديد)</button>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <div style="width:100%;margin:8px 0;text-align:right;">
               <label style="font-size:12px;color:#8a7a60;">خط نص الكتاب (مستقل عن الصفحة الرئيسية)</label>
@@ -5114,7 +5139,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=214';
+            s.src = 'khalwaty-poster.js?v=215';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7515,6 +7540,8 @@ function openTextModal(type) {
         list.forEach(function(a) {
           var am = (typeof timeToMinutes === 'function') ? timeToMinutes(a.time) : -1;
           if (am < 0 || mins < am) return;
+          // فات على ميعاد الصلاة أكتر من نص ساعة: مفيش إشعار للساعة دي
+          if ((mins - am) > 30) return;
           var firedKey = 'khalwati_agpeya_fired_' + a.id + '_' + day;
           if (localStorage.getItem(firedKey) === '1') return;
           queue.push({
@@ -12558,7 +12585,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '214';
+      var APP_VER = '215';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12661,6 +12688,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=214"></script>
+  <script src="khalwaty-poster.js?v=215"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="209" lang="ar" dir="rtl">
+<html data-app-ver="210" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4908,7 +4908,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=209';
+            s.src = 'khalwaty-poster.js?v=210';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -5659,10 +5659,10 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
       }
 
       function paint(tab) {
-        tab = tab || 'fathers';
+        tab = tab || 'verse';
         var html = '';
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;">';
-        [['fathers','من أقوال الآباء'],['links','روابط التفاسير'],['verse','فسّر آية']].forEach(function (t) {
+        [['verse','🤖 فسّر آية بالذكاء الاصطناعي'],['fathers','من أقوال الآباء'],['links','روابط التفاسير']].forEach(function (t) {
           var on = t[0] === tab;
           html += '<button type="button" class="bc-tab" data-tab="' + t[0] + '" style="padding:10px 14px;border-radius:16px;border:1px solid var(--gold);background:' + (on ? 'var(--gold)' : '#fff') + ';color:' + (on ? '#fff' : '#5a4a2a') + ';font-weight:700;cursor:pointer;">' + t[1] + '</button>';
         });
@@ -5700,7 +5700,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var snap = window._verseMenuData || window._lastTafsir || {};
           var prefRef = snap.ref || '';
           var prefTxt = (snap.text || '').replace(/🔊/g, '').replace(/^\s*\d+\s*/, '').trim();
-          html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;">اكتبي مرجع الآية ونصها ثم اضغطي «عرض التفسير».</p>';
+          html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;">اكتبي مرجع الآية ونصها، وسيُولَّد التفسير بالذكاء الاصطناعي.</p>';
           html += '<input id="bcRef" type="text" value="' + esc(prefRef) + '" placeholder="مثال: يوحنا 3: 16" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;margin:8px 0;box-sizing:border-box;" />';
           html += '<textarea id="bcText" rows="4" placeholder="نص الآية…" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;line-height:1.7;">' + esc(prefTxt) + '</textarea>';
           html += '<button type="button" id="bcGo" class="save-btn" style="margin-top:10px;width:100%;padding:12px;">عرض التفسير</button>';
@@ -5773,15 +5773,40 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
             var text = (document.getElementById('bcText').value || '').trim();
             var out = document.getElementById('bcOut');
             if (!text) { if (typeof showToast === 'function') showToast('اكتبي نص الآية'); return; }
-            var body = (typeof generateOrthodoxTafsir === 'function') ? generateOrthodoxTafsir(ref, text) : text;
+            if (!ref) { if (typeof showToast === 'function') showToast('اكتبي مرجع الآية (مثال: يوحنا 3: 16)'); return; }
+            var localBody = (typeof generateOrthodoxTafsir === 'function') ? generateOrthodoxTafsir(ref, text) : text;
             out.style.display = 'block';
-            out.textContent = body;
             try { out.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (err) {}
+            if (!TAFSIR_WORKER_URL) { out.textContent = localBody; return; }
+            out.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
+            go.disabled = true;
+            var ctrl2 = new AbortController();
+            var tm2 = setTimeout(function () { try { ctrl2.abort(); } catch (e) {} }, 30000);
+            fetch(TAFSIR_WORKER_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ref: ref, verseText: text }),
+              signal: ctrl2.signal
+            }).then(function (res) { return res.json(); }).then(function (data) {
+              clearTimeout(tm2);
+              go.disabled = false;
+              if (data && data.mode === 'ai' && data.text) {
+                var aiBody = '【 الآية 】\n' + ref + '\n' + text + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+                out.textContent = aiBody;
+                window._lastTafsir = { ref: ref, text: text, content: aiBody };
+              } else {
+                out.textContent = 'تعذّر التفسير الذكي الآن، هذا تفسير مبسّط من التطبيق:\n\n' + localBody;
+              }
+            }).catch(function () {
+              clearTimeout(tm2);
+              go.disabled = false;
+              out.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا تفسير مبسّط من التطبيق:\n\n' + localBody;
+            });
           });
         }
       }
 
-      paint('fathers');
+      paint('verse');
     }
 
 function openKatameros(dateObj) {
@@ -12181,7 +12206,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '209';
+      var APP_VER = '210';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12284,6 +12309,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=209"></script>
+  <script src="khalwaty-poster.js?v=210"></script>
 </body>
 </html>

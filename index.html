@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="215" lang="ar" dir="rtl">
+<html data-app-ver="216" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -2528,6 +2528,182 @@
       }
     }
 
+    // ===== آبائيات: بستان الرهبان (أسماء الآباء ← أقوالهم وتعاليمهم) =====
+    var BUSTAN_FATHERS = [
+      { id: 'anthony', name: 'القديس الأنبا أنطونيوس الكبير', sub: 'أب الرهبان' },
+      { id: 'macarius', name: 'الأنبا مقار الكبير', sub: 'عمود برية شيهيت' },
+      { id: 'arsenius', name: 'الأنبا أرسانيوس', sub: 'معلم أولاد الملوك' },
+      { id: 'moses', name: 'الأنبا موسى الأسود', sub: '' },
+      { id: 'poemen', name: 'الأنبا بيمن', sub: '' },
+      { id: 'pambo', name: 'الأنبا بموا', sub: '' },
+      { id: 'sisoes', name: 'الأنبا سيسوي', sub: '' },
+      { id: 'isidore', name: 'الأنبا إيسيذورس', sub: '' },
+      { id: 'johnshort', name: 'الأنبا يوحنا القصير', sub: '' },
+      { id: 'pachomius', name: 'الأنبا باخوميوس', sub: 'أبو الشركة' },
+      { id: 'amoun', name: 'الأنبا أمون', sub: '' },
+      { id: 'paphnutius', name: 'الأنبا بفنوتيوس', sub: '' },
+      { id: 'zeno', name: 'الأنبا زينون', sub: '' },
+      { id: 'agathon', name: 'الأنبا أغاثون', sub: '' },
+      { id: 'theodore', name: 'الأنبا تادرس', sub: '' },
+      { id: 'evagrius', name: 'الأنبا أوغريس', sub: '' },
+      { id: 'bishoy', name: 'الأنبا بيشوي', sub: '' },
+      { id: 'shenouda', name: 'الأنبا شنودة', sub: 'رئيس المتوحدين' }
+    ];
+    // أقوال جاهزة من مصدر موثوق تُوضع هنا لاحقًا: { 'anthony': ['قول ...', 'قول ...'] }
+    var BUSTAN_DATA = {};
+
+    function bustanCustomFathers() {
+      try { return JSON.parse(localStorage.getItem('khalwati_bustan_custom') || '[]') || []; } catch (e) { return []; }
+    }
+    function bustanAllFathers() { return BUSTAN_FATHERS.concat(bustanCustomFathers()); }
+    function bustanFindFather(id) {
+      var all = bustanAllFathers();
+      for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+      return null;
+    }
+    function bustanLoad(id) {
+      try { return JSON.parse(localStorage.getItem('khalwati_bustan_' + id) || '[]') || []; } catch (e) { return []; }
+    }
+    function bustanSave(id, arr) {
+      try { localStorage.setItem('khalwati_bustan_' + id, JSON.stringify(arr)); } catch (e) { showToast('تعذّر الحفظ'); }
+    }
+    function bustanSayingsOf(id) {
+      var out = [];
+      (BUSTAN_DATA[id] || []).forEach(function (t) { out.push({ t: t, own: false }); });
+      bustanLoad(id).forEach(function (t, i) { out.push({ t: t, own: true, idx: i }); });
+      return out;
+    }
+
+    function openFathersHub() {
+      var pc = document.getElementById('prayerContent');
+      if (!pc) return;
+      try { if (typeof setPrayerJesusBg === 'function') setPrayerJesusBg(false); } catch (e) {}
+      document.getElementById('prayerTitle').textContent = 'آبائيات';
+      var all = bustanAllFathers();
+      var h = '<div style="text-align:right;direction:rtl;">';
+      h += '<div style="text-align:center;font-weight:800;font-size:19px;color:#5a4a2a;margin:2px 0 10px;">🌿 بستان الرهبان</div>';
+      h += '<div style="text-align:center;font-size:13px;color:#6a5a3a;margin-bottom:12px;line-height:1.8;">اضغطي على اسم الأب لتري أقواله وتعاليمه</div>';
+      h += '<input id="bustanSearch" type="text" dir="rtl" lang="ar" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="🔍 ابحثي عن اسم أب" oninput="bustanFilter(this.value)" ' +
+        'style="display:block;width:100%;box-sizing:border-box;height:50px;padding:0 14px;font-size:17px;font-weight:700;color:#2b1d0e;-webkit-text-fill-color:#2b1d0e;background:#fffdf6;border:2px solid #c9a227;border-radius:14px;direction:rtl;unicode-bidi:plaintext;text-align:right;font-family:inherit;outline:none;-webkit-appearance:none;appearance:none;margin-bottom:12px;">';
+      h += '<div id="bustanList">';
+      all.forEach(function (f) {
+        var n = bustanSayingsOf(f.id).length;
+        h += '<button type="button" class="bustan-item" data-n="' + bsEsc(bsNorm(f.name + ' ' + (f.sub || ''))) + '" onclick="openFatherPage(\'' + f.id + '\')" ' +
+          'style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:7px 0;padding:13px 14px;background:rgba(255,253,248,0.97);border:1.5px solid #d9c48a;border-radius:14px;font-family:inherit;text-align:right;cursor:pointer;color:#3b2a10;">' +
+          '<span><span style="display:block;font-weight:800;font-size:16px;">' + bsEsc(f.name) + '</span>' +
+          (f.sub ? '<span style="display:block;font-size:12px;color:#7a6a4a;margin-top:2px;">' + bsEsc(f.sub) + '</span>' : '') + '</span>' +
+          '<span style="font-size:12px;color:#8a7a50;white-space:nowrap;">' + (n ? n + ' قول' : '‹') + '</span></button>';
+      });
+      h += '</div>';
+      h += '<div id="bustanNone" style="display:none;text-align:center;padding:12px;color:#6a5a3a;">لا يوجد أب بهذا الاسم. يمكنك إضافته بالزر التالي.</div>';
+      h += '<button type="button" class="save-btn" style="width:100%;margin:12px 0 6px;background:#5a7d4a;" onclick="bustanAddFather()">➕ إضافة أب</button>';
+      h += '<button type="button" class="save-btn" style="width:100%;margin:6px 0;background:#8a7a60;" onclick="bustanOpenNotes()">📝 ملاحظاتي في الآبائيات</button>';
+      h += '</div>';
+      pc.innerHTML = h;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+    function bustanFilter(v) {
+      var q = bsNorm(v || '').trim();
+      var items = document.querySelectorAll('#bustanList .bustan-item');
+      var shown = 0;
+      for (var i = 0; i < items.length; i++) {
+        var ok = !q || (items[i].getAttribute('data-n') || '').indexOf(q) >= 0;
+        items[i].style.display = ok ? 'flex' : 'none';
+        if (ok) shown++;
+      }
+      var none = document.getElementById('bustanNone');
+      if (none) none.style.display = shown ? 'none' : 'block';
+    }
+    function bustanOpenNotes() {
+      try { document.getElementById('prayerModal').classList.remove('active'); } catch (e) {}
+      openTextModal('fathers');
+    }
+    function bustanAddFather() {
+      var name = (prompt('اسم الأب الذي تريدين إضافته:') || '').trim();
+      if (!name) return;
+      var list = bustanCustomFathers();
+      var id = 'c' + Date.now();
+      list.push({ id: id, name: name, sub: '' });
+      try { localStorage.setItem('khalwati_bustan_custom', JSON.stringify(list)); } catch (e) {}
+      openFatherPage(id);
+    }
+
+    function openFatherPage(id) {
+      var f = bustanFindFather(id);
+      var pc = document.getElementById('prayerContent');
+      if (!f || !pc) return;
+      document.getElementById('prayerTitle').textContent = 'بستان الرهبان';
+      var sayings = bustanSayingsOf(id);
+      window._bustanCurrent = sayings;
+      window._bustanFatherId = id;
+      var h = '<div style="text-align:right;direction:rtl;">';
+      h += '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 12px;" onclick="openFathersHub()">→ رجوع لأسماء الآباء</button>';
+      h += '<div style="text-align:center;font-weight:800;font-size:20px;color:#5a4a2a;margin:2px 0 4px;">' + bsEsc(f.name) + '</div>';
+      if (f.sub) h += '<div style="text-align:center;font-size:13px;color:#7a6a4a;margin-bottom:10px;">' + bsEsc(f.sub) + '</div>';
+      h += '<div style="font-weight:700;color:#5a4a2a;margin:10px 0 6px;">📜 أقواله وتعاليمه</div>';
+      if (!sayings.length) {
+        h += '<div style="padding:14px;background:rgba(255,253,248,0.95);border:1px dashed #c9a227;border-radius:12px;line-height:1.9;color:#4a3a1a;font-size:14px;">لم تُضَف أقوال لهذا الأب بعد.<br>يمكنك إضافتها من مصدرك الموثوق بالنموذج أدناه، أو قراءتها من الروابط تحتها.</div>';
+      }
+      sayings.forEach(function (it, i) {
+        h += '<div style="margin:9px 0;padding:12px 14px;background:rgba(255,253,248,0.97);border:1px solid #e8d9b5;border-radius:12px;">' +
+          '<div style="white-space:pre-wrap;line-height:2;font-size:16px;color:var(--brown);">' + bsEsc(it.t) + '</div>' +
+          '<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">' +
+          '<button type="button" class="align-btn" onclick="bustanDesign(' + i + ')">🎨 تصميم</button>' +
+          (it.own ? '<button type="button" class="align-btn" onclick="bustanDelete(' + it.idx + ')">🗑 حذف</button>' : '') +
+          '</div></div>';
+      });
+      h += '<div style="margin-top:14px;padding:12px;background:#fff;border:2px solid #c9a227;border-radius:14px;">' +
+        '<div style="font-weight:700;color:#5a4a2a;margin-bottom:6px;">➕ إضافة أقوال</div>' +
+        '<textarea id="bustanNew" dir="rtl" placeholder="الصقي قولًا أو أكثر من مصدرك الموثوق (افصلي بين الأقوال بسطر فاضي)" ' +
+        'style="display:block;width:100%;box-sizing:border-box;min-height:120px;padding:10px;font-size:16px;line-height:1.9;color:#2b1d0e;-webkit-text-fill-color:#2b1d0e;background:#fffdf6;border:1.5px solid #d9c48a;border-radius:12px;direction:rtl;unicode-bidi:plaintext;text-align:right;font-family:inherit;"></textarea>' +
+        '<button type="button" class="save-btn" style="width:100%;margin:8px 0 0;" onclick="bustanAddSayings()">💾 حفظ</button></div>';
+      var g = function (q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q); };
+      var links = [
+        { title: 'أقواله في موقع الأنبا تكلا', url: g('أقوال ' + f.name + ' بستان الرهبان site:st-takla.org'), note: 'نتائج الأنبا تكلا — يُفتح في المتصفح' },
+        { title: 'من أقوال الآباء الشيوخ', url: g('أقوال ' + f.name + ' بستان الرهبان الآباء الشيوخ'), note: 'بحث عام — يُفتح في المتصفح' }
+      ];
+      if (id === 'anthony') links.unshift({ title: 'القديس أنطونيوس: كلماته وتوجيهاته', url: 'https://st-takla.org/books/fr-athnasius-fahmy/patrology/anthonius.html', note: 'كتاب مدخل في علم الآبائيات — الأنبا تكلا' });
+      h += '<div style="margin-top:14px;padding:10px;background:rgba(255,248,230,0.95);border-radius:12px;border:1px solid #e8d9b5;">' +
+        '<div style="font-weight:700;margin-bottom:8px;color:#5a4a2a;">📚 اقرئي أقواله وتعاليمه:</div>';
+      links.forEach(function (l, i) {
+        h += '<button type="button" class="save-btn" style="display:block;width:100%;margin:6px 0;text-align:right;background:#6a5a3a;font-size:13px;line-height:1.6;" onclick="bustanOpenLink(' + i + ')">' +
+          '<span style="display:block;font-weight:700;">' + bsEsc(l.title) + '</span><span style="display:block;font-size:11px;opacity:0.9;">' + bsEsc(l.note) + '</span></button>';
+      });
+      h += '</div></div>';
+      window._bustanLinks = links;
+      pc.innerHTML = h;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+    function bustanOpenLink(i) {
+      var l = (window._bustanLinks || [])[i];
+      if (l) openInAppPage(l.url, l.title);
+    }
+    function bustanAddSayings() {
+      var id = window._bustanFatherId;
+      var ta = document.getElementById('bustanNew');
+      var raw = ta ? ta.value : '';
+      var parts = String(raw).split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!parts.length) { showToast('اكتبي أو الصقي قولًا أولًا'); return; }
+      var arr = bustanLoad(id);
+      parts.forEach(function (t) { arr.push(t); });
+      bustanSave(id, arr);
+      showToast('تم حفظ ' + parts.length + ' قول');
+      openFatherPage(id);
+    }
+    function bustanDelete(idx) {
+      var id = window._bustanFatherId;
+      if (!confirm('حذف هذا القول؟')) return;
+      var arr = bustanLoad(id);
+      arr.splice(idx, 1);
+      bustanSave(id, arr);
+      openFatherPage(id);
+    }
+    function bustanDesign(i) {
+      var it = (window._bustanCurrent || [])[i];
+      var f = bustanFindFather(window._bustanFatherId);
+      if (it && typeof openVerseDesign === 'function') openVerseDesign(it.t, f ? f.name : 'بستان الرهبان');
+    }
+
     function handleOpenItem(id, type) {
       try {
         const data = loadData();
@@ -2539,6 +2715,7 @@
       if (type === 'bibleComment' || id === 'bibleComment') openBibleComment();
       else if (type === 'katameros') openKatameros();
       else if (type === 'faithExamples' || id === 'faithExamples') openFaithExamples();
+      else if (id === 'fathers') openFathersHub();
       else if (type === 'text') openTextModal(id);
       else if (type === 'books') openBooksSection();
       else if (type === 'chart') openProgressChart();
@@ -3879,7 +4056,7 @@ function bibleSpeakText(text, onEnd) {
       };
       if (openers[id]) {
         toggleDaily(id);
-        openTextModal(openers[id]);
+        if (id === 'fathers') openFathersHub(); else openTextModal(openers[id]);
         return;
       }
       toggleDaily(id);
@@ -5139,7 +5316,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=215';
+            s.src = 'khalwaty-poster.js?v=216';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -12585,7 +12762,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '215';
+      var APP_VER = '216';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12688,6 +12865,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=215"></script>
+  <script src="khalwaty-poster.js?v=216"></script>
 </body>
 </html>

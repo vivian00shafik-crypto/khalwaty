@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="216" lang="ar" dir="rtl">
+<html data-app-ver="217" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -2529,24 +2529,68 @@
     }
 
     // ===== آبائيات: بستان الرهبان (أسماء الآباء ← أقوالهم وتعاليمهم) =====
+    // الأسماء كما وردت في الفهرس العام لكتاب «بستان الرهبان» (إعداد الأنبا إبيفانيوس)
     var BUSTAN_FATHERS = [
-      { id: 'anthony', name: 'القديس الأنبا أنطونيوس الكبير', sub: 'أب الرهبان' },
-      { id: 'macarius', name: 'الأنبا مقار الكبير', sub: 'عمود برية شيهيت' },
-      { id: 'arsenius', name: 'الأنبا أرسانيوس', sub: 'معلم أولاد الملوك' },
-      { id: 'moses', name: 'الأنبا موسى الأسود', sub: '' },
-      { id: 'poemen', name: 'الأنبا بيمن', sub: '' },
-      { id: 'pambo', name: 'الأنبا بموا', sub: '' },
-      { id: 'sisoes', name: 'الأنبا سيسوي', sub: '' },
-      { id: 'isidore', name: 'الأنبا إيسيذورس', sub: '' },
-      { id: 'johnshort', name: 'الأنبا يوحنا القصير', sub: '' },
-      { id: 'pachomius', name: 'الأنبا باخوميوس', sub: 'أبو الشركة' },
-      { id: 'amoun', name: 'الأنبا أمون', sub: '' },
-      { id: 'paphnutius', name: 'الأنبا بفنوتيوس', sub: '' },
-      { id: 'zeno', name: 'الأنبا زينون', sub: '' },
-      { id: 'agathon', name: 'الأنبا أغاثون', sub: '' },
-      { id: 'theodore', name: 'الأنبا تادرس', sub: '' },
-      { id: 'evagrius', name: 'الأنبا أوغريس', sub: '' },
-      { id: 'bishoy', name: 'الأنبا بيشوي', sub: '' },
+      { id: 'anthony', name: 'القديس أنطونيوس الكبير', sub: '' },
+      { id: 'macarius', name: 'القديس مقاريوس الكبير', sub: '' },
+      { id: 'pachomius', name: 'القديس باخوميوس', sub: '' },
+      { id: 'climacus', name: 'القديس يوحنا الدرجي (كليماكوس)', sub: '' },
+      { id: 'isaac_syrian', name: 'مار إسحق السرياني', sub: '' },
+      { id: 'arsenius', name: 'القديس أرسانيوس', sub: '' },
+      { id: 'agathon', name: 'القديس أغاثون', sub: '' },
+      { id: 'isidore', name: 'القديس إيسيذوروس القس', sub: '' },
+      { id: 'isidore_pelusium', name: 'القديس إيسيذوروس البيلوزي', sub: '' },
+      { id: 'moses', name: 'القديس موسى الأسود', sub: '' },
+      { id: 'zacharias', name: 'القديس زكريا', sub: '' },
+      { id: 'isaiah_scetis', name: 'أنبا إشعياء الإسقيطي', sub: '' },
+      { id: 'johnshort', name: 'القديس يوحنا القصير', sub: '' },
+      { id: 'serapion', name: 'القديس سرابيون الكبير', sub: '' },
+      { id: 'anoub_bimin', name: 'أنبا أنوب وأنبا بيمين وإخوتهما', sub: '' },
+      { id: 'barsanuphius', name: 'أنبا برصنوفيوس', sub: '' },
+      { id: 'ammonius', name: 'القديس أمونيوس الأسقف', sub: '' },
+      { id: 'achilas', name: 'القديس أخيلاس', sub: '' },
+      { id: 'silvanus', name: 'القديس سلوانس', sub: '' },
+      { id: 'theodore_edessa', name: 'تادرس الرهاوي', sub: '' },
+      { id: 'gelasius', name: 'الأب جلاسيوس', sub: '' },
+      { id: 'daniel', name: 'الأب دانيال', sub: '' },
+      { id: 'dioscorus', name: 'الأب ديسقورس التناسي', sub: '' },
+      { id: 'epiphanius', name: 'القديس إبيفانيوس', sub: '' },
+      { id: 'ephrem', name: 'القديس أفرآم السرياني', sub: '' },
+      { id: 'alogius', name: 'الأب ألوجيوس', sub: '' },
+      { id: 'uranius', name: 'الأب أورانيوس', sub: '' },
+      { id: 'evagrius', name: 'الأب إفاجريوس (أوغريس)', sub: '' },
+      { id: 'zeno', name: 'الأب زينون', sub: '' },
+      { id: 'elijah', name: 'الأب إيليا', sub: '' },
+      { id: 'theodore', name: 'القديس تادرس الفرمي', sub: '' },
+      { id: 'theophilus', name: 'البابا ثاؤفيلس', sub: '' },
+      { id: 'theodora', name: 'الأم تاؤدورة', sub: '' },
+      { id: 'isaac_priest', name: 'الأب إسحق القس', sub: '' },
+      { id: 'johnsyrian', name: 'الأب يوحنا السرياني', sub: '' },
+      { id: 'matoes', name: 'الأب ماطويس', sub: '' },
+      { id: 'mark_silvanus', name: 'القديس مرقص تلميذ أنبا سلوانس', sub: '' },
+      { id: 'paphnutius', name: 'القديس بفنوتيوس', sub: '' },
+      { id: 'basil', name: 'القديس باسيليوس', sub: '' },
+      { id: 'simeon_stylite', name: 'القديس سمعان العمودي', sub: '' },
+      { id: 'todri', name: 'أنبا تودري', sub: '' },
+      { id: 'paul_simple', name: 'القديس بولس البسيط', sub: '' },
+      { id: 'sisoes', name: 'الأب صيصوي', sub: '' },
+      { id: 'simon', name: 'الأب سيمون', sub: '' },
+      { id: 'sarah', name: 'الأم سارة', sub: '' },
+      { id: 'syncletica', name: 'الأم سفرنيكي', sub: '' },
+      { id: 'ebrikhios', name: 'الأب إيبريخيوس', sub: '' },
+      { id: 'or', name: 'الأب أور', sub: '' },
+      { id: 'cassian', name: 'الأب يوحنا كاسيان', sub: '' },
+      { id: 'nilus', name: 'القديس نيلوس', sub: '' },
+      { id: 'spiritual_elder', name: 'الشيخ الروحاني', sub: '' },
+      { id: 'johndaliatha', name: 'الأب يوحنا الدلياتي', sub: '' },
+      { id: 'yohanes', name: 'الأب يحنس', sub: '' },
+      { id: 'yosab', name: 'أنبا يوساب', sub: '' },
+      { id: 'longinus', name: 'أنبا لونجينوس', sub: '' }
+    ];
+    // آباء من القائمة السابقة: يظهرون فقط لو كنتِ أضفتِ لهم أقوالًا قبل التحديث (حتى لا تضيع)
+    var BUSTAN_LEGACY = [
+      { id: 'poemen', name: 'الأنبا بيمن', sub: '' }, { id: 'pambo', name: 'الأنبا بموا', sub: '' },
+      { id: 'amoun', name: 'الأنبا أمون', sub: '' }, { id: 'bishoy', name: 'الأنبا بيشوي', sub: '' },
       { id: 'shenouda', name: 'الأنبا شنودة', sub: 'رئيس المتوحدين' }
     ];
     // أقوال جاهزة من مصدر موثوق تُوضع هنا لاحقًا: { 'anthony': ['قول ...', 'قول ...'] }
@@ -2555,7 +2599,10 @@
     function bustanCustomFathers() {
       try { return JSON.parse(localStorage.getItem('khalwati_bustan_custom') || '[]') || []; } catch (e) { return []; }
     }
-    function bustanAllFathers() { return BUSTAN_FATHERS.concat(bustanCustomFathers()); }
+    function bustanAllFathers() {
+      var legacy = BUSTAN_LEGACY.filter(function (f) { return bustanLoad(f.id).length > 0; });
+      return BUSTAN_FATHERS.concat(legacy, bustanCustomFathers());
+    }
     function bustanFindFather(id) {
       var all = bustanAllFathers();
       for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
@@ -2582,7 +2629,7 @@
       var all = bustanAllFathers();
       var h = '<div style="text-align:right;direction:rtl;">';
       h += '<div style="text-align:center;font-weight:800;font-size:19px;color:#5a4a2a;margin:2px 0 10px;">🌿 بستان الرهبان</div>';
-      h += '<div style="text-align:center;font-size:13px;color:#6a5a3a;margin-bottom:12px;line-height:1.8;">اضغطي على اسم الأب لتري أقواله وتعاليمه</div>';
+      h += '<div style="text-align:center;font-size:13px;color:#6a5a3a;margin-bottom:12px;line-height:1.8;">اضغطي على اسم الأب لتري أقواله وتعاليمه<br><span style="font-size:11px;color:#8a7a50;">الأسماء كما وردت في فهرس كتاب «بستان الرهبان» — الأنبا إبيفانيوس</span></div>';
       h += '<input id="bustanSearch" type="text" dir="rtl" lang="ar" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="🔍 ابحثي عن اسم أب" oninput="bustanFilter(this.value)" ' +
         'style="display:block;width:100%;box-sizing:border-box;height:50px;padding:0 14px;font-size:17px;font-weight:700;color:#2b1d0e;-webkit-text-fill-color:#2b1d0e;background:#fffdf6;border:2px solid #c9a227;border-radius:14px;direction:rtl;unicode-bidi:plaintext;text-align:right;font-family:inherit;outline:none;-webkit-appearance:none;appearance:none;margin-bottom:12px;">';
       h += '<div id="bustanList">';
@@ -2645,8 +2692,8 @@
         h += '<div style="padding:14px;background:rgba(255,253,248,0.95);border:1px dashed #c9a227;border-radius:12px;line-height:1.9;color:#4a3a1a;font-size:14px;">لم تُضَف أقوال لهذا الأب بعد.<br>يمكنك إضافتها من مصدرك الموثوق بالنموذج أدناه، أو قراءتها من الروابط تحتها.</div>';
       }
       sayings.forEach(function (it, i) {
-        h += '<div style="margin:9px 0;padding:12px 14px;background:rgba(255,253,248,0.97);border:1px solid #e8d9b5;border-radius:12px;">' +
-          '<div style="white-space:pre-wrap;line-height:2;font-size:16px;color:var(--brown);">' + bsEsc(it.t) + '</div>' +
+        h += '<div style="margin:10px 0;padding:14px 16px;background:rgba(255,253,248,0.98);border:1px solid #e8d9b5;border-right:5px solid #c9a227;border-radius:12px;">' +
+          '<div style="white-space:pre-wrap;line-height:2.15;font-size:19px;font-weight:800;color:#2b1d0e;">' + bsEsc(it.t) + '</div>' +
           '<div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end;">' +
           '<button type="button" class="align-btn" onclick="bustanDesign(' + i + ')">🎨 تصميم</button>' +
           (it.own ? '<button type="button" class="align-btn" onclick="bustanDelete(' + it.idx + ')">🗑 حذف</button>' : '') +
@@ -5316,7 +5363,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=216';
+            s.src = 'khalwaty-poster.js?v=217';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -12762,7 +12809,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '216';
+      var APP_VER = '217';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12865,6 +12912,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=216"></script>
+  <script src="khalwaty-poster.js?v=217"></script>
 </body>
 </html>

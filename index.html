@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="217" lang="ar" dir="rtl">
+<html data-app-ver="218" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5363,7 +5363,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=217';
+            s.src = 'khalwaty-poster.js?v=218';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7271,6 +7271,11 @@ function openTextModal(type) {
         id: 'augustine',
         title: 'صلاة للقديس أغسطينوس',
         text: 'إلهي، عرفتك لأنك عرفتني، وأحببتك لأنك أحببتني. يا مسرة روحي، اقترب مني لترتوي من ينبوع محبتك نفسي، لأن فيك مواساة قلبي. شوّقني لحبك فأنت حياتي. التفت إليّ لأنك غاية مسرتي.\n\nأحبك يا ربي، قوتي، وصخرتي، حصني ومنقذي. اجعلني شغوفاً بك على الدوام. أعطني قلباً ينبض بحبك، نفساً تشتهيك، روحاً يتعلق بك، قدرة على معرفة أسرارك، وعقلاً يفكر فيك دائماً ويتحد بحكمتك ويعرف كيف يحبك أيها الحب الزاخر بكل حكمة.\n\nإلهي.. ما لم أحبك كما ينبغي فذلك لأنني لم أصل بعد إلى عمق معرفتك. في قصور معرفتي بك فتور لحبي نحوك، وبالتالي فتور لفرحة قلبي التي حصلت عليها. بدد يا ربي كل الظلمات التي تسربت إلى أعماق نفسي. متى تراك نفسي وتدركك.. وتعرفك حينما تستقبلك وتحبك إذا ما عرفتك؟!\n\nكل من يعرفك يحبك.. ويحبك أكثر من ذاته.. يترك كل شيء ويتبعك. آمين.\n\nالقديس أغسطينوس'
+      },
+      {
+        id: 'augustine_confessions',
+        title: 'صلاة القديس أغسطينوس — هب لي يا رب أن أعرف',
+        text: "هب لي يا رب أن أعرف كيف أبدأ وأدرك؛ أأدعوك أولاً أم أسبّحك؟ أم أعرفك فأدعوك؟ وأتِي لي أن أدعوك قبل أن أعرفك؟ وقد يدعو من لا يعرف، واحداً، بل لا من آخر. وهل أدعوك أولاً أم أعرفك؟ وأتِي لي أن أدعو وأنا غير مؤمن؟ أم كيف أؤمن وليس هنالك من يبشّرني؟ الباحث عن الرب يسبّحه وطالب الرب يجده. ومن يجد الرب يسبّحه حقّاً. هل لي يا رب، أن أطلبك داعياً؟ وإن أدعوك، وأنا مؤمن بك، وقد حملت إلينا بشارتك؟"
       }
     ];
 
@@ -12809,7 +12814,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '217';
+      var APP_VER = '218';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12912,6 +12917,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=217"></script>
+  <script src="khalwaty-poster.js?v=218"></script>
 </body>
 </html>

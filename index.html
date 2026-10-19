@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="220" lang="ar" dir="rtl">
+<html data-app-ver="221" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4573,7 +4573,9 @@ function openSaintsPraises() {
         h += '<button type="button" class="save-btn saint-item" data-name="' + String(s.name || '').replace(/"/g, '&quot;') + '" style="margin:0;text-align:right;background:#8a7a60;" onclick="openSaintPraise(' + idx + ')">' +
           (s.name || 'بدون اسم') + ' — <span style="font-weight:400;font-size:12px;">' + (s.title || '') + '</span>' + badge + '</button>';
       });
-      h += '</div></div>';
+      h += '</div>';
+      h += '<button type="button" class="save-btn" style="margin:14px 0 0;width:100%;background:#6a5a3a;" onclick="openSaintClosingHymn()">🎶 لحن يقال بعد كل مديح</button>';
+      h += '</div>';
       document.getElementById('prayerContent').innerHTML = h;
       document.getElementById('prayerModal').classList.add('active');
       try {
@@ -4593,6 +4595,58 @@ function openSaintsPraises() {
       });
     }
 
+    // ===== اللحن الذي يُقال بعد كل مديح (يُكتب فيه اسم القديس تلقائيًا) =====
+    function saintHymnNames(rawName) {
+      var n = String(rawName || '').trim();
+      if (!n) return { first: '(اسم القديس)', second: '(اسم القديس)' };
+      if (/العذراء/.test(n)) return { first: '', second: '' };              // لا يُضاف اسم آخر في مديح العذراء
+      if (/^قزمان ودميان/.test(n)) return { first: 'والقديسين العظيمين ' + n, second: 'والقديسين ' + n };
+      if (/^شهداء/.test(n)) return { first: 'و' + n, second: 'و' + n };
+      if (/^(الملاك|رئيس الملائكة)/.test(n)) {
+        var kind = /^رئيس الملائكة/.test(n) ? 'رئيس الملائكة' : 'الملاك';
+        var bare = n.replace(/^رئيس الملائكة\s+/, '').replace(/^الملاك\s+/, '');
+        return { first: 'و' + kind + ' العظيم ' + bare, second: 'و' + kind + ' ' + bare };
+      }
+      if (/^(القديسة|السامرية|مريم المجدلية|تماف)/.test(n)) {
+        var f = n.replace(/^القديسة\s+/, '');
+        return { first: 'والقديسة العظيمة ' + f, second: 'والقديسة ' + f };
+      }
+      var m = n.replace(/^القديس\s+/, '');
+      var hasTitle = /^(الأنبا|البابا|الأمير)\s/.test(m);
+      return { first: 'والقديس العظيم ' + m, second: hasTitle ? ('و' + m) : ('والقديس ' + m) };
+    }
+    function saintClosingHymnText(rawName, blank) {
+      var nm = blank ? { first: 'والقديس العظيم (..............)', second: 'و............' } : saintHymnNames(rawName);
+      var part1 = [
+        'خين افران ام افيوت نيم ابشيرى نيم بى ابنفما اثؤواب تى اترياس اثؤواب ان اوموسيوس.',
+        'اكسيا اكسيا اكسيا تى اجيا ماريا تى بارثينوس.',
+        'اكسيوس اكسيوس اكسيوس ميخائيل بى نشتى ان ارشى انجيلوس.',
+        'اكسيوس اكسيوس اكسيوس بنيوت ماركوس بى ايف آنجيلستيس.'
+      ].join('\n');
+      var part2 = 'اكاليل ذهب واكاليل فضة واكاليل جوهر على راس القديسة العذراء مريم' + (nm.first ? ' ' + nm.first : '');
+      var part3 = 'وسلام الله يكون معكم يا شعب المسيح باجمعكم وبصوت الفرح ليسمعنا ويسمعكم القائل ادخلوا الى فرح الفردوس بصلاة مريم العذراء' + (nm.second ? ' ' + nm.second : '');
+      return [part1, part2, part3];
+    }
+    function saintClosingHymnHtml(rawName, blank) {
+      var parts = saintClosingHymnText(rawName, blank);
+      var h = '<div style="margin-top:22px;padding:14px 14px 6px;background:rgba(255,248,230,0.95);border:1px solid #e8d9b5;border-right:5px solid #c9a227;border-radius:12px;">';
+      h += '<div style="font-weight:800;color:var(--gold-dark);margin-bottom:8px;">🎶 لحن يقال بعد المديح</div>';
+      parts.forEach(function (t, i) {
+        h += '<div class="agpeya-prayer" style="white-space:pre-wrap;font-size:15px;line-height:2;margin:0 0 ' + (i < parts.length - 1 ? '10' : '4') + 'px;' + (i ? 'padding-top:10px;border-top:1px dashed #d9c48a;' : '') + '">' +
+          String(t).replace(/</g, '&lt;') + '</div>';
+      });
+      return h + '</div>';
+    }
+    function openSaintClosingHymn() {
+      var body = '<div style="text-align:right;line-height:2;color:var(--brown);">' +
+        '<button type="button" class="save-btn" style="margin:0 0 6px;background:#8a7a60;" onclick="openSaintsPraises()">→ رجوع للقائمة</button>' +
+        '<p style="font-size:13px;color:#8a7a60;margin:6px 0 0;">يظهر هذا اللحن تحت كل مديح، ويُكتب فيه اسم القديس تلقائيًا.</p>' +
+        saintClosingHymnHtml('', true) + '</div>';
+      document.getElementById('prayerTitle').textContent = 'لحن يقال بعد كل مديح';
+      document.getElementById('prayerContent').innerHTML = body;
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
     function openSaintPraise(idx) {
       var list = getAllSaintsPraises();
       var s = list[idx];
@@ -4601,6 +4655,7 @@ function openSaintsPraises() {
       body += '<h3 style="margin:0 0 6px;color:var(--gold-dark);">' + (s.name || '') + '</h3>';
       if (s.title) body += '<p style="margin:0 0 14px;font-size:13px;color:#8a7a60;">' + s.title + '</p>';
       body += '<div class="agpeya-prayer" style="white-space:pre-wrap;font-size:15px;">' + String(s.text || '').replace(/</g, '&lt;') + '</div>';
+      body += saintClosingHymnHtml(s.name, false);
       body += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">';
       body += '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openSaintsPraises()">رجوع للقائمة</button>';
       if (s._custom) {
@@ -5380,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=220';
+            s.src = 'khalwaty-poster.js?v=221';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -12831,7 +12886,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '220';
+      var APP_VER = '221';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12939,6 +12994,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=220"></script>
+  <script src="khalwaty-poster.js?v=221"></script>
 </body>
 </html>

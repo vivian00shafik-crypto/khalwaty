@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="218" lang="ar" dir="rtl">
+<html data-app-ver="219" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1476,6 +1476,11 @@
       navigator.serviceWorker.addEventListener('message', function(ev) {
         try {
           var msg = ev.data || {};
+          if (msg.type === 'OFFLINE_READY') {
+            try { if (!msg.failed) localStorage.setItem('khalwati_offline_ready', msg.cache || ''); } catch (e2) {}
+            if (typeof showToast === 'function') showToast(msg.failed ? '⚠️ تعذّر حفظ بعض الملفات للعمل بدون إنترنت، سأحاول لاحقًا' : '✅ التطبيق جاهز للعمل بدون إنترنت');
+            return;
+          }
           if (msg.type !== 'PLAY_FROM_NOTIFICATION') return;
           var d = msg.data || {};
           if (d.type === 'agpeya' || d.playAlarm) {
@@ -4466,6 +4471,12 @@ function bibleSpeakText(text, onEnd) {
     "name": "يوسف النجار",
     "title": "السلام لك يا خطيب العذراء",
     "text": "السلام لك يا خطيب العذراء\nيا يوسف البار\nحارس سر التجسد\nوربيب الإله المتأنس\n\nسمعتَ صوت الملاك\nفي الحلم مرارًا\nوحفظتَ الطفل وأمه\nإلى مصر وإلى الناصرة\n\nعشتَ بالتقوى والعمل\nمثالًا للآباء\nاشفع فينا يا قديس\nأمام رب الأنام\n\nتفسير اسمك في أفواه كل المؤمنين\nالكل يقولون يا إله يوسف النجار أعنا أجمعين."
+  },
+  {
+    "id": "macarius_nioth",
+    "name": "أبو مقار الكبير",
+    "title": "في برية شيهات تحملت الآلام",
+    "text": "في برية شيهات تحملت الآلام\nعشت بصبر وثبات بنيوت آفا مقاريوس\n\nعشت لعمانوئيل بقلب طاهر ونبيل\nوفكر نقي جليل بنيوت آفا مقاريوس\n\nشنشور هي بلدك وابراهيم والدك\nكاهن يخدم ربك بنيوت آفا مقاريوس\n\nفي احد الليالي رأي ابوك الغالي\nملاكا متلالي بنيوت آفا مقاريوس\n\nيقول له ان الله سيرزقك ولدا\nيكون ذكره شائعا بنيوت آفا مقاريوس\n\nسموك أبو مقار نلت مجدا وفخار\nعمرت القفار بنيوت آفا مقاريوس\n\nحلت نعمة فاديك منذ صغرك عليك\nوأطعت والديك بنيوت آفا مقاريوس\n\nزوجك والداك بدون قصدك ورضاك\nويسوع قد دبر لك بنيوت آفا مقاريوس\n\nفي البرية ظهر لك قاروبيم امسك يدك\nوبصوتا عالي قال لك بنيوت آفا مقاريوس\n\nقد اعطاك المسيح الجبل الفسيح\nلتعمره بالتسبيح بنيوت آفا مقاريوس\n\nاهل بلدك رسموك قسا وكرموك\nلك الشياطين حسدوك بنيوت آفا مقاريوس\n\nفتاة شريرة وقعت في الرذيلة\nدبرت لك حيلة بنيوت آفا مقاريوس\n\nتحملت الاهانات صبرت بلا زفرات\nولما جاء الميعاد بنيوت آفا مقاريوس\n\nاظهر يسوع ربك نقاوتك وطهرك\nفهربت لوقتك بنيوت آفا مقاريوس\n\nشهد عنك بايمان اب جميع الرهبان\nانطونيوس المصان بنيوت آفا مقاريوس\n\nانك حبيب فاديك لا يوجد غش فيك\nالبسك اسكيمك بنيوت آفا مقاريوس\n\nبنيت دير البراموس وديرك المأنوس\nكقول بي انجيلوس بنيوت آفا مقاريوس\n\nابعد عنك الكاروبيم شيطان المجد اللئيم\nعشت باتضاع عظيم بنيوت آفا مقاريوس\n\nوفى يوم نياحتك حضرت تاخذ روحك\nملائكة جنود ربك بنيوت آفا مقاريوس\n\nمع انبا انطونيوس وانبا باخوميوس\nفاذكرنا امام ايسوس بنيوت آفا مقاريوس\n\nفى السابع والعشرين من برمهات يا امين\nنلت مجدا ثمين بنيوت آفا مقاريوس\n\nصلواته تكون معنا طلباته ترفعنا\nللرب فيقبلنا بنيوت آفا مقاريوس\n\nوتكون لنا حارس من كل الدسائس\nوللملكوت نرث بنيوت آفا مقاريوس\n\nيا اب نى موناخوس نقول لك اكسيوس\nاكسيوس اكسيوس بنيوت آفا مقاريوس\n\nتفسير اسمك فى افواه كل المؤمنين\nالكل يقولون يا اله القديس ابو مقار اعنا اجمعين"
   }
 ];
 
@@ -5363,7 +5374,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=218';
+            s.src = 'khalwaty-poster.js?v=219';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -12814,7 +12825,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '218';
+      var APP_VER = '219';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12877,12 +12888,17 @@ function dayScore(d) {
               location.replace(u.toString());
             } catch (e) { location.reload(); }
           });
-          navigator.serviceWorker.ready.then(function() {
+          navigator.serviceWorker.ready.then(function(readyReg) {
             setTimeout(function() {
-              ['bible-svd.js', 'bible-deutero.js'].forEach(function(f) {
-                fetch(f + '?v=' + APP_VER).catch(function(){});
-              });
-            }, 15000);
+              try {
+                var offlineDone = localStorage.getItem('khalwati_offline_ready') === 'khalwati-v' + APP_VER;
+                var saver = navigator.connection && navigator.connection.saveData;
+                if (!offlineDone && navigator.onLine && !saver && readyReg && readyReg.active) {
+                  if (typeof showToast === 'function') showToast('⏳ جارٍ تجهيز التطبيق للعمل بدون إنترنت…');
+                  readyReg.active.postMessage({ type: 'CACHE_ALL' });
+                }
+              } catch (e) {}
+            }, 8000);
           });
         }).catch(function(err) { console.log('SW error', err); });
         window.addEventListener('offline', function() {
@@ -12917,6 +12933,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=218"></script>
+  <script src="khalwaty-poster.js?v=219"></script>
 </body>
 </html>

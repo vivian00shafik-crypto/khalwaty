@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="223" lang="ar" dir="rtl">
+<html data-app-ver="224" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=223';
+            s.src = 'khalwaty-poster.js?v=224';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -9011,37 +9011,40 @@ function openTextModal(type) {
         composeAIVerseImage(img, g.ref, g.txt, styles, function (dataUrl) {
           g.items[i] = { img: img, dataUrl: dataUrl, local: !!local };
           if (g === window._aiGallery) paintAIGalleryCard(i, g);
+          var finished = g.items.filter(Boolean);
+          if (!g._notified && finished.length === g.variants.length) {
+            g._notified = true;
+            if (!g.offline && finished.every(function (x) { return x.local; }) && g === window._aiGallery) {
+              showToast('تعذّر التوليد بالذكاء الآن، عرضنا تصاميم جاهزة من التطبيق');
+            }
+          }
         });
       } catch (e) { console.log('gallery compose', e); }
     }
     function aiGalleryGenOne(g, i, done) {
       var v = g.variants[i];
-      var useLocal = function () { aiGalleryLocalImage(g, i, function (img) { aiGalleryFinish(g, i, img, true); done(); }); };
-      if (g.offline) { useLocal(); return; }
-      var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(v.prompt) +
-        '?width=768&height=1024&nologo=true&enhance=true&seed=' + encodeURIComponent(String(g.salt + i * 101)) + '&model=flux';
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      var finished = false;
-      var timer = setTimeout(function () {
-        if (finished) return;
-        finished = true; img.onload = null; img.onerror = null;
-        useLocal();
-      }, 50000);
-      img.onload = function () {
-        if (finished) return;
-        finished = true; clearTimeout(timer);
-        aiGalleryFinish(g, i, img, false); done();
+      var useLocal = function () {
+        aiGalleryLocalImage(g, i, function (img) { aiGalleryFinish(g, i, img, true); done(); });
       };
-      img.onerror = function () {
-        if (finished) return;
-        finished = true; clearTimeout(timer);
-        useLocal();
-      };
-      img.src = url;
+      if (g.offline || !TAFSIR_WORKER_URL) { useLocal(); return; }
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 45000);
+      fetch(TAFSIR_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'image', prompt: v.prompt, seed: g.salt + i * 101 }),
+        signal: ctrl.signal
+      }).then(function (res) { return res.json(); }).then(function (data) {
+        clearTimeout(timer);
+        if (!data || typeof data.image !== 'string' || !data.image) throw new Error('no image');
+        var img = new Image();
+        img.onload = function () { aiGalleryFinish(g, i, img, false); done(); };
+        img.onerror = function () { useLocal(); };
+        img.src = 'data:image/jpeg;base64,' + data.image;
+      }).catch(function () { clearTimeout(timer); useLocal(); });
     }
     function aiGalleryRun(g) {
-      var running = 0, next = 0, maxConc = 2;
+      var running = 0, next = 0, maxConc = 3;
       function pump() {
         while (running < maxConc && next < g.variants.length) {
           (function (idx) {
@@ -13048,7 +13051,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '223';
+      var APP_VER = '224';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13156,6 +13159,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=223"></script>
+  <script src="khalwaty-poster.js?v=224"></script>
 </body>
 </html>

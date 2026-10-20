@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="222" lang="ar" dir="rtl">
+<html data-app-ver="223" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=222';
+            s.src = 'khalwaty-poster.js?v=223';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -8934,7 +8934,204 @@ function openTextModal(type) {
       img.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=1';
     }
 
-function openAIVerseDesign() {
+    // ===== خمسة تصاميم بالذكاء الاصطناعي لكل آية =====
+    // يحدد «حالة الآية» من كلماتها (مع توحيد الهمزات والتشكيل) ثم يختار مشهدًا مناسبًا
+    var VERSE_MOODS = [
+      { key: 'love', kw: ['احب', 'محبه', 'حب ', 'محبوب', 'حنان', 'حنو'], scene: 'warm radiant sunrise over an open valley, a golden path of light, tender glowing atmosphere of divine love' },
+      { key: 'peace', kw: ['سلام', 'لا تخف', 'اطمان', 'طمان', 'رجاء', 'اتكل', 'تتكل', 'ثق', 'راحه', 'استريح'], scene: 'still lake at dawn with soft mist and quiet mountains, deep peace and trust' },
+      { key: 'mercy', kw: ['رحم', 'غفر', 'توب', 'خطيه', 'خطايا', 'اثم', 'نقاو', 'طهر', 'تعف'], scene: 'rays of light breaking over a rocky canyon into a green valley, mercy and renewal, a glowing path upward' },
+      { key: 'light', kw: ['نور', 'اضاء', 'اشرق', 'ضياء', 'صباح', 'شمس', 'فجر'], scene: 'dramatic golden sunrise over mountains and valley, rays of hope breaking through clouds' },
+      { key: 'dark', kw: ['ظلمه', 'ظلام', 'ليل', 'ضيق', 'حزن', 'شده', 'بكاء', 'دموع', 'خوف', 'وادي'], scene: 'night turning to dawn, a single warm beam of light over dark cliffs and the sea, hope in distress' },
+      { key: 'water', kw: ['ماء', 'مياه', 'بحر', 'نهر', 'ينبوع', 'غمر', 'مطر'], scene: 'calm sea at sunrise with a glowing path of light on the water, misty mountains' },
+      { key: 'shepherd', kw: ['راعي', 'رعي', 'خراف', 'غنم', 'مراع', 'جبل', 'ارض', 'حقل', 'كرم', 'زيتون'], scene: 'green pastures beside still waters, rolling biblical hills and olive trees at sunset' },
+      { key: 'praise', kw: ['سبح', 'رتل', 'تهليل', 'هلل', 'فرح', 'ابتهج', 'مجد', 'قدوس', 'حمد', 'شكر'], scene: 'sunlit meadow with wildflowers under a wide joyful sky, bright radiant colors' },
+      { key: 'prayer', kw: ['صلي', 'صلاه', 'ادع', 'اطلب', 'تضرع', 'صراخ', 'استجب'], scene: 'silhouette of a person kneeling in prayer on a cliff at sunrise, open hands, lake and hills below' },
+      { key: 'word', kw: ['كلمه', 'كتاب', 'شريعه', 'وصاي', 'تعليم', 'ناموس', 'سراج'], scene: 'open Bible on a stone ledge at sunset beside a candle lantern, coastal hills, warm glow' },
+      { key: 'cross', kw: ['صليب', 'فدا', 'خلاص', 'بذل', 'دم ', 'ذبيح', 'حمل الله'], scene: 'glowing cross of light above a hilltop at sunrise, golden clouds, quiet sacred hope' },
+      { key: 'kingdom', kw: ['ملكوت', 'سماء', 'سماوات', 'عرش', 'ابديه', 'اورشليم', 'مدينه'], scene: 'majestic heavenly clouds opened by radiant light over a mountain peak, a glowing cross of light in the sky' },
+      { key: 'creation', kw: ['خلق', 'البدء', 'تكوين', 'السماوات والارض'], scene: 'primordial earth and ocean at the first dawn, light breaking over deep waters, epic creation' },
+      { key: 'strength', kw: ['قوه', 'قوي', 'شدد', 'ثبت', 'احتمل', 'صخر', 'حصن', 'ملجا', 'نصر'], scene: 'an ancient strong tree and rock cliff standing firm as a storm turns to sunlight' },
+      { key: 'life', kw: ['قام', 'قيام', 'حياه', 'احيا', 'حي ', 'جديد'], scene: 'garden at sunrise with golden light and spring flowers, new life after darkness' }
+    ];
+    function verseMoodScene(ref, txt) {
+      var n = (typeof bsNorm === 'function' ? bsNorm(String(txt || '')) : String(txt || '')) + ' ';
+      var best = null, bestScore = 0;
+      VERSE_MOODS.forEach(function (m) {
+        var sc = 0;
+        m.kw.forEach(function (k) { if (n.indexOf(k) >= 0) sc++; });
+        if (sc > bestScore) { bestScore = sc; best = m; }
+      });
+      return best ? best.scene : 'cinematic spiritual photograph at golden hour, sacred peaceful atmosphere, soft natural light';
+    }
+    function verseDesignVariants(ref, txt) {
+      var scene = verseMoodScene(ref, txt);
+      var tail = ', no text, no letters, no watermark, no logo, no faces, beautiful composition with empty space for text, cinematic, highly detailed';
+      return [
+        { key: 'heavenly', label: '✨ سماوي', prompt: 'heavenly sky with luminous golden rays breaking through soft clouds, divine glow, serene ethereal atmosphere, ' + scene + tail },
+        { key: 'nature', label: '🌿 طبيعة', prompt: 'majestic natural landscape, green hills, calm water and wildflowers, soft morning light, ' + scene + tail },
+        { key: 'christian', label: '✝ مسيحي', prompt: 'Christian sacred atmosphere, softly glowing Coptic cross on a hilltop, open Bible beside a candle, warm light, ' + scene + tail },
+        { key: 'biblical', label: '🐑 أرض الكتاب', prompt: 'ancient Holy Land landscape, olive trees and a shepherd with sheep seen from far away, golden hour, ' + scene + tail },
+        { key: 'night', label: '🌙 ليل ونجوم', prompt: 'peaceful starry night sky over mountains and still water, a path of light and hopeful dawn on the horizon, ' + scene + tail }
+      ];
+    }
+    function localSceneRanked(ref, txt) {
+      var n = (typeof stripTashkeel === 'function' ? stripTashkeel(txt) : String(txt || ''));
+      var h = hashStr(String(ref || '') + String(txt || ''));
+      var arr = LOCAL_STORY_SCENES.map(function (sc, i) {
+        var score = 0;
+        (sc.tags || []).forEach(function (tag) { if (n.indexOf(tag) >= 0) score += 2; });
+        return { file: sc.file, score: score, tie: (h + i * 7) % 10 };
+      });
+      arr.sort(function (x, y) { return (y.score - x.score) || (x.tie - y.tie); });
+      return arr.map(function (x) { return x.file; });
+    }
+    function aiGalleryLocalImage(g, i, cb) {
+      var ranked = localSceneRanked(g.ref, g.txt);
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () { cb(img); };
+      img.onerror = function () {
+        var W = 768, H = 1024, canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        var ctx = canvas.getContext('2d');
+        var pals = [['#f7e7c1', '#c9a227'], ['#d4e4f2', '#4a7c9b'], ['#e8f0e4', '#5a7d4a'], ['#f3d4d4', '#a65d4a'], ['#e8dff5', '#6b5a8a']];
+        var pal = pals[i % pals.length];
+        var grd = ctx.createLinearGradient(0, 0, 0, H);
+        grd.addColorStop(0, pal[0]); grd.addColorStop(1, pal[1]);
+        ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+        var gi = new Image();
+        gi.onload = function () { cb(gi); };
+        gi.src = canvas.toDataURL('image/jpeg', 0.9);
+      };
+      img.src = ranked[i % ranked.length] + '?v=1';
+    }
+    function aiGalleryFinish(g, i, img, local) {
+      var styles = window._aiTextStyles || { font: 'Amiri', size: 28, color: '#fffdf8', posX: 50, posY: 72 };
+      try {
+        composeAIVerseImage(img, g.ref, g.txt, styles, function (dataUrl) {
+          g.items[i] = { img: img, dataUrl: dataUrl, local: !!local };
+          if (g === window._aiGallery) paintAIGalleryCard(i, g);
+        });
+      } catch (e) { console.log('gallery compose', e); }
+    }
+    function aiGalleryGenOne(g, i, done) {
+      var v = g.variants[i];
+      var useLocal = function () { aiGalleryLocalImage(g, i, function (img) { aiGalleryFinish(g, i, img, true); done(); }); };
+      if (g.offline) { useLocal(); return; }
+      var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(v.prompt) +
+        '?width=768&height=1024&nologo=true&enhance=true&seed=' + encodeURIComponent(String(g.salt + i * 101)) + '&model=flux';
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      var finished = false;
+      var timer = setTimeout(function () {
+        if (finished) return;
+        finished = true; img.onload = null; img.onerror = null;
+        useLocal();
+      }, 50000);
+      img.onload = function () {
+        if (finished) return;
+        finished = true; clearTimeout(timer);
+        aiGalleryFinish(g, i, img, false); done();
+      };
+      img.onerror = function () {
+        if (finished) return;
+        finished = true; clearTimeout(timer);
+        useLocal();
+      };
+      img.src = url;
+    }
+    function aiGalleryRun(g) {
+      var running = 0, next = 0, maxConc = 2;
+      function pump() {
+        while (running < maxConc && next < g.variants.length) {
+          (function (idx) {
+            running++;
+            aiGalleryGenOne(g, idx, function () { running--; pump(); });
+          })(next++);
+        }
+      }
+      pump();
+    }
+    function paintAIGalleryCard(i, g) {
+      g = g || window._aiGallery;
+      var el = document.getElementById('aiGalCard' + i);
+      if (!g || !el) return;
+      var v = g.variants[i], it = g.items[i];
+      var chip = '<span style="position:absolute;top:6px;right:6px;background:rgba(40,28,10,0.72);color:#fff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:12px;">' + v.label + '</span>';
+      el.style.cssText = 'position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;border:2px solid #e8d9b5;background:#f5ecd6;box-shadow:0 4px 12px rgba(0,0,0,.12);' + (it ? 'cursor:pointer;' : '');
+      if (!it) {
+        el.innerHTML = chip + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#8a7a60;font-size:12px;">' +
+          '<div style="width:34px;height:34px;border:3px solid #e8d9b5;border-top-color:#c9a227;border-radius:50%;animation:khalwatiSpin 0.9s linear infinite;"></div>جارٍ التوليد…</div>';
+        el.onclick = null;
+        return;
+      }
+      el.innerHTML = '<img alt="" src="' + it.dataUrl + '" style="width:100%;height:100%;object-fit:cover;display:block;">' + chip +
+        (it.local ? '<span style="position:absolute;bottom:6px;left:6px;background:rgba(255,255,255,0.85);color:#5a4a2a;font-size:10px;padding:2px 7px;border-radius:10px;">صورة جاهزة</span>' : '');
+      el.onclick = function () { selectAIDesign(i); };
+    }
+    function renderAIGallery() {
+      var g = window._aiGallery;
+      if (!g) return;
+      var pc = document.getElementById('prayerContent');
+      document.getElementById('prayerTitle').textContent = '✨ ٥ تصاميم ذكية للآية';
+      var cards = g.variants.map(function (v, i) { return '<div id="aiGalCard' + i + '"></div>'; }).join('');
+      var intro = g.offline
+        ? 'لا يوجد إنترنت الآن — هذه ٥ تصاميم جاهزة من التطبيق مناسبة للآية.'
+        : 'تُولَّد الآن ٥ تصاميم بالذكاء الاصطناعي تناسب معنى الآية. ينزل كل تصميم فور جاهزيته.';
+      pc.innerHTML =
+        '<div style="text-align:center;">' +
+        '<p style="font-size:13px;color:#5a7d4a;margin:0 0 4px;">' + intro + '</p>' +
+        '<p style="font-size:12px;color:#8a7a60;margin:0 0 10px;">اضغطي على التصميم الذي يعجبك لتعديل الخط ومكان الآية، ثم احفظيه أو افتحيه في برنامج تصميم.</p>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + cards + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;">' +
+          '<button type="button" class="save-btn" onclick="aiGalleryRegenerate()">🔄 ٥ تصاميم جديدة</button>' +
+          '<button type="button" class="save-btn" style="background:#8a7a60;" onclick="aiGalleryManual()">🎨 التصميم اليدوي</button>' +
+        '</div></div>';
+      g.variants.forEach(function (v, i) { paintAIGalleryCard(i, g); });
+      document.getElementById('prayerModal').classList.add('active');
+      if (typeof addBackToChapterBtn === 'function') addBackToChapterBtn(pc);
+    }
+    function selectAIDesign(i) {
+      var g = window._aiGallery;
+      var it = g && g.items[i];
+      if (!it) return;
+      window._aiBgImage = it.img;
+      if (!window._aiTextStyles) window._aiTextStyles = { font: 'Amiri', size: 28, color: '#fffdf8', posX: 50, posY: 72 };
+      showAIDesignResult(it.dataUrl, g.ref, g.txt, g.salt + i);
+    }
+    function aiGalleryRegenerate() {
+      var g = window._aiGallery;
+      if (!g) return;
+      window._verseMenuData = { ref: g.ref, text: g.txt, _aiSalt: g.salt + 211 + (Date.now() % 90) };
+      openAIVerseDesign();
+    }
+    function aiGalleryManual() {
+      var g = window._aiGallery;
+      if (g) openVerseDesign(g.txt, g.ref);
+    }
+    // مشاركة الصورة مع برامج التصميم الموجودة على الموبايل (قائمة المشاركة تعرض المثبّت فقط)
+    function shareAIDesignToApps() {
+      var d = window._lastAIDesign;
+      if (!d || !d.dataUrl) { showToast('لا توجد صورة'); return; }
+      fetch(d.dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+        var file = new File([blob], 'khalwati-verse-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+        var canFiles = !!(navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] })));
+        if (canFiles) {
+          navigator.share({ files: [file], title: d.ref || 'آية', text: 'من تطبيق خلوتي' }).catch(function (err) {
+            if (err && err.name !== 'AbortError') showToast('تعذّر فتح قائمة المشاركة');
+          });
+        } else {
+          try {
+            var a = document.createElement('a');
+            a.href = d.dataUrl; a.download = 'khalwati-verse-' + Date.now() + '.jpg';
+            document.body.appendChild(a); a.click(); a.remove();
+          } catch (e) {}
+          showToast('تم حفظ الصورة — افتحيها من برنامج التصميم عندك');
+        }
+      }).catch(function () { showToast('تعذّر تجهيز الصورة'); });
+    }
+
+    function openAIVerseDesign() {
       try {
         var snap = window._verseMenuData || {};
         var el = document.querySelector('.verse-line.active-verse');
@@ -8953,62 +9150,16 @@ function openAIVerseDesign() {
         window._verseMenuData.ref = ref;
         window._verseMenuData.text = txt;
 
-        document.getElementById('prayerTitle').textContent = '✨ تصميم ذكي للآية';
-        var pc = document.getElementById('prayerContent');
-        pc.innerHTML =
-          '<div style="text-align:center;padding:20px 10px;">' +
-          '<p style="color:#8a7a60;font-size:14px;margin-bottom:12px;">جاري توليد صورة طبيعية بالذكاء الاصطناعي حسب موضوع الآية…</p>' +
-          '<div style="width:48px;height:48px;border:3px solid #e8d9b5;border-top-color:#c9a227;border-radius:50%;margin:20px auto;animation:khalwatiSpin 0.9s linear infinite;"></div>' +
-          '<p style="font-size:12px;color:#a09070;">يلزم اتصال بالإنترنت للتوليد لأول مرة</p>' +
-          '</div>';
         if (!document.getElementById('khalwatiSpinStyle')) {
           var st = document.createElement('style');
           st.id = 'khalwatiSpinStyle';
           st.textContent = '@keyframes khalwatiSpin{to{transform:rotate(360deg)}}';
           document.head.appendChild(st);
         }
-        document.getElementById('prayerModal').classList.add('active');
-
-        var prompt = verseToImagePrompt(ref, txt);
-        // مولد صور عام يعمل بدون مفتاح API
-        var imgUrl = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
-          '?width=768&height=1024&nologo=true&enhance=true&seed=' + encodeURIComponent(String(salt)) +
-          '&model=flux';
-
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        var done = false;
-        var timer = setTimeout(function() {
-          if (!done) {
-            done = true;
-            showToast('التوليد تأخر — صورة قصصية جاهزة');
-            loadLocalStoryScene(ref, txt, salt);
-          }
-        }, 45000);
-
-        img.onload = function() {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          try {
-            window._aiBgImage = img;
-            window._aiTextStyles = window._aiTextStyles || { font: 'Amiri', size: 28, color: '#fffdf8', posX: 50, posY: 72 };
-            composeAIVerseImage(img, ref, txt, window._aiTextStyles, function(dataUrl) {
-              showAIDesignResult(dataUrl, ref, txt, salt);
-            });
-          } catch (e1) {
-            console.log(e1);
-            renderAIDesignFallback(ref, txt, salt);
-          }
-        };
-        img.onerror = function() {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          showToast('نستخدم صورة قصصية جاهزة عالية الجودة');
-          loadLocalStoryScene(ref, txt, salt);
-        };
-        img.src = imgUrl;
+        var g = { ref: ref, txt: txt, salt: salt, variants: verseDesignVariants(ref, txt), items: [], offline: (navigator.onLine === false) };
+        window._aiGallery = g;
+        renderAIGallery();
+        aiGalleryRun(g);
       } catch (err) {
         console.log('openAIVerseDesign', err);
         showToast('تعذر توليد التصميم');
@@ -9184,9 +9335,12 @@ function openAIVerseDesign() {
         '</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;">' +
         '<button type="button" class="save-btn" id="aiDesignSaveBtn" style="background:#5a7d4a;">💾 حفظ الصورة</button>' +
-        '<button type="button" class="save-btn" id="aiDesignAgainBtn">🔄 توليد صورة أخرى</button>' +
+        '<button type="button" class="save-btn" id="aiDesignShareBtn" style="background:#6a5a3a;">🎨 فتح في برنامج تصميم</button>' +
+        (window._aiGallery ? '<button type="button" class="save-btn" id="aiGalBackBtn" style="background:#8a7a60;">← التصاميم الخمسة</button>' : '') +
+        '<button type="button" class="save-btn" id="aiDesignAgainBtn">🔄 ٥ تصاميم جديدة</button>' +
         '<button type="button" class="save-btn" id="aiDesignManualBtn" style="background:#8a7a60;">🎨 التصميم اليدوي</button>' +
-        '</div>';
+        '</div>' +
+        '<p style="font-size:11px;color:#8a7a60;margin:10px 0 0;line-height:1.7;">زر «فتح في برنامج تصميم» يعرض قائمة البرامج الموجودة على موبايلك (مثل Canva وPicsArt وAdobe Express) لتكملي التعديل فيها.</p>';
       pc.appendChild(wrapEl);
       document.getElementById('aiDesignImg').src = dataUrl;
 
@@ -9295,6 +9449,9 @@ function openAIVerseDesign() {
       document.getElementById('aiDesignManualBtn').onclick = function() {
         openVerseDesign(txt, ref);
       };
+      document.getElementById('aiDesignShareBtn').onclick = function() { shareAIDesignToApps(); };
+      var galBack = document.getElementById('aiGalBackBtn');
+      if (galBack) galBack.onclick = function() { renderAIGallery(); };
       if (typeof addBackToChapterBtn === 'function') addBackToChapterBtn(pc);
       document.getElementById('prayerModal').classList.add('active');
     }
@@ -12891,7 +13048,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '222';
+      var APP_VER = '223';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -12999,6 +13156,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=222"></script>
+  <script src="khalwaty-poster.js?v=223"></script>
 </body>
 </html>

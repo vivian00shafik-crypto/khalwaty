@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="224" lang="ar" dir="rtl">
+<html data-app-ver="225" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=224';
+            s.src = 'khalwaty-poster.js?v=225';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -8987,10 +8987,7 @@ function openTextModal(type) {
     }
     function aiGalleryLocalImage(g, i, cb) {
       var ranked = localSceneRanked(g.ref, g.txt);
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function () { cb(img); };
-      img.onerror = function () {
+      function gradient() {
         var W = 768, H = 1024, canvas = document.createElement('canvas');
         canvas.width = W; canvas.height = H;
         var ctx = canvas.getContext('2d');
@@ -9002,11 +8999,27 @@ function openTextModal(type) {
         var gi = new Image();
         gi.onload = function () { cb(gi); };
         gi.src = canvas.toDataURL('image/jpeg', 0.9);
-      };
-      img.src = ranked[i % ranked.length] + '?v=1';
+      }
+      function inlineBg() {
+        try {
+          var keys = Object.keys(typeof VERSE_BACKGROUNDS !== 'undefined' ? VERSE_BACKGROUNDS : {});
+          if (!keys.length) { gradient(); return; }
+          var h = hashStr(String(g.ref || '') + String(g.txt || ''));
+          var key = keys[(h + i * 3) % keys.length];
+          var im = new Image();
+          im.onload = function () { cb(im); };
+          im.onerror = gradient;
+          im.src = VERSE_BACKGROUNDS[key];
+        } catch (e) { gradient(); }
+      }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () { cb(img); };
+      img.onerror = inlineBg;
+      img.src = ranked[i % ranked.length];
     }
     function aiGalleryFinish(g, i, img, local) {
-      var styles = window._aiTextStyles || { font: 'Amiri', size: 28, color: '#fffdf8', posX: 50, posY: 72 };
+      var styles = window._aiTextStyles || { font: 'Amiri', size: 38, color: '#fffdf8', posX: 50, posY: 66 };
       try {
         composeAIVerseImage(img, g.ref, g.txt, styles, function (dataUrl) {
           g.items[i] = { img: img, dataUrl: dataUrl, local: !!local };
@@ -9015,6 +9028,8 @@ function openTextModal(type) {
           if (!g._notified && finished.length === g.variants.length) {
             g._notified = true;
             if (!g.offline && finished.every(function (x) { return x.local; }) && g === window._aiGallery) {
+              g.note = 'عرضنا تصاميم جاهزة من التطبيق لأن التوليد بالذكاء لم ينجح. ' + aiGalleryReasonText(g.reason);
+              paintAIGalleryNote(g);
               showToast('تعذّر التوليد بالذكاء الآن، عرضنا تصاميم جاهزة من التطبيق');
             }
           }
@@ -9034,14 +9049,23 @@ function openTextModal(type) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'image', prompt: v.prompt, seed: g.salt + i * 101 }),
         signal: ctrl.signal
-      }).then(function (res) { return res.json(); }).then(function (data) {
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (d) { d = d || {}; d.__status = res.status; return d; });
+      }).then(function (data) {
         clearTimeout(timer);
-        if (!data || typeof data.image !== 'string' || !data.image) throw new Error('no image');
+        if (typeof data.image !== 'string' || !data.image) {
+          if (!g.reason) g.reason = (data.error ? String(data.error) : ('http_' + data.__status)) + (data.detail ? ' — ' + data.detail : '');
+          throw new Error('no image');
+        }
         var img = new Image();
         img.onload = function () { aiGalleryFinish(g, i, img, false); done(); };
-        img.onerror = function () { useLocal(); };
+        img.onerror = function () { if (!g.reason) g.reason = 'bad_image'; useLocal(); };
         img.src = 'data:image/jpeg;base64,' + data.image;
-      }).catch(function () { clearTimeout(timer); useLocal(); });
+      }).catch(function (e) {
+        clearTimeout(timer);
+        if (!g.reason) g.reason = (e && e.name === 'AbortError') ? 'timeout' : 'network';
+        useLocal();
+      });
     }
     function aiGalleryRun(g) {
       var running = 0, next = 0, maxConc = 3;
@@ -9054,6 +9078,19 @@ function openTextModal(type) {
         }
       }
       pump();
+    }
+    function aiGalleryReasonText(r) {
+      r = String(r || '');
+      if (/missing_ref_or_verse_text|http_400/.test(r)) return 'السبب: الـ Worker على Cloudflare لسه على نسخة قديمة. حدّثي كوده من ملف worker-khalwaty-tafsir-v5.js ثم Deploy.';
+      if (/origin_not_allowed|http_403/.test(r)) return 'السبب: الـ Worker رفض الطلب لأن رابط التطبيق مختلف عن المسموح له.';
+      if (r === 'timeout') return 'السبب: التوليد تأخر أكثر من ٤٥ ثانية.';
+      if (/image_unavailable|empty_image|http_502/.test(r)) return 'السبب: Cloudflare لم يولّد الصورة (قد تكون الحصة المجانية اليومية انتهت أو الموديل غير متاح لحسابك). [' + r + ']';
+      return 'السبب: تعذّر الاتصال بالـ Worker (إنترنت ضعيف أو الـ Worker غير مفعّل). [' + (r || 'network') + ']';
+    }
+    function paintAIGalleryNote(g) {
+      var el = document.getElementById('aiGalNote');
+      if (!el || !g) return;
+      el.textContent = g.note || '';
     }
     function paintAIGalleryCard(i, g) {
       g = g || window._aiGallery;
@@ -9086,11 +9123,13 @@ function openTextModal(type) {
         '<p style="font-size:13px;color:#5a7d4a;margin:0 0 4px;">' + intro + '</p>' +
         '<p style="font-size:12px;color:#8a7a60;margin:0 0 10px;">اضغطي على التصميم الذي يعجبك لتعديل الخط ومكان الآية، ثم احفظيه أو افتحيه في برنامج تصميم.</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + cards + '</div>' +
+        '<div id="aiGalNote" style="margin-top:10px;font-size:12px;color:#8a5a3a;line-height:1.8;text-align:right;"></div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;">' +
           '<button type="button" class="save-btn" onclick="aiGalleryRegenerate()">🔄 ٥ تصاميم جديدة</button>' +
           '<button type="button" class="save-btn" style="background:#8a7a60;" onclick="aiGalleryManual()">🎨 التصميم اليدوي</button>' +
         '</div></div>';
       g.variants.forEach(function (v, i) { paintAIGalleryCard(i, g); });
+      paintAIGalleryNote(g);
       document.getElementById('prayerModal').classList.add('active');
       if (typeof addBackToChapterBtn === 'function') addBackToChapterBtn(pc);
     }
@@ -9099,7 +9138,7 @@ function openTextModal(type) {
       var it = g && g.items[i];
       if (!it) return;
       window._aiBgImage = it.img;
-      if (!window._aiTextStyles) window._aiTextStyles = { font: 'Amiri', size: 28, color: '#fffdf8', posX: 50, posY: 72 };
+      if (!window._aiTextStyles) window._aiTextStyles = { font: 'Amiri', size: 38, color: '#fffdf8', posX: 50, posY: 66 };
       showAIDesignResult(it.dataUrl, g.ref, g.txt, g.salt + i);
     }
     function aiGalleryRegenerate() {
@@ -13051,7 +13090,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '224';
+      var APP_VER = '225';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13159,6 +13198,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=224"></script>
+  <script src="khalwaty-poster.js?v=225"></script>
 </body>
 </html>

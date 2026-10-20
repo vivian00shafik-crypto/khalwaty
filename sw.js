@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v224';
+const CACHE = 'khalwati-v225';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -177,7 +177,7 @@ self.addEventListener('notificationclick', (e) => {
       try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=224';
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=225';
     await clients.openWindow(url);
   })());
 });

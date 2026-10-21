@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="231" lang="ar" dir="rtl">
+<html data-app-ver="232" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4880,6 +4880,7 @@ function openSaintsPraises() {
       h += '<button type="button" class="save-btn prep-act" data-prep-act="addPage" style="margin:0;background:#5a7d4a;">＋ إضافة صفحة <span style="opacity:.85;font-size:12px;">(' + pages.length + '/10)</span></button>';
       h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfAll" style="margin:0;background:#6b5b3e;">📄 PDF كل الصفحات</button>';
       h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfEach" style="margin:0;background:#8a7a60;">📄 PDF صفحة بصفحة</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="pptx" style="margin:0;background:#c45c26;">📊 بوربوينت PowerPoint</button>';
       h += '<button type="button" class="save-btn prep-act" data-prep-act="designFull" style="margin:0;background:#5a7d4a;">✨ ملصق إيضاح كامل</button>';
       h += '<button type="button" class="save-btn prep-act" data-prep-act="designChoose" style="margin:0;background:#6b8f5a;">✨ تنسيقات لكل صفحة</button>';
       h += '<button type="button" class="save-btn prep-act" data-prep-act="posterAI" style="margin:0;background:#7a5a9a;">🎨 بوستر A4</button>';
@@ -4923,6 +4924,7 @@ function openSaintsPraises() {
             else if (act === 'addPage') addPreparePage();
             else if (act === 'pdfAll') exportPrepareAllPagesPdf();
             else if (act === 'pdfEach') exportPrepareEachPagePdf();
+            else if (act === 'pptx') exportPreparePptx();
             else if (act === 'designFull') exportPrepareDesignPdf();
             else if (act === 'designChoose') exportPrepareDesignPdfChoose();
             else if (act === 'posterAI') openPrepPosterDesigner();
@@ -5109,6 +5111,307 @@ function onPrepareImageSelected(idx, input) {
       var text = raw.replace(/</g,'&lt;').replace(/\n/g, '<br>');
       html += '<div style="line-height:' + (compact ? '1.55' : '1.85') + ';font-size:15px;margin:0;padding:0;">' + (text || '<span style="color:#999;">(لا يوجد نص)</span>') + '</div>';
       return html;
+    }
+
+
+    /* —— مولّد PPTX بسيط بدون مكتبات خارجية (ZIP STORE) —— */
+    function _pptxCrc32(buf) {
+      var table = _pptxCrc32.table;
+      if (!table) {
+        table = new Uint32Array(256);
+        for (var n = 0; n < 256; n++) {
+          var c = n;
+          for (var k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+          table[n] = c >>> 0;
+        }
+        _pptxCrc32.table = table;
+      }
+      var crc = 0 ^ (-1);
+      for (var i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xff];
+      return (crc ^ (-1)) >>> 0;
+    }
+    function _pptxU16(n) { return new Uint8Array([n & 255, (n >> 8) & 255]); }
+    function _pptxU32(n) {
+      return new Uint8Array([n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255]);
+    }
+    function _pptxStr(s) {
+      return new TextEncoder().encode(s);
+    }
+    function _pptxConcat(parts) {
+      var len = 0;
+      for (var i = 0; i < parts.length; i++) len += parts[i].length;
+      var out = new Uint8Array(len);
+      var o = 0;
+      for (var j = 0; j < parts.length; j++) { out.set(parts[j], o); o += parts[j].length; }
+      return out;
+    }
+    function _pptxZipStore(files) {
+      var locals = [];
+      var centrals = [];
+      var offset = 0;
+      for (var i = 0; i < files.length; i++) {
+        var name = _pptxStr(files[i].name);
+        var data = files[i].data;
+        var crc = _pptxCrc32(data);
+        var local = _pptxConcat([
+          _pptxU32(0x04034b50),
+          _pptxU16(20), _pptxU16(0), _pptxU16(0),
+          _pptxU16(0), _pptxU16(0),
+          _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
+          _pptxU16(name.length), _pptxU16(0),
+          name, data
+        ]);
+        locals.push(local);
+        var central = _pptxConcat([
+          _pptxU32(0x02014b50),
+          _pptxU16(20), _pptxU16(20), _pptxU16(0), _pptxU16(0),
+          _pptxU16(0), _pptxU16(0),
+          _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
+          _pptxU16(name.length), _pptxU16(0), _pptxU16(0),
+          _pptxU16(0), _pptxU16(0), _pptxU32(0),
+          _pptxU32(offset),
+          name
+        ]);
+        centrals.push(central);
+        offset += local.length;
+      }
+      var centralStart = offset;
+      var centralBlob = _pptxConcat(centrals);
+      var end = _pptxConcat([
+        _pptxU32(0x06054b50),
+        _pptxU16(0), _pptxU16(0),
+        _pptxU16(files.length), _pptxU16(files.length),
+        _pptxU32(centralBlob.length), _pptxU32(centralStart),
+        _pptxU16(0)
+      ]);
+      return _pptxConcat(locals.concat([centralBlob, end]));
+    }
+    function _pptxEsc(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    function _pptxSlideXml(title, bodyLines, isTitleSlide) {
+      var shapes = '';
+      // عنوان
+      shapes +=
+        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr><p:ph type="' +
+        (isTitleSlide ? 'ctrTitle' : 'title') + '"/></p:nvPr></p:nvSpPr>' +
+        '<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>' +
+        '<a:p><a:r><a:rPr lang="ar-SA" dirty="0" sz="3200" b="1"/><a:t>' + _pptxEsc(title) + '</a:t></a:r></a:p>' +
+        '</p:txBody></p:sp>';
+      if (bodyLines && bodyLines.length) {
+        var paras = '';
+        bodyLines.forEach(function (ln) {
+          if (!ln) return;
+          paras +=
+            '<a:p><a:pPr marL="0" indent="0"><a:defRPr sz="1800"/></a:pPr>' +
+            '<a:r><a:rPr lang="ar-SA" dirty="0" sz="1800"/><a:t>' + _pptxEsc(ln) + '</a:t></a:r></a:p>';
+        });
+        shapes +=
+          '<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>' +
+          '<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>' + paras + '</p:txBody></p:sp>';
+      }
+      return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+        'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
+        '<p:cSld><p:spTree>' +
+        '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
+        shapes +
+        '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>'
+      );
+    }
+    function exportPreparePptx() {
+      try {
+        var pages = getPreparePages();
+        if (!pages.length) { showToast('لا توجد صفحات في التحضير'); return; }
+        var lessonTitle = getPrepareLessonTitle() || 'تحضير الدرس';
+        var files = [];
+        var n = pages.length + 1; // + title slide
+
+        files.push({
+          name: '[Content_Types].xml',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+            '<Default Extension="xml" ContentType="application/xml"/>' +
+            '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+            '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>' +
+            '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>' +
+            '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' +
+            (function () {
+              var s = '';
+              for (var i = 1; i <= n; i++) {
+                s += '<Override PartName="/ppt/slides/slide' + i + '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>';
+              }
+              return s;
+            })() +
+            '</Types>'
+          )
+        });
+        files.push({
+          name: '_rels/.rels',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>' +
+            '</Relationships>'
+          )
+        });
+
+        var presRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>';
+        var sldIdLst = '';
+        for (var i = 1; i <= n; i++) {
+          presRels += '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide' + i + '.xml"/>';
+          sldIdLst += '<p:sldId id="' + (255 + i) + '" r:id="rId' + (i + 1) + '"/>';
+        }
+        presRels += '</Relationships>';
+        files.push({ name: 'ppt/_rels/presentation.xml.rels', data: _pptxStr(presRels) });
+
+        files.push({
+          name: 'ppt/presentation.xml',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" ' +
+            'saveSubsetFonts="1">' +
+            '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>' +
+            '<p:sldIdLst>' + sldIdLst + '</p:sldIdLst>' +
+            '<p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/>' +
+            '</p:presentation>'
+          )
+        });
+
+        // Theme (minimal)
+        files.push({
+          name: 'ppt/theme/theme1.xml',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Khalwaty">' +
+            '<a:themeElements><a:clrScheme name="Khalwaty">' +
+            '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>' +
+            '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>' +
+            '<a:dk2><a:srgbClr val="1F497D"/></a:dk2><a:lt2><a:srgbClr val="EEECE1"/></a:lt2>' +
+            '<a:accent1><a:srgbClr val="6B5B3E"/></a:accent1><a:accent2><a:srgbClr val="C45C26"/></a:accent2>' +
+            '<a:accent3><a:srgbClr val="5A7D4A"/></a:accent3><a:accent4><a:srgbClr val="8A7A60"/></a:accent4>' +
+            '<a:accent5><a:srgbClr val="4A6A8A"/></a:accent5><a:accent6><a:srgbClr val="A65D4A"/></a:accent6>' +
+            '<a:hlink><a:srgbClr val="0000FF"/></a:hlink><a:folHlink><a:srgbClr val="800080"/></a:folHlink>' +
+            '</a:clrScheme>' +
+            '<a:fontScheme name="Khalwaty"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:majorFont>' +
+            '<a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:minorFont></a:fontScheme>' +
+            '<a:fmtScheme name="Khalwaty"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
+            '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>' +
+            '<a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>' +
+            '<a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>' +
+            '<a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>' +
+            '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>' +
+            '<a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst>' +
+            '</a:fmtScheme></a:themeElements></a:theme>'
+          )
+        });
+
+        // Minimal slide master + layout
+        files.push({
+          name: 'ppt/slideMasters/slideMaster1.xml',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
+            '<p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree>' +
+            '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
+            '</p:spTree></p:cSld>' +
+            '<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>' +
+            '<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>' +
+            '</p:sldMaster>'
+          )
+        });
+        files.push({
+          name: 'ppt/slideMasters/_rels/slideMaster1.xml.rels',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
+            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>' +
+            '</Relationships>'
+          )
+        });
+        files.push({
+          name: 'ppt/slideLayouts/slideLayout1.xml',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">' +
+            '<p:cSld name="Blank"><p:spTree>' +
+            '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
+            '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>'
+          )
+        });
+        files.push({
+          name: 'ppt/slideLayouts/_rels/slideLayout1.xml.rels',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>' +
+            '</Relationships>'
+          )
+        });
+
+        // Title slide
+        files.push({
+          name: 'ppt/slides/slide1.xml',
+          data: _pptxStr(_pptxSlideXml(lessonTitle, ['تطبيق خلوتي — تحضير الدرس'], true))
+        });
+        files.push({
+          name: 'ppt/slides/_rels/slide1.xml.rels',
+          data: _pptxStr(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
+            '</Relationships>'
+          )
+        });
+
+        pages.forEach(function (pg, idx) {
+          var sn = idx + 2;
+          var title = (pg && pg.title) ? String(pg.title).trim() : ('الصفحة ' + (idx + 1));
+          var raw = String((pg && pg.text) || '').replace(/\r\n/g, '\n').trim();
+          var lines = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+          // حد أقصى لسطور الشريحة
+          if (lines.length > 14) lines = lines.slice(0, 14).concat(['…']);
+          files.push({ name: 'ppt/slides/slide' + sn + '.xml', data: _pptxStr(_pptxSlideXml(title, lines, false)) });
+          files.push({
+            name: 'ppt/slides/_rels/slide' + sn + '.xml.rels',
+            data: _pptxStr(
+              '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+              '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
+              '</Relationships>'
+            )
+          });
+        });
+
+        var zipData = _pptxZipStore(files);
+        var blob = new Blob([zipData], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        var safeName = String(lessonTitle).replace(/[\\/:*?"<>|]/g, ' ').trim() || 'تحضير';
+        a.download = safeName + '.pptx';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2000);
+        showToast('تم تنزيل ملف PowerPoint');
+      } catch (err) {
+        console.log('exportPreparePptx', err);
+        showToast('تعذر إنشاء البوربوينت');
+      }
     }
 
     function exportPrepareOnePagePdf(idx) {
@@ -12609,32 +12912,27 @@ function dayScore(d) {
         var b = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         return Math.round((a - b) / 86400000);
       }
-      function fmtDate(iso) {
+      function fmtDateAr(iso) {
         if (!iso) return '—';
         var p = String(iso).slice(0, 10).split('-');
-        if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
-        return iso;
+        if (p.length !== 3) return iso;
+        var months = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        var m = parseInt(p[1], 10);
+        return parseInt(p[2], 10) + ' ' + (months[m] || p[1]) + ' ' + p[0];
       }
       function statusLine(label, iso, warnDays) {
         var ds = daysSince(iso);
         var color = '#8a7a60';
         var extra = '';
-        if (ds === null) {
-          extra = 'غير مسجّل';
-          color = '#a65d4a';
-        } else if (ds < 0) {
-          extra = fmtDate(iso);
-        } else if (ds === 0) {
-          extra = 'اليوم';
-          color = '#2a6a3a';
-        } else {
-          extra = fmtDate(iso) + ' (منذ ' + ds + ' يوم)';
+        if (ds === null) { extra = 'غير مسجّل'; color = '#a65d4a'; }
+        else if (ds === 0) { extra = 'اليوم (' + fmtDateAr(iso) + ')'; color = '#2a6a3a'; }
+        else {
+          extra = fmtDateAr(iso) + ' — منذ ' + ds + ' يوم';
           if (ds >= warnDays) color = '#a65d4a';
           else if (ds >= Math.floor(warnDays * 0.7)) color = '#9a7a20';
         }
         return '<span style="font-size:11px;color:' + color + ';">' + label + ': ' + extra + '</span>';
       }
-      // ترتيب: الأقدم اعترافًا أولًا
       var indexed = list.map(function (p, i) { return { p: p, i: i }; });
       indexed.sort(function (a, b) {
         var da = daysSince(a.p.lastConfession);
@@ -12653,27 +12951,27 @@ function dayScore(d) {
                 statusLine('آخر اعتراف', p.lastConfession, 40) + '<br>' +
                 statusLine('آخر تناول', p.lastCommunion, 30) +
               '</td>' +
-              '<td style="padding:8px;border-bottom:1px solid #eee;vertical-align:top;font-size:12px;">' + (p.phone || '—') + '</td>' +
+              '<td style="padding:8px;border-bottom:1px solid #eee;vertical-align:top;font-size:12px;direction:ltr;text-align:right;">' + (p.phone || '—') + '</td>' +
               '<td style="padding:6px;border-bottom:1px solid #eee;white-space:normal;min-width:120px;">' +
                 '<button type="button" onclick="markServedToday(' + i + ',\'confession\')" style="font-size:11px;margin:2px;padding:4px 8px;border-radius:8px;border:1px solid #c8b88a;background:#eef6ee;">✓ اعتراف اليوم</button>' +
                 '<button type="button" onclick="markServedToday(' + i + ',\'communion\')" style="font-size:11px;margin:2px;padding:4px 8px;border-radius:8px;border:1px solid #c8b88a;background:#eef6ee;">✓ تناول اليوم</button>' +
                 '<button type="button" onclick="editServed(' + i + ')" style="font-size:11px;margin:2px;">تعديل</button>' +
-                '<button type="button" onclick="printServedPdf(' + i + ')" style="font-size:11px;margin:2px;">PDF</button>' +
+                '<button type="button" onclick="openKhalwaReportForm(' + i + ')" style="font-size:11px;margin:2px;background:#6b5b3e;color:#fff;border:none;border-radius:6px;padding:4px 8px;">خلوة أسبوعية/شهرية</button>' +
                 '<button type="button" onclick="shareServedPdf(' + i + ')" style="font-size:11px;margin:2px;background:#3d6b8a;color:#fff;border:none;border-radius:6px;padding:4px 8px;">مشاركة PDF</button>' +
                 (p.phone ? '<a href="tel:' + p.phone + '" style="font-size:11px;margin:2px;">اتصال</a>' : '') +
                 (p.phone ? '<a href="https://wa.me/' + String(p.phone || '').replace(/[^0-9]/g, '') + '" target="_blank" rel="noopener" style="font-size:11px;margin:2px;">واتساب</a>' : '') +
                 '<button type="button" onclick="removeServed(' + i + ')" style="font-size:11px;color:#c0392b;margin:2px;">حذف</button>' +
-              '</td>' +
-            '</tr>';
+              '</td></tr>';
           }).join('')
         : '<tr><td colspan="3" style="padding:16px;text-align:center;color:#8a7a60;">لا يوجد مخدومين بعد</td></tr>';
+
       document.getElementById('prayerTitle').textContent = 'متابعة الخادم — المخدومين';
       document.getElementById('prayerContent').innerHTML =
         '<div style="text-align:right;font-size:13px;">' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
             '<button type="button" class="save-btn" style="margin:0;" onclick="addServedForm()">➕ إضافة مخدوم</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="openKhalwaReportForm(-1)">📝 نموذج خلوة (من المخدوم للخادم)</button>' +
             '<button type="button" class="save-btn" style="margin:0;background:#3d6b8a;" onclick="shareKhalwatiApp()">📤 شارك الابليكيشن</button>' +
-            '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="printAllServedPdf()">📄 تقرير المتابعة PDF</button>' +
           '</div>' +
           '<input id="servantSearch" type="search" placeholder="بحث باسم المخدوم..." oninput="filterServantRows(this.value)" style="width:100%;padding:10px;margin:0 0 10px;border-radius:12px;border:1px solid #e8d9b5;box-sizing:border-box;font-family:inherit;text-align:right;" dir="rtl">' +
           '<div style="overflow-x:auto;">' +
@@ -12683,7 +12981,7 @@ function dayScore(d) {
             '</table>' +
           '</div>' +
           '<button type="button" class="save-btn" style="margin-top:12px;background:#5a7d4a;" onclick="exportServedCsv()">تصدير CSV (إكسيل)</button>' +
-          '<p style="font-size:11px;color:#8a7a60;margin-top:10px;line-height:1.6;">التنبيه باللون الأحمر يظهر عند مرور حوالي 40 يومًا على الاعتراف أو 30 يومًا على التناول، أو إن لم يُسجَّل تاريخ.</p>' +
+          '<p style="font-size:11px;color:#8a7a60;margin-top:10px;line-height:1.7;">نموذج الخلوة الأسبوعي/الشهري يعبّئه المخدوم ويُرسَل للخادم (واتساب أو مشاركة). المتابعة هنا للخادم لتسجيل الاعتراف والتناول.</p>' +
         '</div>';
       document.getElementById('prayerModal').classList.add('active');
     }
@@ -12701,9 +12999,7 @@ function dayScore(d) {
 
     function todayIso() {
       var d = new Date();
-      var m = String(d.getMonth() + 1).padStart(2, '0');
-      var day = String(d.getDate()).padStart(2, '0');
-      return d.getFullYear() + '-' + m + '-' + day;
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
 
     function markServedToday(i, kind) {
@@ -12724,55 +13020,83 @@ function dayScore(d) {
       try {
         if (navigator.share) {
           navigator.share({ title: title, text: text, url: url }).catch(function () {
-            try {
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(function () {
-                  if (typeof showToast === 'function') showToast('تم نسخ رابط التطبيق');
-                });
-              } else {
-                window.prompt('انسخي رابط التطبيق:', url);
-              }
-            } catch (e2) {
-              window.prompt('انسخي رابط التطبيق:', url);
-            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(url).then(function () { showToast('تم نسخ رابط التطبيق'); });
+            } else window.prompt('انسخي رابط التطبيق:', url);
           });
           return;
         }
       } catch (e) {}
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(function () {
-            if (typeof showToast === 'function') showToast('تم نسخ رابط التطبيق');
-          });
+          navigator.clipboard.writeText(url).then(function () { showToast('تم نسخ رابط التطبيق'); });
           return;
         }
       } catch (e3) {}
       try { window.prompt('انسخي رابط التطبيق:', url); } catch (e4) {}
     }
 
-    function servedFormHtml() {
-      // حقول التاريخ dir=ltr حتى لا يظهر التنسيق معكوسًا (موي/رهش/قنس)
-      var dateStyle = 'width:100%;padding:10px;margin:4px 0 12px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;direction:ltr;text-align:left;';
-      var inputStyle = 'width:100%;padding:10px;margin:4px 0 12px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;text-align:right;';
-      var labelStyle = 'display:block;font-size:13px;font-weight:600;color:#5a4a2a;margin:4px 0 2px;';
+    var AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+    function buildArDateSelects(prefix, isoVal) {
+      var y0 = 0, m0 = 0, d0 = 0;
+      if (isoVal && /^\d{4}-\d{2}-\d{2}/.test(isoVal)) {
+        var p = isoVal.slice(0, 10).split('-');
+        y0 = parseInt(p[0], 10); m0 = parseInt(p[1], 10); d0 = parseInt(p[2], 10);
+      }
+      var yearNow = new Date().getFullYear();
+      var h = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px;" dir="rtl">';
+      // يوم
+      h += '<label style="flex:1;min-width:70px;font-size:12px;">اليوم<br><select id="' + prefix + 'D" style="width:100%;padding:8px;border-radius:10px;border:1px solid #e8d9b5;font-family:inherit;">';
+      h += '<option value="">—</option>';
+      for (var d = 1; d <= 31; d++) h += '<option value="' + d + '"' + (d === d0 ? ' selected' : '') + '>' + d + '</option>';
+      h += '</select></label>';
+      // شهر
+      h += '<label style="flex:2;min-width:100px;font-size:12px;">الشهر<br><select id="' + prefix + 'M" style="width:100%;padding:8px;border-radius:10px;border:1px solid #e8d9b5;font-family:inherit;">';
+      h += '<option value="">—</option>';
+      for (var m = 1; m <= 12; m++) h += '<option value="' + m + '"' + (m === m0 ? ' selected' : '') + '>' + AR_MONTHS[m - 1] + '</option>';
+      h += '</select></label>';
+      // سنة
+      h += '<label style="flex:1;min-width:80px;font-size:12px;">السنة<br><select id="' + prefix + 'Y" style="width:100%;padding:8px;border-radius:10px;border:1px solid #e8d9b5;font-family:inherit;">';
+      h += '<option value="">—</option>';
+      for (var y = yearNow; y >= yearNow - 90; y--) h += '<option value="' + y + '"' + (y === y0 ? ' selected' : '') + '>' + y + '</option>';
+      h += '</select></label></div>';
+      return h;
+    }
+
+    function readArDateSelects(prefix) {
+      var d = document.getElementById(prefix + 'D');
+      var m = document.getElementById(prefix + 'M');
+      var y = document.getElementById(prefix + 'Y');
+      var dv = d && d.value ? parseInt(d.value, 10) : 0;
+      var mv = m && m.value ? parseInt(m.value, 10) : 0;
+      var yv = y && y.value ? parseInt(y.value, 10) : 0;
+      if (!dv || !mv || !yv) return '';
+      return yv + '-' + String(mv).padStart(2, '0') + '-' + String(dv).padStart(2, '0');
+    }
+
+    function servedFormHtml(existing) {
+      existing = existing || {};
+      var labelStyle = 'display:block;font-size:13px;font-weight:600;color:#5a4a2a;margin:6px 0 2px;';
+      var inputStyle = 'width:100%;padding:10px;margin:4px 0 8px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;text-align:right;';
       return (
         '<div style="text-align:right;">' +
           '<label style="' + labelStyle + '">اسم المخدوم</label>' +
-          '<input id="sName" type="text" placeholder="اكتبي الاسم" dir="rtl" style="' + inputStyle + '">' +
+          '<input id="sName" type="text" dir="rtl" placeholder="اكتبي الاسم" value="' + String(existing.name || '').replace(/"/g, '&quot;') + '" style="' + inputStyle + '">' +
           '<label style="' + labelStyle + '">العنوان</label>' +
-          '<input id="sAddress" type="text" placeholder="العنوان" dir="rtl" style="' + inputStyle + '">' +
+          '<input id="sAddress" type="text" dir="rtl" placeholder="العنوان" value="' + String(existing.address || '').replace(/"/g, '&quot;') + '" style="' + inputStyle + '">' +
           '<label style="' + labelStyle + '">تاريخ الميلاد</label>' +
-          '<input id="sBirth" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          buildArDateSelects('sBirth', existing.birth || '') +
           '<label style="' + labelStyle + '">رقم التليفون</label>' +
-          '<input id="sPhone" type="tel" placeholder="01xxxxxxxxx" dir="ltr" style="' + dateStyle + '">' +
+          '<input id="sPhone" type="tel" dir="ltr" placeholder="01xxxxxxxxx" value="' + String(existing.phone || '').replace(/"/g, '&quot;') + '" style="' + inputStyle + 'direction:ltr;text-align:left;">' +
           '<label style="' + labelStyle + '">أب الاعتراف</label>' +
-          '<input id="sFather" type="text" placeholder="اسم أب الاعتراف" dir="rtl" style="' + inputStyle + '">' +
+          '<input id="sFather" type="text" dir="rtl" placeholder="اسم أب الاعتراف" value="' + String(existing.father || '').replace(/"/g, '&quot;') + '" style="' + inputStyle + '">' +
           '<label style="' + labelStyle + '">آخر اعتراف</label>' +
-          '<input id="sLastConf" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          buildArDateSelects('sLastConf', existing.lastConfession || '') +
           '<label style="' + labelStyle + '">آخر تناول</label>' +
-          '<input id="sLastComm" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          buildArDateSelects('sLastComm', existing.lastCommunion || '') +
           '<label style="' + labelStyle + '">ملاحظات الخادم / الخلوة</label>' +
-          '<textarea id="sNotes" placeholder="ملاحظات عن الخلوة والمتابعة..." dir="rtl" style="' + inputStyle + 'min-height:90px;"></textarea>' +
+          '<textarea id="sNotes" dir="rtl" placeholder="ملاحظات عن الخلوة والمتابعة..." style="' + inputStyle + 'min-height:90px;">' + String(existing.notes || '').replace(/</g, '&lt;') + '</textarea>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' +
             '<button type="button" class="save-btn" style="margin:0;" id="servedSaveBtn" onclick="saveServed()">حفظ</button>' +
             '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">رجوع</button>' +
@@ -12783,7 +13107,7 @@ function dayScore(d) {
 
     function addServedForm() {
       document.getElementById('prayerTitle').textContent = 'إضافة مخدوم';
-      document.getElementById('prayerContent').innerHTML = servedFormHtml();
+      document.getElementById('prayerContent').innerHTML = servedFormHtml({});
     }
 
     function readServedForm() {
@@ -12794,25 +13118,22 @@ function dayScore(d) {
       return {
         name: val('sName'),
         address: val('sAddress'),
-        birth: val('sBirth'),
+        birth: readArDateSelects('sBirth'),
         phone: val('sPhone'),
         father: val('sFather'),
-        lastConfession: val('sLastConf'),
-        lastCommunion: val('sLastComm'),
+        lastConfession: readArDateSelects('sLastConf'),
+        lastCommunion: readArDateSelects('sLastComm'),
         notes: val('sNotes')
       };
     }
 
     function saveServed() {
       var data = readServedForm();
-      if (!data.name) {
-        if (typeof showToast === 'function') showToast('اكتبي اسم المخدوم');
-        return;
-      }
+      if (!data.name) { showToast('اكتبي اسم المخدوم'); return; }
       var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
       list.push(data);
       localStorage.setItem('khalwati_served', JSON.stringify(list));
-      if (typeof showToast === 'function') showToast('تم الحفظ');
+      showToast('تم الحفظ');
       openServantSection();
     }
 
@@ -12829,124 +13150,166 @@ function dayScore(d) {
       var p = list[i];
       if (!p) return;
       document.getElementById('prayerTitle').textContent = 'تعديل مخدوم';
-      document.getElementById('prayerContent').innerHTML = servedFormHtml();
-      setTimeout(function () {
-        var map = {
-          sName: p.name,
-          sAddress: p.address,
-          sBirth: p.birth,
-          sPhone: p.phone,
-          sFather: p.father,
-          sLastConf: p.lastConfession,
-          sLastComm: p.lastCommunion,
-          sNotes: p.notes
-        };
-        Object.keys(map).forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.value = map[id] || '';
-        });
-        var btn = document.getElementById('servedSaveBtn');
-        if (btn) btn.setAttribute('onclick', 'updateServed(' + i + ')');
-      }, 20);
+      document.getElementById('prayerContent').innerHTML = servedFormHtml(p);
+      var btn = document.getElementById('servedSaveBtn');
+      if (btn) btn.setAttribute('onclick', 'updateServed(' + i + ')');
     }
 
     function updateServed(i) {
       var data = readServedForm();
-      if (!data.name) {
-        if (typeof showToast === 'function') showToast('اكتبي اسم المخدوم');
-        return;
-      }
+      if (!data.name) { showToast('اكتبي اسم المخدوم'); return; }
       var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
       list[i] = data;
       localStorage.setItem('khalwati_served', JSON.stringify(list));
-      if (typeof showToast === 'function') showToast('تم التعديل');
+      showToast('تم التعديل');
       openServantSection();
     }
 
-    function buildServedHtml(p) {
+    /** نموذج خلوة أسبوعي/شهري — يعبّئه المخدوم ويرسله للخادم */
+    function openKhalwaReportForm(servedIdx) {
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var pre = (servedIdx >= 0 && list[servedIdx]) ? list[servedIdx] : {};
+      var labelStyle = 'display:block;font-size:13px;font-weight:600;color:#5a4a2a;margin:8px 0 4px;';
+      var inputStyle = 'width:100%;padding:10px;margin:0 0 6px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;text-align:right;';
+      document.getElementById('prayerTitle').textContent = 'نموذج خلوة — من المخدوم للخادم';
+      document.getElementById('prayerContent').innerHTML =
+        '<div style="text-align:right;font-size:13px;line-height:1.75;">' +
+          '<p style="background:#f5efe0;padding:10px 12px;border-radius:12px;margin:0 0 12px;color:#5a4a2a;">هذا النموذج يعبّئه <b>المخدوم</b> عن خلوته (أسبوعيًا أو شهريًا) ثم يرسله للخادم بالمشاركة أو واتساب.</p>' +
+          '<label style="' + labelStyle + '">اسم المخدوم</label>' +
+          '<input id="khName" type="text" dir="rtl" value="' + String(pre.name || '').replace(/"/g, '&quot;') + '" style="' + inputStyle + '">' +
+          '<label style="' + labelStyle + '">نوع التقرير</label>' +
+          '<select id="khPeriod" style="' + inputStyle + '">' +
+            '<option value="weekly">أسبوعي</option>' +
+            '<option value="monthly">شهري</option>' +
+          '</select>' +
+          '<label style="' + labelStyle + '">فترة التقرير (من)</label>' +
+          buildArDateSelects('khFrom', '') +
+          '<label style="' + labelStyle + '">فترة التقرير (إلى)</label>' +
+          buildArDateSelects('khTo', todayIso()) +
+          '<label style="' + labelStyle + '">هل اعترفت في هذه الفترة؟</label>' +
+          '<select id="khConfessed" style="' + inputStyle + '"><option value="نعم">نعم</option><option value="لا">لا</option></select>' +
+          '<label style="' + labelStyle + '">هل تناولت في هذه الفترة؟</label>' +
+          '<select id="khCommunion" style="' + inputStyle + '"><option value="نعم">نعم</option><option value="لا">لا</option></select>' +
+          '<label style="' + labelStyle + '">القراءات الروحية / الكتاب المقدس</label>' +
+          '<textarea id="khReading" dir="rtl" rows="3" placeholder="ماذا قرأت؟" style="' + inputStyle + '"></textarea>' +
+          '<label style="' + labelStyle + '">الصلوات والتأمل</label>' +
+          '<textarea id="khPrayer" dir="rtl" rows="3" placeholder="صلواتك وتأملاتك" style="' + inputStyle + '"></textarea>' +
+          '<label style="' + labelStyle + '">شكر ونعم</label>' +
+          '<textarea id="khThanks" dir="rtl" rows="2" placeholder="على ماذا تشكر الله؟" style="' + inputStyle + '"></textarea>' +
+          '<label style="' + labelStyle + '">صعوبات أو ضعفات</label>' +
+          '<textarea id="khStruggle" dir="rtl" rows="2" placeholder="اختياري" style="' + inputStyle + '"></textarea>' +
+          '<label style="' + labelStyle + '">طلبات صلاة / رسالة للخادم</label>' +
+          '<textarea id="khAsk" dir="rtl" rows="2" placeholder="ماذا تريد أن يصلي الخادم من أجلك؟" style="' + inputStyle + '"></textarea>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">' +
+            '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="sendKhalwaReportToServant()">📤 إرسال للخادم (مشاركة)</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="printKhalwaReport()">📄 PDF</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">رجوع</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function readKhalwaReport() {
+      function v(id) {
+        var el = document.getElementById(id);
+        return el ? String(el.value || '').trim() : '';
+      }
+      var period = v('khPeriod');
+      return {
+        name: v('khName'),
+        period: period === 'monthly' ? 'شهري' : 'أسبوعي',
+        from: readArDateSelects('khFrom'),
+        to: readArDateSelects('khTo'),
+        confessed: v('khConfessed'),
+        communion: v('khCommunion'),
+        reading: v('khReading'),
+        prayer: v('khPrayer'),
+        thanks: v('khThanks'),
+        struggle: v('khStruggle'),
+        ask: v('khAsk')
+      };
+    }
+
+    function formatKhalwaReportText(r) {
       function fd(iso) {
         if (!iso) return '—';
-        var x = String(iso).slice(0, 10).split('-');
-        return x.length === 3 ? (x[2] + '/' + x[1] + '/' + x[0]) : iso;
+        var p = String(iso).slice(0, 10).split('-');
+        if (p.length !== 3) return iso;
+        return parseInt(p[2], 10) + ' ' + (AR_MONTHS[parseInt(p[1], 10) - 1] || p[1]) + ' ' + p[0];
       }
       return (
-        '<h3 style="margin:0 0 12px;">ملف المخدوم: ' + (p.name || '') + '</h3>' +
-        '<p><strong>العنوان:</strong> ' + (p.address || '—') + '</p>' +
-        '<p><strong>تاريخ الميلاد:</strong> ' + fd(p.birth) + '</p>' +
-        '<p><strong>التليفون:</strong> ' + (p.phone || '—') + '</p>' +
-        '<p><strong>أب الاعتراف:</strong> ' + (p.father || '—') + '</p>' +
-        '<p><strong>آخر اعتراف:</strong> ' + fd(p.lastConfession) + '</p>' +
-        '<p><strong>آخر تناول:</strong> ' + fd(p.lastCommunion) + '</p>' +
-        '<h3>ملاحظات الخادم / الخلوة</h3>' +
-        '<p style="white-space:pre-wrap;">' + String(p.notes || '—').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>'
+        'تقرير خلوة ' + r.period + ' — من المخدوم للخادم\n' +
+        '────────────────\n' +
+        'الاسم: ' + (r.name || '—') + '\n' +
+        'الفترة: من ' + fd(r.from) + ' إلى ' + fd(r.to) + '\n' +
+        'الاعتراف في الفترة: ' + (r.confessed || '—') + '\n' +
+        'التناول في الفترة: ' + (r.communion || '—') + '\n\n' +
+        'القراءات الروحية:\n' + (r.reading || '—') + '\n\n' +
+        'الصلوات والتأمل:\n' + (r.prayer || '—') + '\n\n' +
+        'شكر ونعم:\n' + (r.thanks || '—') + '\n\n' +
+        'صعوبات:\n' + (r.struggle || '—') + '\n\n' +
+        'طلبات / رسالة للخادم:\n' + (r.ask || '—') + '\n' +
+        '────────────────\n' +
+        'عبر تطبيق خلوتي'
       );
     }
 
-    function printServedPdf(i) {
-      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      var p = list[i];
-      if (!p) return;
-      printHTML('متابعة — ' + (p.name || 'مخدوم'), buildServedHtml(p));
+    function formatKhalwaReportHtml(r) {
+      function fd(iso) {
+        if (!iso) return '—';
+        var p = String(iso).slice(0, 10).split('-');
+        if (p.length !== 3) return iso;
+        return parseInt(p[2], 10) + ' ' + (AR_MONTHS[parseInt(p[1], 10) - 1] || p[1]) + ' ' + p[0];
+      }
+      function esc(s) { return String(s || '—').replace(/</g, '&lt;').replace(/\n/g, '<br>'); }
+      return (
+        '<h2>تقرير خلوة ' + r.period + '</h2>' +
+        '<p style="color:#666;">من المخدوم إلى الخادم</p>' +
+        '<p><strong>الاسم:</strong> ' + esc(r.name) + '</p>' +
+        '<p><strong>الفترة:</strong> من ' + fd(r.from) + ' إلى ' + fd(r.to) + '</p>' +
+        '<p><strong>الاعتراف:</strong> ' + esc(r.confessed) + ' | <strong>التناول:</strong> ' + esc(r.communion) + '</p>' +
+        '<h3>القراءات الروحية</h3><p>' + esc(r.reading) + '</p>' +
+        '<h3>الصلوات والتأمل</h3><p>' + esc(r.prayer) + '</p>' +
+        '<h3>شكر ونعم</h3><p>' + esc(r.thanks) + '</p>' +
+        '<h3>صعوبات</h3><p>' + esc(r.struggle) + '</p>' +
+        '<h3>طلبات / رسالة للخادم</h3><p>' + esc(r.ask) + '</p>'
+      );
     }
 
-    function shareServedPdf(i) {
-      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      var p = list[i];
-      if (!p) return;
-      var title = 'خلوة — ' + (p.name || 'مخدوم');
-      var text =
-        title + '\n' +
-        'العنوان: ' + (p.address || '—') + '\n' +
-        'التليفون: ' + (p.phone || '—') + '\n' +
-        'أب الاعتراف: ' + (p.father || '—') + '\n' +
-        'آخر اعتراف: ' + (p.lastConfession || '—') + '\n' +
-        'آخر تناول: ' + (p.lastCommunion || '—') + '\n' +
-        'ملاحظات الخلوة:\n' + (p.notes || '—');
-      // أولًا: مشاركة نصية (مدعومة على أغلب الأجهزة)
-      // مع فتح PDF للطباعة/المشاركة كملف عند الحاجة
+    function sendKhalwaReportToServant() {
+      var r = readKhalwaReport();
+      if (!r.name) { showToast('اكتبي اسم المخدوم'); return; }
+      var text = formatKhalwaReportText(r);
       try {
         if (navigator.share) {
-          navigator.share({ title: title, text: text }).catch(function () {
-            printServedPdf(i);
-            if (typeof showToast === 'function') showToast('تم فتح PDF — شاركي من قائمة الطباعة أو الملفات');
+          navigator.share({ title: 'تقرير خلوة ' + r.period + ' — ' + r.name, text: text }).catch(function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function () { showToast('تم نسخ التقرير — الصقيه في واتساب للخادم'); });
+            }
           });
           return;
         }
       } catch (e) {}
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () {
-            if (typeof showToast === 'function') showToast('تم نسخ ملخص الخلوة — يمكنك لصقه للمشاركة');
-          });
-          printServedPdf(i);
+          navigator.clipboard.writeText(text).then(function () { showToast('تم نسخ التقرير — أرسليه للخادم'); });
           return;
         }
       } catch (e2) {}
-      printServedPdf(i);
-      if (typeof showToast === 'function') showToast('تم فتح PDF للمشاركة');
+      window.prompt('انسخي التقرير وأرسليه للخادم:', text);
     }
 
-    function printAllServedPdf() {
+    function printKhalwaReport() {
+      var r = readKhalwaReport();
+      if (!r.name) { showToast('اكتبي اسم المخدوم'); return; }
+      printHTML('تقرير خلوة ' + r.period + ' — ' + r.name, formatKhalwaReportHtml(r));
+    }
+
+    function shareServedPdf(i) {
       var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      if (!list.length) {
-        if (typeof showToast === 'function') showToast('لا يوجد مخدومين');
-        return;
-      }
-      function fd(iso) {
-        if (!iso) return '—';
-        var x = String(iso).slice(0, 10).split('-');
-        return x.length === 3 ? (x[2] + '/' + x[1] + '/' + x[0]) : iso;
-      }
-      var body = '<h2>تقرير متابعة المخدومين</h2>';
-      body += '<p style="color:#666;">تاريخ التقرير: ' + fd(todayIso()) + '</p>';
-      list.forEach(function (p, idx) {
-        body += '<hr style="margin:16px 0;border:none;border-top:1px solid #ddd;">';
-        body += '<h3>' + (idx + 1) + ') ' + (p.name || 'بدون اسم') + '</h3>';
-        body += '<p>التليفون: ' + (p.phone || '—') + ' | أب الاعتراف: ' + (p.father || '—') + '</p>';
-        body += '<p>آخر اعتراف: ' + fd(p.lastConfession) + ' | آخر تناول: ' + fd(p.lastCommunion) + '</p>';
-        if (p.notes) body += '<p style="white-space:pre-wrap;"><strong>ملاحظات الخلوة:</strong><br>' + String(p.notes).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>';
-      });
-      printHTML('تقرير متابعة المخدومين — خلوتي', body);
+      var p = list[i];
+      if (!p) return;
+      openKhalwaReportForm(i);
+      showToast('عبّي نموذج الخلوة ثم اضغطي إرسال للخادم');
     }
 
     function exportServedCsv() {
@@ -13412,7 +13775,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '231';
+      var APP_VER = '232';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

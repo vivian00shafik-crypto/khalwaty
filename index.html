@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="230" lang="ar" dir="rtl">
+<html data-app-ver="231" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -12599,38 +12599,122 @@ function dayScore(d) {
     }
 
     function openServantSection() {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      const rows = list.length
-        ? list.map((p,i) => `<tr>
-            <td style="padding:6px;border-bottom:1px solid #eee;">
-              <strong>${p.name||''}</strong><br>
-              <span style="font-size:11px;color:#8a7a60;">آخر اعتراف: ${p.lastConfession||'—'}</span><br>
-              <span style="font-size:11px;color:#8a7a60;">آخر تناول: ${p.lastCommunion||'—'}</span>
-            </td>
-            <td style="padding:6px;border-bottom:1px solid #eee;">${p.phone||''}</td>
-            <td style="padding:6px;border-bottom:1px solid #eee;white-space:nowrap;">
-              <button onclick="editServed(${i})" style="font-size:11px;margin:2px;">تعديل</button>
-              <button onclick="printServedPdf(${i})" style="font-size:11px;margin:2px;">PDF</button>
-              ${p.phone ? `<a href="tel:${p.phone}" style="font-size:11px;margin:2px;">اتصال</a>` : ''}
-              ${p.phone ? `<a href="https://wa.me/${(p.phone||'').replace(/[^0-9]/g,'')}" target="_blank" style="font-size:11px;margin:2px;">واتساب</a>` : ''}
-              <button onclick="removeServed(${i})" style="font-size:11px;color:#c0392b;margin:2px;">حذف</button>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="3">لا يوجد مخدومين بعد</td></tr>';
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      function daysSince(iso) {
+        if (!iso) return null;
+        var d = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+        if (isNaN(d.getTime())) return null;
+        var now = new Date();
+        var a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var b = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        return Math.round((a - b) / 86400000);
+      }
+      function fmtDate(iso) {
+        if (!iso) return '—';
+        var p = String(iso).slice(0, 10).split('-');
+        if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
+        return iso;
+      }
+      function statusLine(label, iso, warnDays) {
+        var ds = daysSince(iso);
+        var color = '#8a7a60';
+        var extra = '';
+        if (ds === null) {
+          extra = 'غير مسجّل';
+          color = '#a65d4a';
+        } else if (ds < 0) {
+          extra = fmtDate(iso);
+        } else if (ds === 0) {
+          extra = 'اليوم';
+          color = '#2a6a3a';
+        } else {
+          extra = fmtDate(iso) + ' (منذ ' + ds + ' يوم)';
+          if (ds >= warnDays) color = '#a65d4a';
+          else if (ds >= Math.floor(warnDays * 0.7)) color = '#9a7a20';
+        }
+        return '<span style="font-size:11px;color:' + color + ';">' + label + ': ' + extra + '</span>';
+      }
+      // ترتيب: الأقدم اعترافًا أولًا
+      var indexed = list.map(function (p, i) { return { p: p, i: i }; });
+      indexed.sort(function (a, b) {
+        var da = daysSince(a.p.lastConfession);
+        var db = daysSince(b.p.lastConfession);
+        if (da === null && db === null) return 0;
+        if (da === null) return -1;
+        if (db === null) return 1;
+        return db - da;
+      });
+      var rows = indexed.length
+        ? indexed.map(function (item) {
+            var p = item.p, i = item.i;
+            return '<tr>' +
+              '<td style="padding:8px;border-bottom:1px solid #eee;vertical-align:top;">' +
+                '<strong style="font-size:14px;">' + (p.name || 'بدون اسم') + '</strong><br>' +
+                statusLine('آخر اعتراف', p.lastConfession, 40) + '<br>' +
+                statusLine('آخر تناول', p.lastCommunion, 30) +
+              '</td>' +
+              '<td style="padding:8px;border-bottom:1px solid #eee;vertical-align:top;font-size:12px;">' + (p.phone || '—') + '</td>' +
+              '<td style="padding:6px;border-bottom:1px solid #eee;white-space:normal;min-width:120px;">' +
+                '<button type="button" onclick="markServedToday(' + i + ',\'confession\')" style="font-size:11px;margin:2px;padding:4px 8px;border-radius:8px;border:1px solid #c8b88a;background:#eef6ee;">✓ اعتراف اليوم</button>' +
+                '<button type="button" onclick="markServedToday(' + i + ',\'communion\')" style="font-size:11px;margin:2px;padding:4px 8px;border-radius:8px;border:1px solid #c8b88a;background:#eef6ee;">✓ تناول اليوم</button>' +
+                '<button type="button" onclick="editServed(' + i + ')" style="font-size:11px;margin:2px;">تعديل</button>' +
+                '<button type="button" onclick="printServedPdf(' + i + ')" style="font-size:11px;margin:2px;">PDF</button>' +
+                '<button type="button" onclick="shareServedPdf(' + i + ')" style="font-size:11px;margin:2px;background:#3d6b8a;color:#fff;border:none;border-radius:6px;padding:4px 8px;">مشاركة PDF</button>' +
+                (p.phone ? '<a href="tel:' + p.phone + '" style="font-size:11px;margin:2px;">اتصال</a>' : '') +
+                (p.phone ? '<a href="https://wa.me/' + String(p.phone || '').replace(/[^0-9]/g, '') + '" target="_blank" rel="noopener" style="font-size:11px;margin:2px;">واتساب</a>' : '') +
+                '<button type="button" onclick="removeServed(' + i + ')" style="font-size:11px;color:#c0392b;margin:2px;">حذف</button>' +
+              '</td>' +
+            '</tr>';
+          }).join('')
+        : '<tr><td colspan="3" style="padding:16px;text-align:center;color:#8a7a60;">لا يوجد مخدومين بعد</td></tr>';
       document.getElementById('prayerTitle').textContent = 'متابعة الخادم — المخدومين';
-      document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right;font-size:13px;">
-          <button class="save-btn" onclick="addServedForm()">➕ إضافة مخدوم</button>
-          <button class="save-btn" style="background:#3d6b8a;" onclick="shareKhalwatiApp()">📤 شارك الابليكيشن</button>
-          <div style="overflow-x:auto;margin-top:10px;">
-            <table style="width:100%;border-collapse:collapse;font-size:12px;">
-              <tr style="background:#f5e6c8;"><th>المخدوم</th><th>تليفون</th><th>إجراءات</th></tr>
-              ${rows}
-            </table>
-          </div>
-          <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="exportServedCsv()">تصدير CSV (إكسيل)</button>
-        </div>`;
+      document.getElementById('prayerContent').innerHTML =
+        '<div style="text-align:right;font-size:13px;">' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+            '<button type="button" class="save-btn" style="margin:0;" onclick="addServedForm()">➕ إضافة مخدوم</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#3d6b8a;" onclick="shareKhalwatiApp()">📤 شارك الابليكيشن</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="printAllServedPdf()">📄 تقرير المتابعة PDF</button>' +
+          '</div>' +
+          '<input id="servantSearch" type="search" placeholder="بحث باسم المخدوم..." oninput="filterServantRows(this.value)" style="width:100%;padding:10px;margin:0 0 10px;border-radius:12px;border:1px solid #e8d9b5;box-sizing:border-box;font-family:inherit;text-align:right;" dir="rtl">' +
+          '<div style="overflow-x:auto;">' +
+            '<table id="servantTable" style="width:100%;border-collapse:collapse;font-size:12px;">' +
+              '<tr style="background:#f5e6c8;"><th style="padding:8px;">المخدوم</th><th style="padding:8px;">التليفون</th><th style="padding:8px;">إجراءات</th></tr>' +
+              rows +
+            '</table>' +
+          '</div>' +
+          '<button type="button" class="save-btn" style="margin-top:12px;background:#5a7d4a;" onclick="exportServedCsv()">تصدير CSV (إكسيل)</button>' +
+          '<p style="font-size:11px;color:#8a7a60;margin-top:10px;line-height:1.6;">التنبيه باللون الأحمر يظهر عند مرور حوالي 40 يومًا على الاعتراف أو 30 يومًا على التناول، أو إن لم يُسجَّل تاريخ.</p>' +
+        '</div>';
       document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function filterServantRows(q) {
+      q = String(q || '').trim().toLowerCase();
+      var table = document.getElementById('servantTable');
+      if (!table) return;
+      var rows = table.querySelectorAll('tr');
+      for (var i = 1; i < rows.length; i++) {
+        var name = (rows[i].textContent || '').toLowerCase();
+        rows[i].style.display = (!q || name.indexOf(q) !== -1) ? '' : 'none';
+      }
+    }
+
+    function todayIso() {
+      var d = new Date();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    function markServedToday(i, kind) {
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      if (!list[i]) return;
+      var t = todayIso();
+      if (kind === 'confession') list[i].lastConfession = t;
+      if (kind === 'communion') list[i].lastCommunion = t;
+      localStorage.setItem('khalwati_served', JSON.stringify(list));
+      if (typeof showToast === 'function') showToast(kind === 'confession' ? 'تم تسجيل اعتراف اليوم' : 'تم تسجيل تناول اليوم');
+      openServantSection();
     }
 
     function shareKhalwatiApp() {
@@ -12666,105 +12750,213 @@ function dayScore(d) {
       try { window.prompt('انسخي رابط التطبيق:', url); } catch (e4) {}
     }
 
+    function servedFormHtml() {
+      // حقول التاريخ dir=ltr حتى لا يظهر التنسيق معكوسًا (موي/رهش/قنس)
+      var dateStyle = 'width:100%;padding:10px;margin:4px 0 12px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;direction:ltr;text-align:left;';
+      var inputStyle = 'width:100%;padding:10px;margin:4px 0 12px;font-family:inherit;border:1px solid #e8d9b5;border-radius:10px;box-sizing:border-box;text-align:right;';
+      var labelStyle = 'display:block;font-size:13px;font-weight:600;color:#5a4a2a;margin:4px 0 2px;';
+      return (
+        '<div style="text-align:right;">' +
+          '<label style="' + labelStyle + '">اسم المخدوم</label>' +
+          '<input id="sName" type="text" placeholder="اكتبي الاسم" dir="rtl" style="' + inputStyle + '">' +
+          '<label style="' + labelStyle + '">العنوان</label>' +
+          '<input id="sAddress" type="text" placeholder="العنوان" dir="rtl" style="' + inputStyle + '">' +
+          '<label style="' + labelStyle + '">تاريخ الميلاد</label>' +
+          '<input id="sBirth" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          '<label style="' + labelStyle + '">رقم التليفون</label>' +
+          '<input id="sPhone" type="tel" placeholder="01xxxxxxxxx" dir="ltr" style="' + dateStyle + '">' +
+          '<label style="' + labelStyle + '">أب الاعتراف</label>' +
+          '<input id="sFather" type="text" placeholder="اسم أب الاعتراف" dir="rtl" style="' + inputStyle + '">' +
+          '<label style="' + labelStyle + '">آخر اعتراف</label>' +
+          '<input id="sLastConf" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          '<label style="' + labelStyle + '">آخر تناول</label>' +
+          '<input id="sLastComm" type="date" lang="en" dir="ltr" style="' + dateStyle + '">' +
+          '<label style="' + labelStyle + '">ملاحظات الخادم / الخلوة</label>' +
+          '<textarea id="sNotes" placeholder="ملاحظات عن الخلوة والمتابعة..." dir="rtl" style="' + inputStyle + 'min-height:90px;"></textarea>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' +
+            '<button type="button" class="save-btn" style="margin:0;" id="servedSaveBtn" onclick="saveServed()">حفظ</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">رجوع</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
     function addServedForm() {
-      document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right;">
-          <input id="sName" placeholder="اسم المخدوم" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <input id="sAddress" placeholder="العنوان" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <input id="sBirth" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <input id="sPhone" placeholder="رقم التليفون" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <input id="sFather" placeholder="أب الاعتراف" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <label style="font-size:12px;">آخر اعتراف</label>
-          <input id="sLastConf" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <label style="font-size:12px;">آخر تناول</label>
-          <input id="sLastComm" type="date" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;">
-          <textarea id="sNotes" placeholder="ملاحظات الخادم / الخلوة" style="width:100%;padding:8px;margin:4px 0;font-family:inherit;min-height:70px;"></textarea>
-          <button class="save-btn" onclick="saveServed()">حفظ</button>
-          <button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openServantSection()">رجوع</button>
-        </div>`;
+      document.getElementById('prayerTitle').textContent = 'إضافة مخدوم';
+      document.getElementById('prayerContent').innerHTML = servedFormHtml();
     }
 
     function readServedForm() {
+      function val(id) {
+        var el = document.getElementById(id);
+        return el ? String(el.value || '').trim() : '';
+      }
       return {
-        name: document.getElementById('sName').value,
-        address: document.getElementById('sAddress').value,
-        birth: document.getElementById('sBirth').value,
-        phone: document.getElementById('sPhone').value,
-        father: document.getElementById('sFather').value,
-        lastConfession: document.getElementById('sLastConf').value,
-        lastCommunion: document.getElementById('sLastComm').value,
-        notes: document.getElementById('sNotes').value
+        name: val('sName'),
+        address: val('sAddress'),
+        birth: val('sBirth'),
+        phone: val('sPhone'),
+        father: val('sFather'),
+        lastConfession: val('sLastConf'),
+        lastCommunion: val('sLastComm'),
+        notes: val('sNotes')
       };
     }
 
     function saveServed() {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      list.push(readServedForm());
+      var data = readServedForm();
+      if (!data.name) {
+        if (typeof showToast === 'function') showToast('اكتبي اسم المخدوم');
+        return;
+      }
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      list.push(data);
       localStorage.setItem('khalwati_served', JSON.stringify(list));
-      showToast('تم الحفظ');
+      if (typeof showToast === 'function') showToast('تم الحفظ');
       openServantSection();
     }
 
     function removeServed(i) {
       if (!confirm('حذف هذا المخدوم؟')) return;
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
       list.splice(i, 1);
       localStorage.setItem('khalwati_served', JSON.stringify(list));
       openServantSection();
     }
 
     function editServed(i) {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      const p = list[i];
-      addServedForm();
-      setTimeout(() => {
-        document.getElementById('sName').value = p.name || '';
-        document.getElementById('sAddress').value = p.address || '';
-        document.getElementById('sBirth').value = p.birth || '';
-        document.getElementById('sPhone').value = p.phone || '';
-        document.getElementById('sFather').value = p.father || '';
-        document.getElementById('sLastConf').value = p.lastConfession || '';
-        document.getElementById('sLastComm').value = p.lastCommunion || '';
-        document.getElementById('sNotes').value = p.notes || '';
-        const btn = document.querySelector('#prayerContent .save-btn');
-        if (btn) btn.setAttribute('onclick', `updateServed(${i})`);
-      }, 30);
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var p = list[i];
+      if (!p) return;
+      document.getElementById('prayerTitle').textContent = 'تعديل مخدوم';
+      document.getElementById('prayerContent').innerHTML = servedFormHtml();
+      setTimeout(function () {
+        var map = {
+          sName: p.name,
+          sAddress: p.address,
+          sBirth: p.birth,
+          sPhone: p.phone,
+          sFather: p.father,
+          sLastConf: p.lastConfession,
+          sLastComm: p.lastCommunion,
+          sNotes: p.notes
+        };
+        Object.keys(map).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.value = map[id] || '';
+        });
+        var btn = document.getElementById('servedSaveBtn');
+        if (btn) btn.setAttribute('onclick', 'updateServed(' + i + ')');
+      }, 20);
     }
 
     function updateServed(i) {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      list[i] = readServedForm();
+      var data = readServedForm();
+      if (!data.name) {
+        if (typeof showToast === 'function') showToast('اكتبي اسم المخدوم');
+        return;
+      }
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      list[i] = data;
       localStorage.setItem('khalwati_served', JSON.stringify(list));
-      showToast('تم التعديل');
+      if (typeof showToast === 'function') showToast('تم التعديل');
       openServantSection();
     }
 
+    function buildServedHtml(p) {
+      function fd(iso) {
+        if (!iso) return '—';
+        var x = String(iso).slice(0, 10).split('-');
+        return x.length === 3 ? (x[2] + '/' + x[1] + '/' + x[0]) : iso;
+      }
+      return (
+        '<h3 style="margin:0 0 12px;">ملف المخدوم: ' + (p.name || '') + '</h3>' +
+        '<p><strong>العنوان:</strong> ' + (p.address || '—') + '</p>' +
+        '<p><strong>تاريخ الميلاد:</strong> ' + fd(p.birth) + '</p>' +
+        '<p><strong>التليفون:</strong> ' + (p.phone || '—') + '</p>' +
+        '<p><strong>أب الاعتراف:</strong> ' + (p.father || '—') + '</p>' +
+        '<p><strong>آخر اعتراف:</strong> ' + fd(p.lastConfession) + '</p>' +
+        '<p><strong>آخر تناول:</strong> ' + fd(p.lastCommunion) + '</p>' +
+        '<h3>ملاحظات الخادم / الخلوة</h3>' +
+        '<p style="white-space:pre-wrap;">' + String(p.notes || '—').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>'
+      );
+    }
+
     function printServedPdf(i) {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      const p = list[i];
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var p = list[i];
       if (!p) return;
-      const body = `
-        <h3>ملف المخدوم: ${p.name||''}</h3>
-        <p><strong>العنوان:</strong> ${p.address||'—'}</p>
-        <p><strong>تاريخ الميلاد:</strong> ${p.birth||'—'}</p>
-        <p><strong>التليفون:</strong> ${p.phone||'—'}</p>
-        <p><strong>أب الاعتراف:</strong> ${p.father||'—'}</p>
-        <p><strong>آخر اعتراف:</strong> ${p.lastConfession||'—'}</p>
-        <p><strong>آخر تناول:</strong> ${p.lastCommunion||'—'}</p>
-        <h3>ملاحظات الخادم / الخلوة</h3>
-        <p>${(p.notes||'—').replace(/\n/g,'<br>')}</p>
-      `;
-      printHTML('متابعة — ' + (p.name||'مخدوم'), body);
+      printHTML('متابعة — ' + (p.name || 'مخدوم'), buildServedHtml(p));
+    }
+
+    function shareServedPdf(i) {
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var p = list[i];
+      if (!p) return;
+      var title = 'خلوة — ' + (p.name || 'مخدوم');
+      var text =
+        title + '\n' +
+        'العنوان: ' + (p.address || '—') + '\n' +
+        'التليفون: ' + (p.phone || '—') + '\n' +
+        'أب الاعتراف: ' + (p.father || '—') + '\n' +
+        'آخر اعتراف: ' + (p.lastConfession || '—') + '\n' +
+        'آخر تناول: ' + (p.lastCommunion || '—') + '\n' +
+        'ملاحظات الخلوة:\n' + (p.notes || '—');
+      // أولًا: مشاركة نصية (مدعومة على أغلب الأجهزة)
+      // مع فتح PDF للطباعة/المشاركة كملف عند الحاجة
+      try {
+        if (navigator.share) {
+          navigator.share({ title: title, text: text }).catch(function () {
+            printServedPdf(i);
+            if (typeof showToast === 'function') showToast('تم فتح PDF — شاركي من قائمة الطباعة أو الملفات');
+          });
+          return;
+        }
+      } catch (e) {}
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            if (typeof showToast === 'function') showToast('تم نسخ ملخص الخلوة — يمكنك لصقه للمشاركة');
+          });
+          printServedPdf(i);
+          return;
+        }
+      } catch (e2) {}
+      printServedPdf(i);
+      if (typeof showToast === 'function') showToast('تم فتح PDF للمشاركة');
+    }
+
+    function printAllServedPdf() {
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      if (!list.length) {
+        if (typeof showToast === 'function') showToast('لا يوجد مخدومين');
+        return;
+      }
+      function fd(iso) {
+        if (!iso) return '—';
+        var x = String(iso).slice(0, 10).split('-');
+        return x.length === 3 ? (x[2] + '/' + x[1] + '/' + x[0]) : iso;
+      }
+      var body = '<h2>تقرير متابعة المخدومين</h2>';
+      body += '<p style="color:#666;">تاريخ التقرير: ' + fd(todayIso()) + '</p>';
+      list.forEach(function (p, idx) {
+        body += '<hr style="margin:16px 0;border:none;border-top:1px solid #ddd;">';
+        body += '<h3>' + (idx + 1) + ') ' + (p.name || 'بدون اسم') + '</h3>';
+        body += '<p>التليفون: ' + (p.phone || '—') + ' | أب الاعتراف: ' + (p.father || '—') + '</p>';
+        body += '<p>آخر اعتراف: ' + fd(p.lastConfession) + ' | آخر تناول: ' + fd(p.lastCommunion) + '</p>';
+        if (p.notes) body += '<p style="white-space:pre-wrap;"><strong>ملاحظات الخلوة:</strong><br>' + String(p.notes).replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>';
+      });
+      printHTML('تقرير متابعة المخدومين — خلوتي', body);
     }
 
     function exportServedCsv() {
-      const list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
-      let csv = 'الاسم,العنوان,تاريخ الميلاد,التليفون,أب الاعتراف,آخر اعتراف,آخر تناول,ملاحظات\n';
-      list.forEach(p => {
-        csv += `"${p.name||''}","${p.address||''}","${p.birth||''}","${p.phone||''}","${p.father||''}","${p.lastConfession||''}","${p.lastCommunion||''}","${p.notes||''}"\n`;
+      var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
+      var csv = 'الاسم,العنوان,تاريخ الميلاد,التليفون,أب الاعتراف,آخر اعتراف,آخر تناول,ملاحظات\n';
+      list.forEach(function (p) {
+        csv += '"' + (p.name || '') + '","' + (p.address || '') + '","' + (p.birth || '') + '","' + (p.phone || '') + '","' + (p.father || '') + '","' + (p.lastConfession || '') + '","' + (p.lastCommunion || '') + '","' + String(p.notes || '').replace(/"/g, '""') + '"\n';
       });
-      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a');
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'المخدومين.csv';
       a.click();
@@ -13220,7 +13412,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '230';
+      var APP_VER = '231';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

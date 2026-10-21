@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v238';
+const CACHE = 'khalwati-v239';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -115,7 +115,7 @@ function networkFirst(req, fallbackUrl) {
       if (settled) return;
       const hit = await useCache();
       if (hit && !settled) { settled = true; resolve(hit); }
-    }, 4000);
+    }, 1800);
     fetch(req).then((res) => {
       clearTimeout(timer);
       if (res && res.ok && res.status === 200) {

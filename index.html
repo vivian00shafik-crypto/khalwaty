@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="236" lang="ar" dir="rtl">
+<html data-app-ver="237" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5532,10 +5532,18 @@ function onPrepareImageSelected(idx, input) {
       return points.slice(0, maxPoints);
     }
 
+    function _pptxYield() {
+      return new Promise(function (resolve) { setTimeout(resolve, 0); });
+    }
     function exportPreparePptx() {
-      showToast('جاري تجهيز البوربوينت والصور…');
+      if (window._pptxBusy) {
+        showToast('التصدير شغال — استني لحظة');
+        return;
+      }
+      window._pptxBusy = true;
+      showToast('جاري تجهيز البوربوينت…');
       getPreparePagesWithImages().then(function (pagesAll) {
-      try {
+        return (async function () {
         var pages = (pagesAll || []).filter(function (pg) {
           return pg && ((pg.text && String(pg.text).trim()) || pg.image || pg.hasImage || (pg.title && String(pg.title).trim()));
         });
@@ -5546,18 +5554,25 @@ function onPrepareImageSelected(idx, input) {
         var slideCount = pages.length + 1;
         var mediaFiles = [];
 
-        function addMedia(slideNum, dataUrl) {
-          var img = _pptxDataUrlToBytes(dataUrl);
+        async function addMedia(slideNum, dataUrl) {
+          // صغّر الصورة قبل الدمج حتى لا يتهنج الموبايل
+          var url = dataUrl;
+          try {
+            if (typeof compressPrepareImageDataUrl === 'function') {
+              url = await compressPrepareImageDataUrl(dataUrl, 640, 0.62);
+            }
+          } catch (eC) {}
+          var img = _pptxDataUrlToBytes(url);
           if (!img) {
-            console.log('pptx: failed decode image for slide', slideNum, dataUrl ? String(dataUrl).slice(0, 40) : 'empty');
-            return null;
+            img = _pptxDataUrlToBytes(dataUrl);
           }
-          // rId2 داخل .rels الخاصة بالشريحة (rId1 = التخطيط)
+          if (!img) return null;
           var relId = 'rId2';
           var path = 'ppt/media/image' + slideNum + '.' + img.ext;
           mediaFiles.push({ path: path, bytes: img.bytes, slideNum: slideNum, relId: relId, ext: img.ext });
           return relId;
         }
+        await _pptxYield();
 
         var overrides = '';
         for (var si = 1; si <= slideCount; si++) {
@@ -5577,11 +5592,11 @@ function onPrepareImageSelected(idx, input) {
         slideXmls[1] = _pptxSlideShell(titleShapes);
         slideRels[1] = [];
 
-        pages.forEach(function (pg, idx) {
+        for (var idx = 0; idx < pages.length; idx++) {
+          var pg = pages[idx];
           var sn = idx + 2;
           var title = prepExtractSlideTitle(pg, idx);
           var points = prepSummarizeForPptx(pg.text, 5);
-          // نقاط بخط عريض كبير — بادئة رمز
           var displayLines = points.length
             ? points.map(function (pt) { return '• ' + pt; })
             : ['• راجع نص التحضير في التطبيق للتفاصيل'];
@@ -5596,11 +5611,12 @@ function onPrepareImageSelected(idx, input) {
           var embedId = null;
           var mediaExt = 'jpeg';
           if (hasImg) {
-            embedId = addMedia(sn, pg.image);
+            embedId = await addMedia(sn, pg.image);
             var mFound = mediaFiles.filter(function (x) { return x.slideNum === sn; })[0];
             if (mFound) mediaExt = mFound.ext || 'jpeg';
           }
           hasImg = !!embedId;
+          await _pptxYield();
 
           if (hasImg) {
             // صورة + نقاط مختصرة
@@ -5629,7 +5645,7 @@ function onPrepareImageSelected(idx, input) {
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
           slideXmls[sn] = _pptxSlideShell(shapes);
-        });
+        }
 
         var ct =
           '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -5769,11 +5785,14 @@ function onPrepareImageSelected(idx, input) {
         a.click();
         setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2500);
         showToast('تم تنزيل PowerPoint — ' + pages.length + ' شريحة' + (mediaFiles.length ? (' — ' + mediaFiles.length + ' صورة') : ' — بدون صور'));
-      } catch (err) {
-        console.log('exportPreparePptx', err);
-        showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
-      }
+        })().catch(function (err) {
+          console.log('exportPreparePptx', err);
+          showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
+        }).then(function () {
+          window._pptxBusy = false;
+        });
       }).catch(function (err) {
+        window._pptxBusy = false;
         console.log('exportPreparePptx pages', err);
         showToast('تعذر قراءة صور التحضير');
       });
@@ -14138,91 +14157,74 @@ function dayScore(d) {
 
     // Service Worker for offline
     
-    // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
+    // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '236';
+      var APP_VER = '237';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
-      // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
+
+      // وحّد باراميتر الإصدار في الرابط بدون إعادة تحميل
       try {
         var u0 = new URL(location.href);
         var qv = u0.searchParams.get('v') || '';
-        // لو الرابط لسه على 191 والكود الجديد اتحمّل، صحّح الرابط بدون مسح كامل متكرر
-        if (qv === '191' && htmlVer === APP_VER) {
+        if (qv !== APP_VER && htmlVer === APP_VER) {
           u0.searchParams.set('v', APP_VER);
+          if (u0.searchParams.has('_r')) u0.searchParams.delete('_r');
           history.replaceState(null, '', u0.toString());
         }
       } catch (e) {}
-      if (localStorage.getItem(KEY) === '1') {
-        // سبق الترقية — تأكد فقط من تسجيل SW الجديد
-      } else {
-        localStorage.setItem(KEY, '1');
-        // امسح مفاتيح الترقية القديمة حتى لا تتعارض
+
+      // تنظيف مفاتيح الترقية القديمة مرة واحدة (بدون reload)
+      if (localStorage.getItem(KEY) !== '1') {
         try {
-          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194'].forEach(function(k){
-            localStorage.removeItem(k);
+          localStorage.setItem(KEY, '1');
+          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194',
+           'khalwati_force_v230','khalwati_force_v231','khalwati_force_v232','khalwati_force_v233',
+           'khalwati_force_v234','khalwati_force_v235','khalwati_force_v236'].forEach(function(k) {
+            try { localStorage.removeItem(k); } catch (e1) {}
           });
-        } catch (e) {}
-        var finish = function () {
-          try {
-            var u = new URL(location.href);
-            u.searchParams.set('v', APP_VER);
-            u.searchParams.set('_r', String(Date.now()));
-            location.replace(u.toString());
-          } catch (e) {
-            location.reload();
+          // امسح كاشات الإصدارات القديمة في الخلفية فقط
+          if (window.caches) {
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.filter(function(k) {
+                return k.indexOf('khalwati-') === 0 && k !== ('khalwati-v' + APP_VER);
+              }).map(function(k) { return caches.delete(k); }));
+            }).catch(function() {});
           }
-        };
-        var chain = Promise.resolve();
-        if ('serviceWorker' in navigator) {
-          chain = navigator.serviceWorker.getRegistrations().then(function(regs) {
-            return Promise.all(regs.map(function(r){ return r.unregister(); }));
-          });
-        }
-        chain.then(function() {
-          if (!window.caches) return;
-          return caches.keys().then(function(keys) {
-            return Promise.all(keys.map(function(k){ return caches.delete(k); }));
-          });
-        }).then(finish).catch(finish);
-        return; // لا تسجّل SW قبل إعادة التحميل
+        } catch (e2) {}
       }
 
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=' + APP_VER).then(function(reg) {
-          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-          try { reg.update(); } catch (e) {}
-          // عند تغيّر المتحكم أعد التحميل مرة واحدة لالتقاط index الجديد
-          var refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            if (refreshing) return;
-            refreshing = true;
+      if (!('serviceWorker' in navigator)) return;
+
+      navigator.serviceWorker.register('./sw.js?v=' + APP_VER).then(function(reg) {
+        // فعّل الانتظار بهدوء — بدون إعادة تحميل الصفحة
+        if (reg.waiting) {
+          try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e3) {}
+        }
+        try { reg.update(); } catch (e4) {}
+
+        // لا نعمل location.reload على controllerchange (كان سبب الريستارت المتكرر)
+        navigator.serviceWorker.ready.then(function(readyReg) {
+          setTimeout(function() {
             try {
-              var u = new URL(location.href);
-              u.searchParams.set('v', APP_VER);
-              location.replace(u.toString());
-            } catch (e) { location.reload(); }
-          });
-          navigator.serviceWorker.ready.then(function(readyReg) {
-            setTimeout(function() {
-              try {
-                var offlineDone = localStorage.getItem('khalwati_offline_ready') === 'khalwati-v' + APP_VER;
-                var saver = navigator.connection && navigator.connection.saveData;
-                if (!offlineDone && navigator.onLine && !saver && readyReg && readyReg.active) {
-                  if (typeof showToast === 'function') showToast('⏳ جارٍ تجهيز التطبيق للعمل بدون إنترنت…');
-                  readyReg.active.postMessage({ type: 'CACHE_ALL' });
-                }
-              } catch (e) {}
-            }, 8000);
-          });
-        }).catch(function(err) { console.log('SW error', err); });
-        window.addEventListener('offline', function() {
-          if (typeof showToast === 'function') showToast('وضع بدون إنترنت — من الكاش');
+              var offlineDone = localStorage.getItem('khalwati_offline_ready') === ('khalwati-v' + APP_VER);
+              var saver = navigator.connection && navigator.connection.saveData;
+              if (!offlineDone && navigator.onLine && !saver && readyReg && readyReg.active) {
+                if (typeof showToast === 'function') showToast('⏳ جارٍ تجهيز العمل بدون إنترنت…');
+                readyReg.active.postMessage({ type: 'CACHE_ALL' });
+              }
+            } catch (e5) {}
+          }, 10000);
         });
-        window.addEventListener('online', function() {
-          if (typeof showToast === 'function') showToast('تم الاتصال بالإنترنت');
-        });
-      }
+      }).catch(function(err) { console.log('SW error', err); });
+
+      window.addEventListener('offline', function() {
+        if (typeof showToast === 'function') showToast('وضع بدون إنترنت — من الكاش');
+      });
+      window.addEventListener('online', function() {
+        if (typeof showToast === 'function') showToast('تم الاتصال بالإنترنت');
+      });
+    })();
     })();
   </script>
   <script>

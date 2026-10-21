@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="227" lang="ar" dir="rtl">
+<html data-app-ver="228" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=227';
+            s.src = 'khalwaty-poster.js?v=228';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7358,14 +7358,29 @@ function openTextModal(type) {
         id: 'yarab_matetrokneesh',
         title: 'يارب متتركنيش',
         by: 'للبابا شنوده الثالث',
+        label: 'صلاة مسجّلة',
         audio: 'yarab-matetrokneesh.mp3',
         text: ''
       },
       {
         id: 'yarab_lih_tasmah',
         title: 'يارب ليه تسمح بكدة؟',
-        by: '',
-        video: 'yarab-lih-tasmah.mp4',
+        by: 'أبونا أرميا يوسف',
+        audio: 'yarab-lih-tasmah.m4a',
+        text: ''
+      },
+      {
+        id: 'amal_yarab',
+        title: 'أعمل يارب اللي أنا مش عارف أعمله',
+        by: 'أبونا داود لمعي',
+        audio: 'amal-yarab.m4a',
+        text: ''
+      },
+      {
+        id: 'qoulo_yarab',
+        title: 'قوله يارب أنا مش قادر',
+        by: 'أبونا لوقا سيداروس',
+        audio: 'qoulo-yarab.m4a',
         text: ''
       },
       {
@@ -7397,7 +7412,7 @@ function openTextModal(type) {
       var htmlText = (p.text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g, '<br>');
       var hasText = !!(p.text && String(p.text).trim());
       var audioHtml = p.audio ? ('<div style="margin:6px 0 14px;padding:12px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;text-align:center;">' +
-        '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎧 صلاة مسجّلة</div>' +
+        '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎧 ' + (p.label || 'مقطع صوتي') + '</div>' +
         '<audio controls preload="metadata" src="' + p.audio + '" style="width:100%;" onplay="try{ if (typeof stopBibleMusic === \'function\') stopBibleMusic(); if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}"></audio></div>') : '';
       var videoHtml = p.video ? ('<div style="margin:6px 0 14px;padding:12px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;text-align:center;">' +
         '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎬 فيديو</div>' +
@@ -13102,7 +13117,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '227';
+      var APP_VER = '228';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13210,6 +13225,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=227"></script>
+  <script src="khalwaty-poster.js?v=228"></script>
 </body>
 </html>

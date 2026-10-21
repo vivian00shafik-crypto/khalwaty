@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="228" lang="ar" dir="rtl">
+<html data-app-ver="229" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=228';
+            s.src = 'khalwaty-poster.js?v=229';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7381,6 +7381,13 @@ function openTextModal(type) {
         title: 'قوله يارب أنا مش قادر',
         by: 'أبونا لوقا سيداروس',
         audio: 'qoulo-yarab.m4a',
+        text: ''
+      },
+      {
+        id: 'arafni_ana_fein',
+        title: 'عرفني أنا فين',
+        by: 'الأنبا كاراس أسقف المحلة',
+        audio: 'arafni-ana-fein.m4a',
         text: ''
       },
       {
@@ -13117,7 +13124,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '228';
+      var APP_VER = '229';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13225,6 +13232,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=228"></script>
+  <script src="khalwaty-poster.js?v=229"></script>
 </body>
 </html>

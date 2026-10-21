@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="226" lang="ar" dir="rtl">
+<html data-app-ver="227" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=226';
+            s.src = 'khalwaty-poster.js?v=227';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7357,7 +7357,22 @@ function openTextModal(type) {
       {
         id: 'yarab_matetrokneesh',
         title: 'يارب متتركنيش',
+        by: 'للبابا شنوده الثالث',
         audio: 'yarab-matetrokneesh.mp3',
+        text: ''
+      },
+      {
+        id: 'yarab_lih_tasmah',
+        title: 'يارب ليه تسمح بكدة؟',
+        by: '',
+        video: 'yarab-lih-tasmah.mp4',
+        text: ''
+      },
+      {
+        id: 'tamav_irini_prayer',
+        title: 'صلاة لتماف إيريني',
+        by: '',
+        video: 'tamav-irini-prayer.mp4',
         text: ''
       }
     ];
@@ -7367,7 +7382,7 @@ function openTextModal(type) {
       var listHtml = '<div style="display:flex;flex-direction:column;gap:10px;">';
       SPOKEN_PRAYERS.forEach(function(p, i) {
         listHtml += '<button class="save-btn" style="text-align:right;background:linear-gradient(135deg,#2a4a3a,#1a3a2a);color:#f5e6c8;padding:12px 14px;" onclick="openSpokenPrayerItem(' + i + ')">' +
-          '🙏 ' + p.title + '</button>';
+          (p.video ? '🎬 ' : (p.audio ? '🎧 ' : '🙏 ')) + p.title + (p.by ? ' <small style="opacity:0.85;">— ' + p.by + '</small>' : '') + '</button>';
       });
       listHtml += '</div>';
       document.getElementById('prayerContent').innerHTML = listHtml;
@@ -7384,9 +7399,13 @@ function openTextModal(type) {
       var audioHtml = p.audio ? ('<div style="margin:6px 0 14px;padding:12px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;text-align:center;">' +
         '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎧 صلاة مسجّلة</div>' +
         '<audio controls preload="metadata" src="' + p.audio + '" style="width:100%;" onplay="try{ if (typeof stopBibleMusic === \'function\') stopBibleMusic(); if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}"></audio></div>') : '';
-      var noteHtml = p.audio ? '<p style="text-align:center;color:#8a7a60;font-size:13px;">لم يُضف نص مكتوب لهذه الصلاة بعد.</p>' : '';
+      var videoHtml = p.video ? ('<div style="margin:6px 0 14px;padding:12px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;text-align:center;">' +
+        '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎬 فيديو</div>' +
+        '<video controls playsinline preload="metadata" src="' + p.video + '" style="width:100%;max-height:60vh;border-radius:10px;background:#000;" onplay="try{ if (typeof stopBibleMusic === \'function\') stopBibleMusic(); if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}"></video></div>') : '';
+      var byHtml = p.by ? '<div style="text-align:center;color:#8a7a60;font-size:14px;margin:0 0 8px;">🎙 ' + String(p.by).replace(/</g, '&lt;') + '</div>' : '';
+      var noteHtml = (p.audio || p.video) ? '<p style="text-align:center;color:#8a7a60;font-size:13px;">لم يُضف نص مكتوب لهذه الصلاة بعد.</p>' : '';
       document.getElementById('prayerContent').innerHTML =
-        audioHtml + (hasText ? '<p style="white-space:pre-line; text-align:right; line-height:1.9; font-size:1.05em;">' + htmlText + '</p>' : noteHtml) +
+        byHtml + audioHtml + videoHtml + (hasText ? '<p style="white-space:pre-line; text-align:right; line-height:1.9; font-size:1.05em;">' + htmlText + '</p>' : noteHtml) +
         '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;">' +
         '<span style="display:' + (hasText ? 'contents' : 'none') + ';">' +
           '<button class="save-btn" onclick="speakText(SPOKEN_PRAYERS[' + idx + '].text)">🔊 استماع</button>' +
@@ -13083,7 +13102,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '226';
+      var APP_VER = '227';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13191,6 +13210,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=226"></script>
+  <script src="khalwaty-poster.js?v=227"></script>
 </body>
 </html>

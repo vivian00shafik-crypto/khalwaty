@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v226';
+const CACHE = 'khalwati-v227';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -15,7 +15,7 @@ const FONTS = [
   'ReemKufi', 'ScheherazadeNew', 'Tajawal', 'Merriweather', 'Montserrat', 'OpenSans', 'PlayfairDisplay', 'Roboto'
 ];
 const LATER = [].concat(
-  ['./bible-svd.js', './bible-deutero.js', './yarab-matetrokneesh.mp3'],
+  ['./bible-svd.js', './bible-deutero.js', './yarab-matetrokneesh.mp3', './yarab-lih-tasmah.mp4', './tamav-irini-prayer.mp4'],
   ['./ArefRuqaa-400.woff', './ArefRuqaa-700.woff'],
   [].concat.apply([], FONTS.map((f) => ['./' + f + '-400.woff2', './' + f + '-700.woff2'])),
   ['./jesus.jpg', './jesus-prayer-bg.jpg'],
@@ -177,7 +177,7 @@ self.addEventListener('notificationclick', (e) => {
       try { client.postMessage({ type: 'PLAY_FROM_NOTIFICATION', data: data }); } catch (err) {}
       return;
     }
-    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=226';
+    const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=227';
     await clients.openWindow(url);
   })());
 });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="233" lang="ar" dir="rtl">
+<html data-app-ver="234" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5252,11 +5252,86 @@ function onPrepareImageSelected(idx, input) {
         '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>'
       );
     }
+
+    /** استخراج عنوان الصفحة من العنوان أو أول سطر قوي في النص */
+    function prepExtractSlideTitle(pg, fallbackIdx) {
+      var t = (pg && pg.title) ? String(pg.title).trim() : '';
+      if (t && !/^الصفحة\s*\d+/i.test(t) && t !== 'الصفحة 1') return t;
+      var raw = String((pg && pg.text) || '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return 'نقطة ' + (fallbackIdx + 1);
+      var lines = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!lines.length) return 'نقطة ' + (fallbackIdx + 1);
+      var first = lines[0];
+      // عنوان مرقّم مثل: ١- النظرة النقية / 2- مفهوم الإعجاب
+      var m = first.match(/^([\d٠-٩]+[\-\.\)]\s*)(.{4,80})/);
+      if (m) {
+        var rest = m[2].trim();
+        // لو السطر طويل، خذ حتى أول جملة أو أول 50 حرف
+        var cut = rest.split(/[.。:：]/)[0] || rest;
+        if (cut.length > 55) cut = cut.slice(0, 52) + '…';
+        return cut;
+      }
+      if (first.length <= 60) return first;
+      return first.slice(0, 52) + '…';
+    }
+
+    /** تلخيص النص إلى جمل/نقاط قوية مختصرة للعرض */
+    function prepSummarizeForPptx(text, maxPoints) {
+      maxPoints = maxPoints || 5;
+      var raw = String(text || '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return [];
+      var lines = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var points = [];
+      function pushPoint(s) {
+        s = String(s || '').replace(/\s+/g, ' ').trim();
+        s = s.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '').trim();
+        if (s.length < 8) return;
+        if (s.length > 110) s = s.slice(0, 107) + '…';
+        // تجنب التكرار
+        for (var i = 0; i < points.length; i++) {
+          if (points[i] === s || points[i].indexOf(s.slice(0, 30)) === 0) return;
+        }
+        points.push(s);
+      }
+      // 1) أسطر مرقّمة أو نقطية
+      lines.forEach(function (ln) {
+        if (points.length >= maxPoints) return;
+        if (/^[•\-\*●▪▸►]/.test(ln) || /^[\d٠-٩]+[\-\.\)]\s+/.test(ln)) pushPoint(ln);
+      });
+      // 2) جمل قصيرة قوية من الفقرات
+      if (points.length < maxPoints) {
+        var blob = lines.join(' ');
+        var sentences = blob.split(/(?<=[.。!؟\?])\s+/);
+        // رتّب: جمل متوسطة الطول أولًا (مفهومة)
+        sentences = sentences
+          .map(function (s) { return s.trim(); })
+          .filter(function (s) { return s.length >= 20 && s.length <= 140; })
+          .sort(function (a, b) {
+            // فضّل جمل فيها كلمات مفتاحية
+            function score(s) {
+              var sc = 0;
+              if (/الله|المسيح|المحبة|الطهارة|الإعجاب|الخطيئة|النفس|القلب|الشباب|العفة/.test(s)) sc += 2;
+              if (s.length >= 30 && s.length <= 90) sc += 1;
+              return sc;
+            }
+            return score(b) - score(a);
+          });
+        sentences.forEach(function (s) {
+          if (points.length >= maxPoints) return;
+          pushPoint(s);
+        });
+      }
+      // 3) إن لم يكفِ: اقتطع من أول سطرين
+      if (!points.length && lines.length) {
+        lines.slice(0, 3).forEach(function (ln) { if (points.length < maxPoints) pushPoint(ln); });
+      }
+      return points.slice(0, maxPoints);
+    }
+
     function exportPreparePptx() {
       try {
         var pages = getPreparePages();
         if (!pages || !pages.length) { showToast('لا توجد صفحات في التحضير'); return; }
-        // استبعد الصفحات الفارغة تمامًا
         pages = pages.filter(function (pg) {
           return pg && ((pg.text && String(pg.text).trim()) || pg.image || (pg.title && String(pg.title).trim()));
         });
@@ -5265,7 +5340,7 @@ function onPrepareImageSelected(idx, input) {
         var lessonTitle = getPrepareLessonTitle() || 'تحضير الدرس';
         var files = [];
         var slideCount = pages.length + 1;
-        var mediaFiles = []; // {path, bytes, slideNum, relId, contentType}
+        var mediaFiles = [];
 
         function addMedia(slideNum, dataUrl) {
           var img = _pptxDataUrlToBytes(dataUrl);
@@ -5276,62 +5351,73 @@ function onPrepareImageSelected(idx, input) {
           return relId;
         }
 
-        // —— Content_Types ——
         var overrides = '';
         for (var si = 1; si <= slideCount; si++) {
           overrides += '<Override PartName="/ppt/slides/slide' + si + '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>';
         }
-        var defaultImg = '';
-        // will add image defaults after collecting media — rebuild at end
-        // —— Build slides content first to collect media ——
+
         var slideXmls = [];
         var slideRels = [];
 
-        // Title slide
+        // —— شريحة العنوان ——
         var titleShapes =
           _pptxRect(2, 'bar', 0, 0, 12192000, 1600200, '6B5B3E', null) +
           _pptxTextBox(3, 'Title', 457200, 400000, 11277600, 900000, [lessonTitle], { sz: 3600, bold: true, color: 'FAF6EC', align: 'ctr', anchor: 'ctr' }) +
           _pptxTextBox(4, 'Sub', 457200, 2800000, 11277600, 1200000, ['تطبيق خلوتي', 'تحضير الدرس — عرض تقديمي'], { sz: 2000, color: '6B5B3E', align: 'ctr' }) +
           _pptxRect(5, 'line', 3048000, 4200000, 6096000, 19050, 'C45C26', null) +
-          _pptxTextBox(6, 'Hint', 457200, 4800000, 11277600, 800000, ['من صفحات التحضير داخل التطبيق'], { sz: 1400, color: '8A7A60', align: 'ctr' });
+          _pptxTextBox(6, 'Hint', 457200, 4800000, 11277600, 800000, ['نقاط أساسية من صفحات التحضير'], { sz: 1400, color: '8A7A60', align: 'ctr' });
         slideXmls[1] = _pptxSlideShell(titleShapes);
         slideRels[1] = [];
 
         pages.forEach(function (pg, idx) {
           var sn = idx + 2;
-          var title = (pg && pg.title) ? String(pg.title).trim() : ('الصفحة ' + (idx + 1));
-          var raw = String((pg && pg.text) || '').replace(/\r\n/g, '\n').trim();
-          var lines = raw ? raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
-          if (lines.length > 16) lines = lines.slice(0, 16).concat(['…']);
-          if (!lines.length && !pg.image) lines = ['(لا يوجد نص في هذه الصفحة)'];
+          var title = prepExtractSlideTitle(pg, idx);
+          var points = prepSummarizeForPptx(pg.text, 5);
+          // نقاط بخط عريض كبير — بادئة رمز
+          var displayLines = points.length
+            ? points.map(function (pt) { return '• ' + pt; })
+            : ['• راجع نص التحضير في التطبيق للتفاصيل'];
 
           var shapes = '';
-          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1143000, '6B5B3E', null);
-          shapes += _pptxTextBox(3, 'SlideTitle', 457200, 250000, 11277600, 700000, [title], { sz: 2800, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr' });
-          shapes += _pptxTextBox(4, 'LessonRef', 457200, 900000, 11277600, 300000, [lessonTitle], { sz: 1200, color: 'E8D9B5', align: 'r' });
+          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1300000, '6B5B3E', null);
+          shapes += _pptxTextBox(3, 'SlideTitle', 400000, 280000, 11400000, 850000, [title], {
+            sz: 3000, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr'
+          });
 
           var hasImg = !!(pg && pg.image);
           var embedId = hasImg ? addMedia(sn, pg.image) : null;
           hasImg = !!embedId;
 
           if (hasImg) {
-            // صورة في النصف العلوي + نص في الأسفل
-            shapes += _pptxPic(5, 'Image', 1524000, 1400000, 9144000, 3200000, embedId);
-            shapes += _pptxTextBox(6, 'Body', 457200, 4800000, 11277600, 1800000, lines.slice(0, 8), { sz: 1600, color: '3E2F1C', align: 'r' });
-            slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + (mediaFiles.filter(function (m) { return m.slideNum === sn; })[0] || {}).ext }];
+            // صورة يمين/يسار + نقاط مختصرة
+            shapes += _pptxPic(5, 'Image', 457200, 1500000, 4800000, 4200000, embedId);
+            shapes += _pptxRect(6, 'card', 5500000, 1500000, 6200000, 4200000, 'FFFDF8', 'E8D9B5');
+            shapes += _pptxTextBox(7, 'Body', 5750000, 1650000, 5800000, 3900000, displayLines, {
+              sz: 2000, bold: true, color: '3E2F1C', align: 'r'
+            });
+            var m = mediaFiles.filter(function (x) { return x.slideNum === sn; })[0];
+            slideRels[sn] = m ? [{ id: embedId, target: '../media/image' + sn + '.' + m.ext }] : [];
           } else {
-            // نص كبير في وسط الشريحة
-            shapes += _pptxRect(5, 'card', 457200, 1400000, 11277600, 5000000, 'FFFDF8', 'E8D9B5');
-            shapes += _pptxTextBox(6, 'Body', 685800, 1600000, 10820400, 4600000, lines, { sz: 2000, color: '3E2F1C', align: 'r' });
+            // بدون صورة: بطاقة نقاط كبيرة واضحة
+            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4500000, 'FFFDF8', 'E8D9B5');
+            shapes += _pptxTextBox(6, 'Body', 700000, 1700000, 10800000, 4100000, displayLines, {
+              sz: 2400, bold: true, color: '3E2F1C', align: 'r'
+            });
+            // تلميح لإضافة صورة
+            shapes += _pptxTextBox(8, 'ImgHint', 457200, 6100000, 11277600, 350000,
+              ['💡 لإضافة صورة: افتحي الصفحة في التحضير ← أرفقي صورة من الموبايل ثم أعيدي تصدير البوربوينت'],
+              { sz: 1100, color: '8A7A60', align: 'ctr' });
             slideRels[sn] = [];
           }
 
-          // رقم الشريحة
-          shapes += _pptxTextBox(7, 'Num', 457200, 6400000, 11277600, 300000, [(idx + 1) + ' / ' + pages.length], { sz: 1200, color: '8A7A60', align: 'ctr' });
+          // رقم الشريحة LTR حتى لا ينعكس
+          shapes += _pptxTextBox(9, 'Num', 457200, 6450000, 11277600, 280000,
+            ['\u200E' + (idx + 1) + ' / ' + pages.length],
+            { sz: 1200, color: '8A7A60', align: 'ctr' });
+
           slideXmls[sn] = _pptxSlideShell(shapes);
         });
 
-        // Content types with images
         var ct =
           '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -5347,7 +5433,6 @@ function onPrepareImageSelected(idx, input) {
           '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' +
           overrides + '</Types>';
         files.push({ name: '[Content_Types].xml', data: _pptxStr(ct) });
-
         files.push({
           name: '_rels/.rels',
           data: _pptxStr(
@@ -5382,7 +5467,6 @@ function onPrepareImageSelected(idx, input) {
             '</p:presentation>'
           )
         });
-
         files.push({
           name: 'ppt/theme/theme1.xml',
           data: _pptxStr(
@@ -5445,7 +5529,6 @@ function onPrepareImageSelected(idx, input) {
           )
         });
 
-        // slides + rels + media
         for (var s = 1; s <= slideCount; s++) {
           files.push({ name: 'ppt/slides/slide' + s + '.xml', data: _pptxStr(slideXmls[s]) });
           var relXml =
@@ -5472,7 +5555,7 @@ function onPrepareImageSelected(idx, input) {
         document.body.appendChild(a);
         a.click();
         setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2500);
-        showToast('تم تنزيل PowerPoint بالدرس والصور');
+        showToast('تم تنزيل PowerPoint — عناوين + نقاط مختصرة' + (mediaFiles.length ? ' + صور' : ''));
       } catch (err) {
         console.log('exportPreparePptx', err);
         showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
@@ -13840,7 +13923,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '233';
+      var APP_VER = '234';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="234" lang="ar" dir="rtl">
+<html data-app-ver="235" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4746,9 +4746,53 @@ function openSaintsPraises() {
     function savePrepareData(data) {
       try {
         localStorage.setItem(getPrepareStorageKey(), JSON.stringify(data || {}));
+        return true;
       } catch (e) {
-        if (typeof showToast === 'function') showToast('تعذّر الحفظ');
+        // محاولة ثانية: ضغط الصور أكثر عند امتلاء المساحة
+        try {
+          var d = data || {};
+          if (Array.isArray(d.preparePages)) {
+            d.preparePages = d.preparePages.map(function (pg) {
+              if (!pg || !pg.image || String(pg.image).length < 80000) return pg;
+              return Object.assign({}, pg, { image: pg.image }); // يُعاد ضغطها في compressPrepareImageDataUrl إن لزم
+            });
+          }
+          localStorage.setItem(getPrepareStorageKey(), JSON.stringify(d));
+          return true;
+        } catch (e2) {
+          if (typeof showToast === 'function') {
+            showToast('تعذّر الحفظ — مساحة التخزين ممتلئة. احذفي صورًا قديمة أو صغّري حجم الصور');
+          }
+          return false;
+        }
       }
+    }
+
+    /** ضغط dataURL لصورة قبل الحفظ */
+    function compressPrepareImageDataUrl(dataUrl, maxW, quality) {
+      return new Promise(function (resolve) {
+        try {
+          maxW = maxW || 720;
+          quality = quality || 0.68;
+          if (!dataUrl || String(dataUrl).indexOf('base64,') < 0) return resolve(dataUrl || '');
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var w = img.width, h = img.height;
+              if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+              // حد أقصى للارتفاع أيضًا
+              if (h > 900) { w = Math.round(w * 900 / h); h = 900; }
+              var c = document.createElement('canvas');
+              c.width = w; c.height = h;
+              var ctx = c.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve(c.toDataURL('image/jpeg', quality));
+            } catch (err) { resolve(dataUrl); }
+          };
+          img.onerror = function () { resolve(dataUrl); };
+          img.src = dataUrl;
+        } catch (e) { resolve(dataUrl || ''); }
+      });
     }
 
     function getPreparePages() {
@@ -5010,54 +5054,77 @@ function savePrepareLessonTitleFromUI() {
       if (modal) modal.classList.add('active');
       var fileInput = document.getElementById('prepImageFile');
       if (fileInput) {
-        fileInput.addEventListener('change', function () {
-          onPrepareImageSelected(idx, fileInput);
-        });
+        fileInput.setAttribute('data-page-idx', String(idx));
+        fileInput.onchange = function () {
+          var pi = parseInt(fileInput.getAttribute('data-page-idx') || String(idx), 10);
+          onPrepareImageSelected(pi, fileInput);
+        };
       }
       bindPrepareActions(pc);
     }
 
 function onPrepareImageSelected(idx, input) {
+      var pageIndex = parseInt(idx, 10);
+      if (isNaN(pageIndex) || pageIndex < 0) {
+        showToast('تعذر تحديد رقم الصفحة');
+        return;
+      }
       var file = input && input.files && input.files[0];
       if (!file) return;
-      if (file.size > 2.5 * 1024 * 1024) {
-        showToast('الصورة كبيرة — اختاري أصغر من 2.5 ميجا');
+      if (!/^image\//i.test(file.type || '')) {
+        showToast('اختاري ملف صورة');
+        input.value = '';
+        return;
+      }
+      if (file.size > 4 * 1024 * 1024) {
+        showToast('الصورة كبيرة — اختاري أصغر من 4 ميجا');
         input.value = '';
         return;
       }
       var reader = new FileReader();
-      reader.onload = function(e) {
-        var dataUrl = e.target && e.target.result;
-        if (!dataUrl) return;
-        var img = new Image();
-        img.onload = function() {
+      reader.onload = function (e) {
+        var rawUrl = e.target && e.target.result;
+        if (!rawUrl) return;
+        compressPrepareImageDataUrl(rawUrl, 720, 0.68).then(function (dataUrl) {
+          var pages = getPreparePages();
+          if (!pages[pageIndex]) {
+            showToast('الصفحة غير موجودة');
+            return;
+          }
+          // انسخ المصفوفة حتى لا تُفقد صور الصفحات الأخرى
+          var next = pages.map(function (pg, i) {
+            if (i !== pageIndex) return pg;
+            return Object.assign({}, pg, { image: dataUrl });
+          });
+          var ok = true;
           try {
-            var maxW = 1200;
-            var w = img.width, h = img.height;
-            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-            var c = document.createElement('canvas');
-            c.width = w; c.height = h;
-            var ctx = c.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            dataUrl = c.toDataURL('image/jpeg', 0.82);
-          } catch (err) {}
-          var pages = getPreparePages();
-          if (!pages[idx]) return;
-          pages[idx].image = dataUrl;
-          savePreparePages(pages);
-          showToast('تم إرفاق الصورة ✓');
-          openPreparePage(idx);
-        };
-        img.onerror = function() {
-          var pages = getPreparePages();
-          if (!pages[idx]) return;
-          pages[idx].image = dataUrl;
-          savePreparePages(pages);
-          showToast('تم إرفاق الصورة ✓');
-          openPreparePage(idx);
-        };
-        img.src = dataUrl;
+            var data = loadPrepareData();
+            data.preparePages = next;
+            data.prepare = (next[0] && next[0].text) ? next[0].text : (data.prepare || '');
+            ok = savePrepareData(data);
+          } catch (err) { ok = false; }
+          if (!ok) {
+            // إعادة ضغط أقوى ثم محاولة أخيرة
+            compressPrepareImageDataUrl(rawUrl, 480, 0.55).then(function (smallUrl) {
+              var pages2 = getPreparePages();
+              var next2 = pages2.map(function (pg, i) {
+                if (i !== pageIndex) return pg;
+                return Object.assign({}, pg, { image: smallUrl });
+              });
+              var data2 = loadPrepareData();
+              data2.preparePages = next2;
+              if (savePrepareData(data2)) {
+                showToast('تم إرفاق الصورة لصفحة ' + (pageIndex + 1) + ' (بحجم أصغر)');
+                openPreparePage(pageIndex);
+              }
+            });
+            return;
+          }
+          showToast('تم إرفاق الصورة لصفحة ' + (pageIndex + 1) + ' ✓');
+          openPreparePage(pageIndex);
+        });
       };
+      reader.onerror = function () { showToast('تعذر قراءة الصورة'); };
       reader.readAsDataURL(file);
     }
 
@@ -5344,8 +5411,12 @@ function onPrepareImageSelected(idx, input) {
 
         function addMedia(slideNum, dataUrl) {
           var img = _pptxDataUrlToBytes(dataUrl);
-          if (!img) return null;
-          var relId = 'rIdImg' + slideNum;
+          if (!img) {
+            console.log('pptx: failed decode image for slide', slideNum, dataUrl ? String(dataUrl).slice(0, 40) : 'empty');
+            return null;
+          }
+          // rId2 داخل .rels الخاصة بالشريحة (rId1 = التخطيط)
+          var relId = 'rId2';
           var path = 'ppt/media/image' + slideNum + '.' + img.ext;
           mediaFiles.push({ path: path, bytes: img.bytes, slideNum: slideNum, relId: relId, ext: img.ext });
           return relId;
@@ -5384,19 +5455,24 @@ function onPrepareImageSelected(idx, input) {
             sz: 3000, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr'
           });
 
-          var hasImg = !!(pg && pg.image);
-          var embedId = hasImg ? addMedia(sn, pg.image) : null;
+          var hasImg = !!(pg && pg.image && String(pg.image).indexOf('base64,') > 0);
+          var embedId = null;
+          var mediaExt = 'jpeg';
+          if (hasImg) {
+            embedId = addMedia(sn, pg.image);
+            var mFound = mediaFiles.filter(function (x) { return x.slideNum === sn; })[0];
+            if (mFound) mediaExt = mFound.ext || 'jpeg';
+          }
           hasImg = !!embedId;
 
           if (hasImg) {
-            // صورة يمين/يسار + نقاط مختصرة
+            // صورة + نقاط مختصرة
             shapes += _pptxPic(5, 'Image', 457200, 1500000, 4800000, 4200000, embedId);
             shapes += _pptxRect(6, 'card', 5500000, 1500000, 6200000, 4200000, 'FFFDF8', 'E8D9B5');
             shapes += _pptxTextBox(7, 'Body', 5750000, 1650000, 5800000, 3900000, displayLines, {
               sz: 2000, bold: true, color: '3E2F1C', align: 'r'
             });
-            var m = mediaFiles.filter(function (x) { return x.slideNum === sn; })[0];
-            slideRels[sn] = m ? [{ id: embedId, target: '../media/image' + sn + '.' + m.ext }] : [];
+            slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
             // بدون صورة: بطاقة نقاط كبيرة واضحة
             shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4500000, 'FFFDF8', 'E8D9B5');
@@ -5555,7 +5631,7 @@ function onPrepareImageSelected(idx, input) {
         document.body.appendChild(a);
         a.click();
         setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2500);
-        showToast('تم تنزيل PowerPoint — عناوين + نقاط مختصرة' + (mediaFiles.length ? ' + صور' : ''));
+        showToast('تم تنزيل PowerPoint — ' + pages.length + ' شريحة' + (mediaFiles.length ? (' — ' + mediaFiles.length + ' صورة') : ' — بدون صور'));
       } catch (err) {
         console.log('exportPreparePptx', err);
         showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
@@ -13923,7 +13999,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '234';
+      var APP_VER = '235';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

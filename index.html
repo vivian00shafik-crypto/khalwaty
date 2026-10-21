@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="225" lang="ar" dir="rtl">
+<html data-app-ver="226" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5435,7 +5435,7 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=225';
+            s.src = 'khalwaty-poster.js?v=226';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7353,6 +7353,12 @@ function openTextModal(type) {
         id: 'shenouda_repentance',
         title: 'صلاة للتوبة — للأنبا شنوده رئيس المتوحدين',
         text: "اللهم اغفر لي أنا الخاطي لأني لا أستطيع أن ارفع عيني إليك لأني أخزى من أجل كثرة آثامي..  اللهم لا تحسب على آثامي بل اصنع معي رحمة في ملكوتك.  اللهم إني أتضرع إليك وأسألك من أجل نفسي وجسدي البائسين.\n\nأعطني أن أصنع إرادتك، ولترشدني رحمتك. أيها الرب الإله اغفر لي خطاياي واستر على آثامي، نجنى من غضبك ورجزك. ماذا أقول حين مثولي بين يديك، وبما أتزكى حين تحاكمني؟ يا يسوع المسيح دبرني واسترني من أهوال لجة الشيطان. ضع سلامك واسمك القدوس على أيها الرب الساكن في السموات، لتدركني رحمتك وتسترني. لا تسلمني بيد العدو.. إني ألقيت كل اهتمامي عليك أيها المسيح ابن الله فلا تتركني عنك. إذا ملت إلى الشر لا تتركني ولا تدعني أسير حسب شهواتي الرديئة. لا تدع تبكيتي ليوم دينونتك العظيم. لا تقض على كاستحقاق خطاياي. استر فضيحة عُريي أمام منبرك المرهوب. طهرني كي لا يوجد دنس في نفسي بين يديك.\n\nأيها الإله محب البشر، حصن نفسي بدمك الكريم. اللهم أضبط أهواء الخطية التي فيَّ بخوفك، وأيقظني من سنة الغفلة التي تنتج من نبع الخطية الرديء، واحفظني من الضلالة والزلق بشفتي. اجعل ملاكك الطاهر طاردا عنى كل تجديفات الخطية. أهلني لأن يجد روحك هيكلا في. هب لي أن تسبحك نفسي وروحي كل أيام حياتي. اللهم استجب لي ككثرة رحمتك، واقبل منى صلاتي وابتهالي بين يديك. نجنى لكي لا أخطئ إليك، وأعطني سبيلًا أن اصنع مشيئتك. لا تنزع نعمتك منى وتبعدني من معونتك. احفظني لك هيكلًا مقدسًا. طهر قلبي ولساني وجميع حواسي. انتزع منى القلب الحجري وانعم على بقلب منسحق لأتضرع أمامك. لا ترفضني بما انك دعوتني لأني عاجز جدًا لأجل خطاياي. ارحمني يا من له سلطان الرحمة. اجعلني مستحقا أن أباركك كل الأوقات إلى النفس الأخير.\n\nثبت كلماتك المقدسة في قلبي ونفسي. نجنى من جميع فخاخ الشرير. دبِّر سيرتي كما يرضيك. تراءف على واسمع صراخي. استجب لتضرعي واقبل صلاتي. لا تبعد صلاتي منك ولا رحمتك عنى فلتدخل صلاتي أمامك. أنصت لصوتي وليدخل إليك صراخي. لتستقم صلاتي أمامك كرائحة بخور طيبة بين يديك. لا تحاكم عبدك فانه لا يتزكى أمامك احد. فان لك الملك والقوة والمجد إلى الأبد آمين."
+      },
+      {
+        id: 'yarab_matetrokneesh',
+        title: 'يارب متتركنيش',
+        audio: 'yarab-matetrokneesh.mp3',
+        text: ''
       }
     ];
 
@@ -7374,12 +7380,19 @@ function openTextModal(type) {
       document.getElementById('prayerTitle').textContent = p.title;
       var safe = (p.text || '').replace(/`/g, "'").replace(/\\/g, '\\\\');
       var htmlText = (p.text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g, '<br>');
+      var hasText = !!(p.text && String(p.text).trim());
+      var audioHtml = p.audio ? ('<div style="margin:6px 0 14px;padding:12px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;text-align:center;">' +
+        '<div style="font-weight:700;color:var(--brown);margin-bottom:8px;">🎧 صلاة مسجّلة</div>' +
+        '<audio controls preload="metadata" src="' + p.audio + '" style="width:100%;" onplay="try{ if (typeof stopBibleMusic === \'function\') stopBibleMusic(); if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}"></audio></div>') : '';
+      var noteHtml = p.audio ? '<p style="text-align:center;color:#8a7a60;font-size:13px;">لم يُضف نص مكتوب لهذه الصلاة بعد.</p>' : '';
       document.getElementById('prayerContent').innerHTML =
-        '<p style="white-space:pre-line; text-align:right; line-height:1.9; font-size:1.05em;">' + htmlText + '</p>' +
+        audioHtml + (hasText ? '<p style="white-space:pre-line; text-align:right; line-height:1.9; font-size:1.05em;">' + htmlText + '</p>' : noteHtml) +
         '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;">' +
+        '<span style="display:' + (hasText ? 'contents' : 'none') + ';">' +
           '<button class="save-btn" onclick="speakText(SPOKEN_PRAYERS[' + idx + '].text)">🔊 استماع</button>' +
           '<button class="save-btn" onclick="window.speechSynthesis && speechSynthesis.cancel()">⏹ إيقاف</button>' +
           '<button class="save-btn" style="background:#5a7d4a;" onclick="printHTML(SPOKEN_PRAYERS[' + idx + '].title, (SPOKEN_PRAYERS[' + idx + '].text||\'\').replace(/\\n/g,\'<br>\'))">📄 PDF</button>' +
+        '</span>' +
           '<button class="save-btn" style="background:#666;" onclick="openSpokenPrayers()">← رجوع للقائمة</button>' +
         '</div>';
       try {
@@ -9163,12 +9176,7 @@ function openTextModal(type) {
             if (err && err.name !== 'AbortError') showToast('تعذّر فتح قائمة المشاركة');
           });
         } else {
-          try {
-            var a = document.createElement('a');
-            a.href = d.dataUrl; a.download = 'khalwati-verse-' + Date.now() + '.jpg';
-            document.body.appendChild(a); a.click(); a.remove();
-          } catch (e) {}
-          showToast('تم حفظ الصورة — افتحيها من برنامج التصميم عندك');
+          showDesignSavePreview(d.dataUrl, 'khalwati-verse-' + Date.now() + '.jpg', false, blob);
         }
       }).catch(function () { showToast('تعذّر تجهيز الصورة'); });
     }
@@ -9467,22 +9475,7 @@ function openTextModal(type) {
 
       document.getElementById('aiDesignSaveBtn').onclick = function() {
         var url = (window._lastAIDesign && window._lastAIDesign.dataUrl) || dataUrl;
-        try {
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = 'khalwati-ai-' + Date.now() + '.jpg';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          showToast('تم الحفظ');
-        } catch (e2) {
-          if (navigator.share) {
-            fetch(url).then(function(r){ return r.blob(); }).then(function(blob) {
-              var file = new File([blob], 'khalwati-ai.jpg', { type: 'image/jpeg' });
-              navigator.share({ files: [file], title: ref }).catch(function(){});
-            });
-          } else showToast('اضغطي مطولًا على الصورة للحفظ');
-        }
+        showDesignSavePreview(url, 'khalwati-ai-' + Date.now() + '.jpg', false, null);
       };
       document.getElementById('aiDesignAgainBtn').onclick = function() {
         window._verseMenuData = { ref: ref, text: txt, _aiSalt: (salt || 0) + 17 + (Date.now() % 50) };
@@ -13090,7 +13083,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '225';
+      var APP_VER = '226';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا
@@ -13198,6 +13191,6 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=225"></script>
+  <script src="khalwaty-poster.js?v=226"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v229';
+const CACHE = 'khalwati-v230';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -15,7 +15,7 @@ const FONTS = [
   'ReemKufi', 'ScheherazadeNew', 'Tajawal', 'Merriweather', 'Montserrat', 'OpenSans', 'PlayfairDisplay', 'Roboto'
 ];
 const LATER = [].concat(
-  ['./bible-svd.js', './bible-deutero.js', './yarab-matetrokneesh.mp3', './yarab-lih-tasmah.m4a', './amal-yarab.m4a', './qoulo-yarab.m4a', './arafni-ana-fein.m4a', './tamav-irini-prayer.mp4'],
+  ['./bible-svd.js', './bible-deutero.js', './yarab-matetrokneesh.mp3', './yarab-lih-tasmah.m4a', './amal-yarab.m4a', './qoulo-yarab.m4a', './arafni-ana-fein.m4a', './tamav-irini-prayer.m4a'],
   ['./ArefRuqaa-400.woff', './ArefRuqaa-700.woff'],
   [].concat.apply([], FONTS.map((f) => ['./' + f + '-400.woff2', './' + f + '-700.woff2'])),
   ['./jesus.jpg', './jesus-prayer-bg.jpg'],

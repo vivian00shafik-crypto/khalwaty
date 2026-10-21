@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="229" lang="ar" dir="rtl">
+<html data-app-ver="230" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -7394,7 +7394,8 @@ function openTextModal(type) {
         id: 'tamav_irini_prayer',
         title: 'صلاة لتماف إيريني',
         by: '',
-        video: 'tamav-irini-prayer.mp4',
+        audio: 'tamav-irini-prayer.m4a',
+        label: 'صوتي',
         text: ''
       }
     ];
@@ -12229,17 +12230,36 @@ function requestNotifyPermission() {
       } else if (isTxt) {
         body = '<div id="spTxtBody" style="flex:1;overflow:auto;padding:16px;white-space:pre-wrap;line-height:1.8;font-size:16px;color:#3a2a1a;"></div>';
       } else if (isPdf) {
-        blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
+        // Force application/pdf MIME for reliable in-app viewing
+        try {
+          if (book.dataUrl && String(book.dataUrl).indexOf('base64,') >= 0) {
+            var _parts = String(book.dataUrl).split(',');
+            var _b64 = _parts[1] || '';
+            var _bin = atob(_b64);
+            var _arr = new Uint8Array(_bin.length);
+            for (var _i = 0; _i < _bin.length; _i++) _arr[_i] = _bin.charCodeAt(_i);
+            blobUrl = URL.createObjectURL(new Blob([_arr], { type: 'application/pdf' }));
+          } else {
+            blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
+          }
+        } catch (_e) {
+          blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
+        }
         body =
-          '<div style="flex:1;display:flex;flex-direction:column;min-height:0;">' +
+          '<div style="flex:1;display:flex;flex-direction:column;min-height:0;height:100%;">' +
             '<div style="padding:8px 12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
-              '<a id="spPdfOpen" href="' + blobUrl + '" target="_blank" rel="noopener" style="padding:10px 14px;border-radius:12px;background:#5a7d4a;color:#fff;text-decoration:none;font-weight:700;">فتح للقراءة</a>' +
+              '<button type="button" id="spPdfReload" style="padding:10px 14px;border-radius:12px;border:none;background:#5a7d4a;color:#fff;font-weight:700;cursor:pointer;">عرض داخل التطبيق</button>' +
               '<a id="spPdfDl" href="' + blobUrl + '" download="' + spEsc(name).replace(/"/g, '') + '.pdf" style="padding:10px 14px;border-radius:12px;background:#6b5b3e;color:#fff;text-decoration:none;font-weight:700;">تحميل</a>' +
             '</div>' +
-            '<object data="' + blobUrl + '#toolbar=1&navpanes=0" type="application/pdf" style="flex:1;width:100%;min-height:60vh;border:0;background:#fff;">' +
-              '<embed src="' + blobUrl + '" type="application/pdf" style="width:100%;height:100%;min-height:60vh;border:0;" />' +
-              '<div style="padding:24px;text-align:center;color:#5a4a2a;line-height:1.7;">تعذر عرض PDF داخل الصفحة على هذا الجهاز.<br>اضغطي «فتح للقراءة» أعلاه.</div>' +
-            '</object>' +
+            '<div id="spPdfViewerHost" style="flex:1;min-height:0;position:relative;background:#fff;">' +
+              '<iframe id="spPdfFrame" src="' + blobUrl + '#toolbar=1&navpanes=0&view=FitH" title="PDF" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;"></iframe>' +
+              '<object id="spPdfObject" data="' + blobUrl + '#toolbar=1&navpanes=0" type="application/pdf" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:none;">' +
+                '<embed src="' + blobUrl + '" type="application/pdf" style="width:100%;height:100%;border:0;" />' +
+              '</object>' +
+              '<div id="spPdfFallback" style="display:none;padding:24px;text-align:center;color:#5a4a2a;line-height:1.8;">' +
+                'تعذر عرض PDF داخل الصفحة على هذا الجهاز.<br>يمكنك تحميل الملف وقراءته من ملفات الموبايل.' +
+              '</div>' +
+            '</div>' +
           '</div>';
       } else {
         blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
@@ -12255,6 +12275,48 @@ function requestNotifyPermission() {
         try { if (blobUrl && blobUrl.indexOf('blob:') === 0) URL.revokeObjectURL(blobUrl); } catch (e) {}
         wrap.remove();
       };
+      if (isPdf) {
+        var reloadBtn = document.getElementById('spPdfReload');
+        var frame = document.getElementById('spPdfFrame');
+        var obj = document.getElementById('spPdfObject');
+        var fb = document.getElementById('spPdfFallback');
+        if (reloadBtn) {
+          reloadBtn.onclick = function () {
+            try {
+              if (frame) {
+                frame.style.display = 'block';
+                frame.src = blobUrl + '#toolbar=1&navpanes=0&view=FitH&t=' + Date.now();
+              }
+              if (obj) obj.style.display = 'none';
+              if (fb) fb.style.display = 'none';
+              if (typeof showToast === 'function') showToast('جاري العرض داخل التطبيق…');
+            } catch (eR) {}
+          };
+        }
+        // If iframe fails to load on some mobiles, fall back to object after a short delay
+        try {
+          if (frame) {
+            var _pdfTried = false;
+            frame.onerror = function () {
+              if (_pdfTried) return;
+              _pdfTried = true;
+              try {
+                frame.style.display = 'none';
+                if (obj) obj.style.display = 'block';
+              } catch (e2) {}
+            };
+            setTimeout(function () {
+              try {
+                // Some engines leave iframe blank; offer object fallback without leaving the app
+                if (frame && frame.offsetHeight < 40 && obj) {
+                  frame.style.display = 'none';
+                  obj.style.display = 'block';
+                }
+              } catch (e3) {}
+            }, 1200);
+          }
+        } catch (e4) {}
+      }
       if (isTxt && book.dataUrl) {
         try {
           var el = document.getElementById('spTxtBody');
@@ -12559,6 +12621,7 @@ function dayScore(d) {
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;font-size:13px;">
           <button class="save-btn" onclick="addServedForm()">➕ إضافة مخدوم</button>
+          <button class="save-btn" style="background:#3d6b8a;" onclick="shareKhalwatiApp()">📤 شارك الابليكيشن</button>
           <div style="overflow-x:auto;margin-top:10px;">
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
               <tr style="background:#f5e6c8;"><th>المخدوم</th><th>تليفون</th><th>إجراءات</th></tr>
@@ -12568,6 +12631,39 @@ function dayScore(d) {
           <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="exportServedCsv()">تصدير CSV (إكسيل)</button>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function shareKhalwatiApp() {
+      var url = 'https://vivian00shafik-crypto.github.io/khalwaty/';
+      var title = 'خلوتي';
+      var text = 'تطبيق خلوتي — نوتة روحية قبطية';
+      try {
+        if (navigator.share) {
+          navigator.share({ title: title, text: text, url: url }).catch(function () {
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                  if (typeof showToast === 'function') showToast('تم نسخ رابط التطبيق');
+                });
+              } else {
+                window.prompt('انسخي رابط التطبيق:', url);
+              }
+            } catch (e2) {
+              window.prompt('انسخي رابط التطبيق:', url);
+            }
+          });
+          return;
+        }
+      } catch (e) {}
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function () {
+            if (typeof showToast === 'function') showToast('تم نسخ رابط التطبيق');
+          });
+          return;
+        }
+      } catch (e3) {}
+      try { window.prompt('انسخي رابط التطبيق:', url); } catch (e4) {}
     }
 
     function addServedForm() {
@@ -13124,7 +13220,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '229';
+      var APP_VER = '230';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

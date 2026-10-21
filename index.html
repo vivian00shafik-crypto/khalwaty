@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="235" lang="ar" dir="rtl">
+<html data-app-ver="236" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -4824,9 +4824,100 @@ function openSaintsPraises() {
 
     function savePreparePages(pages) {
       var data = loadPrepareData();
-      data.preparePages = pages || [];
+      // الصور تُحفظ في IndexedDB — هنا metadata فقط
+      var light = (pages || []).map(function (pg) {
+        var copy = Object.assign({}, pg || {});
+        if (copy.image && String(copy.image).indexOf('base64,') > 0) {
+          copy.hasImage = true;
+          delete copy.image;
+        }
+        return copy;
+      });
+      data.preparePages = light;
       data.prepare = (pages && pages[0] && pages[0].text) ? pages[0].text : (data.prepare || '');
       savePrepareData(data);
+    }
+
+    var _prepImgDbPromise = null;
+    function openPrepImageDB() {
+      if (_prepImgDbPromise) return _prepImgDbPromise;
+      _prepImgDbPromise = new Promise(function (resolve, reject) {
+        try {
+          var req = indexedDB.open('khalwati_prep_images_v1', 1);
+          req.onupgradeneeded = function () {
+            var db = req.result;
+            if (!db.objectStoreNames.contains('images')) db.createObjectStore('images');
+          };
+          req.onsuccess = function () { resolve(req.result); };
+          req.onerror = function () { _prepImgDbPromise = null; reject(req.error); };
+        } catch (e) { _prepImgDbPromise = null; reject(e); }
+      });
+      return _prepImgDbPromise;
+    }
+    function prepImageStorageKey(pageIndex) {
+      return getPrepareStorageKey() + '::p' + String(pageIndex);
+    }
+    function idbPutPrepImage(pageIndex, dataUrl) {
+      return openPrepImageDB().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction('images', 'readwrite');
+          var store = tx.objectStore('images');
+          var key = prepImageStorageKey(pageIndex);
+          if (!dataUrl) store.delete(key);
+          else store.put(String(dataUrl), key);
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      });
+    }
+    function idbGetPrepImage(pageIndex) {
+      return openPrepImageDB().then(function (db) {
+        return new Promise(function (resolve) {
+          try {
+            var tx = db.transaction('images', 'readonly');
+            var req = tx.objectStore('images').get(prepImageStorageKey(pageIndex));
+            req.onsuccess = function () { resolve(req.result || ''); };
+            req.onerror = function () { resolve(''); };
+          } catch (e) { resolve(''); }
+        });
+      }).catch(function () { return ''; });
+    }
+    function idbGetAllPrepImages(pageCount) {
+      var tasks = [];
+      for (var i = 0; i < pageCount; i++) {
+        (function (idx) {
+          tasks.push(idbGetPrepImage(idx).then(function (url) {
+            return { idx: idx, url: url || '' };
+          }));
+        })(i);
+      }
+      return Promise.all(tasks).then(function (rows) {
+        var map = {};
+        rows.forEach(function (r) { if (r.url) map[r.idx] = r.url; });
+        return map;
+      });
+    }
+    function getPreparePagesWithImages() {
+      var pages = getPreparePages().map(function (pg) { return Object.assign({}, pg); });
+      return idbGetAllPrepImages(pages.length).then(function (map) {
+        var migrate = [];
+        pages.forEach(function (pg, i) {
+          if (map[i]) {
+            pg.image = map[i];
+            pg.hasImage = true;
+          } else if (pg.image && String(pg.image).indexOf('base64,') > 0) {
+            pg.hasImage = true;
+            migrate.push(idbPutPrepImage(i, pg.image));
+          }
+        });
+        if (migrate.length) {
+          Promise.all(migrate).then(function () {
+            // بعد النقل: خفّف localStorage
+            try { savePreparePages(pages); } catch (e) {}
+          });
+        }
+        return pages;
+      });
     }
 
     function listAllPrepareLessons() {
@@ -5061,6 +5152,34 @@ function savePrepareLessonTitleFromUI() {
         };
       }
       bindPrepareActions(pc);
+      // حمّل صورة هذه الصفحة من IndexedDB
+      idbGetPrepImage(idx).then(function (url) {
+        if (!url) {
+          // توافق مع صور قديمة في localStorage
+          var pages0 = getPreparePages();
+          if (pages0[idx] && pages0[idx].image && String(pages0[idx].image).indexOf('base64,') > 0) {
+            url = pages0[idx].image;
+            idbPutPrepImage(idx, url).catch(function () {});
+          }
+        }
+        if (!url) return;
+        var box = document.getElementById('prepImagePreview');
+        if (!box) {
+          var label = pc && pc.querySelector('label');
+          // أنشئ معاينة فوق حقل الملف
+          var inputEl = document.getElementById('prepImageFile');
+          if (inputEl && inputEl.parentNode) {
+            box = document.createElement('div');
+            box.id = 'prepImagePreview';
+            box.style.cssText = 'margin-bottom:12px;text-align:center;';
+            inputEl.parentNode.insertBefore(box, inputEl);
+          }
+        }
+        if (!box) return;
+        box.innerHTML = '<img src="' + url + '" alt="صورة التحضير" style="max-width:100%;max-height:220px;border-radius:12px;border:1px solid #e8d9b5;">' +
+          '<div style="margin-top:6px;"><button type="button" class="save-btn prep-act" data-prep-act="delImage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;font-size:13px;">حذف الصورة</button></div>';
+        bindPrepareActions(box);
+      }).catch(function () {});
     }
 
 function onPrepareImageSelected(idx, input) {
@@ -5073,55 +5192,45 @@ function onPrepareImageSelected(idx, input) {
       if (!file) return;
       if (!/^image\//i.test(file.type || '')) {
         showToast('اختاري ملف صورة');
-        input.value = '';
+        if (input) input.value = '';
         return;
       }
-      if (file.size > 4 * 1024 * 1024) {
-        showToast('الصورة كبيرة — اختاري أصغر من 4 ميجا');
-        input.value = '';
+      if (file.size > 8 * 1024 * 1024) {
+        showToast('الصورة كبيرة — اختاري أصغر من 8 ميجا');
+        if (input) input.value = '';
         return;
       }
+      showToast('جاري حفظ صورة الصفحة ' + (pageIndex + 1) + '…');
       var reader = new FileReader();
       reader.onload = function (e) {
         var rawUrl = e.target && e.target.result;
         if (!rawUrl) return;
-        compressPrepareImageDataUrl(rawUrl, 720, 0.68).then(function (dataUrl) {
-          var pages = getPreparePages();
-          if (!pages[pageIndex]) {
-            showToast('الصفحة غير موجودة');
-            return;
-          }
-          // انسخ المصفوفة حتى لا تُفقد صور الصفحات الأخرى
-          var next = pages.map(function (pg, i) {
-            if (i !== pageIndex) return pg;
-            return Object.assign({}, pg, { image: dataUrl });
+        var runSave = function (dataUrl) {
+          return idbPutPrepImage(pageIndex, dataUrl).then(function () {
+            var pages = getPreparePages();
+            if (!pages[pageIndex]) {
+              showToast('الصفحة غير موجودة');
+              return;
+            }
+            // حدّث هذه الصفحة فقط دون المساس بالباقي
+            pages[pageIndex] = Object.assign({}, pages[pageIndex], { hasImage: true });
+            delete pages[pageIndex].image;
+            savePreparePages(pages);
+            showToast('تم حفظ صورة الصفحة ' + (pageIndex + 1) + ' ✓');
+            openPreparePage(pageIndex);
           });
-          var ok = true;
-          try {
-            var data = loadPrepareData();
-            data.preparePages = next;
-            data.prepare = (next[0] && next[0].text) ? next[0].text : (data.prepare || '');
-            ok = savePrepareData(data);
-          } catch (err) { ok = false; }
-          if (!ok) {
-            // إعادة ضغط أقوى ثم محاولة أخيرة
-            compressPrepareImageDataUrl(rawUrl, 480, 0.55).then(function (smallUrl) {
-              var pages2 = getPreparePages();
-              var next2 = pages2.map(function (pg, i) {
-                if (i !== pageIndex) return pg;
-                return Object.assign({}, pg, { image: smallUrl });
-              });
-              var data2 = loadPrepareData();
-              data2.preparePages = next2;
-              if (savePrepareData(data2)) {
-                showToast('تم إرفاق الصورة لصفحة ' + (pageIndex + 1) + ' (بحجم أصغر)');
-                openPreparePage(pageIndex);
-              }
+        };
+        compressPrepareImageDataUrl(rawUrl, 900, 0.75).then(function (dataUrl) {
+          return runSave(dataUrl).catch(function (err) {
+            console.log('idb image save fail', err);
+            // محاولة بضغط أقوى
+            return compressPrepareImageDataUrl(rawUrl, 480, 0.55).then(function (small) {
+              return runSave(small);
             });
-            return;
-          }
-          showToast('تم إرفاق الصورة لصفحة ' + (pageIndex + 1) + ' ✓');
-          openPreparePage(pageIndex);
+          });
+        }).catch(function (err) {
+          console.log(err);
+          showToast('تعذر حفظ الصورة');
         });
       };
       reader.onerror = function () { showToast('تعذر قراءة الصورة'); };
@@ -5131,10 +5240,13 @@ function onPrepareImageSelected(idx, input) {
     function removePrepareImage(idx) {
       var pages = getPreparePages();
       if (!pages[idx]) return;
-      pages[idx].image = '';
-      savePreparePages(pages);
-      showToast('تم حذف الصورة');
-      openPreparePage(idx);
+      idbPutPrepImage(idx, '').catch(function () {}).then(function () {
+        pages[idx] = Object.assign({}, pages[idx], { hasImage: false, image: '' });
+        delete pages[idx].image;
+        savePreparePages(pages);
+        showToast('تم حذف الصورة');
+        openPreparePage(idx);
+      });
     }
 
     function savePreparePage(idx) {
@@ -5156,10 +5268,35 @@ function onPrepareImageSelected(idx, input) {
       var pages = getPreparePages();
       if (pages.length <= 1) { showToast('لازم تفضل صفحة واحدة على الأقل'); return; }
       if (!confirm('حذف هذه الصفحة؟')) return;
-      pages.splice(idx, 1);
-      savePreparePages(pages);
-      showToast('تم الحذف');
-      openPreparePages();
+      // أعد فهرسة صور IndexedDB بعد الحذف
+      idbGetAllPrepImages(pages.length).then(function (map) {
+        var urls = [];
+        for (var i = 0; i < pages.length; i++) {
+          if (i === idx) continue;
+          urls.push(map[i] || '');
+        }
+        pages.splice(idx, 1);
+        savePreparePages(pages);
+        var puts = [];
+        // امسح المفاتيح القديمة ثم أعد الكتابة بالفهارس الجديدة
+        for (var j = 0; j < pages.length + 2; j++) {
+          puts.push(idbPutPrepImage(j, ''));
+        }
+        return Promise.all(puts).then(function () {
+          var writes = urls.map(function (url, i) {
+            return url ? idbPutPrepImage(i, url) : Promise.resolve();
+          });
+          return Promise.all(writes);
+        }).then(function () {
+          showToast('تم الحذف');
+          openPreparePages();
+        });
+      }).catch(function () {
+        pages.splice(idx, 1);
+        savePreparePages(pages);
+        showToast('تم الحذف');
+        openPreparePages();
+      });
     }
 
     function buildPreparePageHtml(p, lessonTitle, compact) {
@@ -5396,11 +5533,11 @@ function onPrepareImageSelected(idx, input) {
     }
 
     function exportPreparePptx() {
+      showToast('جاري تجهيز البوربوينت والصور…');
+      getPreparePagesWithImages().then(function (pagesAll) {
       try {
-        var pages = getPreparePages();
-        if (!pages || !pages.length) { showToast('لا توجد صفحات في التحضير'); return; }
-        pages = pages.filter(function (pg) {
-          return pg && ((pg.text && String(pg.text).trim()) || pg.image || (pg.title && String(pg.title).trim()));
+        var pages = (pagesAll || []).filter(function (pg) {
+          return pg && ((pg.text && String(pg.text).trim()) || pg.image || pg.hasImage || (pg.title && String(pg.title).trim()));
         });
         if (!pages.length) { showToast('لا يوجد محتوى في صفحات التحضير'); return; }
 
@@ -5636,6 +5773,10 @@ function onPrepareImageSelected(idx, input) {
         console.log('exportPreparePptx', err);
         showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
       }
+      }).catch(function (err) {
+        console.log('exportPreparePptx pages', err);
+        showToast('تعذر قراءة صور التحضير');
+      });
     }
 
     function exportPrepareOnePagePdf(idx) {
@@ -13999,7 +14140,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '235';
+      var APP_VER = '236';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

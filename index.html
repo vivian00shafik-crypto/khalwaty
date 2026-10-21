@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="232" lang="ar" dir="rtl">
+<html data-app-ver="233" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -5114,7 +5114,8 @@ function onPrepareImageSelected(idx, input) {
     }
 
 
-    /* —— مولّد PPTX بسيط بدون مكتبات خارجية (ZIP STORE) —— */
+
+    /* —— مولّد PPTX: شرائح بموضع مطلق + صور + تنسيق عربي —— */
     function _pptxCrc32(buf) {
       var table = _pptxCrc32.table;
       if (!table) {
@@ -5134,124 +5135,219 @@ function onPrepareImageSelected(idx, input) {
     function _pptxU32(n) {
       return new Uint8Array([n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255]);
     }
-    function _pptxStr(s) {
-      return new TextEncoder().encode(s);
-    }
+    function _pptxStr(s) { return new TextEncoder().encode(s); }
     function _pptxConcat(parts) {
       var len = 0;
       for (var i = 0; i < parts.length; i++) len += parts[i].length;
-      var out = new Uint8Array(len);
-      var o = 0;
+      var out = new Uint8Array(len), o = 0;
       for (var j = 0; j < parts.length; j++) { out.set(parts[j], o); o += parts[j].length; }
       return out;
     }
     function _pptxZipStore(files) {
-      var locals = [];
-      var centrals = [];
-      var offset = 0;
+      var locals = [], centrals = [], offset = 0;
       for (var i = 0; i < files.length; i++) {
         var name = _pptxStr(files[i].name);
-        var data = files[i].data;
+        var data = files[i].data instanceof Uint8Array ? files[i].data : _pptxStr(String(files[i].data || ''));
         var crc = _pptxCrc32(data);
         var local = _pptxConcat([
-          _pptxU32(0x04034b50),
-          _pptxU16(20), _pptxU16(0), _pptxU16(0),
-          _pptxU16(0), _pptxU16(0),
-          _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
-          _pptxU16(name.length), _pptxU16(0),
-          name, data
+          _pptxU32(0x04034b50), _pptxU16(20), _pptxU16(0), _pptxU16(0),
+          _pptxU16(0), _pptxU16(0), _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
+          _pptxU16(name.length), _pptxU16(0), name, data
         ]);
         locals.push(local);
-        var central = _pptxConcat([
-          _pptxU32(0x02014b50),
-          _pptxU16(20), _pptxU16(20), _pptxU16(0), _pptxU16(0),
-          _pptxU16(0), _pptxU16(0),
-          _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
-          _pptxU16(name.length), _pptxU16(0), _pptxU16(0),
-          _pptxU16(0), _pptxU16(0), _pptxU32(0),
-          _pptxU32(offset),
-          name
-        ]);
-        centrals.push(central);
+        centrals.push(_pptxConcat([
+          _pptxU32(0x02014b50), _pptxU16(20), _pptxU16(20), _pptxU16(0), _pptxU16(0),
+          _pptxU16(0), _pptxU16(0), _pptxU32(crc), _pptxU32(data.length), _pptxU32(data.length),
+          _pptxU16(name.length), _pptxU16(0), _pptxU16(0), _pptxU16(0), _pptxU16(0), _pptxU32(0),
+          _pptxU32(offset), name
+        ]));
         offset += local.length;
       }
-      var centralStart = offset;
       var centralBlob = _pptxConcat(centrals);
-      var end = _pptxConcat([
-        _pptxU32(0x06054b50),
-        _pptxU16(0), _pptxU16(0),
+      var endrec = _pptxConcat([
+        _pptxU32(0x06054b50), _pptxU16(0), _pptxU16(0),
         _pptxU16(files.length), _pptxU16(files.length),
-        _pptxU32(centralBlob.length), _pptxU32(centralStart),
-        _pptxU16(0)
+        _pptxU32(centralBlob.length), _pptxU32(offset), _pptxU16(0)
       ]);
-      return _pptxConcat(locals.concat([centralBlob, end]));
+      return _pptxConcat(locals.concat([centralBlob, endrec]));
     }
     function _pptxEsc(s) {
-      return String(s || '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-    function _pptxSlideXml(title, bodyLines, isTitleSlide) {
-      var shapes = '';
-      // عنوان
-      shapes +=
-        '<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr><p:ph type="' +
-        (isTitleSlide ? 'ctrTitle' : 'title') + '"/></p:nvPr></p:nvSpPr>' +
-        '<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>' +
-        '<a:p><a:r><a:rPr lang="ar-SA" dirty="0" sz="3200" b="1"/><a:t>' + _pptxEsc(title) + '</a:t></a:r></a:p>' +
-        '</p:txBody></p:sp>';
-      if (bodyLines && bodyLines.length) {
-        var paras = '';
-        bodyLines.forEach(function (ln) {
-          if (!ln) return;
-          paras +=
-            '<a:p><a:pPr marL="0" indent="0"><a:defRPr sz="1800"/></a:pPr>' +
-            '<a:r><a:rPr lang="ar-SA" dirty="0" sz="1800"/><a:t>' + _pptxEsc(ln) + '</a:t></a:r></a:p>';
-        });
-        shapes +=
-          '<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>' +
-          '<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/>' + paras + '</p:txBody></p:sp>';
+    function _pptxDataUrlToBytes(dataUrl) {
+      try {
+        if (!dataUrl || String(dataUrl).indexOf('base64,') < 0) return null;
+        var parts = String(dataUrl).split(',');
+        var meta = parts[0] || '';
+        var mime = (meta.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+        var bin = atob(parts[1] || '');
+        var arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        var ext = /png/i.test(mime) ? 'png' : (/gif/i.test(mime) ? 'gif' : 'jpeg');
+        return { bytes: arr, mime: mime, ext: ext };
+      } catch (e) { return null; }
+    }
+    function _pptxTextBox(id, name, x, y, cx, cy, lines, opts) {
+      opts = opts || {};
+      var sz = opts.sz || 1800;
+      var bold = opts.bold ? ' b="1"' : '';
+      var color = opts.color || '3E2F1C';
+      var align = opts.align || 'r'; // RTL default
+      var paras = '';
+      (lines || ['']).forEach(function (ln) {
+        paras +=
+          '<a:p><a:pPr algn="' + align + '"><a:defRPr sz="' + sz + '"/></a:pPr>' +
+          '<a:r><a:rPr lang="ar-SA" sz="' + sz + '"' + bold + ' dirty="0">' +
+          '<a:solidFill><a:srgbClr val="' + color + '"/></a:solidFill>' +
+          '<a:latin typeface="Arial"/><a:cs typeface="Arial"/>' +
+          '</a:rPr><a:t>' + _pptxEsc(ln) + '</a:t></a:r></a:p>';
+      });
+      if (!paras) {
+        paras = '<a:p><a:pPr algn="' + align + '"/><a:endParaRPr lang="ar-SA" sz="' + sz + '"/></a:p>';
       }
+      return (
+        '<p:sp>' +
+        '<p:nvSpPr><p:cNvPr id="' + id + '" name="' + _pptxEsc(name) + '"/>' +
+        '<p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>' +
+        '<p:spPr><a:xfrm><a:off x="' + x + '" y="' + y + '"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+        (opts.fill ? ('<a:solidFill><a:srgbClr val="' + opts.fill + '"/></a:solidFill>') : '<a:noFill/>') +
+        (opts.line ? ('<a:ln w="12700"><a:solidFill><a:srgbClr val="' + opts.line + '"/></a:solidFill></a:ln>') : '<a:ln><a:noFill/></a:ln>') +
+        '</p:spPr>' +
+        '<p:txBody><a:bodyPr wrap="square" rtlCol="1" anchor="' + (opts.anchor || 't') + '"/>' +
+        '<a:lstStyle/>' + paras + '</p:txBody></p:sp>'
+      );
+    }
+    function _pptxRect(id, name, x, y, cx, cy, fill, line) {
+      return (
+        '<p:sp><p:nvSpPr><p:cNvPr id="' + id + '" name="' + name + '"/>' +
+        '<p:cNvSpPr/><p:nvPr/></p:nvSpPr>' +
+        '<p:spPr><a:xfrm><a:off x="' + x + '" y="' + y + '"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+        '<a:solidFill><a:srgbClr val="' + fill + '"/></a:solidFill>' +
+        (line ? ('<a:ln w="12700"><a:solidFill><a:srgbClr val="' + line + '"/></a:solidFill></a:ln>') : '<a:ln><a:noFill/></a:ln>') +
+        '</p:spPr></p:sp>'
+      );
+    }
+    function _pptxPic(id, name, x, y, cx, cy, embedId) {
+      return (
+        '<p:pic>' +
+        '<p:nvPicPr><p:cNvPr id="' + id + '" name="' + _pptxEsc(name) + '"/>' +
+        '<p:cNvPicPr><a:picLocks noChangeAspect="0"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>' +
+        '<p:blipFill><a:blip r:embed="' + embedId + '"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>' +
+        '<p:spPr><a:xfrm><a:off x="' + x + '" y="' + y + '"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>'
+      );
+    }
+    function _pptxSlideShell(shapesXml) {
       return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
         'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
-        '<p:cSld><p:spTree>' +
+        '<p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FAF6EC"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>' +
+        '<p:spTree>' +
         '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
-        shapes +
+        shapesXml +
         '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>'
       );
     }
     function exportPreparePptx() {
       try {
         var pages = getPreparePages();
-        if (!pages.length) { showToast('لا توجد صفحات في التحضير'); return; }
+        if (!pages || !pages.length) { showToast('لا توجد صفحات في التحضير'); return; }
+        // استبعد الصفحات الفارغة تمامًا
+        pages = pages.filter(function (pg) {
+          return pg && ((pg.text && String(pg.text).trim()) || pg.image || (pg.title && String(pg.title).trim()));
+        });
+        if (!pages.length) { showToast('لا يوجد محتوى في صفحات التحضير'); return; }
+
         var lessonTitle = getPrepareLessonTitle() || 'تحضير الدرس';
         var files = [];
-        var n = pages.length + 1; // + title slide
+        var slideCount = pages.length + 1;
+        var mediaFiles = []; // {path, bytes, slideNum, relId, contentType}
 
-        files.push({
-          name: '[Content_Types].xml',
-          data: _pptxStr(
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
-            '<Default Extension="xml" ContentType="application/xml"/>' +
-            '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
-            '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>' +
-            '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>' +
-            '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' +
-            (function () {
-              var s = '';
-              for (var i = 1; i <= n; i++) {
-                s += '<Override PartName="/ppt/slides/slide' + i + '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>';
-              }
-              return s;
-            })() +
-            '</Types>'
-          )
+        function addMedia(slideNum, dataUrl) {
+          var img = _pptxDataUrlToBytes(dataUrl);
+          if (!img) return null;
+          var relId = 'rIdImg' + slideNum;
+          var path = 'ppt/media/image' + slideNum + '.' + img.ext;
+          mediaFiles.push({ path: path, bytes: img.bytes, slideNum: slideNum, relId: relId, ext: img.ext });
+          return relId;
+        }
+
+        // —— Content_Types ——
+        var overrides = '';
+        for (var si = 1; si <= slideCount; si++) {
+          overrides += '<Override PartName="/ppt/slides/slide' + si + '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>';
+        }
+        var defaultImg = '';
+        // will add image defaults after collecting media — rebuild at end
+        // —— Build slides content first to collect media ——
+        var slideXmls = [];
+        var slideRels = [];
+
+        // Title slide
+        var titleShapes =
+          _pptxRect(2, 'bar', 0, 0, 12192000, 1600200, '6B5B3E', null) +
+          _pptxTextBox(3, 'Title', 457200, 400000, 11277600, 900000, [lessonTitle], { sz: 3600, bold: true, color: 'FAF6EC', align: 'ctr', anchor: 'ctr' }) +
+          _pptxTextBox(4, 'Sub', 457200, 2800000, 11277600, 1200000, ['تطبيق خلوتي', 'تحضير الدرس — عرض تقديمي'], { sz: 2000, color: '6B5B3E', align: 'ctr' }) +
+          _pptxRect(5, 'line', 3048000, 4200000, 6096000, 19050, 'C45C26', null) +
+          _pptxTextBox(6, 'Hint', 457200, 4800000, 11277600, 800000, ['من صفحات التحضير داخل التطبيق'], { sz: 1400, color: '8A7A60', align: 'ctr' });
+        slideXmls[1] = _pptxSlideShell(titleShapes);
+        slideRels[1] = [];
+
+        pages.forEach(function (pg, idx) {
+          var sn = idx + 2;
+          var title = (pg && pg.title) ? String(pg.title).trim() : ('الصفحة ' + (idx + 1));
+          var raw = String((pg && pg.text) || '').replace(/\r\n/g, '\n').trim();
+          var lines = raw ? raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
+          if (lines.length > 16) lines = lines.slice(0, 16).concat(['…']);
+          if (!lines.length && !pg.image) lines = ['(لا يوجد نص في هذه الصفحة)'];
+
+          var shapes = '';
+          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1143000, '6B5B3E', null);
+          shapes += _pptxTextBox(3, 'SlideTitle', 457200, 250000, 11277600, 700000, [title], { sz: 2800, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr' });
+          shapes += _pptxTextBox(4, 'LessonRef', 457200, 900000, 11277600, 300000, [lessonTitle], { sz: 1200, color: 'E8D9B5', align: 'r' });
+
+          var hasImg = !!(pg && pg.image);
+          var embedId = hasImg ? addMedia(sn, pg.image) : null;
+          hasImg = !!embedId;
+
+          if (hasImg) {
+            // صورة في النصف العلوي + نص في الأسفل
+            shapes += _pptxPic(5, 'Image', 1524000, 1400000, 9144000, 3200000, embedId);
+            shapes += _pptxTextBox(6, 'Body', 457200, 4800000, 11277600, 1800000, lines.slice(0, 8), { sz: 1600, color: '3E2F1C', align: 'r' });
+            slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + (mediaFiles.filter(function (m) { return m.slideNum === sn; })[0] || {}).ext }];
+          } else {
+            // نص كبير في وسط الشريحة
+            shapes += _pptxRect(5, 'card', 457200, 1400000, 11277600, 5000000, 'FFFDF8', 'E8D9B5');
+            shapes += _pptxTextBox(6, 'Body', 685800, 1600000, 10820400, 4600000, lines, { sz: 2000, color: '3E2F1C', align: 'r' });
+            slideRels[sn] = [];
+          }
+
+          // رقم الشريحة
+          shapes += _pptxTextBox(7, 'Num', 457200, 6400000, 11277600, 300000, [(idx + 1) + ' / ' + pages.length], { sz: 1200, color: '8A7A60', align: 'ctr' });
+          slideXmls[sn] = _pptxSlideShell(shapes);
         });
+
+        // Content types with images
+        var ct =
+          '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+          '<Default Extension="xml" ContentType="application/xml"/>' +
+          '<Default Extension="jpeg" ContentType="image/jpeg"/>' +
+          '<Default Extension="jpg" ContentType="image/jpeg"/>' +
+          '<Default Extension="png" ContentType="image/png"/>' +
+          '<Default Extension="gif" ContentType="image/gif"/>' +
+          '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+          '<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>' +
+          '<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>' +
+          '<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' +
+          overrides + '</Types>';
+        files.push({ name: '[Content_Types].xml', data: _pptxStr(ct) });
+
         files.push({
           name: '_rels/.rels',
           data: _pptxStr(
@@ -5262,25 +5358,24 @@ function onPrepareImageSelected(idx, input) {
           )
         });
 
-        var presRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        var presRels =
+          '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
           '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>';
         var sldIdLst = '';
-        for (var i = 1; i <= n; i++) {
+        for (var i = 1; i <= slideCount; i++) {
           presRels += '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide' + i + '.xml"/>';
           sldIdLst += '<p:sldId id="' + (255 + i) + '" r:id="rId' + (i + 1) + '"/>';
         }
         presRels += '</Relationships>';
         files.push({ name: 'ppt/_rels/presentation.xml.rels', data: _pptxStr(presRels) });
-
         files.push({
           name: 'ppt/presentation.xml',
           data: _pptxStr(
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
             '<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
             'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
-            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" ' +
-            'saveSubsetFonts="1">' +
+            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
             '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>' +
             '<p:sldIdLst>' + sldIdLst + '</p:sldIdLst>' +
             '<p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/>' +
@@ -5288,16 +5383,14 @@ function onPrepareImageSelected(idx, input) {
           )
         });
 
-        // Theme (minimal)
         files.push({
           name: 'ppt/theme/theme1.xml',
           data: _pptxStr(
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
             '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Khalwaty">' +
             '<a:themeElements><a:clrScheme name="Khalwaty">' +
-            '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>' +
-            '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>' +
-            '<a:dk2><a:srgbClr val="1F497D"/></a:dk2><a:lt2><a:srgbClr val="EEECE1"/></a:lt2>' +
+            '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1><a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>' +
+            '<a:dk2><a:srgbClr val="3E2F1C"/></a:dk2><a:lt2><a:srgbClr val="FAF6EC"/></a:lt2>' +
             '<a:accent1><a:srgbClr val="6B5B3E"/></a:accent1><a:accent2><a:srgbClr val="C45C26"/></a:accent2>' +
             '<a:accent3><a:srgbClr val="5A7D4A"/></a:accent3><a:accent4><a:srgbClr val="8A7A60"/></a:accent4>' +
             '<a:accent5><a:srgbClr val="4A6A8A"/></a:accent5><a:accent6><a:srgbClr val="A65D4A"/></a:accent6>' +
@@ -5305,31 +5398,22 @@ function onPrepareImageSelected(idx, input) {
             '</a:clrScheme>' +
             '<a:fontScheme name="Khalwaty"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:majorFont>' +
             '<a:minorFont><a:latin typeface="Arial"/><a:ea typeface=""/><a:cs typeface="Arial"/></a:minorFont></a:fontScheme>' +
-            '<a:fmtScheme name="Khalwaty"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill>' +
-            '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>' +
-            '<a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>' +
-            '<a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>' +
-            '<a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>' +
+            '<a:fmtScheme name="Khalwaty"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>' +
+            '<a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>' +
             '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>' +
             '<a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst>' +
             '</a:fmtScheme></a:themeElements></a:theme>'
           )
         });
-
-        // Minimal slide master + layout
         files.push({
           name: 'ppt/slideMasters/slideMaster1.xml',
           data: _pptxStr(
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-            '<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
-            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
-            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
+            '<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">' +
             '<p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree>' +
-            '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
-            '</p:spTree></p:cSld>' +
+            '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>' +
             '<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>' +
-            '<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>' +
-            '</p:sldMaster>'
+            '<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>'
           )
         });
         files.push({
@@ -5346,12 +5430,9 @@ function onPrepareImageSelected(idx, input) {
           name: 'ppt/slideLayouts/slideLayout1.xml',
           data: _pptxStr(
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-            '<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
-            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
-            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">' +
-            '<p:cSld name="Blank"><p:spTree>' +
-            '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
-            '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>'
+            '<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">' +
+            '<p:cSld name="Blank"><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>' +
+            '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>'
           )
         });
         files.push({
@@ -5364,38 +5445,22 @@ function onPrepareImageSelected(idx, input) {
           )
         });
 
-        // Title slide
-        files.push({
-          name: 'ppt/slides/slide1.xml',
-          data: _pptxStr(_pptxSlideXml(lessonTitle, ['تطبيق خلوتي — تحضير الدرس'], true))
-        });
-        files.push({
-          name: 'ppt/slides/_rels/slide1.xml.rels',
-          data: _pptxStr(
+        // slides + rels + media
+        for (var s = 1; s <= slideCount; s++) {
+          files.push({ name: 'ppt/slides/slide' + s + '.xml', data: _pptxStr(slideXmls[s]) });
+          var relXml =
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
-            '</Relationships>'
-          )
-        });
-
-        pages.forEach(function (pg, idx) {
-          var sn = idx + 2;
-          var title = (pg && pg.title) ? String(pg.title).trim() : ('الصفحة ' + (idx + 1));
-          var raw = String((pg && pg.text) || '').replace(/\r\n/g, '\n').trim();
-          var lines = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
-          // حد أقصى لسطور الشريحة
-          if (lines.length > 14) lines = lines.slice(0, 14).concat(['…']);
-          files.push({ name: 'ppt/slides/slide' + sn + '.xml', data: _pptxStr(_pptxSlideXml(title, lines, false)) });
-          files.push({
-            name: 'ppt/slides/_rels/slide' + sn + '.xml.rels',
-            data: _pptxStr(
-              '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-              '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-              '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>' +
-              '</Relationships>'
-            )
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>';
+          (slideRels[s] || []).forEach(function (r) {
+            if (!r || !r.id || !r.target) return;
+            relXml += '<Relationship Id="' + r.id + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="' + r.target + '"/>';
           });
+          relXml += '</Relationships>';
+          files.push({ name: 'ppt/slides/_rels/slide' + s + '.xml.rels', data: _pptxStr(relXml) });
+        }
+        mediaFiles.forEach(function (m) {
+          files.push({ name: m.path, data: m.bytes });
         });
 
         var zipData = _pptxZipStore(files);
@@ -5406,11 +5471,11 @@ function onPrepareImageSelected(idx, input) {
         a.download = safeName + '.pptx';
         document.body.appendChild(a);
         a.click();
-        setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2000);
-        showToast('تم تنزيل ملف PowerPoint');
+        setTimeout(function () { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2500);
+        showToast('تم تنزيل PowerPoint بالدرس والصور');
       } catch (err) {
         console.log('exportPreparePptx', err);
-        showToast('تعذر إنشاء البوربوينت');
+        showToast('تعذر إنشاء البوربوينت: ' + (err && err.message ? err.message : ''));
       }
     }
 
@@ -13775,7 +13840,7 @@ function dayScore(d) {
     
     // فرض ترقية من أي كاش قديم (v191 وغيرها) مرة واحدة إلى الإصدار الحالي
     (function forceUpgradeCache() {
-      var APP_VER = '232';
+      var APP_VER = '233';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
       // لو الصفحة نفسها قديمة جدًا لا نفعل شيئًا غريبًا

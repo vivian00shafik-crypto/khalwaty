@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="242" lang="ar" dir="rtl">
+<html data-app-ver="243" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -12067,29 +12067,141 @@ function showDesignSavePreview(url, name, silent, blob) {
       return 'المصدر اللغوي: معاجم STEPBible (TBESH/TBESG) برخصة CC BY 4.0 — www.STEPBible.org — والكلمات الأصلية من Berean Interlinear عبر bible.helloao.org. أرقام Strong\'s والأصول المعروضة مسترجعة من المصدر وليست مختلقة. هذا تحليل لغوي وليس تفسيرًا لاهوتيًا.';
     }
 
+    // تعريب مبسّط لمعاني STEP الإنجليزية الشائعة (بدون اختراع Strong's)
+    var STEP_GLOSS_AR = {
+      "god":"الله","the lord":"الرب","lord":"الرب","yahweh":"يهوه","elohim":"إله / آلهة",
+      "man":"إنسان / رجل","woman":"امرأة","people":"شعب","son":"ابن","daughter":"ابنة",
+      "father":"أب","mother":"أم","king":"ملك","priest":"كاهن","prophet":"نبي",
+      "house":"بيت","land":"أرض","earth":"أرض","heaven":"سماء","heavens":"سماوات",
+      "day":"يوم","night":"ليل","light":"نور","darkness":"ظلمة","water":"ماء","waters":"مياه",
+      "spirit":"روح","soul":"نفس","heart":"قلب","hand":"يد","eye":"عين","face":"وجه",
+      "word":"كلمة","name":"اسم","law":"شريعة","covenant":"عهد","peace":"سلام",
+      "love":"محبة","faith":"إيمان","hope":"رجاء","grace":"نعمة","mercy":"رحمة",
+      "sin":"خطية","evil":"شر","good":"صالح / خير","holy":"قدوس / مقدَّس","righteous":"بار",
+      "save":"يخلّص","salvation":"خلاص","forgive":"يغفر","forgiven":"مغفور",
+      "life":"حياة","death":"موت","blood":"دم","flesh":"جسد","body":"جسد",
+      "come":"يأتي","go":"يذهب","say":"يقول","said":"قال","speak":"يتكلم","hear":"يسمع",
+      "see":"يرى","know":"يعرف","give":"يعطي","take":"يأخذ","make":"يصنع / يعمل",
+      "create":"يخلق","call":"يدعو","bless":"يبارك","curse":"يلعن",
+      "fear":"خوف / يخاف","rejoice":"يفرح","joy":"فرح","weep":"يبكي","cry":"يصرخ",
+      "eat":"يأكل","drink":"يشرب","bread":"خبز","wine":"خمر",
+      "city":"مدينة","mountain":"جبل","sea":"بحر","river":"نهر","desert":"برية",
+      "servant":"عبد / خادم","master":"سيد","enemy":"عدو","friend":"صديق",
+      "all":"كل","every":"كل","great":"عظيم","small":"صغير","new":"جديد","old":"قديم",
+      "true":"حق / حقيقي","false":"كاذب","first":"أول","last":"آخر",
+      "hook":"صنّارة / شص","net":"شبكة","dragnet":"شبكة صيد","fishing net":"مصيدة / شبكة صيد",
+      "catch":"يصطاد","catches":"يصطاد","gather":"يجمع","gathers":"يجمع",
+      "pull":"يسحب","pulls":"يسحب","up":"إلى فوق","so":"لذلك","therefore":"لذلك",
+      "rejoice":"يفرح","glad":"مبتهج","joyfully":"بفرح",
+      "the foe":"العدو","foe":"عدو","enemy":"عدو",
+      "with a hook":"بشصّ / بصنّارة","in his dragnet":"في شبكته","in his fishing net":"في مصيدته",
+      "he catches them":"يصطادهم","and gathers them":"ويجمعهم",
+      "[the foe] pulls all of them":"يسحبهم كلّهم / يصعدهم",
+      "all of them":"كلّهم","all":"الكل",
+      "to be":"يكون","is":"يكون","was":"كان","are":"يكونون","were":"كانوا",
+      "and":"و","or":"أو","but":"لكن","for":"لأن / لأجل","from":"من","to":"إلى","in":"في","on":"على","with":"مع / بـ","by":"بـ",
+      "not":"لا","no":"لا","yes":"نعم",
+      "i":"أنا","you":"أنت","he":"هو","she":"هي","we":"نحن","they":"هم",
+      "him":"هو / إيّاه","his":"له","her":"لها","their":"لهم","them":"هم",
+      "this":"هذا","that":"ذلك","these":"هؤلاء","those":"أولئك",
+      "who":"الذي","which":"الذي","what":"ماذا","when":"متى","where":"أين","why":"لماذا","how":"كيف",
+      "hook":"صنّارة","with a hook":"بشصّه / بصنّارة",
+      "dragnet":"شبكة جرّ","fishing net":"مصيدة صيد","net":"شبكة",
+      "catches them":"يصطادهم","he catches them":"يصطادهم",
+      "and gathers them":"ويجمعهم","gathers them":"يجمعهم",
+      "pulls all of them":"يسحب الكل / يطلعهم",
+      "[the foe] pulls all of them":"يُطلع الكلّ (العدو)",
+      "so":"لذلك","therefore":"لذلك",
+      "rejoices":"يفرح","is glad":"يبتهج","glad":"مبتهج",
+      "sacrifice":"ذبيحة","altar":"مذبح","temple":"هيكل","church":"كنيسة",
+      "pray":"يصلّي","prayer":"صلاة","worship":"عبادة","praise":"تسبيح",
+      "believe":"يؤمن","trust":"يثق","obey":"يطيع","command":"وصية",
+      "kingdom":"ملكوت","glory":"مجد","power":"قوة","strength":"قوّة",
+      "weak":"ضعيف","poor":"فقير","rich":"غني","humble":"متواضع",
+      "proud":"متكبّر","wise":"حكيم","fool":"جاهل",
+      "truth":"حق","lie":"كذب","light":"نور","path":"طريق","way":"طريق",
+      "shepherd":"راعي","sheep":"خروف","flock":"قطيع",
+      "bread":"خبز","stone":"حجر","fire":"نار","wind":"ريح",
+      "angel":"ملاك","demon":"شيطان","devil":"إبليس",
+      "cross":"صليب","resurrection":"قيامة","tomb":"قبر",
+      "disciple":"تلميذ","apostle":"رسول","gospel":"إنجيل","church":"كنيسة",
+      "baptize":"يعمّد","baptism":"معمودية",
+      "heaven":"سماء","earth":"أرض","world":"عالم",
+      "forever":"إلى الأبد","amen":"آمين",
+
+    };
+
+    function arabicizeGloss(en) {
+      if (!en) return '';
+      var s = String(en).trim();
+      if (!s) return '';
+      var low = s.toLowerCase().replace(/\s+/g, ' ').trim();
+      // مطابقة كاملة أولاً
+      if (STEP_GLOSS_AR[low]) return STEP_GLOSS_AR[low];
+      // إزالة أقواس توضيحية شائعة
+      var cleaned = low.replace(/[\[\]\(\)]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (STEP_GLOSS_AR[cleaned]) return STEP_GLOSS_AR[cleaned];
+      // ترجمة كلمة بكلمة للأجزاء المعروفة
+      var parts = cleaned.split(/[\s,;\/]+/).filter(Boolean);
+      var out = [];
+      var any = false;
+      for (var i = 0; i < parts.length; i++) {
+        var w = parts[i];
+        if (STEP_GLOSS_AR[w]) {
+          out.push(STEP_GLOSS_AR[w]);
+          any = true;
+        } else if (/^\d+$/.test(w)) {
+          out.push(w);
+        } else {
+          // أبقِ الكلمة الإنجليزية إن لم تُعرف
+          out.push(w);
+        }
+      }
+      if (any && out.length) {
+        var joined = out.join(' ');
+        // لو بقي كثير إنجليزي، أظهر العربي + الأصل بين قوسين
+        var stillEn = /[a-zA-Z]{3,}/.test(joined);
+        if (stillEn) return joined + ' («' + s + '»)';
+        return joined;
+      }
+      // لا ترجمة موثوقة — أظهر الإنجليزية مع تنويه
+      return '«' + s + '» (من المصدر بالإنجليزية)';
+    }
+
+    function arabicizeDefinition(def) {
+      if (!def) return '';
+      var s = String(def).trim();
+      if (s.length > 180) s = s.slice(0, 180) + '…';
+      // لا نترجم فقرات طويلة آليًا بدقة؛ نعرض ملخصًا بسيطًا
+      return 'ملخص من المصدر: ' + s;
+    }
+
     function buildStepArabicTemplate(ref, words) {
       var lines = [];
-      lines.push('المعنى اللغوي العام:');
+      lines.push('المعنى العام للآية:');
       if (words && words.length) {
-        lines.push('تتكوّن الآية في النص الأصلي من مفردات يمكن تتبعها في معجم STEP؛ فيما يلي أهمها حسب البيانات المسترجعة لـ «' + (ref || '') + '».');
+        lines.push('الآية «' + (ref || '') + '» فيها كلمات مهمة من اللغة الأصلية. هنا شرحها بكلام بسيط حسب المعجم المعتمد:');
       } else {
-        lines.push('لا تتوفر بيانات أصلية موثّقة لهذه الآية في المصدر المربوط.');
+        lines.push('ما فيش بيانات أصلية مؤكدة للآية دي في المصدر المربوط حاليًا.');
       }
       lines.push('');
-      lines.push('معاني الكلمات الصعبة:');
+      lines.push('معاني الكلمات:');
       if (words && words.length) {
         words.forEach(function (e) {
-          lines.push('• «' + (e.word || '') + '»' + (e.original ? ' — ' + e.original : ''));
-          if (e.strongs) lines.push('  Strong\'s: ' + e.strongs);
-          if (e.translit) lines.push('  النطق التقريبي: ' + e.translit);
-          if (e.lexical) lines.push('  المعنى المعجمي (موجز إنجليزي من STEP): ' + e.lexical);
-          if (!e.verified) lines.push('  ملاحظة: المدخل المعجمي غير مكتمل.');
+          var arMean = arabicizeGloss(e.lexical || '');
+          lines.push('• «' + (e.word || '') + '»');
+          if (e.original) lines.push('  بالأصلي: ' + e.original);
+          if (e.translit) lines.push('  نطق تقريبي: ' + e.translit);
+          if (e.strongs) lines.push('  رقم Strong: ' + e.strongs);
+          if (arMean) lines.push('  المعنى ببساطة: ' + arMean);
+          else if (e.lexical) lines.push('  المعنى من المصدر: ' + e.lexical);
+          if (!e.verified) lines.push('  ملاحظة: البيانات مش كاملة في المصدر.');
         });
       } else {
-        lines.push('• لا توجد كلمات معجمية مسترجعة.');
+        lines.push('• لا توجد كلمات مسترجعة.');
       }
       lines.push('');
-      lines.push('خلاصة: التحليل مبني على بيانات STEP/Berean فقط، وليس تخمينًا من النص العربي وحده.');
+      lines.push('ملاحظة: المعاني مبنية على معجم STEP والنص الأصلي، مش تفسير روحي ولا تخمين من العربي فقط.');
       return lines.join('\n');
     }
 
@@ -12174,7 +12286,7 @@ function showDesignSavePreview(url, name, silent, blob) {
       if (words.length) {
         var wH = document.createElement('div');
         wH.style.cssText = 'font-weight:700;margin:12px 0 8px;color:#6b5b3e;';
-        wH.textContent = 'كلمات من النص الأصلي (موثّقة من STEP)';
+        wH.textContent = 'معاني الكلمات (من المصدر الأصلي)';
         box.appendChild(wH);
         words.forEach(function (w) {
           if (!w || typeof w !== 'object') return;
@@ -12191,13 +12303,19 @@ function showDesignSavePreview(url, name, silent, blob) {
             line.textContent = label + ': ' + String(val);
             card.appendChild(line);
           }
-          addLine('Strong\'s', w.strongs);
-          addLine('الأصل', w.original);
-          addLine('النطق التقريبي', w.translit);
-          addLine('المعنى المعجمي (موجز)', w.lexical);
-          if (w.definition) addLine('تعريف موجز', String(w.definition).slice(0, 220));
-          addLine('اللغة', w.language);
-          if (!w.verified) addLine('ملاحظة', 'المدخل غير مكتمل في المعجم المسترجع');
+          addLine('بالأصلي', w.original);
+          addLine('نطق تقريبي', w.translit);
+          addLine('رقم Strong', w.strongs);
+          var arM = arabicizeGloss(w.lexical || '');
+          if (arM) addLine('المعنى ببساطة', arM);
+          else if (w.lexical) addLine('المعنى من المصدر', w.lexical);
+          if (w.definition) addLine('تفاصيل إضافية', String(w.definition).slice(0, 160));
+          if (w.language) {
+            var langAr = String(w.language).toLowerCase().indexOf('hebr') >= 0 ? 'عبرية'
+              : (String(w.language).toLowerCase().indexOf('greek') >= 0 ? 'يونانية' : w.language);
+            addLine('اللغة', langAr);
+          }
+          if (!w.verified) addLine('ملاحظة', 'البيانات مش كاملة في المصدر');
           box.appendChild(card);
         });
       }
@@ -12207,7 +12325,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         src.style.cssText = 'margin-top:14px;padding:10px;border-radius:10px;background:#f7f1e4;font-size:12px;line-height:1.7;color:#5a4a32;';
         var srcTitle = document.createElement('div');
         srcTitle.style.cssText = 'font-weight:700;margin-bottom:4px;';
-        srcTitle.textContent = 'مصادر البيانات اللغوية';
+        srcTitle.textContent = 'من أين جت المعاني؟';
         src.appendChild(srcTitle);
         try {
           if (data.sources.lexicon) {
@@ -12271,13 +12389,13 @@ function showDesignSavePreview(url, name, silent, blob) {
         var status = document.createElement('div');
         status.id = 'meaningStatusNote';
         status.style.cssText = 'margin-bottom:10px;font-size:13px;color:#8a7a5a;text-align:right;';
-        status.textContent = '⏳ جارٍ استرجاع البيانات المعجمية من STEP / النص الأصلي…';
+        status.textContent = '⏳ جارٍ تحميل معاني الكلمات…';
         wrap.appendChild(status);
 
         var box = document.createElement('div');
         box.id = 'meaningResultBox';
         box.style.cssText = 'line-height:1.95;font-size:14.5px;color:var(--brown);background:rgba(255,253,248,0.9);padding:12px;border-radius:12px;border:1px solid #e8d9b5;white-space:pre-line;';
-        box.textContent = 'يُحضَّر التحليل اللغوي من مصادر موثّقة…';
+        box.textContent = 'ثواني… بنجهّز المعاني.';
         wrap.appendChild(box);
 
         var extra = document.createElement('div');
@@ -12318,8 +12436,8 @@ function showDesignSavePreview(url, name, silent, blob) {
           window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
           window._lastMeaning.source = via || 'step';
           status.textContent = hasWords
-            ? ('تم استرجاع ' + data.words.length + ' مدخلًا معجميًا موثّقًا من STEP / النص الأصلي.')
-            : (data.dataNote || 'اكتمل الطلب.');
+            ? ('اتجهّزت معاني ' + data.words.length + ' كلمة من المصدر الأصلي.')
+            : (data.dataNote || 'تم.');
           bindMeaningActions();
           return true;
         }
@@ -12337,7 +12455,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         // 1) جرب Worker إن وُجد (نسخة STEP الجديدة)
         // 2) إن فشل أو أعاد mode:none → جلب STEP مباشرة من المتصفح
         function loadDirectStep() {
-          status.textContent = '⏳ جارٍ جلب البيانات مباشرة من STEP / Berean…';
+          status.textContent = '⏳ جارٍ تحميل المعاني من المصدر…';
           return fetchStepLinguisticData(ref || '').then(function (data) {
             if (applyStepData(data, 'step-direct')) return;
             showLocalFallback(data && data.dataNote
@@ -14584,7 +14702,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '242';
+      var APP_VER = '243';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

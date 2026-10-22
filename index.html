@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="241" lang="ar" dir="rtl">
+<html data-app-ver="242" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -11889,6 +11889,210 @@ function showDesignSavePreview(url, name, silent, blob) {
         .replace(/"/g, '&quot;');
     }
 
+    // —— ربط STEP / Berean Interlinear من المتصفح (CORS مفتوح على helloao) ——
+    var STEP_AR_BOOK_TO_ID = {
+      "تكوين":"GEN","خروج":"EXO","لاويين":"LEV","عدد":"NUM","تثنية":"DEU",
+      "يشوع":"JOS","قضاة":"JDG","راعوث":"RUT","صموئيل الأول":"1SA","صموئيل الثاني":"2SA",
+      "الملوك الأول":"1KI","الملوك الثاني":"2KI","أخبار الأيام الأول":"1CH","أخبار الأيام الثاني":"2CH",
+      "عزرا":"EZR","نحميا":"NEH","أستير":"EST","أيوب":"JOB","مزمور":"PSA","مزامير":"PSA",
+      "أمثال":"PRO","جامعة":"ECC","نشيد الإنشاد":"SNG","نشيد":"SNG",
+      "إشعياء":"ISA","أشعياء":"ISA","إرميا":"JER","مراثي":"LAM","حزقيال":"EZK","دانيال":"DAN",
+      "هوشع":"HOS","يوئيل":"JOL","عاموس":"AMO","عوبديا":"OBA","يونان":"JON","ميخا":"MIC",
+      "ناحوم":"NAM","حبقوق":"HAB","صفنيا":"ZEP","حجي":"HAG","زكريا":"ZEC","ملاخي":"MAL",
+      "متى":"MAT","مرقس":"MRK","لوقا":"LUK","يوحنا":"JHN","أعمال":"ACT","أعمال الرسل":"ACT",
+      "رومية":"ROM","كورنثوس الأولى":"1CO","كورنثوس الثانية":"2CO","غلاطية":"GAL","أفسس":"EPH",
+      "فيلبي":"PHP","كولوسي":"COL","تسالونيكي الأولى":"1TH","تسالونيكي الثانية":"2TH",
+      "تيموثاوس الأولى":"1TI","تيموثاوس الثانية":"2TI","تيطس":"TIT","فليمون":"PHM","عبرانيين":"HEB",
+      "يعقوب":"JAS","بطرس الأولى":"1PE","بطرس الثانية":"2PE",
+      "يوحنا الأولى":"1JN","يوحنا الثانية":"2JN","يوحنا الثالثة":"3JN","يهوذا":"JUD","رؤيا":"REV","رؤيا يوحنا":"REV",
+      "تك":"GEN","خر":"EXO","لا":"LEV","عد":"NUM","تث":"DEU","يش":"JOS","قض":"JDG","را":"RUT",
+      "1صم":"1SA","2صم":"2SA","1مل":"1KI","2مل":"2KI","1أخ":"1CH","2أخ":"2CH",
+      "عز":"EZR","نح":"NEH","أس":"EST","أي":"JOB","مز":"PSA","أم":"PRO","جا":"ECC","نش":"SNG",
+      "إش":"ISA","إر":"JER","مرا":"LAM","حز":"EZK","دا":"DAN","هو":"HOS","يؤ":"JOL","عا":"AMO",
+      "عو":"OBA","يون":"JON","مي":"MIC","نا":"NAM","حب":"HAB","صف":"ZEP","حج":"HAG","زك":"ZEC","مل":"MAL",
+      "مت":"MAT","مر":"MRK","لو":"LUK","يو":"JHN","أع":"ACT","رو":"ROM","1كو":"1CO","2كو":"2CO",
+      "غل":"GAL","أف":"EPH","في":"PHP","كو":"COL","1تس":"1TH","2تس":"2TH","1تي":"1TI","2تي":"2TI",
+      "تي":"TIT","فل":"PHM","عب":"HEB","يع":"JAS","1بط":"1PE","2بط":"2PE","1يو":"1JN","2يو":"2JN","3يو":"3JN","يه":"JUD","رؤ":"REV"
+    };
+
+    function stepNormalizeDigits(s) {
+      return String(s || '').replace(/[٠-٩]/g, function (d) {
+        return '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)];
+      });
+    }
+
+    function stepParseArabicRef(ref) {
+      var raw = stepNormalizeDigits(String(ref || '').trim());
+      var m = raw.match(/^(.+?)\s+(\d+)\s*[:：]\s*(\d+)/);
+      if (!m) return null;
+      var bookName = m[1].replace(/^إنجيل\s+/u, '').replace(/^سفر\s+/u, '').trim();
+      var chapter = parseInt(m[2], 10);
+      var verse = parseInt(m[3], 10);
+      if (!chapter || !verse) return null;
+      var keys = Object.keys(STEP_AR_BOOK_TO_ID).sort(function (a, b) { return b.length - a.length; });
+      var bookId = null;
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (bookName === k || bookName.indexOf(k) >= 0) { bookId = STEP_AR_BOOK_TO_ID[k]; break; }
+      }
+      if (!bookId) return null;
+      return { bookId: bookId, chapter: chapter, verse: verse, bookName: bookName };
+    }
+
+    function stepPadStrong(s) {
+      var t = String(s || '').trim().toUpperCase();
+      var m = t.match(/^([HG])(\d+)([A-Z]?)$/);
+      if (!m) return t;
+      return m[1] + m[2].padStart(4, '0') + (m[3] || '');
+    }
+
+    function stepIsSkipStrong(strong, gloss) {
+      var base = String(strong || '').toUpperCase().replace(/[A-Z]$/, '');
+      var particles = { G3588:1, H0853:1, G2532:1, G1722:1, G1519:1, G1537:1, G4314:1, G1223:1 };
+      if (particles[base] && (!gloss || String(gloss).length < 2)) return true;
+      return false;
+    }
+
+    function fetchStepJson(url) {
+      return fetch(url).then(function (res) {
+        if (!res.ok) return null;
+        return res.json().catch(function () { return null; });
+      }).catch(function () { return null; });
+    }
+
+    function fetchStepLinguisticData(ref) {
+      var parsed = stepParseArabicRef(ref);
+      if (!parsed) {
+        return Promise.resolve({
+          mode: 'linguistic',
+          text: '',
+          words: [],
+          dataStatus: 'unmapped_ref',
+          dataNote: 'تعذر ربط مرجع الآية بنص أصلي موسوم.',
+          sources: stepSourcesBlock(),
+          disclaimer: stepDisclaimer()
+        });
+      }
+      var chUrl = 'https://bible.helloao.org/api/d/bsb-interlinear/' + parsed.bookId + '/' + parsed.chapter + '.json';
+      return fetchStepJson(chUrl).then(function (chData) {
+        if (!chData || !chData.chapter || !Array.isArray(chData.chapter.content)) {
+          return {
+            mode: 'linguistic', text: '', words: [],
+            dataStatus: 'no_interlinear',
+            dataNote: 'لا تتوفر كلمات أصلية موسومة لهذه الآية في مصدر Berean Interlinear.',
+            sources: stepSourcesBlock(), disclaimer: stepDisclaimer()
+          };
+        }
+        var item = null;
+        for (var i = 0; i < chData.chapter.content.length; i++) {
+          if (Number(chData.chapter.content[i].verse) === Number(parsed.verse)) {
+            item = chData.chapter.content[i];
+            break;
+          }
+        }
+        if (!item || !Array.isArray(item.words) || !item.words.length) {
+          return {
+            mode: 'linguistic', text: '', words: [],
+            dataStatus: 'no_interlinear',
+            dataNote: 'لا تتوفر كلمات أصلية لهذه الآية في المصدر المربوط.',
+            sources: stepSourcesBlock(), disclaimer: stepDisclaimer()
+          };
+        }
+        var seen = {};
+        var picked = [];
+        item.words.forEach(function (w) {
+          var st = stepPadStrong(w.strongs);
+          if (!st || seen[st]) return;
+          if (stepIsSkipStrong(st, w.gloss)) return;
+          seen[st] = 1;
+          picked.push(w);
+        });
+        picked = picked.slice(0, 14);
+        var chain = Promise.resolve([]);
+        picked.forEach(function (w) {
+          chain = chain.then(function (acc) {
+            var st = stepPadStrong(w.strongs);
+            var lexUrl = 'https://bible.helloao.org/api/d/stepbible-lexicon/lexicon/' + st + '.json';
+            return fetchStepJson(lexUrl).then(function (lex) {
+              var sense = lex && lex.entry && Array.isArray(lex.entry.senses) && lex.entry.senses[0]
+                ? lex.entry.senses[0] : null;
+              acc.push({
+                word: w.text || '',
+                strongs: (lex && lex.entry && lex.entry.id) || st,
+                original: (sense && sense.lemma) || w.text || '',
+                translit: (sense && sense.transliteration) || w.transliteration || '',
+                lexical: (sense && sense.gloss) || w.gloss || '',
+                definition: sense && sense.definition ? String(sense.definition).slice(0, 400) : '',
+                language: w.language || (lex && lex.entry && lex.entry.language) || '',
+                parsing: w.parsingFull || w.parsing || '',
+                verified: !!(sense && (sense.gloss || sense.lemma || sense.definition))
+              });
+              return acc;
+            });
+          });
+        });
+        return chain.then(function (wordsOut) {
+          var text = buildStepArabicTemplate(ref, wordsOut);
+          return {
+            mode: 'linguistic',
+            text: text,
+            words: wordsOut,
+            dataStatus: wordsOut.length ? 'ok' : 'no_lexicon_hits',
+            dataNote: wordsOut.length ? '' : 'وُجد النص الأصلي لكن لم تُسترجع مداخل معجمية كافية.',
+            sources: stepSourcesBlock(),
+            disclaimer: stepDisclaimer()
+          };
+        });
+      });
+    }
+
+    function stepSourcesBlock() {
+      return {
+        interlinear: {
+          name: 'Berean Standard Bible Interlinear (bsb-interlinear)',
+          url: 'https://bible.helloao.org/docs/reference/datasets/',
+          license: 'Public domain (Berean interlinear tables)'
+        },
+        lexicon: {
+          name: 'STEPBible Brief Lexicons (TBESH / TBESG)',
+          url: 'https://github.com/STEPBible/STEPBible-Data',
+          license: 'CC BY 4.0 — STEP Bible / Tyndale House Cambridge',
+          attribution: 'Data: STEP Bible (www.STEPBible.org), CC BY 4.0'
+        },
+        api: 'https://bible.helloao.org'
+      };
+    }
+
+    function stepDisclaimer() {
+      return 'المصدر اللغوي: معاجم STEPBible (TBESH/TBESG) برخصة CC BY 4.0 — www.STEPBible.org — والكلمات الأصلية من Berean Interlinear عبر bible.helloao.org. أرقام Strong\'s والأصول المعروضة مسترجعة من المصدر وليست مختلقة. هذا تحليل لغوي وليس تفسيرًا لاهوتيًا.';
+    }
+
+    function buildStepArabicTemplate(ref, words) {
+      var lines = [];
+      lines.push('المعنى اللغوي العام:');
+      if (words && words.length) {
+        lines.push('تتكوّن الآية في النص الأصلي من مفردات يمكن تتبعها في معجم STEP؛ فيما يلي أهمها حسب البيانات المسترجعة لـ «' + (ref || '') + '».');
+      } else {
+        lines.push('لا تتوفر بيانات أصلية موثّقة لهذه الآية في المصدر المربوط.');
+      }
+      lines.push('');
+      lines.push('معاني الكلمات الصعبة:');
+      if (words && words.length) {
+        words.forEach(function (e) {
+          lines.push('• «' + (e.word || '') + '»' + (e.original ? ' — ' + e.original : ''));
+          if (e.strongs) lines.push('  Strong\'s: ' + e.strongs);
+          if (e.translit) lines.push('  النطق التقريبي: ' + e.translit);
+          if (e.lexical) lines.push('  المعنى المعجمي (موجز إنجليزي من STEP): ' + e.lexical);
+          if (!e.verified) lines.push('  ملاحظة: المدخل المعجمي غير مكتمل.');
+        });
+      } else {
+        lines.push('• لا توجد كلمات معجمية مسترجعة.');
+      }
+      lines.push('');
+      lines.push('خلاصة: التحليل مبني على بيانات STEP/Berean فقط، وليس تخمينًا من النص العربي وحده.');
+      return lines.join('\n');
+    }
+
     function buildLinguisticDisplayText(ref, verseText, data) {
       var parts = [];
       parts.push('【 الآية 】');
@@ -11970,7 +12174,7 @@ function showDesignSavePreview(url, name, silent, blob) {
       if (words.length) {
         var wH = document.createElement('div');
         wH.style.cssText = 'font-weight:700;margin:12px 0 8px;color:#6b5b3e;';
-        wH.textContent = 'كلمات من النص الأصلي (موثّقة)';
+        wH.textContent = 'كلمات من النص الأصلي (موثّقة من STEP)';
         box.appendChild(wH);
         words.forEach(function (w) {
           if (!w || typeof w !== 'object') return;
@@ -11978,8 +12182,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           card.style.cssText = 'margin:0 0 10px;padding:10px;border-radius:10px;border:1px solid #e8d9b5;background:#fffdf8;';
           var title = document.createElement('div');
           title.style.cssText = 'font-weight:700;margin-bottom:4px;';
-          var badge = w.verified ? ' ✓' : '';
-          title.textContent = '«' + String(w.word || '') + '»' + badge;
+          title.textContent = '«' + String(w.word || '') + '»' + (w.verified ? ' ✓' : '');
           card.appendChild(title);
           function addLine(label, val) {
             if (!val) return;
@@ -12016,14 +12219,14 @@ function showDesignSavePreview(url, name, silent, blob) {
               a1.href = data.sources.lexicon.url;
               a1.target = '_blank';
               a1.rel = 'noopener';
-              a1.style.cssText = 'color:#6b5b3e;';
+              a1.style.cssText = 'color:#6b5b3e;display:inline-block;margin-top:2px;';
               a1.textContent = 'مستودع STEPBible-Data';
               src.appendChild(a1);
             }
           }
           if (data.sources.interlinear) {
             var l2 = document.createElement('div');
-            l2.style.marginTop = '4px';
+            l2.style.marginTop = '6px';
             l2.textContent = '• ' + (data.sources.interlinear.name || 'Berean Interlinear') + ' — ' + (data.sources.interlinear.license || '');
             src.appendChild(l2);
           }
@@ -12068,7 +12271,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         var status = document.createElement('div');
         status.id = 'meaningStatusNote';
         status.style.cssText = 'margin-bottom:10px;font-size:13px;color:#8a7a5a;text-align:right;';
-        status.textContent = '⏳ جارٍ استرجاع البيانات المعجمية (STEP / النص الأصلي)…';
+        status.textContent = '⏳ جارٍ استرجاع البيانات المعجمية من STEP / النص الأصلي…';
         wrap.appendChild(status);
 
         var box = document.createElement('div');
@@ -12103,6 +12306,24 @@ function showDesignSavePreview(url, name, silent, blob) {
         bindMeaningActions();
         addBackToChapterBtn(document.getElementById('prayerContent'));
 
+        function applyStepData(data, via) {
+          if (!data) return false;
+          var hasWords = data.words && data.words.length;
+          var hasText = data.text && String(data.text).trim();
+          if (!hasWords && !hasText) return false;
+          if (!hasText && hasWords) {
+            data.text = buildStepArabicTemplate(ref, data.words);
+          }
+          renderLinguisticResult(box, ref, txt, data);
+          window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
+          window._lastMeaning.source = via || 'step';
+          status.textContent = hasWords
+            ? ('تم استرجاع ' + data.words.length + ' مدخلًا معجميًا موثّقًا من STEP / النص الأصلي.')
+            : (data.dataNote || 'اكتمل الطلب.');
+          bindMeaningActions();
+          return true;
+        }
+
         function showLocalFallback(reasonMsg) {
           box.style.whiteSpace = 'pre-line';
           while (box.firstChild) box.removeChild(box.firstChild);
@@ -12113,13 +12334,27 @@ function showDesignSavePreview(url, name, silent, blob) {
           bindMeaningActions();
         }
 
+        // 1) جرب Worker إن وُجد (نسخة STEP الجديدة)
+        // 2) إن فشل أو أعاد mode:none → جلب STEP مباشرة من المتصفح
+        function loadDirectStep() {
+          status.textContent = '⏳ جارٍ جلب البيانات مباشرة من STEP / Berean…';
+          return fetchStepLinguisticData(ref || '').then(function (data) {
+            if (applyStepData(data, 'step-direct')) return;
+            showLocalFallback(data && data.dataNote
+              ? (data.dataNote + ' — عُرض المعجم المحلي.')
+              : 'تعذّر استرجاع بيانات STEP — نتيجة محلية من معجم التطبيق.');
+          }).catch(function () {
+            showLocalFallback('تعذّر الاتصال بمصادر STEP — نتيجة محلية من معجم التطبيق.');
+          });
+        }
+
         if (!TAFSIR_WORKER_URL) {
-          showLocalFallback('لا يوجد رابط للـ Worker — نتيجة محلية من معجم التطبيق.');
+          loadDirectStep();
           return;
         }
 
         var mCtrl = new AbortController();
-        var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 90000);
+        var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 25000);
         fetch(TAFSIR_WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -12127,38 +12362,20 @@ function showDesignSavePreview(url, name, silent, blob) {
           signal: mCtrl.signal
         }).then(function (res) {
           return res.json().then(function (data) {
-            return { ok: res.ok, status: res.status, data: data };
-          }).catch(function () {
-            return { ok: false, status: res.status, data: null };
-          });
+            return { ok: res.ok, data: data };
+          }).catch(function () { return { ok: false, data: null }; });
         }).then(function (pack) {
           clearTimeout(mTm);
           var data = pack && pack.data;
-          var hasText = data && typeof data.text === 'string' && data.text.trim();
-          var okMode = data && (data.mode === 'linguistic' || data.mode === 'ai');
-          if (pack.ok && hasText && okMode) {
-            renderLinguisticResult(box, ref, txt, data);
-            window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
-            window._lastMeaning.source = 'worker-step';
-            var nWords = (data.words && data.words.length) ? data.words.length : 0;
-            status.textContent = nWords
-              ? ('تم استرجاع ' + nWords + ' مدخلًا معجميًا موثّقًا من STEP / النص الأصلي.')
-              : (data.dataNote || 'اكتمل الطلب — لم تُسترجع كلمات معجمية لهذه الآية.');
-            bindMeaningActions();
+          // Worker الجديد: mode=linguistic مع words أو text
+          if (pack.ok && data && data.mode === 'linguistic' && applyStepData(data, 'worker-step')) {
             return;
           }
-          if (data && data.error === 'rate_minute') {
-            showLocalFallback('تم تجاوز حد الطلبات في الدقيقة — نتيجة محلية من معجم التطبيق.');
-            return;
-          }
-          if (data && data.error === 'rate_day') {
-            showLocalFallback('تم تجاوز الحد اليومي — نتيجة محلية من معجم التطبيق.');
-            return;
-          }
-          showLocalFallback('تعذّر إعداد المعنى من الخدمة — نتيجة محلية من معجم التطبيق.');
+          // Worker قديم يعيد mode:none — انتقل للجلب المباشر
+          loadDirectStep();
         }).catch(function () {
           clearTimeout(mTm);
-          showLocalFallback('لا يوجد اتصال أو تعذّر الوصول للخدمة — نتيجة محلية من معجم التطبيق.');
+          loadDirectStep();
         });
       } catch (err) {
         console.log('openWordMeaning', err);
@@ -14367,7 +14584,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '241';
+      var APP_VER = '242';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

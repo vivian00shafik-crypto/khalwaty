@@ -1,0 +1,18 @@
+name = "khalwaty-tafsir"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]
+
+# Secret (لا تُحفظ في Git):
+# wrangler secret put IP_HASH_SECRET
+# القيمة: openssl rand -hex 32  (>= 64 حرفًا سداسيًا عشريًا)

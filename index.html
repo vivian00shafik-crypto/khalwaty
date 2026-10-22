@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="239" lang="ar" dir="rtl">
+<html data-app-ver="240" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -11881,6 +11881,119 @@ function showDesignSavePreview(url, name, silent, blob) {
       }
     }
 
+    function escapeMeaningHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function buildLinguisticDisplayText(ref, verseText, data) {
+      var parts = [];
+      parts.push('【 الآية 】');
+      if (ref) parts.push(ref);
+      parts.push(verseText);
+      parts.push('');
+      if (data && typeof data.text === 'string' && data.text.trim()) {
+        parts.push(data.text.trim());
+      }
+      if (data && data.disclaimer) {
+        parts.push('');
+        parts.push(String(data.disclaimer));
+      }
+      return parts.join('\n');
+    }
+
+    function renderLinguisticResult(box, ref, verseText, data) {
+      while (box.firstChild) box.removeChild(box.firstChild);
+      box.style.whiteSpace = 'normal';
+
+      var verseBlock = document.createElement('div');
+      verseBlock.style.cssText = 'margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e8d9b5;';
+      var vTitle = document.createElement('div');
+      vTitle.style.cssText = 'font-weight:700;margin-bottom:4px;color:#6b5b3e;';
+      vTitle.textContent = 'الآية';
+      verseBlock.appendChild(vTitle);
+      if (ref) {
+        var vRef = document.createElement('div');
+        vRef.style.cssText = 'font-size:13px;color:#8a7a60;margin-bottom:4px;';
+        vRef.textContent = ref;
+        verseBlock.appendChild(vRef);
+      }
+      var vTxt = document.createElement('div');
+      vTxt.style.cssText = 'white-space:pre-line;line-height:1.85;';
+      vTxt.textContent = verseText;
+      verseBlock.appendChild(vTxt);
+      box.appendChild(verseBlock);
+
+      var words = (data && Array.isArray(data.words)) ? data.words : null;
+      var mainText = (data && typeof data.text === 'string') ? data.text.trim() : '';
+      var general = (data && typeof data.general === 'string') ? data.general.trim() : '';
+
+      if (general) {
+        var gH = document.createElement('div');
+        gH.style.cssText = 'font-weight:700;margin:10px 0 6px;color:#6b5b3e;';
+        gH.textContent = 'المعنى اللغوي العام';
+        box.appendChild(gH);
+        var gP = document.createElement('div');
+        gP.style.cssText = 'white-space:pre-line;line-height:1.9;margin-bottom:10px;';
+        gP.textContent = general;
+        box.appendChild(gP);
+      }
+
+      if (words && words.length) {
+        var wH = document.createElement('div');
+        wH.style.cssText = 'font-weight:700;margin:12px 0 8px;color:#6b5b3e;';
+        wH.textContent = 'معاني الكلمات الصعبة';
+        box.appendChild(wH);
+        words.forEach(function (w) {
+          if (!w || typeof w !== 'object') return;
+          var card = document.createElement('div');
+          card.style.cssText = 'margin:0 0 10px;padding:10px;border-radius:10px;border:1px solid #e8d9b5;background:#fffdf8;';
+          var title = document.createElement('div');
+          title.style.cssText = 'font-weight:700;margin-bottom:4px;';
+          title.textContent = '«' + String(w.word || w.arabic || '') + '»';
+          card.appendChild(title);
+          function addLine(label, val) {
+            if (!val) return;
+            var line = document.createElement('div');
+            line.style.cssText = 'font-size:13.5px;line-height:1.7;color:#4a3f2a;';
+            line.textContent = label + ': ' + String(val);
+            card.appendChild(line);
+          }
+          addLine('الأصل', w.original || w.origin || w.lemma);
+          addLine('النقل الصوتي', w.translit || w.transliteration);
+          addLine('المعنى المعجمي', w.lexical || w.lexicon);
+          addLine('في سياق الآية', w.contextual || w.context || w.meaning);
+          if (!w.contextual && !w.context && !w.meaning && w.note) addLine('الشرح', w.note);
+          box.appendChild(card);
+        });
+        if (mainText && !general) {
+          var extraH = document.createElement('div');
+          extraH.style.cssText = 'font-weight:700;margin:12px 0 6px;color:#6b5b3e;';
+          extraH.textContent = 'تحليل لغوي';
+          box.appendChild(extraH);
+          var extraP = document.createElement('div');
+          extraP.style.cssText = 'white-space:pre-line;line-height:1.9;';
+          extraP.textContent = mainText;
+          box.appendChild(extraP);
+        }
+      } else if (mainText) {
+        var body = document.createElement('div');
+        body.style.cssText = 'white-space:pre-line;line-height:1.95;';
+        body.textContent = mainText;
+        box.appendChild(body);
+      }
+
+      if (data && data.disclaimer) {
+        var d = document.createElement('div');
+        d.style.cssText = 'margin-top:12px;font-size:12px;color:#8a7a60;line-height:1.7;white-space:pre-line;';
+        d.textContent = String(data.disclaimer);
+        box.appendChild(d);
+      }
+    }
+
     function openWordMeaning() {
       try {
         var snap = window._verseMenuData || {};
@@ -11891,72 +12004,119 @@ function showDesignSavePreview(url, name, silent, blob) {
         }
         var txt = (snap.text || (el ? (el.getAttribute('data-text') || el.innerText || '') : '') || '').trim();
         var ref = (snap.ref || (el ? (el.getAttribute('data-ref') || '') : '') || '').trim();
-        // نظّف أزرار/رموز من innerText
         txt = txt.replace(/🔊/g, '').replace(/^\s*\d+\s*/, '').trim();
         if (!txt) {
           showToast('اختاري آية أولًا من نص الكتاب');
           return;
         }
         closeVerseMenu();
-        var content = generateLinguisticNote(txt, ref);
-        window._lastMeaning = { ref: ref, text: txt, content: content };
+
+        var localContent = generateLinguisticNote(txt, ref);
+        window._lastMeaning = { ref: ref, text: txt, content: localContent, source: 'local' };
+
         document.getElementById('prayerTitle').textContent = 'المعنى اللغوي للآية';
         var pc = document.getElementById('prayerContent');
         pc.innerHTML = '';
         var wrap = document.createElement('div');
         wrap.style.cssText = 'text-align:right;direction:rtl;';
+
+        var status = document.createElement('div');
+        status.id = 'meaningStatusNote';
+        status.style.cssText = 'margin-bottom:10px;font-size:13px;color:#8a7a5a;text-align:right;';
+        status.textContent = '⏳ جارٍ إعداد المعنى اللغوي…';
+        wrap.appendChild(status);
+
         var box = document.createElement('div');
-        box.style.cssText = 'line-height:1.95;font-size:14.5px;white-space:pre-line;color:var(--brown);background:rgba(255,253,248,0.9);padding:12px;border-radius:12px;border:1px solid #e8d9b5;';
-        box.textContent = content;
+        box.id = 'meaningResultBox';
+        box.style.cssText = 'line-height:1.95;font-size:14.5px;color:var(--brown);background:rgba(255,253,248,0.9);padding:12px;border-radius:12px;border:1px solid #e8d9b5;white-space:pre-line;';
+        box.textContent = 'يُحضَّر التحليل اللغوي…';
         wrap.appendChild(box);
+
         var extra = document.createElement('div');
-        extra.style.cssText = 'margin-top:12px;';
-        extra.innerHTML = '<button type="button" class="save-btn" id="meaningSpeakBtn">🔊 استماع</button> ' +
+        extra.style.cssText = 'margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;';
+        extra.innerHTML =
+          '<button type="button" class="save-btn" id="meaningSpeakBtn">🔊 استماع</button>' +
           '<button type="button" class="save-btn" id="meaningPdfBtn" style="background:#5a7d4a;">📄 PDF</button>';
         wrap.appendChild(extra);
-        // روابط تفاسير الآباء تحت المعنى اللغوي
-        try { wrap.insertBefore(makeCommentaryBox(ref, txt), extra); } catch (e) { console.log('meaning links', e); }
+
+        try { wrap.appendChild(makeCommentaryBox(ref, txt)); } catch (e) { console.log('meaning links', e); }
+
         pc.appendChild(wrap);
         document.getElementById('prayerModal').classList.add('active');
-        var sb = document.getElementById('meaningSpeakBtn');
-        if (sb) sb.onclick = function() { speakText(window._lastMeaning.content); };
-        var pb = document.getElementById('meaningPdfBtn');
-        if (pb) pb.onclick = function() { printHTML('معنى لغوي ' + ref, String(window._lastMeaning.content || '').replace(/\n/g, '<br>')); };
-        // المعنى اللغوي بالذكاء الاصطناعي من تفاسير الآباء (الأنبا تكلا) — وإلا يبقى معجم التطبيق
-        if (TAFSIR_WORKER_URL && ref) {
-          var mNote = document.createElement('div');
-          mNote.style.cssText = 'margin-top:10px;font-size:12px;color:#8a7a5a;text-align:right;';
-          mNote.textContent = '⏳ جارٍ استخراج المعنى اللغوي من تفاسير الآباء…';
-          wrap.insertBefore(mNote, extra);
-          var mCtrl = new AbortController();
-          var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 70000);
-          fetch(TAFSIR_WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: 'linguistic', ref: ref, verseText: txt, sources: commentarySources(ref, txt) }),
-            signal: mCtrl.signal
-          }).then(function (res) { return res.json(); }).then(function (data) {
-            clearTimeout(mTm);
-            if (data && data.mode === 'ai' && data.text) {
-              var mc = '【 الآية 】\n' + ref + '\n' + txt + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
-              box.textContent = mc;
-              window._lastMeaning.content = mc;
-              mNote.remove();
-            } else {
-              mNote.textContent = 'لم يتوفر نص تفسير من الأنبا تكلا لهذه الآية، فهذا معنى مبسّط من معجم التطبيق.';
-            }
-          }).catch(function () {
-            clearTimeout(mTm);
-            mNote.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا معنى مبسّط من معجم التطبيق.';
-          });
+
+        function bindMeaningActions() {
+          var sb = document.getElementById('meaningSpeakBtn');
+          if (sb) sb.onclick = function () {
+            if (window._lastMeaning) speakText(window._lastMeaning.content);
+          };
+          var pb = document.getElementById('meaningPdfBtn');
+          if (pb) pb.onclick = function () {
+            if (!window._lastMeaning) return;
+            printHTML('معنى لغوي ' + (ref || ''), String(window._lastMeaning.content || '').replace(/\n/g, '<br>'));
+          };
         }
+        bindMeaningActions();
         addBackToChapterBtn(document.getElementById('prayerContent'));
+
+        function showLocalFallback(reasonMsg) {
+          box.style.whiteSpace = 'pre-line';
+          while (box.firstChild) box.removeChild(box.firstChild);
+          box.textContent = localContent;
+          window._lastMeaning.content = localContent;
+          window._lastMeaning.source = 'local';
+          status.textContent = reasonMsg || 'تعذّر الاتصال — نتيجة محلية من معجم التطبيق (ليست تحليل Worker).';
+          bindMeaningActions();
+        }
+
+        if (!TAFSIR_WORKER_URL) {
+          showLocalFallback('لا يوجد رابط للـ Worker — نتيجة محلية من معجم التطبيق.');
+          return;
+        }
+
+        var mCtrl = new AbortController();
+        var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 70000);
+        fetch(TAFSIR_WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'linguistic', ref: ref || 'آية', verseText: txt }),
+          signal: mCtrl.signal
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, status: res.status, data: data };
+          }).catch(function () {
+            return { ok: false, status: res.status, data: null };
+          });
+        }).then(function (pack) {
+          clearTimeout(mTm);
+          var data = pack && pack.data;
+          var hasText = data && typeof data.text === 'string' && data.text.trim();
+          var okMode = data && (data.mode === 'linguistic' || data.mode === 'ai');
+          if (pack.ok && hasText && okMode) {
+            renderLinguisticResult(box, ref, txt, data);
+            window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
+            window._lastMeaning.source = 'worker';
+            status.textContent = 'تحليل لغوي مولّد عبر الخدمة — ليس معجمًا محليًا.';
+            bindMeaningActions();
+            return;
+          }
+          if (data && data.error === 'rate_minute') {
+            showLocalFallback('تم تجاوز حد الطلبات في الدقيقة — نتيجة محلية من معجم التطبيق.');
+            return;
+          }
+          if (data && data.error === 'rate_day') {
+            showLocalFallback('تم تجاوز الحد اليومي — نتيجة محلية من معجم التطبيق.');
+            return;
+          }
+          showLocalFallback('تعذّر إعداد المعنى من الخدمة — نتيجة محلية من معجم التطبيق.');
+        }).catch(function () {
+          clearTimeout(mTm);
+          showLocalFallback('لا يوجد اتصال أو تعذّر الوصول للخدمة — نتيجة محلية من معجم التطبيق.');
+        });
       } catch (err) {
         console.log('openWordMeaning', err);
         showToast('تعذر فتح المعنى اللغوي');
       }
     }
-
 
     function getAgpeyaAlarms() {
       var defaults = [
@@ -14159,7 +14319,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '239';
+      var APP_VER = '240';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="240" lang="ar" dir="rtl">
+<html data-app-ver="241" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -11898,6 +11898,30 @@ function showDesignSavePreview(url, name, silent, blob) {
       if (data && typeof data.text === 'string' && data.text.trim()) {
         parts.push(data.text.trim());
       }
+      if (data && Array.isArray(data.words) && data.words.length) {
+        parts.push('');
+        parts.push('【 كلمات موثّقة 】');
+        data.words.forEach(function (w) {
+          if (!w) return;
+          var line = '• ' + (w.word || '') + (w.strongs ? ' [' + w.strongs + ']' : '');
+          if (w.original) line += ' — ' + w.original;
+          if (w.translit) line += ' | ' + w.translit;
+          if (w.lexical) line += ' | ' + w.lexical;
+          parts.push(line);
+        });
+      }
+      if (data && data.sources) {
+        parts.push('');
+        parts.push('【 المصادر 】');
+        try {
+          if (data.sources.lexicon) {
+            parts.push('معجم: ' + (data.sources.lexicon.name || 'STEPBible') + ' — ' + (data.sources.lexicon.license || 'CC BY 4.0'));
+          }
+          if (data.sources.interlinear) {
+            parts.push('النص الأصلي الموسوم: ' + (data.sources.interlinear.name || 'Berean Interlinear'));
+          }
+        } catch (e) {}
+      }
       if (data && data.disclaimer) {
         parts.push('');
         parts.push(String(data.disclaimer));
@@ -11927,25 +11951,26 @@ function showDesignSavePreview(url, name, silent, blob) {
       verseBlock.appendChild(vTxt);
       box.appendChild(verseBlock);
 
-      var words = (data && Array.isArray(data.words)) ? data.words : null;
-      var mainText = (data && typeof data.text === 'string') ? data.text.trim() : '';
-      var general = (data && typeof data.general === 'string') ? data.general.trim() : '';
-
-      if (general) {
-        var gH = document.createElement('div');
-        gH.style.cssText = 'font-weight:700;margin:10px 0 6px;color:#6b5b3e;';
-        gH.textContent = 'المعنى اللغوي العام';
-        box.appendChild(gH);
-        var gP = document.createElement('div');
-        gP.style.cssText = 'white-space:pre-line;line-height:1.9;margin-bottom:10px;';
-        gP.textContent = general;
-        box.appendChild(gP);
+      if (data && data.dataNote) {
+        var note = document.createElement('div');
+        note.style.cssText = 'font-size:13px;color:#8a5a3a;margin-bottom:10px;line-height:1.6;';
+        note.textContent = String(data.dataNote);
+        box.appendChild(note);
       }
 
-      if (words && words.length) {
+      var mainText = (data && typeof data.text === 'string') ? data.text.trim() : '';
+      if (mainText) {
+        var body = document.createElement('div');
+        body.style.cssText = 'white-space:pre-line;line-height:1.95;margin-bottom:12px;';
+        body.textContent = mainText;
+        box.appendChild(body);
+      }
+
+      var words = (data && Array.isArray(data.words)) ? data.words : [];
+      if (words.length) {
         var wH = document.createElement('div');
         wH.style.cssText = 'font-weight:700;margin:12px 0 8px;color:#6b5b3e;';
-        wH.textContent = 'معاني الكلمات الصعبة';
+        wH.textContent = 'كلمات من النص الأصلي (موثّقة)';
         box.appendChild(wH);
         words.forEach(function (w) {
           if (!w || typeof w !== 'object') return;
@@ -11953,7 +11978,8 @@ function showDesignSavePreview(url, name, silent, blob) {
           card.style.cssText = 'margin:0 0 10px;padding:10px;border-radius:10px;border:1px solid #e8d9b5;background:#fffdf8;';
           var title = document.createElement('div');
           title.style.cssText = 'font-weight:700;margin-bottom:4px;';
-          title.textContent = '«' + String(w.word || w.arabic || '') + '»';
+          var badge = w.verified ? ' ✓' : '';
+          title.textContent = '«' + String(w.word || '') + '»' + badge;
           card.appendChild(title);
           function addLine(label, val) {
             if (!val) return;
@@ -11962,28 +11988,47 @@ function showDesignSavePreview(url, name, silent, blob) {
             line.textContent = label + ': ' + String(val);
             card.appendChild(line);
           }
-          addLine('الأصل', w.original || w.origin || w.lemma);
-          addLine('النقل الصوتي', w.translit || w.transliteration);
-          addLine('المعنى المعجمي', w.lexical || w.lexicon);
-          addLine('في سياق الآية', w.contextual || w.context || w.meaning);
-          if (!w.contextual && !w.context && !w.meaning && w.note) addLine('الشرح', w.note);
+          addLine('Strong\'s', w.strongs);
+          addLine('الأصل', w.original);
+          addLine('النطق التقريبي', w.translit);
+          addLine('المعنى المعجمي (موجز)', w.lexical);
+          if (w.definition) addLine('تعريف موجز', String(w.definition).slice(0, 220));
+          addLine('اللغة', w.language);
+          if (!w.verified) addLine('ملاحظة', 'المدخل غير مكتمل في المعجم المسترجع');
           box.appendChild(card);
         });
-        if (mainText && !general) {
-          var extraH = document.createElement('div');
-          extraH.style.cssText = 'font-weight:700;margin:12px 0 6px;color:#6b5b3e;';
-          extraH.textContent = 'تحليل لغوي';
-          box.appendChild(extraH);
-          var extraP = document.createElement('div');
-          extraP.style.cssText = 'white-space:pre-line;line-height:1.9;';
-          extraP.textContent = mainText;
-          box.appendChild(extraP);
-        }
-      } else if (mainText) {
-        var body = document.createElement('div');
-        body.style.cssText = 'white-space:pre-line;line-height:1.95;';
-        body.textContent = mainText;
-        box.appendChild(body);
+      }
+
+      if (data && data.sources) {
+        var src = document.createElement('div');
+        src.style.cssText = 'margin-top:14px;padding:10px;border-radius:10px;background:#f7f1e4;font-size:12px;line-height:1.7;color:#5a4a32;';
+        var srcTitle = document.createElement('div');
+        srcTitle.style.cssText = 'font-weight:700;margin-bottom:4px;';
+        srcTitle.textContent = 'مصادر البيانات اللغوية';
+        src.appendChild(srcTitle);
+        try {
+          if (data.sources.lexicon) {
+            var l1 = document.createElement('div');
+            l1.textContent = '• ' + (data.sources.lexicon.name || 'STEPBible') + ' — ' + (data.sources.lexicon.license || 'CC BY 4.0');
+            src.appendChild(l1);
+            if (data.sources.lexicon.url) {
+              var a1 = document.createElement('a');
+              a1.href = data.sources.lexicon.url;
+              a1.target = '_blank';
+              a1.rel = 'noopener';
+              a1.style.cssText = 'color:#6b5b3e;';
+              a1.textContent = 'مستودع STEPBible-Data';
+              src.appendChild(a1);
+            }
+          }
+          if (data.sources.interlinear) {
+            var l2 = document.createElement('div');
+            l2.style.marginTop = '4px';
+            l2.textContent = '• ' + (data.sources.interlinear.name || 'Berean Interlinear') + ' — ' + (data.sources.interlinear.license || '');
+            src.appendChild(l2);
+          }
+        } catch (e) {}
+        box.appendChild(src);
       }
 
       if (data && data.disclaimer) {
@@ -12023,13 +12068,13 @@ function showDesignSavePreview(url, name, silent, blob) {
         var status = document.createElement('div');
         status.id = 'meaningStatusNote';
         status.style.cssText = 'margin-bottom:10px;font-size:13px;color:#8a7a5a;text-align:right;';
-        status.textContent = '⏳ جارٍ إعداد المعنى اللغوي…';
+        status.textContent = '⏳ جارٍ استرجاع البيانات المعجمية (STEP / النص الأصلي)…';
         wrap.appendChild(status);
 
         var box = document.createElement('div');
         box.id = 'meaningResultBox';
         box.style.cssText = 'line-height:1.95;font-size:14.5px;color:var(--brown);background:rgba(255,253,248,0.9);padding:12px;border-radius:12px;border:1px solid #e8d9b5;white-space:pre-line;';
-        box.textContent = 'يُحضَّر التحليل اللغوي…';
+        box.textContent = 'يُحضَّر التحليل اللغوي من مصادر موثّقة…';
         wrap.appendChild(box);
 
         var extra = document.createElement('div');
@@ -12064,7 +12109,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           box.textContent = localContent;
           window._lastMeaning.content = localContent;
           window._lastMeaning.source = 'local';
-          status.textContent = reasonMsg || 'تعذّر الاتصال — نتيجة محلية من معجم التطبيق (ليست تحليل Worker).';
+          status.textContent = reasonMsg || 'تعذّر الاتصال — نتيجة محلية من معجم التطبيق (ليست بيانات STEP).';
           bindMeaningActions();
         }
 
@@ -12074,7 +12119,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         }
 
         var mCtrl = new AbortController();
-        var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 70000);
+        var mTm = setTimeout(function () { try { mCtrl.abort(); } catch (e) {} }, 90000);
         fetch(TAFSIR_WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -12094,8 +12139,11 @@ function showDesignSavePreview(url, name, silent, blob) {
           if (pack.ok && hasText && okMode) {
             renderLinguisticResult(box, ref, txt, data);
             window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
-            window._lastMeaning.source = 'worker';
-            status.textContent = 'تحليل لغوي مولّد عبر الخدمة — ليس معجمًا محليًا.';
+            window._lastMeaning.source = 'worker-step';
+            var nWords = (data.words && data.words.length) ? data.words.length : 0;
+            status.textContent = nWords
+              ? ('تم استرجاع ' + nWords + ' مدخلًا معجميًا موثّقًا من STEP / النص الأصلي.')
+              : (data.dataNote || 'اكتمل الطلب — لم تُسترجع كلمات معجمية لهذه الآية.');
             bindMeaningActions();
             return;
           }
@@ -14319,7 +14367,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '240';
+      var APP_VER = '241';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

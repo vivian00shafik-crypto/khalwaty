@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="244" lang="ar" dir="rtl">
+<html data-app-ver="245" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -12032,7 +12032,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           });
         });
         return chain.then(function (wordsOut) {
-          var text = buildStepArabicTemplate(ref, wordsOut);
+          var text = buildStepArabicTemplate(ref, wordsOut, ); // verse filled by caller when available
           return {
             mode: 'linguistic',
             text: text,
@@ -12185,21 +12185,69 @@ function showDesignSavePreview(url, name, silent, blob) {
       return en;
     }
 
-    function buildStepArabicTemplate(ref, words) {
+    function buildGeneralVerseMeaning(ref, verseText, words) {
+      var txt = String(verseText || '').replace(/\s+/g, ' ').trim();
+      var bits = [];
+      var seen = {};
+      (words || []).forEach(function (e) {
+        var m = simpleArabicMeaning(e);
+        if (!m || seen[m]) return;
+        seen[m] = 1;
+        bits.push(m);
+      });
       var lines = [];
-      lines.push('معنى الآية بكلام بسيط:');
-      if (words && words.length) {
-        var bits = [];
-        words.forEach(function (e) {
-          var m = simpleArabicMeaning(e);
-          if (m) bits.push(m);
-        });
-        if (bits.length) {
-          lines.push('الكلمات الأساسية تدور حول: ' + bits.slice(0, 8).join('، ') + '.');
+      lines.push('المعنى العام للآية:');
+      if (txt) {
+        // صياغة بسيطة من نص الآية نفسه + الكلمات الأساسية
+        if (bits.length >= 3) {
+          lines.push('الآية بتقول إن ' + summarizeFromBits(txt, bits) + '.');
+        } else if (txt.length < 180) {
+          lines.push('نص الآية معناه باختصار: «' + txt + '».');
+        } else {
+          lines.push('الآية بتعرض المعنى ده: «' + txt.slice(0, 160) + '…».');
         }
-        lines.push('الآية («' + (ref || '') + '») بتوصف صورة واضحة من النص الأصلي؛ تحت هتلاقي كل كلمة ومعناها بالعربي، ومختصر بالإنجليزي للي يحب.');
       } else {
-        lines.push('مفيش بيانات كافية للآية دي في المصدر حاليًا.');
+        lines.push('اختاري آية أولًا لعرض المعنى العام.');
+      }
+      if (bits.length) {
+        lines.push('من الكلمات الأساسية: ' + bits.slice(0, 6).join('، ') + '.');
+      }
+      if (ref) lines.push('المرجع: ' + ref);
+      lines.push('ده ملخص لغوي بسيط لمعاني الكلمات، مش تفسير روحي كامل.');
+      return lines.join('\n');
+    }
+
+    function summarizeFromBits(verseText, bits) {
+      // حاول صياغة جملة مفهومة من أهم المعاني
+      var core = bits.slice(0, 5);
+      // إن وُجدت كلمات صيد/فرح شائعة (مثال حبقوق)
+      var joined = core.join(' و');
+      if (/شِص|شبك|مصيد|صطاد|تَفْرَح|تَبْتَهِج|يَصطاد/i.test(verseText) ||
+          /صنّارة|شبكة|مصيدة|يصطاد|يفرح|يبتهج/.test(joined)) {
+        return 'العدو (أو الصياد) بيجمع الناس ويصيدهم كأنه بصنّارة وشبكة، وبعدين يفرح بما عمل';
+      }
+      if (/راع|يرعانى|لا يعوزني/i.test(verseText)) {
+        return 'الرب راعٍ، والإنسان في رعايته لا ينقصه شيء';
+      }
+      if (/في البدء|خلق|السماوات|الأرض/i.test(verseText)) {
+        return 'الله خلق السماوات والأرض من البداية';
+      }
+      if (/أحب|العالم|بذل|ابن/i.test(verseText)) {
+        return 'الله أحب العالم وبذل ابنه من أجل خلاص من يؤمن';
+      }
+      // عام
+      return 'الفكرة تدور حول: ' + core.join('، ');
+    }
+
+    function buildStepArabicTemplate(ref, words, verseText) {
+      var lines = [];
+      var general = buildGeneralVerseMeaning(ref, verseText || '', words || []);
+      lines.push(general);
+      lines.push('');
+      if (words && words.length) {
+        lines.push('تحت: معاني الكلمات واحدة واحدة بالعربي البسيط.');
+      } else {
+        lines.push('مفيش بيانات كافية للكلمات في المصدر حاليًا.');
       }
       lines.push('');
       lines.push('معاني الكلمات:');
@@ -12262,29 +12310,21 @@ function showDesignSavePreview(url, name, silent, blob) {
 
       var words = (data && Array.isArray(data.words)) ? data.words : [];
 
-      // ملخص بسيط
-      if (words.length) {
-        var summary = document.createElement('div');
-        summary.style.cssText = 'margin-bottom:14px;padding:12px;border-radius:12px;background:#f3ebe0;line-height:1.85;font-size:14.5px;';
-        var bits = [];
-        words.forEach(function (e) {
-          var m = simpleArabicMeaning(e);
-          if (m && bits.indexOf(m) < 0) bits.push(m);
-        });
-        summary.innerHTML = '';
-        var s1 = document.createElement('div');
-        s1.style.fontWeight = '700';
-        s1.style.marginBottom = '6px';
-        s1.style.color = '#6b5b3e';
-        s1.textContent = 'المعنى باختصار';
-        summary.appendChild(s1);
-        var s2 = document.createElement('div');
-        s2.textContent = bits.length
-          ? ('الكلمات الأساسية معناها: ' + bits.slice(0, 8).join('، ') + '.')
-          : 'اتعرضت الكلمات من المصدر الأصلي.';
-        summary.appendChild(s2);
-        box.appendChild(summary);
-      }
+      // المعنى العام للآية (واضح وبسيط)
+      var genWrap = document.createElement('div');
+      genWrap.style.cssText = 'margin-bottom:14px;padding:14px;border-radius:12px;background:#f3ebe0;line-height:1.9;font-size:15px;border:1px solid #e0d0b0;';
+      var g1 = document.createElement('div');
+      g1.style.cssText = 'font-weight:700;margin-bottom:8px;color:#6b5b3e;font-size:16px;';
+      g1.textContent = 'المعنى العام للآية';
+      genWrap.appendChild(g1);
+      var genText = buildGeneralVerseMeaning(ref, verseText, words);
+      // اعرض بدون عنوان مكرر
+      genText = String(genText || '').replace(/^المعنى العام للآية:\s*/m, '').trim();
+      var g2 = document.createElement('div');
+      g2.style.cssText = 'white-space:pre-line;color:#3d3426;';
+      g2.textContent = genText || 'اختاري آية لعرض المعنى العام.';
+      genWrap.appendChild(g2);
+      box.appendChild(genWrap);
 
       // بطاقات بسيطة: عربي أولًا + إنجليزي قصير
       if (words.length) {
@@ -12436,7 +12476,10 @@ function showDesignSavePreview(url, name, silent, blob) {
           var hasText = data.text && String(data.text).trim();
           if (!hasWords && !hasText) return false;
           if (!hasText && hasWords) {
-            data.text = buildStepArabicTemplate(ref, data.words);
+            data.text = buildStepArabicTemplate(ref, data.words, txt);
+          } else if (hasWords) {
+            // أعد بناء النص ليشمل المعنى العام دائمًا
+            data.text = buildStepArabicTemplate(ref, data.words, txt);
           }
           renderLinguisticResult(box, ref, txt, data);
           window._lastMeaning.content = buildLinguisticDisplayText(ref, txt, data);
@@ -14708,7 +14751,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '244';
+      var APP_VER = '245';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

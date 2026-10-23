@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="250" lang="ar" dir="rtl">
+<html data-app-ver="251" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1862,7 +1862,7 @@
       { id: 'mass', label: 'قداس', icon: i3d('chalice') },
       { id: 'praise', label: 'تسبيحة', icon: i3d('music') },
       { id: 'fast', label: 'صوم', icon: i3d('leaf') },
-      { id: 'silence', label: 'ساعة صمت', icon: i3d('silence') },
+      { id: 'silence', label: 'ساعة صمت', icon: (typeof silenceIcon==='function'?silenceIcon(false):i3d('silence')) },
       { id: 'service', label: 'خدمة اليوم', icon: i3d('pray') }
     ];
 
@@ -1888,6 +1888,17 @@
     function progressIcon() {
       const g = localStorage.getItem('khalwati_gender') || 'girl';
       return i3d(g === 'boy' ? 'progress_boy' : 'progress_girl');
+    }
+    function silenceIcon(checked) {
+      var g = localStorage.getItem('khalwati_gender') || 'girl';
+      var src;
+      if (g === 'boy') {
+        src = checked ? 'silence-boy-shush.jpg' : 'silence-boy.jpg';
+      } else {
+        src = checked ? 'silence-girl-shush.jpg' : 'silence-girl.jpg';
+      }
+      src += '?v=251';
+      return '<img class="i3d silence-gender-icon" src="' + src + '" alt="ساعة صمت" width="48" height="48" decoding="async" style="width:48px;height:48px;object-fit:cover;border-radius:50%;display:block;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,0.12);">';
     }
     function kyrieIcon() {
       const g = localStorage.getItem('khalwati_gender') || 'girl';
@@ -2508,7 +2519,7 @@
         // تسبيحة: أيقونة جديدة قبل التفعيل، والأيقونة القديمة بعد الضغط
         let iconHtml = item.icon;
         if (item.id === 'silence') {
-          iconHtml = checked ? i3d('silence_shush') : i3d('silence');
+          iconHtml = silenceIcon(checked);
         }
         if (item.id === 'praise') {
           iconHtml = checked ? i3d('music_on') : i3d('music');
@@ -13108,7 +13119,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           </select>
 
           <p style="margin-top:14px;"><strong>نوع المستخدم (للرسم البياني)</strong></p>
-          <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value); try { var p=serviceItems.find(function(s){return s.id==='progressChart';}); if(p)p.icon=progressIcon(); var k=serviceItems.find(function(s){return s.id==='kyrie';}); if(k)k.icon=kyrieIcon(); if(typeof renderServices==='function')renderServices(); else if(typeof renderDailyIcons==='function')renderDailyIcons(); } catch(e){}" >
+          <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value); try { var p=serviceItems.find(function(s){return s.id==='progressChart';}); if(p)p.icon=progressIcon(); var k=serviceItems.find(function(s){return s.id==='kyrie';}); if(k)k.icon=kyrieIcon(); if(typeof renderDailyIcons==='function')renderDailyIcons(); if(typeof renderServices==='function')renderServices(); } catch(e){}" >
             <option value="girl" ${gender==='girl'?'selected':''}>بنت / Girl</option>
             <option value="boy" ${gender==='boy'?'selected':''}>ولد / Boy</option>
           </select>
@@ -15025,7 +15036,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '250';
+      var APP_VER = '251';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="251" lang="ar" dir="rtl">
+<html data-app-ver="252" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1860,7 +1860,7 @@
       { id: 'sunset', label: 'غروب', icon: i3d('sunset') },
       { id: 'sleep', label: 'نوم', icon: i3d('moon') },
       { id: 'mass', label: 'قداس', icon: i3d('chalice') },
-      { id: 'praise', label: 'تسبيحة', icon: i3d('music') },
+      { id: 'praise', label: 'تسبيحة', icon: customIconImg('icon-praise-david.jpg', 'تسبيحة') },
       { id: 'fast', label: 'صوم', icon: i3d('leaf') },
       { id: 'silence', label: 'ساعة صمت', icon: (typeof silenceIcon==='function'?silenceIcon(false):i3d('silence')) },
       { id: 'service', label: 'خدمة اليوم', icon: i3d('pray') }
@@ -1878,7 +1878,7 @@
       { id: 'faithExamples', label: 'تمثلوا بإيمانهم', icon: i3d('saint'), type: 'faithExamples' },
       { id: 'prepare', label: 'تحضير', icon: i3d('prepare'), type: 'prepare' },
       { id: 'spiritualReading', label: 'قراءات روحية', icon: i3d('books'), type: 'books' },
-      { id: 'saintsPraises', label: 'مدائح القديسين', icon: i3d('music'), type: 'saints' },
+      { id: 'saintsPraises', label: 'مدائح القديسين', icon: customIconImg('icon-saints-praises.jpg', 'مدائح القديسين'), type: 'saints' },
       { id: 'servantFollow', label: 'متابعة الخادم', icon: i3d('duo'), type: 'servant' }
     ];
 
@@ -1888,6 +1888,9 @@
     function progressIcon() {
       const g = localStorage.getItem('khalwati_gender') || 'girl';
       return i3d(g === 'boy' ? 'progress_boy' : 'progress_girl');
+    }
+    function customIconImg(src, alt) {
+      return '<img class="i3d custom-app-icon" src="' + src + '?v=252" alt="' + (alt || '') + '" width="48" height="48" decoding="async" style="width:48px;height:48px;object-fit:cover;border-radius:50%;display:block;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,0.12);">';
     }
     function silenceIcon(checked) {
       var g = localStorage.getItem('khalwati_gender') || 'girl';
@@ -2522,7 +2525,8 @@
           iconHtml = silenceIcon(checked);
         }
         if (item.id === 'praise') {
-          iconHtml = checked ? i3d('music_on') : i3d('music');
+          // داؤد الملك بالقيثارة (ثابتة)، مع تمييز التفعيل من كلاس checked
+          iconHtml = customIconImg('icon-praise-david.jpg', 'تسبيحة');
         }
         container.innerHTML += `
           <div class="daily-item${extraCls} ${checked ? 'checked' : ''}" onclick="toggleDaily('${item.id}')">
@@ -15036,7 +15040,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '251';
+      var APP_VER = '252';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

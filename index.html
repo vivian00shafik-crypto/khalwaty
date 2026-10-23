@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="249" lang="ar" dir="rtl">
+<html data-app-ver="250" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1889,10 +1889,15 @@
       const g = localStorage.getItem('khalwati_gender') || 'girl';
       return i3d(g === 'boy' ? 'progress_boy' : 'progress_girl');
     }
+    function kyrieIcon() {
+      const g = localStorage.getItem('khalwati_gender') || 'girl';
+      const src = (g === 'boy' ? 'kyrie-boy.jpg' : 'kyrie-girl.jpg') + '?v=250';
+      return '<img class="i3d kyrie-gender-icon" src="' + src + '" alt="كيرياليسون" width="48" height="48" decoding="async" style="width:48px;height:48px;object-fit:cover;border-radius:50%;display:block;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,0.12);">';
+    }
     const serviceItems = [
       { id: 'jesusPrayer', label: 'صلاة يسوع', icon: i3d('beads') },
       { id: 'confession', label: 'مساعد الاعتراف', icon: i3d('priest') },
-      { id: 'kyrie', label: 'كيرياليسون', icon: i3d('prayhand') },
+      { id: 'kyrie', label: 'كيرياليسون', icon: kyrieIcon() },
       { id: 'progressChart', label: 'مستوى الخلوة', icon: progressIcon() }
     ];
 
@@ -4214,9 +4219,11 @@ function bibleSpeakText(text, onEnd) {
 
     function renderServices() {
       const data = loadData();
-      // حدّث أيقونة مستوى الخلوة حسب النوع
+      // حدّث أيقونة مستوى الخلوة وكيرياليسون حسب النوع (بنت/ولد)
       const prog = serviceItems.find(s => s.id === 'progressChart');
       if (prog) prog.icon = progressIcon();
+      const kyr = serviceItems.find(s => s.id === 'kyrie');
+      if (kyr) kyr.icon = kyrieIcon();
       const container = document.getElementById('serviceRow');
       if (!container) return;
       container.innerHTML = `
@@ -13101,7 +13108,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           </select>
 
           <p style="margin-top:14px;"><strong>نوع المستخدم (للرسم البياني)</strong></p>
-          <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value)">
+          <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value); try { var p=serviceItems.find(function(s){return s.id==='progressChart';}); if(p)p.icon=progressIcon(); var k=serviceItems.find(function(s){return s.id==='kyrie';}); if(k)k.icon=kyrieIcon(); if(typeof renderServices==='function')renderServices(); else if(typeof renderDailyIcons==='function')renderDailyIcons(); } catch(e){}" >
             <option value="girl" ${gender==='girl'?'selected':''}>بنت / Girl</option>
             <option value="boy" ${gender==='boy'?'selected':''}>ولد / Boy</option>
           </select>
@@ -15018,7 +15025,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '249';
+      var APP_VER = '250';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

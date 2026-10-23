@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="252" lang="ar" dir="rtl">
+<html data-app-ver="253" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -7741,6 +7741,8 @@ function openTextModal(type) {
         `;
       } else {
         // Jesus Prayer - 50 lines
+        const _jg = localStorage.getItem('khalwati_gender') || 'girl';
+        const _weakLine = _jg === 'boy' ? 'ارحمني يا رب لأني ضعيف' : 'ارحمني يا رب لأني ضعيفة';
         const jesusLines = [
           'أحبك يا رب يا قوتي',
           'أمجد اسمك يا نصرتي',
@@ -7750,7 +7752,7 @@ function openTextModal(type) {
           'تراءف عليّ واسمع صلاتي',
           'سهل قدامي طريقك',
           'انظر إلى مذلتي من مبغضيّ',
-          'ارحمني يا رب لأني ضعيفة',
+          _weakLine,
           'خلصني من أجل رحمتك',
           'أسرع إلى نصرتي',
           'التفت إليّ وارحمني',
@@ -7806,7 +7808,7 @@ function openTextModal(type) {
           <div style="font-size:14.5px; line-height:1.9; text-align:right;">
             ${jesusLines.map((line, i) => `<p style="margin-bottom:5px;"><span style="color:var(--gold-dark); font-weight:600;">${i+1}.</span> ${line}</p>`).join('')}
           </div>
-          <p style="text-align:center; margin-top:16px; font-size:12px; color:#8a7a60;">تلخيص — قيفيان شفيق</p>
+          <p style="text-align:center; margin-top:16px; font-size:12px; color:#8a7a60;">تلخيص ڤيڤيان شفيق</p>
         `;
       }
 
@@ -15040,7 +15042,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '252';
+      var APP_VER = '253';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

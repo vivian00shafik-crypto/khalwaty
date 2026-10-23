@@ -1,8 +1,10 @@
-const CACHE = 'khalwati-v248';
+const CACHE = 'khalwati-v249';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
   './', './index.html', './manifest.json', './sw.js',
+  './progress-girl-low.jpg', './progress-girl-high.jpg', './progress-girl-final.jpg',
+  './progress-boy-low.jpg', './progress-boy-high.jpg', './progress-boy-final.jpg',
   './khalwaty-poster.js', './agpeya-texts.js', './psalms.js',
   './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png',

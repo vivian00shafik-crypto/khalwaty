@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="248" lang="ar" dir="rtl">
+<html data-app-ver="249" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -13984,104 +13984,166 @@ function dayScore(d) {
 
     function openProgressChart(period) {
       period = period || 'week';
-      const gender = localStorage.getItem('khalwati_gender') || 'girl';
-      const personEmoji = gender === 'boy' ? '👦' : '👧';
-      const person = gender === 'boy' ? 'ولد' : 'بنت';
-      let levels = [];
+      var gender = localStorage.getItem('khalwati_gender') || 'girl';
+      var personEmoji = gender === 'boy' ? '👦' : '👧';
+      var person = gender === 'boy' ? 'ولد' : 'بنت';
+      var levels = [];
       if (period === 'week') {
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i, 12);
+        for (var i = 6; i >= 0; i--) {
+          var d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i, 12);
           levels.push({ label: dayNames[d.getDay()], score: dayScore(d) });
         }
       } else if (period === 'month') {
-        for (let i = 3; i >= 0; i--) {
-          let sum = 0, cnt = 0;
-          for (let j = 0; j < 7; j++) {
-            const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - (i*7+j), 12);
-            sum += dayScore(d); cnt++;
+        for (var i2 = 3; i2 >= 0; i2--) {
+          var sum = 0, cnt = 0;
+          for (var j = 0; j < 7; j++) {
+            var d2 = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - (i2 * 7 + j), 12);
+            sum += dayScore(d2); cnt++;
           }
-          levels.push({ label: 'أ' + (4-i), score: Math.round(sum / cnt) });
+          levels.push({ label: 'أ' + (4 - i2), score: Math.round(sum / cnt) });
         }
       } else {
-        for (let i = 5; i >= 0; i--) {
-          const m = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 15, 12);
-          let sum = 0, cnt = 0;
-          for (let j = 0; j < 28; j++) {
-            const d = new Date(m.getFullYear(), m.getMonth(), j+1, 12);
-            if (d.getMonth() !== m.getMonth()) break;
-            sum += dayScore(d); cnt++;
+        for (var i3 = 5; i3 >= 0; i3--) {
+          var m = new Date(currentDate.getFullYear(), currentDate.getMonth() - i3, 15, 12);
+          var sum2 = 0, cnt2 = 0;
+          for (var j2 = 0; j2 < 28; j2++) {
+            var d3 = new Date(m.getFullYear(), m.getMonth(), j2 + 1, 12);
+            if (d3.getMonth() !== m.getMonth()) break;
+            sum2 += dayScore(d3); cnt2++;
           }
-          levels.push({ label: (m.getMonth()+1) + '', score: cnt ? Math.round(sum / cnt) : 0 });
+          levels.push({ label: (m.getMonth() + 1) + '', score: cnt2 ? Math.round(sum2 / cnt2) : 0 });
         }
       }
-      const avg = levels.length ? levels.reduce((a,b)=>a+b.score,0)/levels.length : 0;
-      const trend = levels.length >= 2 ? (levels[levels.length-1].score - levels[0].score) : 0;
-      const trendText = trend > 1 ? 'ارتفاع 📈 — قربتِ من يسوع' : trend < -1 ? 'انخفاض 📉 — رجعي خطوة' : 'ثبات ➡️';
-      const step = Math.min(10, Math.round(avg));
-      // 3 مستويات: بداية السلم / اقتراب / وصول نهائي (عناق يسوع)
-      // النهائي يظهر عند مستوى عالي في الأسبوعي أو الشهري أو السنوي
-      let level = 'low';
-      if (avg >= 9) level = 'final';
-      else if (avg >= 6) level = 'high';
-      let progressImg, stageText, progressVideo = null;
+
+      var avgAll = levels.length ? levels.reduce(function (a, b) { return a + b.score; }, 0) / levels.length : 0;
+      // متوسط الأيام النشطة فقط (حتى لا تسحب الأيام الفارغة الصورة للخلف)
+      var active = levels.filter(function (l) { return l.score > 0; });
+      var avgActive = active.length
+        ? active.reduce(function (a, b) { return a + b.score; }, 0) / active.length
+        : 0;
+      // درجة العرض من 10: نستخدم مزيجًا من المتوسط العام ومتوسط الأيام الملتزمة
+      var displayScore = Math.min(10, Math.round(avgAll * 10 / 12));
+      var commitmentScore = Math.min(10, Math.round(avgActive * 10 / 12));
+      // لو التزمتِ بعدة أيام بدرجة جيدة، نرفع مستوى الصورة حتى لو باقي الأسبوع فاضي
+      var goodDays = levels.filter(function (l) { return l.score >= 6; }).length;
+      var veryGoodDays = levels.filter(function (l) { return l.score >= 9; }).length;
+
+      var trend = levels.length >= 2 ? (levels[levels.length - 1].score - levels[0].score) : 0;
+      var trendText = trend > 1 ? 'ارتفاع 📈 — قربتِ من يسوع' : trend < -1 ? 'انخفاض 📉 — رجعي خطوة' : 'ثبات ➡️';
+
+      // 3 مستويات للصورة
+      // high: متوسط نشط >= 5/12 أو يومين جيدين على الأقل أو درجة عرض >= 5
+      // final: متوسط نشط >= 9/12 أو 3 أيام ممتازة أو درجة عرض >= 8 مع التزام واضح
+      var level = 'low';
+      if (
+        avgActive >= 9 ||
+        veryGoodDays >= 3 ||
+        (displayScore >= 8 && goodDays >= 3) ||
+        (avgAll >= 8)
+      ) {
+        level = 'final';
+      } else if (
+        avgActive >= 5 ||
+        goodDays >= 2 ||
+        displayScore >= 5 ||
+        avgAll >= 5
+      ) {
+        level = 'high';
+      }
+
+      var progressImg, stageText, progressVideo = null;
+      var cacheBust = 'v=249';
       if (gender === 'boy') {
         if (level === 'final') {
-          progressImg = 'progress-boy-final.jpg';
-          progressVideo = 'progress-boy-final.mp4';
+          progressImg = 'progress-boy-final.jpg?' + cacheBust;
+          progressVideo = 'progress-boy-final.mp4?' + cacheBust;
           stageText = 'المستوى النهائي — الولد في حضن يسوع 🤗';
         } else if (level === 'high') {
-          progressImg = 'progress-boy-high.jpg';
+          progressImg = 'progress-boy-high.jpg?' + cacheBust;
           stageText = 'قرب الولد من يسوع — يمسك بيده';
         } else {
-          progressImg = 'progress-boy-low.jpg';
+          progressImg = 'progress-boy-low.jpg?' + cacheBust;
           stageText = 'الولد في بداية السلم نحو يسوع';
         }
       } else {
         if (level === 'final') {
-          progressImg = 'progress-girl-final.jpg';
-          progressVideo = 'progress-girl-final.mp4';
+          progressImg = 'progress-girl-final.jpg?' + cacheBust;
+          progressVideo = 'progress-girl-final.mp4?' + cacheBust;
           stageText = 'المستوى النهائي — البنت في حضن يسوع 🤗';
         } else if (level === 'high') {
-          progressImg = 'progress-girl-high.jpg';
+          progressImg = 'progress-girl-high.jpg?' + cacheBust;
           stageText = 'قرب البنت من يسوع — تمد يدها إليه';
         } else {
-          progressImg = 'progress-girl-low.jpg';
+          progressImg = 'progress-girl-low.jpg?' + cacheBust;
           stageText = 'البنت في بداية السلم نحو يسوع';
         }
       }
-      const bars = levels.map(l => {
-        const h = 10 + l.score * 10;
-        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:28px;">
-          <div style="font-size:14px;">${l.score >= 7 ? '🙂' : l.score >= 4 ? '😐' : '😔'}</div>
-          <div style="width:20px;height:${h}px;background:linear-gradient(#c9a227,#a67c00);border-radius:6px 6px 0 0;"></div>
-          <div style="font-size:10px;">${l.label}</div>
-        </div>`;
+
+      var levelLabel = level === 'final' ? 'نهائي 🌟' : (level === 'high' ? 'قريب من يسوع ✨' : 'بداية الطريق');
+      var bars = levels.map(function (l) {
+        var h = 10 + l.score * 10;
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:28px;">' +
+          '<div style="font-size:14px;">' + (l.score >= 7 ? '🙂' : l.score >= 4 ? '😐' : '😔') + '</div>' +
+          '<div style="width:20px;height:' + h + 'px;background:linear-gradient(#c9a227,#a67c00);border-radius:6px 6px 0 0;"></div>' +
+          '<div style="font-size:10px;">' + l.label + '</div></div>';
       }).join('');
+
       document.getElementById('prayerTitle').textContent = 'مستوى الخلوة';
-      document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:center;">
-          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">
-            <button onclick="openProgressChart('week')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='week'?'var(--gold)':'#fff'};color:${period==='week'?'#fff':'var(--brown)'};font-family:inherit;">أسبوعي</button>
-            <button onclick="openProgressChart('month')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='month'?'var(--gold)':'#fff'};color:${period==='month'?'#fff':'var(--brown)'};font-family:inherit;">شهري</button>
-            <button onclick="openProgressChart('year')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:${period==='year'?'var(--gold)':'#fff'};color:${period==='year'?'#fff':'var(--brown)'};font-family:inherit;">سنوي</button>
-          </div>
-          <p style="margin-bottom:4px;font-weight:600;">${stageText}</p>
-          <p style="margin-bottom:8px;font-size:13px;">الاتجاه: <strong>${trendText}</strong> — الدرجة: ${step}/10</p>
-          <div style="border-radius:16px;overflow:hidden;border:2px solid #c9a227;margin:8px 0;box-shadow:0 4px 16px rgba(92,64,51,0.12);background:#000;">
-            ${level === 'final' && progressVideo
-              ? `<video id="progressFinalVideo" src="${progressVideo}" playsinline controls autoplay style="width:100%;display:block;max-height:360px;background:#000;"></video>
-                 <p style="text-align:center;background:#fff9e8;margin:0;padding:8px;font-size:13px;color:var(--brown);font-weight:600;">🎉 نهاية هدف الخلوة — وصول إلى حضن يسوع</p>`
-              : `<img src="${progressImg}" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;">`
-            }
-          </div>
-          <div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:4px;">
-            ${bars}
-          </div>
-          <p style="margin-top:10px;font-size:12px;color:#8a7a60;">كل ما التزمتِ بالخلوة والصلاة، الصورة تتغير وتقربك أكثر من يسوع.</p>
-          <p style="font-size:12px;color:#8a7a60;">اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.</p>
-        </div>`;
+      var mediaHtml = '';
+      if (level === 'final' && progressVideo) {
+        mediaHtml =
+          '<video id="progressFinalVideo" src="' + progressVideo + '" playsinline controls preload="auto" style="width:100%;display:block;max-height:360px;background:#000;"></video>' +
+          '<p style="text-align:center;background:#fff9e8;margin:0;padding:8px;font-size:13px;color:var(--brown);font-weight:600;">🎉 نهاية هدف الخلوة — وصول إلى حضن يسوع</p>' +
+          '<button type="button" class="save-btn" style="width:100%;margin:8px 0 0;background:#5a7d4a;" onclick="playProgressFinalVideo()">▶️ تشغيل فيديو الوصول</button>';
+      } else {
+        mediaHtml = '<img src="' + progressImg + '" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;" onerror="this.style.background=\'#f0e6d0\';this.alt=\'تعذر تحميل الصورة\';">';
+      }
+
+      document.getElementById('prayerContent').innerHTML =
+        '<div style="text-align:center;">' +
+          '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">' +
+            '<button onclick="openProgressChart(\'week\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'week' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'week' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">أسبوعي</button>' +
+            '<button onclick="openProgressChart(\'month\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'month' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'month' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">شهري</button>' +
+            '<button onclick="openProgressChart(\'year\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'year' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'year' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">سنوي</button>' +
+          '</div>' +
+          '<div style="font-size:28px;margin-bottom:4px;">' + personEmoji + '</div>' +
+          '<div style="font-size:18px;font-weight:800;color:var(--brown);margin-bottom:4px;">' + displayScore + ' من 10</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#5a7d4a;margin-bottom:6px;">المستوى: ' + levelLabel + '</div>' +
+          '<div style="font-size:13px;color:#6a5a3a;margin-bottom:10px;line-height:1.7;">' + stageText + '<br>' + trendText +
+            (active.length ? '<br><span style="font-size:11px;color:#8a7a60;">أيام ملتزمة هذا الأسبوع: ' + active.length + ' — أيام جيدة: ' + goodDays + '</span>' : '') +
+          '</div>' +
+          '<div style="border-radius:16px;overflow:hidden;border:2px solid #e8d9b5;margin-bottom:12px;background:#faf6ee;">' + mediaHtml + '</div>' +
+          '<div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:4px;">' + bars + '</div>' +
+          '<p style="margin-top:10px;font-size:12px;color:#8a7a60;line-height:1.7;">كل ما التزمتِ بالخلوة والصلاة، الصورة تتغير وتقربك أكثر من يسوع.<br>عند الوصول للمستوى النهائي يشتغل فيديو الوصول (بنت أو ولد حسب اختيارك في الإعدادات).</p>' +
+          '<p style="font-size:12px;color:#8a7a60;">اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.</p>' +
+        '</div>';
       document.getElementById('prayerModal').classList.add('active');
+
+      // تشغيل الفيديو تلقائيًا عند المستوى النهائي
+      if (level === 'final' && progressVideo) {
+        setTimeout(function () { playProgressFinalVideo(); }, 400);
+      }
     }
+
+    function playProgressFinalVideo() {
+      try {
+        var v = document.getElementById('progressFinalVideo');
+        if (!v) return;
+        v.muted = false;
+        var p = v.play();
+        if (p && typeof p.then === 'function') {
+          p.catch(function () {
+            // قيود المتصفح: جرّب صامت ثم المستخدم يضغط
+            try {
+              v.muted = true;
+              v.play().catch(function () {});
+              if (typeof showToast === 'function') showToast('اضغطي ▶ على الفيديو للتشغيل');
+            } catch (e2) {}
+          });
+        }
+      } catch (e) {}
+    }
+
 
     function openServantSection() {
       var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
@@ -14956,7 +15018,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '248';
+      var APP_VER = '249';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

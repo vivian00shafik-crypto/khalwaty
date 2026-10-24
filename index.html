@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="254" lang="ar" dir="rtl">
+<html data-app-ver="255" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -9185,8 +9185,11 @@ function openTextModal(type) {
         document.addEventListener('visibilitychange', function() {
           if (document.visibilityState === 'visible') {
             try {
-              if (typeof scheduleJesusNotificationForUserTime === 'function') scheduleJesusNotificationForUserTime();
-              if (typeof scheduleAgpeyaNotifications === 'function') scheduleAgpeyaNotifications();
+              if (typeof rescheduleAllBackgroundNotifications === 'function') rescheduleAllBackgroundNotifications();
+              else {
+                if (typeof scheduleJesusNotificationForUserTime === 'function') scheduleJesusNotificationForUserTime();
+                if (typeof scheduleAgpeyaNotifications === 'function') scheduleAgpeyaNotifications();
+              }
               pulse();
             } catch (e) {}
           }
@@ -12866,6 +12869,101 @@ function showDesignSavePreview(url, name, silent, blob) {
       return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
     }
 
+    
+    /** جدولة إشعار في الخلفية عبر Service Worker + TimestampTrigger (أندرويد كروم / PWA مثبت) */
+    async function scheduleBackgroundNotification(title, body, whenMs, opts) {
+      opts = opts || {};
+      try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return { ok: false, reason: 'permission' };
+        var when = typeof whenMs === 'number' ? whenMs : (whenMs && whenMs.getTime ? whenMs.getTime() : 0);
+        if (!when || when - Date.now() < 2000) return { ok: false, reason: 'time' };
+        var tag = opts.tag || ('khalwati-bg-' + when);
+        var data = opts.data || {};
+        data.scheduledFor = when;
+
+        // الأفضل: TimestampTrigger عبر الـ Service Worker (يشتغل والتطبيق مقفول على أندرويد كروم لو التطبيق متثبت)
+        if (navigator.serviceWorker && typeof TimestampTrigger !== 'undefined') {
+          try {
+            var reg = await navigator.serviceWorker.ready;
+            try {
+              var old = await reg.getNotifications({ tag: tag, includeTriggered: true });
+              old.forEach(function(n) { try { n.close(); } catch (e) {} });
+            } catch (e) {}
+            await reg.showNotification(title, {
+              body: body || '',
+              icon: './icon-192.png',
+              badge: './icon-192.png',
+              dir: 'rtl',
+              lang: 'ar',
+              tag: tag,
+              renotify: true,
+              requireInteraction: !!opts.requireInteraction,
+              silent: false,
+              vibrate: opts.vibrate || [300, 100, 300, 100, 400],
+              data: data,
+              showTrigger: new TimestampTrigger(when)
+            });
+            // أخبر الـ SW أيضًا (للتسجيل الداخلي)
+            try {
+              if (reg.active) reg.active.postMessage({
+                type: 'SCHEDULE_NOTIFICATION',
+                title: title,
+                body: body || '',
+                when: when,
+                tag: tag,
+                data: data,
+                requireInteraction: !!opts.requireInteraction
+              });
+            } catch (e) {}
+            return { ok: true, method: 'timestamp-trigger' };
+          } catch (e) {
+            console.log('scheduleBackgroundNotification trigger fail', e);
+          }
+        }
+
+        // احتياطي: setTimeout (يشتغل والتبويب مفتوح/في الذاكرة فقط)
+        return { ok: false, reason: (typeof TimestampTrigger === 'undefined' ? 'no-trigger' : 'sw-fail') };
+      } catch (e) {
+        console.log('scheduleBackgroundNotification', e);
+        return { ok: false, reason: 'error' };
+      }
+    }
+
+    /** إعادة جدولة كل التنبيهات للخلفية (أجبية + صوت يسوع) */
+    async function rescheduleAllBackgroundNotifications() {
+      try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        // أجبية
+        if (typeof scheduleAgpeyaNotifications === 'function') {
+          await scheduleAgpeyaNotifications();
+        }
+        // صوت يسوع
+        if (typeof scheduleJesusNotificationForUserTime === 'function') {
+          await scheduleJesusNotificationForUserTime();
+        }
+        // تذكير عام من الإعدادات إن وُجد
+        try {
+          var list = JSON.parse(localStorage.getItem('khalwati_custom_reminders') || '[]');
+          if (Array.isArray(list)) {
+            for (var i = 0; i < list.length; i++) {
+              var r = list[i];
+              if (!r || !r.enabled || !r.time) continue;
+              var when = (typeof nextTimeTodayOrTomorrow === 'function') ? nextTimeTodayOrTomorrow(r.time) : null;
+              if (!when) continue;
+              await scheduleBackgroundNotification(
+                r.title || 'خلوتي — تذكير',
+                r.body || 'حان موعد تذكيرك',
+                when.getTime(),
+                { tag: 'khalwati-custom-' + (r.id || i), data: { type: 'custom', id: r.id || i }, requireInteraction: true }
+              );
+            }
+          }
+        } catch (e) {}
+      } catch (e) {
+        console.log('rescheduleAllBackgroundNotifications', e);
+      }
+    }
+
     async function scheduleAgpeyaNotifications() {
       try {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -12901,12 +12999,21 @@ function showDesignSavePreview(url, name, silent, blob) {
             var tag = 'khalwati-agpeya-' + a.id;
             var data = { type: 'agpeya', hour: a.id, playAlarm: true, sound: 'prayer-alarm' };
 
-            // setTimeout دائمًا
+            // setTimeout (لو التطبيق لسه في الذاكرة)
             window._agpeyaTimeouts[a.id] = setTimeout(function() {
               fireAgpeyaAlarmNow(a.id, title, body, data, tag);
             }, delay);
 
-            // Trigger اختياري
+            // جدولة خلفية حقيقية عبر TimestampTrigger + SW
+            try {
+              scheduleBackgroundNotification(title, body, when.getTime(), {
+                tag: tag,
+                data: data,
+                requireInteraction: true,
+                vibrate: [300, 100, 300]
+              });
+            } catch (e) {}
+            // Trigger مباشر أيضًا
             if (reg && hasTrigger) {
               reg.showNotification(title, {
                 body: body,
@@ -13210,7 +13317,12 @@ function showDesignSavePreview(url, name, silent, blob) {
           <button class="save-btn" style="margin-top:8px;background:#4a6a8a;" onclick="rescheduleAllNotifications();">⏰ إعادة جدولة المواعيد</button>
           <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast('تم حفظ الإعدادات');">حفظ وطلب إذن الإشعارات</button>
           <button class="save-btn" style="margin-top:8px;background:#c9a227;" onclick="requestNotifyPermission(); testJesusVoiceNow();">تجربة صوت يسوع الآن (آية + صوت)</button>
-          <p style="font-size:12px;color:#8a7a60;margin-top:8px;">ملاحظة: تنبيهات المتصفح تظهر بقوة والتطبيق مفتوح أو في الخلفية القريبة. ثبّتي التطبيق على الشاشة الرئيسية وفعّلي إذن الإشعارات.</p>
+          <p style="font-size:12px;color:#8a7a60;margin-top:8px;line-height:1.7;">لكي يوصل الإشعار في ميعاده والتطبيق <b>مقفول أو في الخلفية</b>:<br>
+1) ثبّتي «خلوتي» على الشاشة الرئيسية (إضافة إلى الشاشة الرئيسية).<br>
+2) اسمحي بالإشعارات من الزر أعلاه.<br>
+3) على أندرويد: إعدادات الموبايل ← التطبيقات ← Chrome (أو خلوتي) ← الإشعارات ← مسموح، وبطّلي «توفير البطارية» للتطبيق.<br>
+4) على آيفون: افتحي من أيقونة الشاشة الرئيسية، وفعّلي الإشعارات من إعدادات آيفون.<br>
+<strong>مهم:</strong> المتصفح يحتاج دعم «الإشعار المجدول» (Timestamp Trigger) — متوفر غالبًا على كروم أندرويد مع التطبيق المثبت. لو الجهاز لا يدعمه، الإشعار يشتغل والتطبيق مفتوح أو بعد أول فتح بعد الميعاد.</p>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
       try {
@@ -13323,7 +13435,8 @@ function requestNotifyPermission() {
       function afterGranted() {
         if (typeof showToast === 'function') showToast('تم تفعيل الإشعارات ✓');
         try { if (typeof scheduleJesusNotificationForUserTime === 'function') scheduleJesusNotificationForUserTime(); } catch (e) {}
-        try { if (typeof scheduleAgpeyaNotifications === 'function') scheduleAgpeyaNotifications(); } catch (e) {}
+        try { if (typeof rescheduleAllBackgroundNotifications === 'function') rescheduleAllBackgroundNotifications();
+            else if (typeof scheduleAgpeyaNotifications === 'function') scheduleAgpeyaNotifications(); } catch (e) {}
         try { if (typeof startNotificationWatchdog === 'function') startNotificationWatchdog(); } catch (e) {}
         setTimeout(function() {
           if (typeof testNotificationNow === 'function') testNotificationNow();
@@ -15052,7 +15165,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '254';
+      var APP_VER = '255';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

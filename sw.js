@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v254';
+const CACHE = 'khalwati-v255';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -185,4 +185,49 @@ self.addEventListener('notificationclick', (e) => {
     const url = './?fromNotif=1&play=' + encodeURIComponent(playType) + '&v=229';
     await clients.openWindow(url);
   })());
+});
+
+
+// جدولة إشعار بميعاد محدد (TimestampTrigger) — يعمل والتطبيق مقفول على أندرويد كروم عند دعمه
+self.addEventListener('message', (event) => {
+  const msg = event && event.data;
+  if (!msg || !msg.type) return;
+  if (msg.type === 'SCHEDULE_NOTIFICATION') {
+    event.waitUntil((async () => {
+      try {
+        if (typeof TimestampTrigger === 'undefined') return;
+        const when = Number(msg.when) || 0;
+        if (!when || when <= Date.now() + 1500) return;
+        const tag = msg.tag || ('khalwati-bg-' + when);
+        try {
+          const old = await self.registration.getNotifications({ tag: tag, includeTriggered: true });
+          old.forEach((n) => { try { n.close(); } catch (e) {} });
+        } catch (e) {}
+        await self.registration.showNotification(msg.title || 'خلوتي', {
+          body: msg.body || '',
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          dir: 'rtl',
+          lang: 'ar',
+          tag: tag,
+          renotify: true,
+          requireInteraction: !!msg.requireInteraction,
+          silent: false,
+          vibrate: [300, 100, 300, 100, 400],
+          data: msg.data || {},
+          showTrigger: new TimestampTrigger(when)
+        });
+      } catch (e) {
+        // تجاهل — العميل يعتمد على setTimeout كاحتياطي
+      }
+    })());
+  }
+  if (msg.type === 'CANCEL_NOTIFICATION' && msg.tag) {
+    event.waitUntil((async () => {
+      try {
+        const old = await self.registration.getNotifications({ tag: msg.tag, includeTriggered: true });
+        old.forEach((n) => { try { n.close(); } catch (e) {} });
+      } catch (e) {}
+    })());
+  }
 });

@@ -1028,7 +1028,7 @@
       transform: scale(0.97);
     }
 
-    /* Ship Wheel Menu - Exact image design */
+    /* Ship Wheel Menu - Exact image design + rotatable */
     .wheel-wrapper {
       display: flex;
       flex-direction: column;
@@ -1037,19 +1037,32 @@
       user-select: none;
       -webkit-user-select: none;
       width: 100%;
+      background: transparent;
     }
     .jesus-wheel {
       position: relative;
       width: 100%;
       max-width: 360px;
       aspect-ratio: 1 / 1;
+      background: transparent;
+      touch-action: none;
+      cursor: grab;
     }
-    .jesus-wheel img {
+    .jesus-wheel:active {
+      cursor: grabbing;
+    }
+    .jesus-wheel-inner {
+      position: absolute;
+      inset: 0;
+      transform-origin: center center;
+      will-change: transform;
+    }
+    .jesus-wheel-inner img {
       width: 100%;
       height: 100%;
       display: block;
-      border-radius: 12px;
       pointer-events: none;
+      background: transparent;
     }
     /* Clickable hotspots over the circular icons in the image */
     .wheel-hotspot {
@@ -1059,12 +1072,12 @@
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
-      /* subtle feedback */
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: box-shadow 0.12s;
+      /* larger hit area for first-tap reliability */
+      -webkit-tap-highlight-color: transparent;
     }
     .wheel-hotspot:active {
-      transform: scale(0.92);
-      box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.55);
+      box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.6);
     }
     /* Positions calibrated to the provided Jesus wheel image */
     .hotspot-altar     { top: 34.0%; left: 42.7%; }   /* على المذبح - top */
@@ -1703,50 +1716,131 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img src="wheel-jesus.jpg" alt="عجلة الخلوة" draggable="false">
-        <!-- Clickable hotspots matching the exact circular icons in the image -->
-        <div class="wheel-hotspot hotspot-altar"    onclick="openTextModal('altar')" title="على المذبح"></div>
-        <div class="wheel-hotspot hotspot-prayers"  onclick="openSpokenPrayers()" title="صلوات ومسموعة"></div>
-        <div class="wheel-hotspot hotspot-verses"   onclick="openSavedVerses()" title="آياتي المحفوظة"></div>
-        <div class="wheel-hotspot hotspot-contact"  onclick="openContactUs()" title="راسلنا"></div>
-        <div class="wheel-hotspot hotspot-readings" onclick="openTextModal('likedReadings')" title="قراءات لمستني"></div>
-        <div class="wheel-hotspot hotspot-pdf"      onclick="openPdfOptions()" title="تحميل PDF"></div>
+        <div class="jesus-wheel-inner" id="jesusWheelInner">
+          <img src="wheel-jesus.png" alt="عجلة الخلوة" draggable="false">
+          <!-- Clickable hotspots matching the exact circular icons in the image -->
+          <div class="wheel-hotspot hotspot-altar"    data-action="altar" title="على المذبح"></div>
+          <div class="wheel-hotspot hotspot-prayers"  data-action="prayers" title="صلوات ومسموعة"></div>
+          <div class="wheel-hotspot hotspot-verses"   data-action="verses" title="آياتي المحفوظة"></div>
+          <div class="wheel-hotspot hotspot-contact"  data-action="contact" title="راسلنا"></div>
+          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني"></div>
+          <div class="wheel-hotspot hotspot-pdf"      data-action="pdf" title="تحميل PDF"></div>
+        </div>
       </div>
-      <div class="wheel-hint">اضغطي على أي أيقونة في العجلة</div>
+      <div class="wheel-hint">لفّي العجلة • اضغطي على أي أيقونة</div>
     </div>
     <script>
-    // راسلنا - Contact Us
-    function openContactUs() {
-      var msg = 'مرحباً، أود التواصل بخصوص تطبيق خلوتي';
-      try {
-        if (navigator.share) {
-          navigator.share({
-            title: 'راسلنا - خلوتي',
-            text: msg
-          }).catch(function() {
-            fallbackContact(msg);
-          });
-        } else {
-          fallbackContact(msg);
-        }
-      } catch (e) {
-        fallbackContact(msg);
+    (function() {
+      var outer = document.getElementById('jesusWheel');
+      var inner = document.getElementById('jesusWheelInner');
+      if (!outer || !inner) return;
+
+      var rotation = 0;
+      var startAngle = 0;
+      var isDragging = false;
+      var moved = false;
+      var startX = 0, startY = 0;
+
+      function getAngle(e) {
+        var rect = outer.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
       }
-    }
-    function fallbackContact(msg) {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(msg).then(function() {
-            if (typeof showToast === 'function') showToast('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
-            else alert('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
-          });
-        } else {
+
+      function applyRotation() {
+        inner.style.transform = 'rotate(' + rotation + 'deg)';
+      }
+
+      function onStart(e) {
+        isDragging = true;
+        moved = false;
+        startAngle = getAngle(e) - rotation;
+        var pt = e.touches ? e.touches[0] : e;
+        startX = pt.clientX;
+        startY = pt.clientY;
+      }
+
+      function onMove(e) {
+        if (!isDragging) return;
+        var pt = e.touches ? e.touches[0] : e;
+        var dx = pt.clientX - startX;
+        var dy = pt.clientY - startY;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+        rotation = getAngle(e) - startAngle;
+        applyRotation();
+        if (e.cancelable) e.preventDefault();
+      }
+
+      function onEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        // if it was a tap (not a drag), trigger the hotspot under the finger
+        if (!moved) {
+          var target = e.changedTouches ? document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
+                                         : e.target;
+          if (target && target.classList && target.classList.contains('wheel-hotspot')) {
+            triggerAction(target.getAttribute('data-action'));
+          }
+        }
+      }
+
+      function triggerAction(action) {
+        if (!action) return;
+        // call immediately on first press
+        try {
+          if (action === 'altar') openTextModal('altar');
+          else if (action === 'prayers') openSpokenPrayers();
+          else if (action === 'verses') openSavedVerses();
+          else if (action === 'contact') openContactUs();
+          else if (action === 'readings') openTextModal('likedReadings');
+          else if (action === 'pdf') openPdfOptions();
+        } catch (err) { console.error(err); }
+      }
+
+      // also allow direct click (desktop)
+      inner.querySelectorAll('.wheel-hotspot').forEach(function(hs) {
+        hs.addEventListener('click', function(ev) {
+          if (moved) { ev.preventDefault(); return; }
+          triggerAction(hs.getAttribute('data-action'));
+        });
+      });
+
+      outer.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      outer.addEventListener('touchstart', onStart, {passive: true});
+      outer.addEventListener('touchmove', onMove, {passive: false});
+      outer.addEventListener('touchend', onEnd);
+
+      // راسلنا
+      window.openContactUs = function() {
+        var msg = 'مرحباً، أود التواصل بخصوص تطبيق خلوتي';
+        try {
+          if (navigator.share) {
+            navigator.share({ title: 'راسلنا - خلوتي', text: msg }).catch(function(){ fallbackContact(msg); });
+          } else {
+            fallbackContact(msg);
+          }
+        } catch (e) { fallbackContact(msg); }
+      };
+      function fallbackContact(msg) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(msg).then(function() {
+              if (typeof showToast === 'function') showToast('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
+              else alert('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
+            });
+          } else {
+            window.location.href = 'mailto:?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') + '&body=' + encodeURIComponent(msg);
+          }
+        } catch (e2) {
           window.location.href = 'mailto:?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') + '&body=' + encodeURIComponent(msg);
         }
-      } catch (e2) {
-        window.location.href = 'mailto:?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') + '&body=' + encodeURIComponent(msg);
       }
-    }
+    })();
     </script>
 
     <!-- الآية -->

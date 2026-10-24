@@ -1028,123 +1028,54 @@
       transform: scale(0.97);
     }
 
-    /* Ship Wheel Menu */
+    /* Ship Wheel Menu - Exact image design */
     .wheel-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 16px 0 8px;
+      margin: 12px 0 8px;
       user-select: none;
       -webkit-user-select: none;
+      width: 100%;
     }
-    .ship-wheel {
+    .jesus-wheel {
       position: relative;
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 40% 35%, #e8c84a 0%, #c9a227 35%, #8a6a00 70%, #5a4500 100%);
-      box-shadow:
-        0 0 0 8px #a67c00,
-        0 0 0 12px #d4af37,
-        0 0 0 16px #8a6a00,
-        0 12px 30px rgba(0,0,0,0.35),
-        inset 0 0 40px rgba(0,0,0,0.25);
-      transition: transform 0.15s ease-out;
-      cursor: grab;
-      touch-action: none;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
     }
-    .ship-wheel:active { cursor: grabbing; }
-    .ship-wheel .rim {
-      position: absolute;
-      inset: 18px;
-      border-radius: 50%;
-      border: 6px solid #d4af37;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+    .jesus-wheel img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 12px;
       pointer-events: none;
     }
-    .ship-wheel .hub {
+    /* Clickable hotspots over the circular icons in the image */
+    .wheel-hotspot {
       position: absolute;
-      top: 50%; left: 50%;
-      width: 48px; height: 48px;
-      margin: -24px 0 0 -24px;
+      width: 13.2%;
+      height: 13.2%;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #f0d060, #c9a227 50%, #7a5a00);
-      box-shadow: 0 0 0 4px #a67c00, 0 0 0 7px #d4af37, inset 0 2px 6px rgba(255,255,255,0.4);
-      z-index: 5;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      color: #5a3a00;
-    }
-    .wheel-spoke {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 6px;
-      height: 90px;
-      margin-left: -3px;
-      margin-top: -90px;
-      background: linear-gradient(to bottom, #d4af37, #a67c00);
-      border-radius: 3px;
-      transform-origin: bottom center;
-      z-index: 1;
-      pointer-events: none;
-      box-shadow: 0 0 4px rgba(0,0,0,0.3);
-    }
-    .wheel-handle {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 18px; height: 36px;
-      margin-left: -9px;
-      margin-top: -130px;
-      background: linear-gradient(to bottom, #c9a227, #7a5a00);
-      border-radius: 9px 9px 4px 4px;
-      transform-origin: 50% 130px;
-      z-index: 2;
-      pointer-events: none;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-    .wheel-btn {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 72px; height: 72px;
-      margin: -36px 0 0 -36px;
-      border-radius: 50%;
-      background: linear-gradient(145deg, #e8c84a, #c9a227 40%, #a67c00);
-      border: 3px solid #d4af37;
-      box-shadow:
-        0 4px 12px rgba(0,0,0,0.35),
-        inset 0 2px 6px rgba(255,255,255,0.35),
-        inset 0 -2px 6px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #3a2800;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1.15;
-      padding: 4px;
       cursor: pointer;
       z-index: 10;
+      /* subtle feedback */
       transition: transform 0.15s, box-shadow 0.15s;
-      transform-origin: center center;
     }
-    .wheel-btn:active {
+    .wheel-hotspot:active {
       transform: scale(0.92);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.55);
     }
-    .wheel-btn .icon {
-      font-size: 18px;
-      margin-bottom: 2px;
-      line-height: 1;
-    }
-    .wheel-btn span {
-      display: block;
-      max-width: 64px;
-      word-break: break-word;
-    }
+    /* Positions calibrated to the provided Jesus wheel image */
+    .hotspot-altar     { top: 34.0%; left: 42.7%; }   /* على المذبح - top */
+    .hotspot-prayers   { top: 42.0%; left: 57.5%; }   /* صلوات ومسموعة - top right */
+    .hotspot-verses    { top: 60.5%; left: 57.0%; }   /* آياتي المحفوظة - bottom right */
+    .hotspot-contact   { top: 69.0%; left: 42.7%; }   /* راسلنا - bottom */
+    .hotspot-readings  { top: 60.5%; left: 28.5%; }   /* قراءات لمستي - bottom left */
+    .hotspot-pdf       { top: 42.0%; left: 28.5%; }   /* تحميل PDF - left */
+
     .wheel-hint {
-      margin-top: 10px;
+      margin-top: 8px;
       font-size: 12px;
       color: #8a7a60;
       text-align: center;
@@ -1771,107 +1702,19 @@
     </div>
 
     <div class="wheel-wrapper">
-      <div class="ship-wheel" id="shipWheel">
-        <div class="rim"></div>
-        <!-- Spokes & Handles (visual only) - 6 positions -->
-        <div class="wheel-spoke" style="transform: rotate(0deg)"></div>
-        <div class="wheel-spoke" style="transform: rotate(60deg)"></div>
-        <div class="wheel-spoke" style="transform: rotate(120deg)"></div>
-        <div class="wheel-spoke" style="transform: rotate(180deg)"></div>
-        <div class="wheel-spoke" style="transform: rotate(240deg)"></div>
-        <div class="wheel-spoke" style="transform: rotate(300deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(0deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(60deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(120deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(180deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(240deg)"></div>
-        <div class="wheel-handle" style="transform: rotate(300deg)"></div>
-        <div class="hub">✝</div>
-        <!-- Interactive circular buttons - 6 icons matching the design -->
-        <div class="wheel-btn" style="transform: rotate(0deg) translateY(-105px) rotate(0deg)" onclick="openTextModal('altar')">
-          <div class="icon">✝️</div>
-          <span>على المذبح</span>
-        </div>
-        <div class="wheel-btn" style="transform: rotate(60deg) translateY(-105px) rotate(-60deg)" onclick="openSpokenPrayers()">
-          <div class="icon">🎧</div>
-          <span>صلوات ومسموعة</span>
-        </div>
-        <div class="wheel-btn" style="transform: rotate(120deg) translateY(-105px) rotate(-120deg)" onclick="openSavedVerses()">
-          <div class="icon">⭐</div>
-          <span>آياتي المحفوظة</span>
-        </div>
-        <div class="wheel-btn" style="transform: rotate(180deg) translateY(-105px) rotate(-180deg)" onclick="openContactUs()">
-          <div class="icon">✉️</div>
-          <span>راسلنا</span>
-        </div>
-        <div class="wheel-btn" style="transform: rotate(240deg) translateY(-105px) rotate(-240deg)" onclick="openTextModal('likedReadings')">
-          <div class="icon">📖</div>
-          <span>قراءات لمستني</span>
-        </div>
-        <div class="wheel-btn" style="transform: rotate(300deg) translateY(-105px) rotate(-300deg)" onclick="openPdfOptions()">
-          <div class="icon">⬇️</div>
-          <span>تحميل PDF</span>
-        </div>
+      <div class="jesus-wheel" id="jesusWheel">
+        <img src="wheel-jesus.jpg" alt="عجلة الخلوة" draggable="false">
+        <!-- Clickable hotspots matching the exact circular icons in the image -->
+        <div class="wheel-hotspot hotspot-altar"    onclick="openTextModal('altar')" title="على المذبح"></div>
+        <div class="wheel-hotspot hotspot-prayers"  onclick="openSpokenPrayers()" title="صلوات ومسموعة"></div>
+        <div class="wheel-hotspot hotspot-verses"   onclick="openSavedVerses()" title="آياتي المحفوظة"></div>
+        <div class="wheel-hotspot hotspot-contact"  onclick="openContactUs()" title="راسلنا"></div>
+        <div class="wheel-hotspot hotspot-readings" onclick="openTextModal('likedReadings')" title="قراءات لمستني"></div>
+        <div class="wheel-hotspot hotspot-pdf"      onclick="openPdfOptions()" title="تحميل PDF"></div>
       </div>
-      <div class="wheel-hint">لفّي العجلة واختارى أي أيقونة</div>
+      <div class="wheel-hint">اضغطي على أي أيقونة في العجلة</div>
     </div>
     <script>
-    (function() {
-      var wheel = document.getElementById('shipWheel');
-      if (!wheel) return;
-      var rotation = 0;
-      var startAngle = 0;
-      var currentAngle = 0;
-      var isDragging = false;
-      var buttons = wheel.querySelectorAll('.wheel-btn');
-      var baseAngles = [0, 60, 120, 180, 240, 300];
-
-      function getAngle(e) {
-        var rect = wheel.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
-      }
-
-      function updateButtons() {
-        for (var i = 0; i < buttons.length; i++) {
-          var a = baseAngles[i] + rotation;
-          buttons[i].style.transform = 'rotate(' + a + 'deg) translateY(-105px) rotate(' + (-a) + 'deg)';
-        }
-        var spokes = wheel.querySelectorAll('.wheel-spoke');
-        var handles = wheel.querySelectorAll('.wheel-handle');
-        for (var j = 0; j < spokes.length; j++) {
-          spokes[j].style.transform = 'rotate(' + (baseAngles[j] + rotation) + 'deg)';
-          handles[j].style.transform = 'rotate(' + (baseAngles[j] + rotation) + 'deg)';
-        }
-      }
-
-      function onStart(e) {
-        isDragging = true;
-        startAngle = getAngle(e) - rotation;
-        e.preventDefault();
-      }
-      function onMove(e) {
-        if (!isDragging) return;
-        currentAngle = getAngle(e);
-        rotation = currentAngle - startAngle;
-        updateButtons();
-        e.preventDefault();
-      }
-      function onEnd() {
-        isDragging = false;
-      }
-
-      wheel.addEventListener('mousedown', onStart);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
-      wheel.addEventListener('touchstart', onStart, {passive: false});
-      window.addEventListener('touchmove', onMove, {passive: false});
-      window.addEventListener('touchend', onEnd);
-    })();
-
     // راسلنا - Contact Us
     function openContactUs() {
       var msg = 'مرحباً، أود التواصل بخصوص تطبيق خلوتي';

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="265" lang="ar" dir="rtl">
+<html data-app-ver="264" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1028,7 +1028,7 @@
       transform: scale(0.97);
     }
 
-    /* Ship Wheel Menu — يسوع ماسك الطارة + الداخلية تدور جوّه الفتحة */
+    /* Ship Wheel Menu - Exact image design + rotatable */
     .wheel-wrapper {
       display: flex;
       flex-direction: column;
@@ -1046,13 +1046,19 @@
       aspect-ratio: 1 / 1;
       background: transparent;
       touch-action: none;
-      cursor: default;
+      cursor: grab;
+      /* لا مربع أسود — الخلفية من طبقات الصور الشفافة */
       overflow: visible;
     }
-    .jesus-wheel.is-dragging {
+    .jesus-wheel:active {
       cursor: grabbing;
     }
-    /* صورة يسوع ثابتة (الطارة الخارجية) */
+    .jesus-wheel-inner {
+      position: absolute;
+      inset: 0;
+      transform-origin: 49.9% 65.6%;
+      will-change: transform;
+    }
     .wheel-layer {
       position: absolute;
       inset: 0;
@@ -1062,22 +1068,6 @@
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      object-fit: contain;
-    }
-    /* الطارة الداخلية — متوسطة على فتحة عجلة يسوع وتدور فقط */
-    .jesus-wheel-inner {
-      position: absolute;
-      /* مركز فتحة العجلة في صورة يسوع ≈ (49.73%, 65.47%) */
-      left: 49.73%;
-      top: 65.47%;
-      /* حجم يناسب الفتحة الداخلية للعجلة الذهبية */
-      width: 46%;
-      height: 46%;
-      transform: translate(-50%, -50%) rotate(0deg);
-      transform-origin: 50% 50%;
-      will-change: transform;
-      cursor: grab;
-      z-index: 5;
     }
     .jesus-wheel-inner img {
       width: 100%;
@@ -1085,24 +1075,26 @@
       display: block;
       pointer-events: none;
       background: transparent;
-      object-fit: contain;
+      /* wheel-inner.webp أصبح بخلفية شفافة */
     }
-    /* مناطق الضغط — مركز كل زرار */
+    /* Clickable hotspots over the circular icons in the image */
     .wheel-hotspot {
       position: absolute;
-      width: 28%;
-      height: 28%;
+      width: 14.5%;
+      height: 14.5%;
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
       transition: box-shadow 0.12s;
+      /* left/top = center of each circular icon; translate keeps hit-area centered */
       transform: translate(-50%, -50%);
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
     .wheel-hotspot:active {
-      box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.55);
+      box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.55);
     }
+    /* Centers calibrated from wheel-inner.webp button disks */
 
     .wheel-hint {
       margin-top: 8px;
@@ -1733,18 +1725,19 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg.webp" alt="عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
           <img src="wheel-inner.webp" alt="" draggable="false">
-          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:16.58%"></div>
-          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:80.41%;top:32.97%"></div>
-          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:80.37%;top:67.92%"></div>
-          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:49.98%;top:84.18%"></div>
-          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:19.38%;top:68.03%"></div>
-          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:19.60%;top:32.96%"></div>
+          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:48.70%;top:47.48%"></div>
+          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:63.30%;top:57.14%"></div>
+          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:63.32%;top:78.67%"></div>
+          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:49.10%;top:85.08%"></div>
+          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:34.73%;top:77.69%"></div>
+          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:33.28%;top:55.25%"></div>
         </div>
+        <img class="wheel-layer wheel-rim" src="wheel-rim.webp" alt="" draggable="false">
       </div>
-      <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
+      <div class="wheel-hint">لفّي العجلة • اضغطي على أي أيقونة</div>
     </div>
     <script>
     (function() {
@@ -1757,6 +1750,11 @@
       var isDragging = false;
       var moved = false;
       var startX = 0, startY = 0;
+      // Pivot matches CSS transform-origin (hub of the wheel)
+      var PIVOT_X = 0.499;
+      var PIVOT_Y = 0.656;
+      // Only the circular inner wheel disk is rotatable (not the outer image/rim area)
+      var WHEEL_RADIUS = 0.30;
 
       function getPoint(e) {
         if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
@@ -1765,30 +1763,31 @@
       }
 
       function getAngle(e) {
-        var rect = inner.getBoundingClientRect();
-        var cx = rect.left + rect.width * 0.5;
-        var cy = rect.top + rect.height * 0.5;
+        var rect = outer.getBoundingClientRect();
+        var cx = rect.left + rect.width * PIVOT_X;
+        var cy = rect.top + rect.height * PIVOT_Y;
         var pt = getPoint(e);
         return Math.atan2(pt.clientY - cy, pt.clientX - cx) * 180 / Math.PI;
       }
 
-      /** اللمس داخل قرص الطارة الداخلية فقط */
-      function isInsideInner(e) {
-        var rect = inner.getBoundingClientRect();
-        var cx = rect.left + rect.width * 0.5;
-        var cy = rect.top + rect.height * 0.5;
+      /** True only when the touch/click is inside the inner wheel disk */
+      function isInsideInnerWheel(e) {
+        var rect = outer.getBoundingClientRect();
+        var cx = rect.left + rect.width * PIVOT_X;
+        var cy = rect.top + rect.height * PIVOT_Y;
         var pt = getPoint(e);
-        var dx = (pt.clientX - cx) / (rect.width * 0.5);
-        var dy = (pt.clientY - cy) / (rect.height * 0.5);
-        return (dx * dx + dy * dy) <= 1.05;
+        var dx = (pt.clientX - cx) / rect.width;
+        var dy = (pt.clientY - cy) / rect.height;
+        return Math.sqrt(dx * dx + dy * dy) <= WHEEL_RADIUS;
       }
 
       function applyRotation() {
-        inner.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
+        inner.style.transform = 'rotate(' + rotation + 'deg)';
       }
 
       function onStart(e) {
-        if (!isInsideInner(e)) {
+        // Do not start rotation when touching outside the inner wheel area
+        if (!isInsideInnerWheel(e)) {
           isDragging = false;
           return;
         }
@@ -1798,7 +1797,6 @@
         var pt = getPoint(e);
         startX = pt.clientX;
         startY = pt.clientY;
-        outer.classList.add('is-dragging');
       }
 
       function onMove(e) {
@@ -1806,7 +1804,7 @@
         var pt = getPoint(e);
         var dx = pt.clientX - startX;
         var dy = pt.clientY - startY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
         rotation = getAngle(e) - startAngle;
         applyRotation();
         if (e.cancelable) e.preventDefault();
@@ -1815,7 +1813,7 @@
       function onEnd(e) {
         if (!isDragging) return;
         isDragging = false;
-        outer.classList.remove('is-dragging');
+        // Tap (not drag) on a hotspot → open that action
         if (!moved) {
           var pt = getPoint(e);
           var target = document.elementFromPoint(pt.clientX, pt.clientY);
@@ -1837,6 +1835,7 @@
         } catch (err) { console.error(err); }
       }
 
+      // Direct click on hotspots (desktop / accessibility)
       inner.querySelectorAll('.wheel-hotspot').forEach(function(hs) {
         hs.addEventListener('click', function(ev) {
           if (moved) { ev.preventDefault(); return; }
@@ -1844,13 +1843,13 @@
         });
       });
 
-      // اللف فقط عند اللمس على الطارة الداخلية
-      inner.addEventListener('mousedown', onStart);
+      // Listen on outer for hit-testing, but rotation only starts inside the disk
+      outer.addEventListener('mousedown', onStart);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onEnd);
-      inner.addEventListener('touchstart', onStart, {passive: true});
-      inner.addEventListener('touchmove', onMove, {passive: false});
-      inner.addEventListener('touchend', onEnd);
+      outer.addEventListener('touchstart', onStart, {passive: true});
+      outer.addEventListener('touchmove', onMove, {passive: false});
+      outer.addEventListener('touchend', onEnd);
 
       // راسلنا
       window.openContactUs = function() {
@@ -15385,7 +15384,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '265';
+      var APP_VER = '264';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

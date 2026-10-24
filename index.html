@@ -1028,6 +1028,128 @@
       transform: scale(0.97);
     }
 
+    /* Ship Wheel Menu */
+    .wheel-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 16px 0 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .ship-wheel {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #e8c84a 0%, #c9a227 35%, #8a6a00 70%, #5a4500 100%);
+      box-shadow:
+        0 0 0 8px #a67c00,
+        0 0 0 12px #d4af37,
+        0 0 0 16px #8a6a00,
+        0 12px 30px rgba(0,0,0,0.35),
+        inset 0 0 40px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease-out;
+      cursor: grab;
+      touch-action: none;
+    }
+    .ship-wheel:active { cursor: grabbing; }
+    .ship-wheel .rim {
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 6px solid #d4af37;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+    .ship-wheel .hub {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 48px; height: 48px;
+      margin: -24px 0 0 -24px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #f0d060, #c9a227 50%, #7a5a00);
+      box-shadow: 0 0 0 4px #a67c00, 0 0 0 7px #d4af37, inset 0 2px 6px rgba(255,255,255,0.4);
+      z-index: 5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: #5a3a00;
+    }
+    .wheel-spoke {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 6px;
+      height: 90px;
+      margin-left: -3px;
+      margin-top: -90px;
+      background: linear-gradient(to bottom, #d4af37, #a67c00);
+      border-radius: 3px;
+      transform-origin: bottom center;
+      z-index: 1;
+      pointer-events: none;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+    }
+    .wheel-handle {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 18px; height: 36px;
+      margin-left: -9px;
+      margin-top: -130px;
+      background: linear-gradient(to bottom, #c9a227, #7a5a00);
+      border-radius: 9px 9px 4px 4px;
+      transform-origin: 50% 130px;
+      z-index: 2;
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .wheel-btn {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 72px; height: 72px;
+      margin: -36px 0 0 -36px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #e8c84a, #c9a227 40%, #a67c00);
+      border: 3px solid #d4af37;
+      box-shadow:
+        0 4px 12px rgba(0,0,0,0.35),
+        inset 0 2px 6px rgba(255,255,255,0.35),
+        inset 0 -2px 6px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #3a2800;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.15;
+      padding: 4px;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.15s, box-shadow 0.15s;
+      transform-origin: center center;
+    }
+    .wheel-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .wheel-btn .icon {
+      font-size: 18px;
+      margin-bottom: 2px;
+      line-height: 1;
+    }
+    .wheel-btn span {
+      display: block;
+      max-width: 64px;
+      word-break: break-word;
+    }
+    .wheel-hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #8a7a60;
+      text-align: center;
+    }
+
     /* Bottom sections */
     .bottom-grid {
       display: grid;
@@ -1648,17 +1770,141 @@
       </div>
     </div>
 
-    <div class="action-buttons" style="margin-top:10px;">
-      <button class="action-btn" onclick="openSpokenPrayers()">صلوات مقروءة ومسموعة</button>
-      <button class="action-btn" onclick="openTextModal('altar')">على المذبح</button>
+    <div class="wheel-wrapper">
+      <div class="ship-wheel" id="shipWheel">
+        <div class="rim"></div>
+        <!-- Spokes & Handles (visual only) - 6 positions -->
+        <div class="wheel-spoke" style="transform: rotate(0deg)"></div>
+        <div class="wheel-spoke" style="transform: rotate(60deg)"></div>
+        <div class="wheel-spoke" style="transform: rotate(120deg)"></div>
+        <div class="wheel-spoke" style="transform: rotate(180deg)"></div>
+        <div class="wheel-spoke" style="transform: rotate(240deg)"></div>
+        <div class="wheel-spoke" style="transform: rotate(300deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(0deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(60deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(120deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(180deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(240deg)"></div>
+        <div class="wheel-handle" style="transform: rotate(300deg)"></div>
+        <div class="hub">✝</div>
+        <!-- Interactive circular buttons - 6 icons matching the design -->
+        <div class="wheel-btn" style="transform: rotate(0deg) translateY(-105px) rotate(0deg)" onclick="openTextModal('altar')">
+          <div class="icon">✝️</div>
+          <span>على المذبح</span>
+        </div>
+        <div class="wheel-btn" style="transform: rotate(60deg) translateY(-105px) rotate(-60deg)" onclick="openSpokenPrayers()">
+          <div class="icon">🎧</div>
+          <span>صلوات ومسموعة</span>
+        </div>
+        <div class="wheel-btn" style="transform: rotate(120deg) translateY(-105px) rotate(-120deg)" onclick="openSavedVerses()">
+          <div class="icon">⭐</div>
+          <span>آياتي المحفوظة</span>
+        </div>
+        <div class="wheel-btn" style="transform: rotate(180deg) translateY(-105px) rotate(-180deg)" onclick="openContactUs()">
+          <div class="icon">✉️</div>
+          <span>راسلنا</span>
+        </div>
+        <div class="wheel-btn" style="transform: rotate(240deg) translateY(-105px) rotate(-240deg)" onclick="openTextModal('likedReadings')">
+          <div class="icon">📖</div>
+          <span>قراءات لمستني</span>
+        </div>
+        <div class="wheel-btn" style="transform: rotate(300deg) translateY(-105px) rotate(-300deg)" onclick="openPdfOptions()">
+          <div class="icon">⬇️</div>
+          <span>تحميل PDF</span>
+        </div>
+      </div>
+      <div class="wheel-hint">لفّي العجلة واختارى أي أيقونة</div>
     </div>
-    <div class="action-buttons" style="margin-top:10px;">
-      <button class="action-btn" onclick="openTextModal('likedReadings')">قراءات لمستني</button>
-      <button class="action-btn" onclick="openPdfOptions()">تحميل PDF</button>
-    </div>
-    <div class="action-buttons" style="margin-top:10px;">
-      <button class="action-btn" onclick="openSavedVerses()" style="background:linear-gradient(135deg,#c9a227,#a67c00);color:#fff;">📖 آياتي المحفوظة — اختاري للتصميم</button>
-    </div>
+    <script>
+    (function() {
+      var wheel = document.getElementById('shipWheel');
+      if (!wheel) return;
+      var rotation = 0;
+      var startAngle = 0;
+      var currentAngle = 0;
+      var isDragging = false;
+      var buttons = wheel.querySelectorAll('.wheel-btn');
+      var baseAngles = [0, 60, 120, 180, 240, 300];
+
+      function getAngle(e) {
+        var rect = wheel.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
+      }
+
+      function updateButtons() {
+        for (var i = 0; i < buttons.length; i++) {
+          var a = baseAngles[i] + rotation;
+          buttons[i].style.transform = 'rotate(' + a + 'deg) translateY(-105px) rotate(' + (-a) + 'deg)';
+        }
+        var spokes = wheel.querySelectorAll('.wheel-spoke');
+        var handles = wheel.querySelectorAll('.wheel-handle');
+        for (var j = 0; j < spokes.length; j++) {
+          spokes[j].style.transform = 'rotate(' + (baseAngles[j] + rotation) + 'deg)';
+          handles[j].style.transform = 'rotate(' + (baseAngles[j] + rotation) + 'deg)';
+        }
+      }
+
+      function onStart(e) {
+        isDragging = true;
+        startAngle = getAngle(e) - rotation;
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (!isDragging) return;
+        currentAngle = getAngle(e);
+        rotation = currentAngle - startAngle;
+        updateButtons();
+        e.preventDefault();
+      }
+      function onEnd() {
+        isDragging = false;
+      }
+
+      wheel.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+      wheel.addEventListener('touchstart', onStart, {passive: false});
+      window.addEventListener('touchmove', onMove, {passive: false});
+      window.addEventListener('touchend', onEnd);
+    })();
+
+    // راسلنا - Contact Us
+    function openContactUs() {
+      var msg = 'مرحباً، أود التواصل بخصوص تطبيق خلوتي';
+      try {
+        if (navigator.share) {
+          navigator.share({
+            title: 'راسلنا - خلوتي',
+            text: msg
+          }).catch(function() {
+            fallbackContact(msg);
+          });
+        } else {
+          fallbackContact(msg);
+        }
+      } catch (e) {
+        fallbackContact(msg);
+      }
+    }
+    function fallbackContact(msg) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(msg).then(function() {
+            if (typeof showToast === 'function') showToast('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
+            else alert('تم نسخ الرسالة — الصقيها في واتساب أو البريد');
+          });
+        } else {
+          window.location.href = 'mailto:?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') + '&body=' + encodeURIComponent(msg);
+        }
+      } catch (e2) {
+        window.location.href = 'mailto:?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') + '&body=' + encodeURIComponent(msg);
+      }
+    }
+    </script>
 
     <!-- الآية -->
     <div class="verse-footer">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="255" lang="ar" dir="rtl">
+<html data-app-ver="262" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1054,8 +1054,18 @@
     .jesus-wheel-inner {
       position: absolute;
       inset: 0;
-      transform-origin: center center;
+      transform-origin: 49.9% 65.6%;
       will-change: transform;
+    }
+    .wheel-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
     }
     .jesus-wheel-inner img {
       width: 100%;
@@ -1080,12 +1090,6 @@
       box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.6);
     }
     /* Positions calibrated to the provided Jesus wheel image */
-    .hotspot-altar     { top: 34.0%; left: 42.7%; }   /* على المذبح - top */
-    .hotspot-prayers   { top: 42.0%; left: 57.5%; }   /* صلوات ومسموعة - top right */
-    .hotspot-verses    { top: 60.5%; left: 57.0%; }   /* آياتي المحفوظة - bottom right */
-    .hotspot-contact   { top: 69.0%; left: 42.7%; }   /* راسلنا - bottom */
-    .hotspot-readings  { top: 60.5%; left: 28.5%; }   /* قراءات لمستي - bottom left */
-    .hotspot-pdf       { top: 42.0%; left: 28.5%; }   /* تحميل PDF - left */
 
     .wheel-hint {
       margin-top: 8px;
@@ -1716,16 +1720,17 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
+        <img class="wheel-layer" src="wheel-bg.webp" alt="عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-jesus.png" alt="عجلة الخلوة" draggable="false">
-          <!-- Clickable hotspots matching the exact circular icons in the image -->
-          <div class="wheel-hotspot hotspot-altar"    data-action="altar" title="على المذبح"></div>
-          <div class="wheel-hotspot hotspot-prayers"  data-action="prayers" title="صلوات ومسموعة"></div>
-          <div class="wheel-hotspot hotspot-verses"   data-action="verses" title="آياتي المحفوظة"></div>
-          <div class="wheel-hotspot hotspot-contact"  data-action="contact" title="راسلنا"></div>
-          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني"></div>
-          <div class="wheel-hotspot hotspot-pdf"      data-action="pdf" title="تحميل PDF"></div>
+          <img src="wheel-inner.webp" alt="" draggable="false">
+          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:43.43%;top:40.97%"></div>
+          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:58.97%;top:48.50%"></div>
+          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:57.83%;top:70.97%"></div>
+          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:43.17%;top:78.03%"></div>
+          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:28.83%;top:70.57%"></div>
+          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:27.77%;top:48.57%"></div>
         </div>
+        <img class="wheel-layer wheel-rim" src="wheel-rim.webp" alt="" draggable="false">
       </div>
       <div class="wheel-hint">لفّي العجلة • اضغطي على أي أيقونة</div>
     </div>
@@ -1743,8 +1748,8 @@
 
       function getAngle(e) {
         var rect = outer.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
+        var cx = rect.left + rect.width * 0.499;
+        var cy = rect.top + rect.height * 0.656;
         var clientX = e.touches ? e.touches[0].clientX : e.clientX;
         var clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="262" lang="ar" dir="rtl">
+<html data-app-ver="263" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1077,19 +1077,21 @@
     /* Clickable hotspots over the circular icons in the image */
     .wheel-hotspot {
       position: absolute;
-      width: 13.2%;
-      height: 13.2%;
+      width: 14.5%;
+      height: 14.5%;
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
       transition: box-shadow 0.12s;
-      /* larger hit area for first-tap reliability */
+      /* left/top = center of each circular icon; translate keeps hit-area centered */
+      transform: translate(-50%, -50%);
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     .wheel-hotspot:active {
-      box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.6);
+      box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.55);
     }
-    /* Positions calibrated to the provided Jesus wheel image */
+    /* Centers calibrated from wheel-inner.webp button disks */
 
     .wheel-hint {
       margin-top: 8px;
@@ -1723,12 +1725,12 @@
         <img class="wheel-layer" src="wheel-bg.webp" alt="عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
           <img src="wheel-inner.webp" alt="" draggable="false">
-          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:43.43%;top:40.97%"></div>
-          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:58.97%;top:48.50%"></div>
-          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:57.83%;top:70.97%"></div>
-          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:43.17%;top:78.03%"></div>
-          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:28.83%;top:70.57%"></div>
-          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:27.77%;top:48.57%"></div>
+          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:48.70%;top:47.48%"></div>
+          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:63.30%;top:57.14%"></div>
+          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:63.32%;top:78.67%"></div>
+          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:49.10%;top:85.08%"></div>
+          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:34.73%;top:77.69%"></div>
+          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:33.28%;top:55.25%"></div>
         </div>
         <img class="wheel-layer wheel-rim" src="wheel-rim.webp" alt="" draggable="false">
       </div>
@@ -1745,14 +1747,35 @@
       var isDragging = false;
       var moved = false;
       var startX = 0, startY = 0;
+      // Pivot matches CSS transform-origin (hub of the wheel)
+      var PIVOT_X = 0.499;
+      var PIVOT_Y = 0.656;
+      // Only the circular inner wheel disk is rotatable (not the outer image/rim area)
+      var WHEEL_RADIUS = 0.30;
+
+      function getPoint(e) {
+        if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
+        if (e.touches && e.touches.length) return e.touches[0];
+        return e;
+      }
 
       function getAngle(e) {
         var rect = outer.getBoundingClientRect();
-        var cx = rect.left + rect.width * 0.499;
-        var cy = rect.top + rect.height * 0.656;
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
+        var cx = rect.left + rect.width * PIVOT_X;
+        var cy = rect.top + rect.height * PIVOT_Y;
+        var pt = getPoint(e);
+        return Math.atan2(pt.clientY - cy, pt.clientX - cx) * 180 / Math.PI;
+      }
+
+      /** True only when the touch/click is inside the inner wheel disk */
+      function isInsideInnerWheel(e) {
+        var rect = outer.getBoundingClientRect();
+        var cx = rect.left + rect.width * PIVOT_X;
+        var cy = rect.top + rect.height * PIVOT_Y;
+        var pt = getPoint(e);
+        var dx = (pt.clientX - cx) / rect.width;
+        var dy = (pt.clientY - cy) / rect.height;
+        return Math.sqrt(dx * dx + dy * dy) <= WHEEL_RADIUS;
       }
 
       function applyRotation() {
@@ -1760,17 +1783,22 @@
       }
 
       function onStart(e) {
+        // Do not start rotation when touching outside the inner wheel area
+        if (!isInsideInnerWheel(e)) {
+          isDragging = false;
+          return;
+        }
         isDragging = true;
         moved = false;
         startAngle = getAngle(e) - rotation;
-        var pt = e.touches ? e.touches[0] : e;
+        var pt = getPoint(e);
         startX = pt.clientX;
         startY = pt.clientY;
       }
 
       function onMove(e) {
         if (!isDragging) return;
-        var pt = e.touches ? e.touches[0] : e;
+        var pt = getPoint(e);
         var dx = pt.clientX - startX;
         var dy = pt.clientY - startY;
         if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
@@ -1782,10 +1810,10 @@
       function onEnd(e) {
         if (!isDragging) return;
         isDragging = false;
-        // if it was a tap (not a drag), trigger the hotspot under the finger
+        // Tap (not drag) on a hotspot → open that action
         if (!moved) {
-          var target = e.changedTouches ? document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
-                                         : e.target;
+          var pt = getPoint(e);
+          var target = document.elementFromPoint(pt.clientX, pt.clientY);
           if (target && target.classList && target.classList.contains('wheel-hotspot')) {
             triggerAction(target.getAttribute('data-action'));
           }
@@ -1794,7 +1822,6 @@
 
       function triggerAction(action) {
         if (!action) return;
-        // call immediately on first press
         try {
           if (action === 'altar') openTextModal('altar');
           else if (action === 'prayers') openSpokenPrayers();
@@ -1805,7 +1832,7 @@
         } catch (err) { console.error(err); }
       }
 
-      // also allow direct click (desktop)
+      // Direct click on hotspots (desktop / accessibility)
       inner.querySelectorAll('.wheel-hotspot').forEach(function(hs) {
         hs.addEventListener('click', function(ev) {
           if (moved) { ev.preventDefault(); return; }
@@ -1813,6 +1840,7 @@
         });
       });
 
+      // Listen on outer for hit-testing, but rotation only starts inside the disk
       outer.addEventListener('mousedown', onStart);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onEnd);
@@ -15353,7 +15381,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '255';
+      var APP_VER = '263';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="290" lang="ar" dir="rtl">
+<html data-app-ver="291" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v290.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v291.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v290.webp" alt="" draggable="false">
+          <img src="wheel-inner-v291.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v290.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v291.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6888,24 +6888,9 @@ function onPrepareImageSelected(idx, input) {
 
     function exportPrepareDesignPdf() {
       try {
-        showToast('جاري تجهيز ملصق الإيضاح…');
-        if (typeof getPreparePagesWithImages === 'function') {
-          getPreparePagesWithImages().then(function (pages) {
-            pages = (pages || []).filter(function (p) {
-              return p && (String(p.text || '').trim().length >= 6 || (p.image && String(p.image).indexOf('base64,') > 0));
-            });
-            if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
-            generateFullLessonPosters(pages, getPrepareLessonTitle());
-          }).catch(function () {
-            var pages = getPreparePages();
-            if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
-            generateFullLessonPosters(pages, getPrepareLessonTitle());
-          });
-        } else {
-          var pages = getPreparePages();
-          if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
-          generateFullLessonPosters(pages, getPrepareLessonTitle());
-        }
+        // أُلغي ملصق الإيضاح الكامل — البوستر من المصمم فقط
+        openPrepPosterDesigner();
+        return;
       } catch (err) {
         console.log('exportPrepareDesignPdf', err);
         showToast('تعذر فتح التصميم: ' + (err && err.message ? err.message : err));
@@ -6927,7 +6912,7 @@ function onPrepareImageSelected(idx, input) {
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=229';
+            s.src = 'khalwaty-poster.js?v=291';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -6944,9 +6929,10 @@ function onPrepareImageSelected(idx, input) {
         var items = pages.map(function(p, i) {
           var heading = String(p.title || ('نقطة ' + (i + 1))).trim();
           var body = String(p.text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-          // لا تعكس الكلمات ولا تعيد ترتيب الأسطر — النص كما أدخله المستخدم
+          // النص كاملًا بالترتيب — العنوان منفصل عن الجسم
           return { heading: heading, text: body };
-        });
+        }).filter(function(it){ return (it.text && it.text.length) || (it.heading && it.heading.length); });
+        if (!items.length) { showToast('أضيفي نصوصًا في صفحات التحضير أولًا'); return; }
         window.KhalwatyPoster.open({ title: getPrepareLessonTitle() || 'تحضير الدرس', items: items });
       } catch (err) {
         console.log('openPrepPosterDesigner', err);
@@ -15752,7 +15738,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '290';
+      var APP_VER = '291';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -15842,7 +15828,7 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=229"></script>
+  <script src="khalwaty-poster.js?v=291"></script>
 <script>
 /* ===== خلوتي — الإشعارات الأصلية لأندرويد (Capacitor Local Notifications) =====
    بتجدول كل صلاة + صوت يسوع + التذكيرات كمنبّه يومي على الموبايل نفسه،

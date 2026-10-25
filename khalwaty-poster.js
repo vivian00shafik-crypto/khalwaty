@@ -150,16 +150,16 @@ var EMOJI_WORDS = {
 
   /* ---------- تقسيم المحتوى على الصفحات ---------- */
   function dims(s, lhRatio) {
-    var BODY = Math.max(27, Math.round(34 * s));
-    var ratio = (typeof lhRatio === 'number' && lhRatio > 0.5) ? lhRatio : 1.8;
+    var BODY = Math.max(24, Math.round(30 * s));
+    var ratio = (typeof lhRatio === 'number' && lhRatio > 0.5) ? lhRatio : 1.42;
     var LH = Math.round(BODY * ratio);
     return {
       BODY: BODY,
       LH: LH,
-      HEAD_F: Math.max(20, Math.round(24 + 8 * s)),
-      HEAD_H: Math.round(48 + 14 * s),
-      CARD_PAD: 18,
-      ACCENT: 8,
+      HEAD_F: Math.max(26, Math.round(30 + 10 * s)),
+      HEAD_H: Math.round(38 + 12 * s),
+      CARD_PAD: 12,
+      ACCENT: 6,
       LH_RATIO: ratio
     };
   }
@@ -168,61 +168,92 @@ var EMOJI_WORDS = {
   function paginate(items, s, m, lhRatio) {
     var d = dims(s, lhRatio);
     var fullW = W - 2 * M - 2 * INNER - 20;
-    var sideW = Math.round(fullW * 0.30); // عمود صورة جانبية محجوز
+    var sideW = Math.round(fullW * 0.32);
     var PADB = d.CARD_PAD * 2;
     var pages = [[]], pi = 0, y = topOf(0);
     m.direction = 'rtl';
     function next() { pages.push([]); pi++; y = topOf(pi); }
+
     items.forEach(function (it, i) {
-      var raw = String(it.text || '').trim();
-      if (!raw) return;
-      var linesAll = raw.split(/\n/);
-      var head = '';
+      var raw = String(it.text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      if (!raw && !it.heading) return;
+
+      var head = String(it.heading || '').trim();
       var body = raw;
-      if (linesAll.length > 1 && linesAll[0].trim().length > 0 && linesAll[0].trim().length <= 52) {
-        head = linesAll[0].trim();
-        body = linesAll.slice(1).join('\n').trim() || raw;
+      if (!head) {
+        var linesAll = raw.split(/\n/);
+        if (linesAll.length > 1 && linesAll[0].trim().length > 0 && linesAll[0].trim().length <= 56) {
+          head = linesAll[0].trim();
+          body = linesAll.slice(1).join('\n').trim() || raw;
+        }
       }
-      // صورة جانبية لأقسام فردية طويلة فقط — والنص يُلفّ على العرض المتبقي فقط
-      var useSide = (i % 2 === 1);
-      var textColW = useSide ? (fullW - sideW - 16) : fullW;
+
+      // فقرات كاملة بالترتيب
+      var paras = String(body || '').split(/\n\s*\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+      if (!paras.length && body) {
+        // أسطر مفردة كنص متتابع
+        paras = [body.replace(/\n+/g, ' ').trim()];
+      }
+      if (!paras.length && head) paras = [''];
+
+      var layoutMode = i % 3;
+      var useSide = (layoutMode !== 2) && body.length > 50;
+      var textColW = useSide ? (fullW - sideW - 14) : fullW;
+
       m.font = '400 ' + d.BODY + 'px ' + FONT;
-      var lines = wrap(m, body, textColW);
+      var lines = [];
+      paras.forEach(function (para, pii) {
+        var chunk = para.replace(/\n+/g, ' ').trim();
+        var pl = wrap(m, chunk, textColW);
+        if (!pl.length) pl = [''];
+        pl.forEach(function (ln) { lines.push(ln); });
+        if (pii < paras.length - 1) lines.push('');
+      });
       if (!lines.length) lines = [''];
+
       var idx = 0, n = lines.length;
-      var headH = head ? d.HEAD_H : Math.round(d.HEAD_H * 0.4);
-      var over = headH + PADB + 10;
+      var headH = head ? d.HEAD_H : Math.round(d.HEAD_H * 0.2);
+      var over = headH + PADB + 4;
+
       function place(k) {
-        var hh = over + k * d.LH;
-        // ارتفاع أدنى لو فيه صورة جانبية
-        if (useSide) hh = Math.max(hh, sideW * 0.7 + PADB);
+        var textH = k * d.LH;
+        var hh = over + textH;
+        if (useSide && idx === 0) {
+          var sideH = Math.round(sideW * 0.65);
+          // ارتفاع البطاقة ≈ النص؛ الصورة لا تفرض فراغًا كبيرًا
+          hh = over + Math.max(textH, Math.min(sideH, textH + d.LH * 1.5));
+        }
         pages[pi].push({
           it: it, i: i,
           lines: lines.slice(idx, idx + k),
           cont: idx > 0,
           y: y, h: hh,
           head: idx === 0 ? head : '',
-          hasSide: useSide && idx === 0, // الصورة مرة واحدة مع بداية القسم
+          hasSide: useSide && idx === 0,
+          sidePos: layoutMode,
           textColW: textColW,
           sideW: useSide ? sideW : 0
         });
         return hh;
       }
+
       while (idx < n) {
-        var cap = Math.floor((BOTTOM - y - over) / d.LH), rem = n - idx;
+        var cap = Math.floor((BOTTOM - y - over) / d.LH);
+        var rem = n - idx;
         if (cap < 1) { next(); continue; }
         if (cap >= rem) {
           var hh = place(rem);
-          y += hh + GAP;
+          y += hh + Math.max(10, Math.round(GAP * 0.55));
           idx = n;
         } else {
-          var take = Math.min(cap, Math.max(2, rem - 1));
-          var fresh = (y === topOf(pi));
-          if (take >= 2 || fresh) {
-            place(take);
-            idx += take;
-            next();
-          } else next();
+          var take = cap;
+          // تفضيل القطع عند فاصل فقرة
+          for (var t = take; t >= 2; t--) {
+            if (lines[idx + t - 1] === '') { take = t; break; }
+          }
+          place(take);
+          idx += take;
+          next();
         }
       }
     });
@@ -517,9 +548,9 @@ var cardTints = [
         var emos = (opt && opt.emojis) || emojis || ['✝'];
         var headEmoji = emos[fi % emos.length] || '✝';
         var headText = headEmoji + '  ' + String(f.head);
-        var headSize = Math.round((d.HEAD_F || 28) * 1.12);
+        var headSize = Math.round((d.HEAD_F || 28) * 1.22);
         ctx.font = '800 ' + headSize + 'px ' + FONT_USE;
-        ctx.fillStyle = hsl(hb, 60, 26);
+        ctx.fillStyle = '#A67C00';
         var hl = wrap(ctx, headText, textColW - 4);
         hl.forEach(function (ln, li) {
           cursorY += headSize * 0.55;
@@ -556,7 +587,7 @@ var cardTints = [
 
       // إعادة لفّ على عرض العمود الفعلي لضمان عدم تجاوز الصورة
       ctx.font = '400 ' + d.BODY + 'px ' + FONT_USE;
-      ctx.fillStyle = hsl(hb, 22, 16);
+      ctx.fillStyle = '#2C2416';
       var bodyText = (f.lines || []).join(' ');
       var drawLines = f.lines || [];
       if (f.textColW && Math.abs(f.textColW - textColW) > 8) {

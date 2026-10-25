@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="272" lang="ar" dir="rtl">
+<html data-app-ver="282" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1742,17 +1742,17 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v270.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v282.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v272.webp" alt="" draggable="false">
+          <img src="wheel-inner-v282.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
-          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:77.73%;top:34.09%"></div>
+          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
           <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:49.94%;top:80.68%"></div>
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v270.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v282.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6026,55 +6026,50 @@ function onPrepareImageSelected(idx, input) {
       return first.slice(0, 52) + '…';
     }
 
-    /** تلخيص النص إلى جمل/نقاط قوية مختصرة للعرض */
+    /** استخراج أهم نصوص الفقرات للعرض في البوربوينت — فقرات قصيرة بحجم أكبر وتباعد أوسع */
     function prepSummarizeForPptx(text, maxPoints) {
-      maxPoints = maxPoints || 5;
+      maxPoints = maxPoints || 6;
       var raw = String(text || '').replace(/\r\n/g, '\n').trim();
       if (!raw) return [];
-      var lines = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      // فقرة = مجموعة أسطر مفصولة بسطر فارغ أو أكثر
+      var paras = raw.split(/\n\s*\n+/).map(function (p) {
+        return p.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+      }).filter(function (p) { return p.length >= 12; });
+      if (!paras.length) {
+        paras = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 12; });
+      }
       var points = [];
-      function pushPoint(s) {
+      function pushPoint(s, forceLarge) {
         s = String(s || '').replace(/\s+/g, ' ').trim();
         s = s.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '').trim();
-        if (s.length < 8) return;
-        if (s.length > 110) s = s.slice(0, 107) + '…';
+        if (s.length < 10) return;
         // تجنب التكرار
         for (var i = 0; i < points.length; i++) {
-          if (points[i] === s || points[i].indexOf(s.slice(0, 30)) === 0) return;
+          if (points[i].t === s || points[i].t.indexOf(s.slice(0, 28)) === 0) return;
         }
-        points.push(s);
+        var isShort = forceLarge || (s.split(/[.。!؟\?]/).filter(Boolean).length <= 2 && s.length <= 160);
+        if (s.length > 180) s = s.slice(0, 177) + '…';
+        points.push({ t: s, large: isShort });
       }
-      // 1) أسطر مرقّمة أو نقطية
-      lines.forEach(function (ln) {
+      // 1) فقرات مرقّمة أو نقطية أولًا
+      paras.forEach(function (p) {
         if (points.length >= maxPoints) return;
-        if (/^[•\-\*●▪▸►]/.test(ln) || /^[\d٠-٩]+[\-\.\)]\s+/.test(ln)) pushPoint(ln);
+        if (/^[•\-\*●▪▸►]/.test(p) || /^[\d٠-٩]+[\-\.\)]\s+/.test(p)) pushPoint(p, true);
       });
-      // 2) جمل قصيرة قوية من الفقرات
-      if (points.length < maxPoints) {
-        var blob = lines.join(' ');
-        var sentences = blob.split(/(?<=[.。!؟\?])\s+/);
-        // رتّب: جمل متوسطة الطول أولًا (مفهومة)
-        sentences = sentences
-          .map(function (s) { return s.trim(); })
-          .filter(function (s) { return s.length >= 20 && s.length <= 140; })
-          .sort(function (a, b) {
-            // فضّل جمل فيها كلمات مفتاحية
-            function score(s) {
-              var sc = 0;
-              if (/الله|المسيح|المحبة|الطهارة|الإعجاب|الخطيئة|النفس|القلب|الشباب|العفة/.test(s)) sc += 2;
-              if (s.length >= 30 && s.length <= 90) sc += 1;
-              return sc;
-            }
-            return score(b) - score(a);
-          });
+      // 2) باقي الفقرات — القصيرة منها تُعرض كاملة بحجم كبير
+      paras.forEach(function (p) {
+        if (points.length >= maxPoints) return;
+        pushPoint(p, false);
+      });
+      // 3) إن لم يكفِ: جمل قوية
+      if (points.length < 3) {
+        var blob = paras.join(' ');
+        var sentences = blob.split(/(?<=[.。!؟\?])\s+/).map(function (s) { return s.trim(); })
+          .filter(function (s) { return s.length >= 25 && s.length <= 130; });
         sentences.forEach(function (s) {
           if (points.length >= maxPoints) return;
-          pushPoint(s);
+          pushPoint(s, true);
         });
-      }
-      // 3) إن لم يكفِ: اقتطع من أول سطرين
-      if (!points.length && lines.length) {
-        lines.slice(0, 3).forEach(function (ln) { if (points.length < maxPoints) pushPoint(ln); });
       }
       return points.slice(0, maxPoints);
     }
@@ -6143,10 +6138,15 @@ function onPrepareImageSelected(idx, input) {
           var pg = pages[idx];
           var sn = idx + 2;
           var title = prepExtractSlideTitle(pg, idx);
-          var points = prepSummarizeForPptx(pg.text, 5);
+          var points = prepSummarizeForPptx(pg.text, 6);
+          // نقاط قصيرة → حجم كبير وتباعد؛ ألوان متعددة حسب الأهمية
+          var hasLarge = points.some(function (pt) { return pt && pt.large; });
           var displayLines = points.length
-            ? points.map(function (pt) { return '• ' + pt; })
+            ? points.map(function (pt) { return '• ' + (pt.t || pt); })
             : ['• راجع نص التحضير في التطبيق للتفاصيل'];
+          var bodySz = hasLarge ? 2600 : 2000;
+          var bodyColor = '3E2F1C';
+          var accentColor = '5C4033';
 
           var shapes = '';
           shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1300000, '6B5B3E', null);
@@ -6166,28 +6166,52 @@ function onPrepareImageSelected(idx, input) {
           await _pptxYield();
 
           if (hasImg) {
-            // صورة + نقاط مختصرة
+            // صورة + نصوص مهمة بألوان وأحجام متنوعة
             shapes += _pptxPic(5, 'Image', 457200, 1500000, 4800000, 4200000, embedId);
             shapes += _pptxRect(6, 'card', 5500000, 1500000, 6200000, 4200000, 'FFFDF8', 'E8D9B5');
-            shapes += _pptxTextBox(7, 'Body', 5750000, 1650000, 5800000, 3900000, displayLines, {
-              sz: 2000, bold: true, color: '3E2F1C', align: 'r'
-            });
+            // عنوان فرعي بلون ذهبي
+            if (points.length) {
+              shapes += _pptxTextBox(7, 'BodyMain', 5750000, 1650000, 5800000, 1200000, [displayLines[0]], {
+                sz: bodySz + 200, bold: true, color: 'A67C00', align: 'r'
+              });
+              if (displayLines.length > 1) {
+                shapes += _pptxTextBox(8, 'BodyRest', 5750000, 2900000, 5800000, 2600000, displayLines.slice(1), {
+                  sz: bodySz - 200, bold: false, color: accentColor, align: 'r'
+                });
+              }
+            } else {
+              shapes += _pptxTextBox(7, 'Body', 5750000, 1650000, 5800000, 3900000, displayLines, {
+                sz: bodySz, bold: true, color: bodyColor, align: 'r'
+              });
+            }
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            // بدون صورة: بطاقة نقاط كبيرة واضحة
+            // بدون صورة: بطاقة نصوص كبيرة واضحة — فقرات قصيرة بحجم أكبر وتباعد
             shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4500000, 'FFFDF8', 'E8D9B5');
-            shapes += _pptxTextBox(6, 'Body', 700000, 1700000, 10800000, 4100000, displayLines, {
-              sz: 2400, bold: true, color: '3E2F1C', align: 'r'
-            });
+            if (points.length && hasLarge) {
+              // أول فقرة كبيرة بلون بني غامق
+              shapes += _pptxTextBox(6, 'BodyMain', 700000, 1700000, 10800000, 1600000, [displayLines[0]], {
+                sz: 2800, bold: true, color: '5C4033', align: 'r'
+              });
+              if (displayLines.length > 1) {
+                shapes += _pptxTextBox(7, 'BodyRest', 700000, 3400000, 10800000, 2300000, displayLines.slice(1), {
+                  sz: 2200, bold: false, color: '3E2F1C', align: 'r'
+                });
+              }
+            } else {
+              shapes += _pptxTextBox(6, 'Body', 700000, 1700000, 10800000, 4100000, displayLines, {
+                sz: bodySz, bold: true, color: bodyColor, align: 'r'
+              });
+            }
             // تلميح لإضافة صورة
-            shapes += _pptxTextBox(8, 'ImgHint', 457200, 6100000, 11277600, 350000,
+            shapes += _pptxTextBox(10, 'ImgHint', 457200, 6100000, 11277600, 350000,
               ['💡 لإضافة صورة: افتحي الصفحة في التحضير ← أرفقي صورة من الموبايل ثم أعيدي تصدير البوربوينت'],
               { sz: 1100, color: '8A7A60', align: 'ctr' });
             slideRels[sn] = [];
           }
 
           // رقم الشريحة LTR حتى لا ينعكس
-          shapes += _pptxTextBox(9, 'Num', 457200, 6450000, 11277600, 280000,
+          shapes += _pptxTextBox(11, 'Num', 457200, 6450000, 11277600, 280000,
             ['\u200E' + (idx + 1) + ' / ' + pages.length],
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
@@ -8647,7 +8671,7 @@ function openTextModal(type) {
     ];
 
     function openSpokenPrayers() {
-      document.getElementById('prayerTitle').textContent = 'صلوات مقروءة ومسموعة';
+      document.getElementById('prayerTitle').textContent = 'صلوات';
       var listHtml = '<div style="display:flex;flex-direction:column;gap:10px;">';
       SPOKEN_PRAYERS.forEach(function(p, i) {
         listHtml += '<button class="save-btn" style="text-align:right;background:linear-gradient(135deg,#2a4a3a,#1a3a2a);color:#f5e6c8;padding:12px 14px;" onclick="openSpokenPrayerItem(' + i + ')">' +
@@ -15494,7 +15518,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '272';
+      var APP_VER = '282';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

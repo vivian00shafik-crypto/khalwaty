@@ -205,12 +205,25 @@ var EMOJI_WORDS = {
 
       m.font = '400 ' + d.BODY + 'px ' + FONT;
       var lines = [];
+      // أرقام عربية للنقاط: ١. ٢. ٣. …
+      var arabNums = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      function toArabNum(n) {
+        return String(n).split('').map(function (c) { return arabNums[parseInt(c, 10)] || c; }).join('');
+      }
       paras.forEach(function (para, pii) {
         var chunk = para.replace(/\n+/g, ' ').trim();
-        var pl = wrap(m, chunk, textColW);
-        if (!pl.length) pl = [''];
-        pl.forEach(function (ln) { lines.push(ln); });
-        // بدون سطر فاضي بين الفقرات — التباعد من ارتفاع السطر فقط
+        if (!chunk) return;
+        // أزل ترقيم/رموز قديمة ثم أضف ترقيمًا متسلسلًا
+        chunk = chunk.replace(/^[•\-\*●▪▸►]\s*/, '');
+        chunk = chunk.replace(/^[\d٠-٩]+[\-\.\)]\s*/, '');
+        var num = toArabNum(pii + 1) + '. ';
+        var pl = wrap(m, num + chunk, textColW);
+        if (!pl.length) pl = [num + chunk];
+        // السطر الأول فيه الرقم؛ أسطر الالتفاف بمسافة بادئة خفيفة
+        pl.forEach(function (ln, li) {
+          if (li === 0) lines.push(ln);
+          else lines.push('   ' + ln.replace(/^\s+/, ''));
+        });
       });
       if (!lines.length) lines = [''];
 

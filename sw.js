@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v293';
+const CACHE = 'khalwati-v294';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -11,7 +11,7 @@ const CORE = [
   './khalwaty-poster.js', './agpeya-texts.js', './psalms.js',
   './logo.png', './parchment-bg.jpg',
   './icon-192.png', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png',
-  './wheel-bg-v293.webp', './wheel-inner-v293.webp', './prayer-alarm.mp3', './sawt-rabina.mp3', './bible-music-4.mp3'
+  './wheel-bg-v294.webp', './wheel-inner-v294.webp', './prayer-alarm.mp3', './sawt-rabina.mp3', './bible-music-4.mp3'
 ];
 
 // ملفات أكبر تُحفظ في الخلفية بعد فتح التطبيق (بترتيب الأهمية) ليعمل التطبيق بدون إنترنت

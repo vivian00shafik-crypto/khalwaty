@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="266" lang="ar" dir="rtl">
+<html data-app-ver="270" lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
@@ -1078,6 +1078,7 @@
       will-change: transform;
       cursor: grab;
       z-index: 5;
+      touch-action: none;
     }
     .jesus-wheel-inner img {
       width: 100%;
@@ -1086,6 +1087,7 @@
       pointer-events: none;
       background: transparent;
       object-fit: contain;
+      filter: drop-shadow(0 1px 3px rgba(70, 45, 0, 0.5));
     }
     /* الطبقة الأمامية: نفس صورة يسوع بعد تفريغ فتحة الطارة — فتخلّي الطارة الخارجية والأيدي فوق الداخلية */
     .wheel-front {
@@ -1104,7 +1106,7 @@
       transition: box-shadow 0.12s;
       transform: translate(-50%, -50%);
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      touch-action: none;
     }
     .wheel-hotspot:active {
       box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.55);
@@ -1739,9 +1741,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg.webp?v=266" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v270.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner.webp?v=266" alt="" draggable="false">
+          <img src="wheel-inner-v270.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1749,7 +1751,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg.webp?v=266" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v270.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -1764,80 +1766,109 @@
       var isDragging = false;
       var moved = false;
       var startX = 0, startY = 0;
+      var lastTrigAt = 0;
+      var swallowUntil = 0;
+      var DRAG_PX = 12; /* حساسية الضغط: أي حركة أقل من كده تعتبر ضغطة مش لف */
 
-      function getPoint(e) {
-        if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
-        if (e.touches && e.touches.length) return e.touches[0];
-        return e;
-      }
+      /* مراكز الأيقونات (٪ من مربع الطارة الداخلية) */
+      var MEDS = [
+        { a: 'altar',    x: 50.11, y: 19.03 },
+        { a: 'prayers',  x: 77.73, y: 34.09 },
+        { a: 'verses',   x: 77.78, y: 66.02 },
+        { a: 'contact',  x: 49.94, y: 80.68 },
+        { a: 'readings', x: 22.16, y: 66.08 },
+        { a: 'pdf',      x: 22.33, y: 34.20 }
+      ];
+      var HIT_R = 12; /* نصف قطر الأيقونة تقريباً (٪) */
 
       function getAngle(e) {
         var rect = inner.getBoundingClientRect();
         var cx = rect.left + rect.width * 0.5;
         var cy = rect.top + rect.height * 0.5;
-        var pt = getPoint(e);
-        return Math.atan2(pt.clientY - cy, pt.clientX - cx) * 180 / Math.PI;
+        return Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
       }
 
-      /** اللمس داخل قرص الطارة الداخلية فقط */
+      /* اللمس داخل قرص الطارة الداخلية فقط (لا يتأثر بالدوران) */
       function isInsideInner(e) {
         var rect = inner.getBoundingClientRect();
         var cx = rect.left + rect.width * 0.5;
         var cy = rect.top + rect.height * 0.5;
-        var pt = getPoint(e);
-        var rad = inner.offsetWidth * 0.5; /* لا يتأثر بالدوران */
-        var dx = (pt.clientX - cx) / rad;
-        var dy = (pt.clientY - cy) / rad;
+        var rad = inner.offsetWidth * 0.5;
+        var dx = (e.clientX - cx) / rad;
+        var dy = (e.clientY - cy) / rad;
         return (dx * dx + dy * dy) <= 1.0;
+      }
+
+      /* أي أيقونة تحت الإصبع؟ (بالحساب الهندسي مع تعويض الدوران الحالي) */
+      function hitTest(e) {
+        var rect = inner.getBoundingClientRect();
+        var cx = rect.left + rect.width * 0.5;
+        var cy = rect.top + rect.height * 0.5;
+        var W = inner.offsetWidth;
+        var r = -rotation * Math.PI / 180;
+        var dx = e.clientX - cx, dy = e.clientY - cy;
+        var ux = dx * Math.cos(r) - dy * Math.sin(r);
+        var uy = dx * Math.sin(r) + dy * Math.cos(r);
+        var px = 50 + ux / W * 100, py = 50 + uy / W * 100;
+        var best = null, bestD = HIT_R;
+        MEDS.forEach(function(m) {
+          var d = Math.hypot(px - m.x, py - m.y);
+          if (d <= bestD) { bestD = d; best = m.a; }
+        });
+        return best;
       }
 
       function applyRotation() {
         inner.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
       }
 
-      function onStart(e) {
-        if (!isInsideInner(e)) {
-          isDragging = false;
-          return;
-        }
+      inner.addEventListener('pointerdown', function(e) {
+        if (!isInsideInner(e)) { isDragging = false; return; }
         isDragging = true;
         moved = false;
+        startX = e.clientX; startY = e.clientY;
         startAngle = getAngle(e) - rotation;
-        var pt = getPoint(e);
-        startX = pt.clientX;
-        startY = pt.clientY;
         outer.classList.add('is-dragging');
-      }
+        try { inner.setPointerCapture(e.pointerId); } catch (err) {}
+      });
 
-      function onMove(e) {
+      inner.addEventListener('pointermove', function(e) {
         if (!isDragging) return;
-        var pt = getPoint(e);
-        var dx = pt.clientX - startX;
-        var dy = pt.clientY - startY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+        if (!moved) {
+          if (Math.hypot(e.clientX - startX, e.clientY - startY) < DRAG_PX) return;
+          moved = true;
+          startAngle = getAngle(e) - rotation; /* بدون قفزة عند بداية اللف */
+        }
         rotation = getAngle(e) - startAngle;
         applyRotation();
         if (e.cancelable) e.preventDefault();
-      }
+      });
 
-      function onEnd(e) {
+      function endPointer(e, cancelled) {
         if (!isDragging) return;
         isDragging = false;
         outer.classList.remove('is-dragging');
-        if (!moved) {
-          var pt = getPoint(e);
-          var target = document.elementFromPoint(pt.clientX, pt.clientY);
-          if (target && target.classList && target.classList.contains('wheel-hotspot')) {
-            triggerAction(target.getAttribute('data-action'));
+        try { inner.releasePointerCapture(e.pointerId); } catch (err) {}
+        if (!moved && !cancelled) {
+          var act = hitTest(e);
+          if (act) {
+            swallowUntil = Date.now() + 600; /* نبلع الـ click التلقائي اللي بعد اللمس */
+            triggerAction(act);
           }
         }
       }
+      inner.addEventListener('pointerup', function(e) { endPointer(e, false); });
+      inner.addEventListener('pointercancel', function(e) { endPointer(e, true); });
 
-      var lastTrigAt = 0;
+      /* الـ click التلقائي بعد اللمس كان بيقع على خلفية النافذة اللي لسه فتحت ويقفلها */
+      document.addEventListener('click', function(ev) {
+        if (Date.now() < swallowUntil) { ev.stopPropagation(); ev.preventDefault(); }
+      }, true);
+
       function triggerAction(action) {
         if (!action) return;
         var now = Date.now();
-        if (now - lastTrigAt < 500) return; /* منع الفتح المزدوج (touchend + click) */
+        if (now - lastTrigAt < 500) return;
         lastTrigAt = now;
         try {
           if (action === 'altar') openTextModal('altar');
@@ -1848,21 +1879,6 @@
           else if (action === 'pdf') openPdfOptions();
         } catch (err) { console.error(err); }
       }
-
-      inner.querySelectorAll('.wheel-hotspot').forEach(function(hs) {
-        hs.addEventListener('click', function(ev) {
-          if (moved) { ev.preventDefault(); return; }
-          triggerAction(hs.getAttribute('data-action'));
-        });
-      });
-
-      // اللف فقط عند اللمس على الطارة الداخلية
-      inner.addEventListener('mousedown', onStart);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
-      inner.addEventListener('touchstart', onStart, {passive: true});
-      inner.addEventListener('touchmove', onMove, {passive: false});
-      inner.addEventListener('touchend', onEnd);
 
       // راسلنا
       window.openContactUs = function() {
@@ -15397,7 +15413,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '266';
+      var APP_VER = '270';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

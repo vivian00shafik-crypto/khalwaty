@@ -207,7 +207,7 @@ var EMOJI_WORDS = {
         var pl = wrap(m, chunk, textColW);
         if (!pl.length) pl = [''];
         pl.forEach(function (ln) { lines.push(ln); });
-        if (pii < paras.length - 1) lines.push('');
+        // بدون سطر فاضي بين الفقرات — التباعد من ارتفاع السطر فقط
       });
       if (!lines.length) lines = [''];
 
@@ -615,7 +615,7 @@ var cardTints = [
           ctx.fillText(String(ln || ''), textX, cursorY);
         }
         cursorY += bodyLH * 0.5;
-        if (!String(ln || '').trim()) cursorY += 6 * paraMul;
+        if (!String(ln || '').trim()) { cursorY += 2; return; }
       });
       ctx.restore();
     });

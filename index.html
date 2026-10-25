@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="291" lang="ar" dir="rtl">
+<html data-app-ver="292" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v291.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v292.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v292.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v291.webp" alt="" draggable="false">
+          <img src="wheel-inner-v292.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v292.webp'" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v291.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v292.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v292.webp'" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6912,7 +6912,7 @@ function onPrepareImageSelected(idx, input) {
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=291';
+            s.src = 'khalwaty-poster.js?v=292';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -14705,77 +14705,81 @@ function dayScore(d) {
       var gender = localStorage.getItem('khalwati_gender') || 'girl';
       var personEmoji = gender === 'boy' ? '👦' : '👧';
       var person = gender === 'boy' ? 'ولد' : 'بنت';
+
+      // يوم ناجح = درجة يومية معقولة من أنشطة الخلوة
+      function isDaySuccess(d) {
+        return dayScore(d) >= 4;
+      }
+
       var levels = [];
+      var maxUnits = 7;
+      var successCount = 0;
+      var now = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 12);
+
       if (period === 'week') {
+        maxUnits = 7;
         for (var i = 6; i >= 0; i--) {
-          var d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i, 12);
-          levels.push({ label: dayNames[d.getDay()], score: dayScore(d) });
+          var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 12);
+          var ok = isDaySuccess(d);
+          if (ok) successCount++;
+          levels.push({ label: dayNames[d.getDay()], score: ok ? 1 : 0, raw: dayScore(d) });
         }
       } else if (period === 'month') {
-        for (var i2 = 3; i2 >= 0; i2--) {
-          var sum = 0, cnt = 0;
-          for (var j = 0; j < 7; j++) {
-            var d2 = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - (i2 * 7 + j), 12);
-            sum += dayScore(d2); cnt++;
+        var y = now.getFullYear(), m = now.getMonth();
+        maxUnits = new Date(y, m + 1, 0).getDate();
+        for (var day = 1; day <= maxUnits; day++) {
+          var dM = new Date(y, m, day, 12);
+          // لا نحسب أيام المستقبل
+          if (dM > now) {
+            levels.push({ label: String(day), score: 0, raw: 0, future: true });
+            continue;
           }
-          levels.push({ label: 'أ' + (4 - i2), score: Math.round(sum / cnt) });
+          var okM = isDaySuccess(dM);
+          if (okM) successCount++;
+          levels.push({ label: String(day), score: okM ? 1 : 0, raw: dayScore(dM) });
         }
       } else {
-        for (var i3 = 5; i3 >= 0; i3--) {
-          var m = new Date(currentDate.getFullYear(), currentDate.getMonth() - i3, 15, 12);
-          var sum2 = 0, cnt2 = 0;
-          for (var j2 = 0; j2 < 28; j2++) {
-            var d3 = new Date(m.getFullYear(), m.getMonth(), j2 + 1, 12);
-            if (d3.getMonth() !== m.getMonth()) break;
-            sum2 += dayScore(d3); cnt2++;
+        // سنوي: من 1 يناير حتى اليوم (أو كامل أيام السنة للحد الأقصى)
+        var y2 = now.getFullYear();
+        var startY = new Date(y2, 0, 1, 12);
+        var endY = new Date(y2, 11, 31, 12);
+        maxUnits = ((endY - startY) / 86400000) + 1; // 365 أو 366
+        successCount = 0;
+        // أعمدة شهرية للعرض + العدّ اليومي للدرجة
+        for (var mo = 0; mo < 12; mo++) {
+          var daysInM = new Date(y2, mo + 1, 0).getDate();
+          var succM = 0, counted = 0;
+          for (var dd = 1; dd <= daysInM; dd++) {
+            var dY = new Date(y2, mo, dd, 12);
+            if (dY > now) break;
+            counted++;
+            if (isDaySuccess(dY)) { succM++; successCount++; }
           }
-          levels.push({ label: (m.getMonth() + 1) + '', score: cnt2 ? Math.round(sum2 / cnt2) : 0 });
+          levels.push({ label: String(mo + 1), score: counted ? (succM / counted) : 0, raw: succM, counted: counted });
         }
       }
 
-      var avgAll = levels.length ? levels.reduce(function (a, b) { return a + b.score; }, 0) / levels.length : 0;
-      // متوسط الأيام النشطة فقط (حتى لا تسحب الأيام الفارغة الصورة للخلف)
-      var active = levels.filter(function (l) { return l.score > 0; });
-      var avgActive = active.length
-        ? active.reduce(function (a, b) { return a + b.score; }, 0) / active.length
-        : 0;
-      // درجة العرض من 10: نستخدم مزيجًا من المتوسط العام ومتوسط الأيام الملتزمة
-      var displayScore = Math.min(10, Math.round(avgAll * 10 / 12));
-      var commitmentScore = Math.min(10, Math.round(avgActive * 10 / 12));
-      // لو التزمتِ بعدة أيام بدرجة جيدة، نرفع مستوى الصورة حتى لو باقي الأسبوع فاضي
-      var goodDays = levels.filter(function (l) { return l.score >= 6; }).length;
-      var veryGoodDays = levels.filter(function (l) { return l.score >= 9; }).length;
+      var displayScore = successCount;
+      var displayMax = period === 'week' ? 7 : (period === 'month' ? maxUnits : maxUnits);
+      // عتبة الامتياز ≈ 5 من 7
+      var excelThreshold = Math.max(1, Math.ceil(displayMax * (5 / 7)));
+      var isExcellence = successCount >= excelThreshold;
 
-      var trend = levels.length >= 2 ? (levels[levels.length - 1].score - levels[0].score) : 0;
-      var trendText = trend > 1 ? 'ارتفاع 📈 — قربتِ من يسوع' : trend < -1 ? 'انخفاض 📉 — رجعي خطوة' : 'ثبات ➡️';
-
-      // 3 مستويات للصورة
-      // high: متوسط نشط >= 5/12 أو يومين جيدين على الأقل أو درجة عرض >= 5
-      // final: متوسط نشط >= 9/12 أو 3 أيام ممتازة أو درجة عرض >= 8 مع التزام واضح
+      // مستوى الصورة
       var level = 'low';
-      if (
-        avgActive >= 9 ||
-        veryGoodDays >= 3 ||
-        (displayScore >= 8 && goodDays >= 3) ||
-        (avgAll >= 8)
-      ) {
+      if (isExcellence) {
         level = 'final';
-      } else if (
-        avgActive >= 5 ||
-        goodDays >= 2 ||
-        displayScore >= 5 ||
-        avgAll >= 5
-      ) {
+      } else if (successCount >= Math.ceil(displayMax * (3 / 7))) {
         level = 'high';
       }
 
       var progressImg, stageText, progressVideo = null;
-      var cacheBust = 'v=249';
+      var cacheBust = 'v=292';
       if (gender === 'boy') {
         if (level === 'final') {
           progressImg = 'progress-boy-final.jpg?' + cacheBust;
           progressVideo = 'progress-boy-final.mp4?' + cacheBust;
-          stageText = 'المستوى النهائي — الولد في حضن يسوع 🤗';
+          stageText = 'امتياز — الولد في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-boy-high.jpg?' + cacheBust;
           stageText = 'قرب الولد من يسوع — يمسك بيده';
@@ -14787,7 +14791,7 @@ function dayScore(d) {
         if (level === 'final') {
           progressImg = 'progress-girl-final.jpg?' + cacheBust;
           progressVideo = 'progress-girl-final.mp4?' + cacheBust;
-          stageText = 'المستوى النهائي — البنت في حضن يسوع 🤗';
+          stageText = 'امتياز — البنت في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-girl-high.jpg?' + cacheBust;
           stageText = 'قرب البنت من يسوع — تمد يدها إليه';
@@ -14797,53 +14801,65 @@ function dayScore(d) {
         }
       }
 
-      var levelLabel = level === 'final' ? 'نهائي 🌟' : (level === 'high' ? 'قريب من يسوع ✨' : 'بداية الطريق');
-      var bars = levels.map(function (l) {
-        var h = 10 + l.score * 10;
-        return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:28px;">' +
-          '<div style="font-size:14px;">' + (l.score >= 7 ? '🙂' : l.score >= 4 ? '😐' : '😔') + '</div>' +
-          '<div style="width:20px;height:' + h + 'px;background:linear-gradient(#c9a227,#a67c00);border-radius:6px 6px 0 0;"></div>' +
-          '<div style="font-size:10px;">' + l.label + '</div></div>';
-      }).join('');
+      var levelLabel = level === 'final' ? 'امتياز ⭐' : (level === 'high' ? 'جيد' : 'مبتدئ');
+      var periodLabel = period === 'week' ? 'أسبوعي' : (period === 'month' ? 'شهري' : 'سنوي');
+      var unitHint = period === 'week'
+        ? ('من 7 أيام — الامتياز من ' + excelThreshold + ' أيام ناجحة')
+        : (period === 'month'
+          ? ('من ' + displayMax + ' يومًا في الشهر — الامتياز من ' + excelThreshold)
+          : ('من ' + displayMax + ' يومًا في السنة — الامتياز من ' + excelThreshold));
 
-      document.getElementById('prayerTitle').textContent = 'مستوى الخلوة';
+      // أشرطة بيانية
+      var bars = '';
+      var maxBar = 100;
+      levels.forEach(function (l) {
+        var pct;
+        if (period === 'year') {
+          pct = Math.round((l.score || 0) * 100);
+        } else {
+          pct = l.score ? 100 : 8;
+        }
+        var h = Math.max(8, Math.round(maxBar * (pct / 100)));
+        var col = l.score > 0 ? (level === 'final' ? '#5a7d4a' : '#C9A227') : '#e0d4b8';
+        bars += '<div style="display:flex;flex-direction:column;align-items:center;min-width:' + (period === 'month' ? '14px' : '28px') + ';">' +
+          '<div style="width:12px;height:' + h + 'px;background:' + col + ';border-radius:6px 6px 2px 2px;"></div>' +
+          '<div style="font-size:9px;color:#6a5a3a;margin-top:3px;">' + l.label + '</div></div>';
+      });
+
       var mediaHtml = '';
-      if (level === 'final' && progressVideo) {
-        mediaHtml =
-          '<video id="progressFinalVideo" src="' + progressVideo + '" playsinline controls preload="auto" style="width:100%;display:block;max-height:360px;background:#000;"></video>' +
-          '<p style="text-align:center;background:#fff9e8;margin:0;padding:8px;font-size:13px;color:var(--brown);font-weight:600;">🎉 نهاية هدف الخلوة — وصول إلى حضن يسوع</p>' +
-          '<button type="button" class="save-btn" style="width:100%;margin:8px 0 0;background:#5a7d4a;" onclick="playProgressFinalVideo()">▶️ تشغيل فيديو الوصول</button>';
+      if (progressVideo && level === 'final') {
+        mediaHtml = '<video id="progressFinalVideo" src="' + progressVideo + '" playsinline controls style="width:100%;display:block;background:#000;" poster="' + progressImg + '"></video>';
       } else {
-        mediaHtml = '<img src="' + progressImg + '" alt="مستوى الخلوة" style="width:100%;display:block;max-height:340px;object-fit:cover;object-position:center top;" onerror="this.style.background=\'#f0e6d0\';this.alt=\'تعذر تحميل الصورة\';">';
+        mediaHtml = '<img src="' + progressImg + '" alt="مستوى الخلوة" style="width:100%;display:block;" loading="lazy">';
       }
 
+      document.getElementById('prayerTitle').textContent = '📊 مستوى الخلوة — ' + periodLabel;
       document.getElementById('prayerContent').innerHTML =
-        '<div style="text-align:center;">' +
-          '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">' +
+        '<div style="text-align:center;padding:8px 4px 16px;">' +
+          '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
             '<button onclick="openProgressChart(\'week\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'week' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'week' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">أسبوعي</button>' +
             '<button onclick="openProgressChart(\'month\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'month' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'month' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">شهري</button>' +
             '<button onclick="openProgressChart(\'year\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'year' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'year' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">سنوي</button>' +
           '</div>' +
           '<div style="font-size:28px;margin-bottom:4px;">' + personEmoji + '</div>' +
-          '<div style="font-size:18px;font-weight:800;color:var(--brown);margin-bottom:4px;">' + displayScore + ' من 10</div>' +
-          '<div style="font-size:14px;font-weight:700;color:#5a7d4a;margin-bottom:6px;">المستوى: ' + levelLabel + '</div>' +
-          '<div style="font-size:13px;color:#6a5a3a;margin-bottom:10px;line-height:1.7;">' + stageText + '<br>' + trendText +
-            (active.length ? '<br><span style="font-size:11px;color:#8a7a60;">أيام ملتزمة هذا الأسبوع: ' + active.length + ' — أيام جيدة: ' + goodDays + '</span>' : '') +
-          '</div>' +
+          '<div style="font-size:22px;font-weight:800;color:var(--brown);margin-bottom:4px;">' + displayScore + ' من ' + displayMax + '</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#5a7d4a;margin-bottom:4px;">المستوى: ' + levelLabel + '</div>' +
+          '<div style="font-size:12px;color:#8a7a60;margin-bottom:8px;">' + unitHint + '</div>' +
+          '<div style="font-size:13px;color:#6a5a3a;margin-bottom:10px;line-height:1.7;">' + stageText + '</div>' +
           '<div style="border-radius:16px;overflow:hidden;border:2px solid #e8d9b5;margin-bottom:12px;background:#faf6ee;">' + mediaHtml + '</div>' +
-          '<div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:4px;">' + bars + '</div>' +
-          '<p style="margin-top:10px;font-size:12px;color:#8a7a60;line-height:1.7;">كل ما التزمتِ بالخلوة والصلاة، الصورة تتغير وتقربك أكثر من يسوع.<br>عند الوصول للمستوى النهائي يشتغل فيديو الوصول (بنت أو ولد حسب اختيارك في الإعدادات).</p>' +
+          '<div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:3px;">' + bars + '</div>' +
+          '<p style="margin-top:10px;font-size:12px;color:#8a7a60;line-height:1.7;">اليوم الناجح = التزام بأنشطة الخلوة.<br>الفيديو يظهر عند الامتياز (من ' + excelThreshold + ' فأعلى على مقياس ' + displayMax + ').</p>' +
           '<p style="font-size:12px;color:#8a7a60;">اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.</p>' +
         '</div>';
       document.getElementById('prayerModal').classList.add('active');
 
-      // تشغيل الفيديو تلقائيًا عند المستوى النهائي
       if (level === 'final' && progressVideo) {
         setTimeout(function () { playProgressFinalVideo(); }, 400);
       }
     }
 
-    function playProgressFinalVideo() {
+    
+function playProgressFinalVideo() {
       try {
         var v = document.getElementById('progressFinalVideo');
         if (!v) return;
@@ -15738,7 +15754,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '291';
+      var APP_VER = '292';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -15828,7 +15844,7 @@ function dayScore(d) {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=291"></script>
+  <script src="khalwaty-poster.js?v=292"></script>
 <script>
 /* ===== خلوتي — الإشعارات الأصلية لأندرويد (Capacitor Local Notifications) =====
    بتجدول كل صلاة + صوت يسوع + التذكيرات كمنبّه يومي على الموبايل نفسه،

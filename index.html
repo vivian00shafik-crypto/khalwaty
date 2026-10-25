@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="288" lang="ar" dir="rtl">
+<html data-app-ver="289" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v288.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v289.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v288.webp" alt="" draggable="false">
+          <img src="wheel-inner-v289.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v288.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v289.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6033,32 +6033,39 @@ function onPrepareImageSelected(idx, input) {
       maxPoints = maxPoints || 8;
       var raw = String(text || '').replace(/\r\n/g, '\n').trim();
       if (!raw) return [];
-      // حافظ على ترتيب الفقرات كما كتبها المستخدم
       var paras = raw.split(/\n\s*\n+/).map(function (p) {
         return p.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-      }).filter(function (p) { return p.length >= 8; });
+      }).filter(function (p) { return p.length >= 6; });
       if (!paras.length) {
-        paras = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 8; });
+        paras = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 6; });
       }
-      // لو فقرة واحدة طويلة جدًا: قسّمها لجمل مع الحفاظ على الترتيب
-      if (paras.length === 1 && paras[0].length > 220) {
-        var parts = paras[0].split(/(?<=[.。!؟\?])\s+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 12; });
+      if (paras.length === 1 && paras[0].length > 240) {
+        var parts = paras[0].split(/(?<=[.。!؟\?])\s+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 10; });
         if (parts.length >= 2) paras = parts;
       }
       var points = [];
       paras.forEach(function (p) {
         if (points.length >= maxPoints) return;
         var s = String(p || '').replace(/\s+/g, ' ').trim();
+        var hadBullet = /^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/.test(s);
         s = s.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '').trim();
-        if (s.length < 8) return;
-        // تكرار حرفي فقط
+        if (s.length < 6) return;
         for (var i = 0; i < points.length; i++) {
           if (points[i].t === s) return;
         }
-        var isShort = s.length <= 140 && s.split(/[.。!؟\?]/).filter(Boolean).length <= 2;
-        if (s.length > 220) s = s.slice(0, 217) + '…';
-        points.push({ t: s, large: isShort });
+        // عنوان: قصير، أو ينتهي بـ : أو ؟، أو سطر من غير نقطة طويلة
+        var isHeading = (!hadBullet && s.length <= 48) ||
+          /[:：]$/.test(s) ||
+          (s.length <= 56 && /[؟?]$/.test(s)) ||
+          (s.length <= 40 && !/[.。]/.test(s));
+        var isShort = s.length <= 130;
+        if (s.length > 240) s = s.slice(0, 237) + '…';
+        points.push({ t: s, large: isShort, heading: isHeading });
       });
+      // أول نقطة قصيرة جدًا تُعتبر عنوان قسم إن لم يُعلَّم
+      if (points.length && points[0].t.length <= 42 && !/[.。]/.test(points[0].t)) {
+        points[0].heading = true;
+      }
       return points;
     }
 
@@ -6170,31 +6177,82 @@ function onPrepareImageSelected(idx, input) {
           hasImg = !!embedId;
           await _pptxYield();
 
+          // بناء أسطر العرض مع تمييز العنوان عن البند
+          var richLines = points.length
+            ? points.map(function (pt) {
+                return {
+                  t: (pt.heading ? '' : '• ') + (pt.t || ''),
+                  heading: !!pt.heading,
+                  large: !!pt.large
+                };
+              })
+            : displayLines.map(function (ln, i) {
+                var t = String(ln || '').replace(/^•\s*/, '');
+                var heading = i === 0 && t.length <= 42 && !/[.。]/.test(t);
+                return { t: (heading ? '' : '• ') + t, heading: heading, large: t.length <= 130 };
+              });
+          if (!richLines.length && earlyHasImg) {
+            richLines = [];
+          }
+
+          function _pptxStackLines(shapesRef, startId, x, y0, w, y1, lines) {
+            var colorsHead = 'A67C00';
+            var colorsBody = '3E2F1C';
+            var n = Math.min(lines.length, 8);
+            if (!n) return shapesRef;
+            var gap = 90000;
+            var totalH = y1 - y0;
+            // تقدير ارتفاع كل سطر حسب كونه عنوان أو فقرة
+            var weights = [];
+            var sumW = 0;
+            for (var i = 0; i < n; i++) {
+              var L = lines[i];
+              var len = (L.t || '').length;
+              var wgt = L.heading ? 1.35 : (len > 160 ? 1.5 : (len > 90 ? 1.2 : 1.0));
+              weights.push(wgt);
+              sumW += wgt;
+            }
+            var y = y0;
+            for (var i = 0; i < n; i++) {
+              var L = lines[i];
+              var h = Math.floor((totalH - gap * (n - 1)) * (weights[i] / sumW));
+              if (h < 280000) h = 280000;
+              if (y + h > y1) h = Math.max(240000, y1 - y);
+              var sz, col, bold;
+              if (L.heading) {
+                sz = 2600;
+                col = colorsHead;
+                bold = true;
+              } else if (L.large) {
+                sz = 1900;
+                col = colorsBody;
+                bold = false;
+              } else {
+                sz = 1700;
+                col = colorsBody;
+                bold = false;
+              }
+              shapesRef += _pptxTextBox(startId + i, 'L' + i, x, y, w, h, [L.t], {
+                sz: sz, bold: bold, color: col, align: 'r', spcAft: 120
+              });
+              y += h + gap;
+              if (y >= y1 - 200000) break;
+            }
+            return shapesRef;
+          }
+
           if (hasImg) {
-            shapes += _pptxPic(5, 'Image', 400000, 1500000, 4500000, 4700000, embedId);
-            shapes += _pptxRect(6, 'card', 5100000, 1500000, 6700000, 4700000, 'FFFDF8', 'E8D9B5');
-            // صندوق نص واحد مرتّب — بدون تداخل
-            var sideLines = displayLines.slice(0, 6);
-            var sideSz = sideLines.length <= 3 ? 2200 : (sideLines.length <= 5 ? 1800 : 1600);
-            shapes += _pptxTextBox(7, 'Body', 5300000, 1650000, 6300000, 4400000, sideLines, {
-              sz: sideSz, bold: false, color: '3E2F1C', align: 'r', spcAft: 280
-            });
+            shapes += _pptxPic(5, 'Image', 380000, 1480000, 4400000, 4800000, embedId);
+            shapes += _pptxRect(6, 'card', 5000000, 1480000, 6800000, 4800000, 'FFFDF8', 'E8D9B5');
+            shapes = _pptxStackLines(shapes, 20, 5200000, 1620000, 6400000, 6100000, richLines);
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4900000, 'FFFDF8', 'E8D9B5');
-            var fullLines = displayLines.slice(0, 7);
-            var fullSz = fullLines.length <= 3 ? 2400 : (fullLines.length <= 5 ? 2000 : 1700);
-            // فقرات قصيرة → تباعد أكبر وحجم أكبر
-            if (points.length && points.every(function (pt) { return pt.large; })) {
-              fullSz = Math.min(2800, fullSz + 400);
-            }
-            shapes += _pptxTextBox(6, 'Body', 700000, 1680000, 10800000, 4500000, fullLines, {
-              sz: fullSz, bold: false, color: '3E2F1C', align: 'r', spcAft: 320
-            });
+            shapes += _pptxRect(5, 'card', 457200, 1480000, 11277600, 5000000, 'FFFDF8', 'E8D9B5');
+            shapes = _pptxStackLines(shapes, 20, 700000, 1650000, 10800000, 6300000, richLines);
             slideRels[sn] = [];
           }
 
-          shapes += _pptxTextBox(11, 'Num', 457200, 6500000, 11277600, 250000,
+          shapes += _pptxTextBox(11, 'Num', 457200, 6550000, 11277600, 220000,
             ['\u200E' + (idx + 1) + ' / ' + pages.length],
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
@@ -15501,7 +15559,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '288';
+      var APP_VER = '289';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

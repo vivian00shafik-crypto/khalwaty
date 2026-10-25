@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="284" lang="ar" dir="rtl">
+<html data-app-ver="285" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1043,10 +1043,11 @@
     .jesus-wheel {
       position: relative;
       width: 100%;
-      max-width: min(96vw, 460px);
+      max-width: min(98vw, 560px);
       aspect-ratio: 1 / 1;
       background: transparent;
-      touch-action: none;
+      /* السماح بتمرير الصفحة رأسيًا عند لمس المسيح/الخلفية */
+      touch-action: pan-y;
       cursor: default;
       overflow: visible;
       margin-inline: auto;
@@ -1743,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v284.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v285.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v284.webp" alt="" draggable="false">
+          <img src="wheel-inner-v285.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1753,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v284.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v285.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -15519,7 +15520,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '284';
+      var APP_VER = '285';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

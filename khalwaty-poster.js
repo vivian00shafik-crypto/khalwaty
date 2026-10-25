@@ -188,11 +188,14 @@ var EMOJI_WORDS = {
         }
       }
 
-      // فقرات كاملة بالترتيب
-      var paras = String(body || '').split(/\n\s*\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
-      if (!paras.length && body) {
-        // أسطر مفردة كنص متتابع
-        paras = [body.replace(/\n+/g, ' ').trim()];
+      // فقرات بالترتيب كما وردت في النص الأصلي
+      var paras = [];
+      var rawBody = String(body || '');
+      if (rawBody.indexOf('\n\n') >= 0 || /\n\s*\n/.test(rawBody)) {
+        paras = rawBody.split(/\n\s*\n+/).map(function (p) { return p.replace(/\n+/g, ' ').trim(); }).filter(Boolean);
+      } else {
+        // أسطر متتالية = فقرات/بنود بالترتيب (لا تُدمج ولا تُعاد ترتيبها)
+        paras = rawBody.split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
       }
       if (!paras.length && head) paras = [''];
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="287" lang="ar" dir="rtl">
+<html data-app-ver="288" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v287.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v288.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v287.webp" alt="" draggable="false">
+          <img src="wheel-inner-v288.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v287.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v288.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6030,50 +6030,36 @@ function onPrepareImageSelected(idx, input) {
 
     /** استخراج أهم نصوص الفقرات للعرض في البوربوينت — فقرات قصيرة بحجم أكبر وتباعد أوسع */
     function prepSummarizeForPptx(text, maxPoints) {
-      maxPoints = maxPoints || 6;
+      maxPoints = maxPoints || 8;
       var raw = String(text || '').replace(/\r\n/g, '\n').trim();
       if (!raw) return [];
-      // فقرة = مجموعة أسطر مفصولة بسطر فارغ أو أكثر
+      // حافظ على ترتيب الفقرات كما كتبها المستخدم
       var paras = raw.split(/\n\s*\n+/).map(function (p) {
         return p.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-      }).filter(function (p) { return p.length >= 12; });
+      }).filter(function (p) { return p.length >= 8; });
       if (!paras.length) {
-        paras = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 12; });
+        paras = raw.split(/\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 8; });
+      }
+      // لو فقرة واحدة طويلة جدًا: قسّمها لجمل مع الحفاظ على الترتيب
+      if (paras.length === 1 && paras[0].length > 220) {
+        var parts = paras[0].split(/(?<=[.。!؟\?])\s+/).map(function (s) { return s.trim(); }).filter(function (s) { return s.length >= 12; });
+        if (parts.length >= 2) paras = parts;
       }
       var points = [];
-      function pushPoint(s, forceLarge) {
-        s = String(s || '').replace(/\s+/g, ' ').trim();
+      paras.forEach(function (p) {
+        if (points.length >= maxPoints) return;
+        var s = String(p || '').replace(/\s+/g, ' ').trim();
         s = s.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '').trim();
-        if (s.length < 10) return;
-        // تجنب التكرار
+        if (s.length < 8) return;
+        // تكرار حرفي فقط
         for (var i = 0; i < points.length; i++) {
-          if (points[i].t === s || points[i].t.indexOf(s.slice(0, 28)) === 0) return;
+          if (points[i].t === s) return;
         }
-        var isShort = forceLarge || (s.split(/[.。!؟\?]/).filter(Boolean).length <= 2 && s.length <= 160);
-        if (s.length > 180) s = s.slice(0, 177) + '…';
+        var isShort = s.length <= 140 && s.split(/[.。!؟\?]/).filter(Boolean).length <= 2;
+        if (s.length > 220) s = s.slice(0, 217) + '…';
         points.push({ t: s, large: isShort });
-      }
-      // 1) فقرات مرقّمة أو نقطية أولًا
-      paras.forEach(function (p) {
-        if (points.length >= maxPoints) return;
-        if (/^[•\-\*●▪▸►]/.test(p) || /^[\d٠-٩]+[\-\.\)]\s+/.test(p)) pushPoint(p, true);
       });
-      // 2) باقي الفقرات — القصيرة منها تُعرض كاملة بحجم كبير
-      paras.forEach(function (p) {
-        if (points.length >= maxPoints) return;
-        pushPoint(p, false);
-      });
-      // 3) إن لم يكفِ: جمل قوية
-      if (points.length < 3) {
-        var blob = paras.join(' ');
-        var sentences = blob.split(/(?<=[.。!؟\?])\s+/).map(function (s) { return s.trim(); })
-          .filter(function (s) { return s.length >= 25 && s.length <= 130; });
-        sentences.forEach(function (s) {
-          if (points.length >= maxPoints) return;
-          pushPoint(s, true);
-        });
-      }
-      return points.slice(0, maxPoints);
+      return points;
     }
 
     function _pptxYield() {
@@ -6089,7 +6075,12 @@ function onPrepareImageSelected(idx, input) {
       getPreparePagesWithImages().then(function (pagesAll) {
         return (async function () {
         var pages = (pagesAll || []).filter(function (pg) {
-          return pg && ((pg.text && String(pg.text).trim()) || pg.image || pg.hasImage || (pg.title && String(pg.title).trim()));
+          if (!pg) return false;
+          var t = String(pg.text || '').replace(/\s+/g, ' ').trim();
+          var hasText = t.length >= 12;
+          var hasImg = !!(pg.image && String(pg.image).indexOf('base64,') > 0) || !!pg.hasImage;
+          // تجاهل الصفحات الفاضية (عنوان فقط أو فارغة تمامًا)
+          return hasText || hasImg;
         });
         if (!pages.length) { showToast('لا يوجد محتوى في صفحات التحضير'); return; }
 
@@ -6145,7 +6136,19 @@ function onPrepareImageSelected(idx, input) {
           var hasLarge = points.some(function (pt) { return pt && pt.large; });
           var displayLines = points.length
             ? points.map(function (pt) { return '• ' + (pt.t || pt); })
-            : ['• راجع نص التحضير في التطبيق للتفاصيل'];
+            : [];
+          // لو التلخيص فاضي لكن في نص: خذ أسطر خام بالترتيب
+          if (!displayLines.length && pg.text) {
+            displayLines = String(pg.text).replace(/\r\n/g, '\n').split(/\n+/).map(function (x) {
+              return x.replace(/\s+/g, ' ').trim();
+            }).filter(function (x) { return x.length >= 8; }).slice(0, 7).map(function (x) {
+              return '• ' + x.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '');
+            });
+          }
+          var earlyHasImg = !!(pg && pg.image && String(pg.image).indexOf('base64,') > 0);
+          if (!displayLines.length) {
+            displayLines = earlyHasImg ? [] : ['• (لا يوجد نص في هذه الصفحة)'];
+          }
           var bodySz = hasLarge ? 2600 : 2000;
           var bodyColor = '3E2F1C';
           var accentColor = '5C4033';
@@ -6168,63 +6171,30 @@ function onPrepareImageSelected(idx, input) {
           await _pptxYield();
 
           if (hasImg) {
-            // صورة يسار + بطاقة نصوص يمين — كل نقطة في صندوق منفصل بلا تداخل
-            shapes += _pptxPic(5, 'Image', 400000, 1500000, 4600000, 4600000, embedId);
-            shapes += _pptxRect(6, 'card', 5200000, 1500000, 6600000, 4600000, 'FFFDF8', 'E8D9B5');
-            (function layoutSidePoints() {
-              var colors = ['A67C00', '5C4033', '3E2F1C', '4A6A8A', '6B5B3E', 'C45C26'];
-              var boxX = 5400000, boxW = 6200000;
-              var topY = 1650000, bottomY = 5900000;
-              var avail = bottomY - topY;
-              var n = Math.max(1, Math.min(displayLines.length, 5));
-              var gap = 80000;
-              var slot = Math.floor((avail - gap * (n - 1)) / n);
-              if (slot < 320000) slot = 320000;
-              for (var li = 0; li < n; li++) {
-                var ln = displayLines[li];
-                var isShort = (ln || '').length < 90;
-                var sz = isShort ? 2400 : (li === 0 ? 2200 : 1800);
-                var y = topY + li * (slot + gap);
-                var h = slot;
-                if (y + h > bottomY) h = Math.max(280000, bottomY - y);
-                shapes += _pptxTextBox(20 + li, 'Pt' + li, boxX, y, boxW, h, [ln], {
-                  sz: sz, bold: li === 0 || isShort, color: colors[li % colors.length], align: 'r', spcAft: 160
-                });
-              }
-            })();
+            shapes += _pptxPic(5, 'Image', 400000, 1500000, 4500000, 4700000, embedId);
+            shapes += _pptxRect(6, 'card', 5100000, 1500000, 6700000, 4700000, 'FFFDF8', 'E8D9B5');
+            // صندوق نص واحد مرتّب — بدون تداخل
+            var sideLines = displayLines.slice(0, 6);
+            var sideSz = sideLines.length <= 3 ? 2200 : (sideLines.length <= 5 ? 1800 : 1600);
+            shapes += _pptxTextBox(7, 'Body', 5300000, 1650000, 6300000, 4400000, sideLines, {
+              sz: sideSz, bold: false, color: '3E2F1C', align: 'r', spcAft: 280
+            });
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            // بدون صورة: كل نقطة في صف مستقل بمسافات واضحة
-            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4800000, 'FFFDF8', 'E8D9B5');
-            (function layoutFullPoints() {
-              var colors = ['5C4033', 'A67C00', '3E2F1C', '4A6A8A', '6B5B3E', 'C45C26'];
-              var boxX = 700000, boxW = 10800000;
-              var topY = 1680000, bottomY = 6100000;
-              var avail = bottomY - topY;
-              var n = Math.max(1, Math.min(displayLines.length, 6));
-              var gap = 100000;
-              var slot = Math.floor((avail - gap * (n - 1)) / n);
-              if (slot < 360000) slot = 360000;
-              for (var li = 0; li < n; li++) {
-                var ln = displayLines[li];
-                var isShort = (ln || '').length < 100;
-                var sz = isShort ? 2600 : (li === 0 ? 2400 : 1900);
-                var y = topY + li * (slot + gap);
-                var h = slot;
-                if (y + h > bottomY) h = Math.max(300000, bottomY - y);
-                shapes += _pptxTextBox(20 + li, 'Pt' + li, boxX, y, boxW, h, [ln], {
-                  sz: sz, bold: li === 0 || isShort, color: colors[li % colors.length], align: 'r', spcAft: 180
-                });
-              }
-            })();
-            shapes += _pptxTextBox(10, 'ImgHint', 457200, 6350000, 11277600, 280000,
-              ['💡 لإضافة صورة: افتحي الصفحة في التحضير ← أرفقي صورة ثم أعيدي التصدير'],
-              { sz: 1100, color: '8A7A60', align: 'ctr' });
+            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4900000, 'FFFDF8', 'E8D9B5');
+            var fullLines = displayLines.slice(0, 7);
+            var fullSz = fullLines.length <= 3 ? 2400 : (fullLines.length <= 5 ? 2000 : 1700);
+            // فقرات قصيرة → تباعد أكبر وحجم أكبر
+            if (points.length && points.every(function (pt) { return pt.large; })) {
+              fullSz = Math.min(2800, fullSz + 400);
+            }
+            shapes += _pptxTextBox(6, 'Body', 700000, 1680000, 10800000, 4500000, fullLines, {
+              sz: fullSz, bold: false, color: '3E2F1C', align: 'r', spcAft: 320
+            });
             slideRels[sn] = [];
           }
 
-          // رقم الشريحة LTR حتى لا ينعكس
-          shapes += _pptxTextBox(11, 'Num', 457200, 6580000, 11277600, 220000,
+          shapes += _pptxTextBox(11, 'Num', 457200, 6500000, 11277600, 250000,
             ['\u200E' + (idx + 1) + ' / ' + pages.length],
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
@@ -15531,7 +15501,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '287';
+      var APP_VER = '288';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

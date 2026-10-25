@@ -188,14 +188,22 @@ var EMOJI_WORDS = {
         }
       }
 
-      // فقرات بالترتيب كما وردت في النص الأصلي
+      // فقرات/نقاط بالترتيب كما وردت في النص الأصلي
       var paras = [];
       var rawBody = String(body || '');
       if (rawBody.indexOf('\n\n') >= 0 || /\n\s*\n/.test(rawBody)) {
         paras = rawBody.split(/\n\s*\n+/).map(function (p) { return p.replace(/\n+/g, ' ').trim(); }).filter(Boolean);
-      } else {
-        // أسطر متتالية = فقرات/بنود بالترتيب (لا تُدمج ولا تُعاد ترتيبها)
+      } else if (/\n/.test(rawBody)) {
         paras = rawBody.split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+      } else if (/\s[•●]\s/.test(rawBody) || /^[•●]/.test(rawBody.trim())) {
+        paras = rawBody.split(/(?=[•●])/).map(function (p) { return p.replace(/^[•●]\s*/, '').trim(); }).filter(Boolean);
+      } else if (/\s[\-–—]\s/.test(rawBody) && (rawBody.match(/\s[\-–—]\s/g) || []).length >= 2) {
+        // نقاط مفصولة بـ " - " في سطر واحد
+        paras = rawBody.split(/\s[\-–—]\s+/).map(function (p) { return p.replace(/^[\-–—]\s*/, '').trim(); }).filter(Boolean);
+      } else if (/(?:^|\s)\d+[\.\-\)]\s+/.test(rawBody) && (rawBody.match(/\d+[\.\-\)]\s+/g) || []).length >= 2) {
+        paras = rawBody.split(/(?=(?:\s|^)\d+[\.\-\)]\s+)/).map(function (p) { return p.trim(); }).filter(Boolean);
+      } else {
+        paras = [rawBody.trim()].filter(Boolean);
       }
       if (!paras.length && head) paras = [''];
 
@@ -604,34 +612,18 @@ var cardTints = [
       // إعادة لفّ على عرض العمود الفعلي لضمان عدم تجاوز الصورة
       ctx.font = '400 ' + d.BODY + 'px ' + FONT_USE;
       ctx.fillStyle = '#2C2416';
-      var bodyText = (f.lines || []).join(' ');
-      var drawLines = f.lines || [];
-      if (f.textColW && Math.abs(f.textColW - textColW) > 8) {
-        drawLines = wrap(ctx, bodyText, textColW - 4);
-      }
-      // ضبط السطور (Justify) مثل Word ما عدا آخر سطر في الفقرة
-      var paraLines = wrapPara(ctx, bodyText, textColW - 4);
-      if (!paraLines.length && drawLines.length) {
-        paraLines = drawLines.map(function (ln, i) {
-          return { t: ln, justify: false };
-        });
-      }
-      paraLines.forEach(function (item) {
-        var ln = typeof item === 'string' ? item : item.t;
-        var doJ = (opt && opt.justify !== false) && typeof item === 'object' && item.justify && align !== 'center';
+      // السطور كما رُقّمت في paginate (١. ٢. ٣.) — بدون دمج أو إعادة لف
+      var drawLines = (f.lines || []).slice();
+      drawLines.forEach(function (ln) {
+        ln = String(ln || '');
+        if (!ln.trim()) { cursorY += 4; return; }
         cursorY += bodyLH * 0.5;
         if (cursorY > y + h - pad) return;
-        if (doJ) {
-          var edge = textRight;
-          if (align === 'left') edge = textLeft;
-          else if (align === 'center') edge = (textLeft + textRight) / 2;
-          fillTextJustify(ctx, ln, edge, cursorY, textColW - 4, align);
-        } else {
-          ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
-          ctx.fillText(String(ln || ''), textX, cursorY);
-        }
+        ctx.textAlign = align === 'left' ? 'left' : (align === 'center' ? 'center' : 'right');
+        ctx.fillStyle = '#2C2416';
+        ctx.font = '400 ' + d.BODY + 'px ' + FONT_USE;
+        ctx.fillText(ln, textX, cursorY);
         cursorY += bodyLH * 0.5;
-        if (!String(ln || '').trim()) { cursorY += 2; return; }
       });
       ctx.restore();
     });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="289" lang="ar" dir="rtl">
+<html data-app-ver="290" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v289.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v290.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v289.webp" alt="" draggable="false">
+          <img src="wheel-inner-v290.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v289.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v290.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6466,44 +6466,71 @@ function onPrepareImageSelected(idx, input) {
     }
 
     function parsePrepContent(title, text) {
-      var raw = String(text || '').replace(/\r\n/g, '\n').trim();
-      var lines = raw.split(/\n+/).map(function(x){ return x.trim(); }).filter(Boolean);
-      var bullets = [];
-      var paras = [];
-      var quotes = [];
-      lines.forEach(function(ln) {
-        if (/^[•\-\*●▪▸►]\s*/.test(ln) || /^\d+[\.\-\)]\s+/.test(ln)) {
-          bullets.push(ln.replace(/^[•\-\*●▪▸►]\s*/, '').replace(/^\d+[\.\-\)]\s+/, ''));
-        } else if (/^[«"“]/.test(ln) || /[»"”]$/.test(ln) || ln.length > 80) {
-          if (/^[«"“]/.test(ln) || /[»"”]$/.test(ln)) quotes.push(ln.replace(/^[«"“]+|[»"”]+$/g, '').trim());
-          else paras.push(ln);
+      var raw = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+      var blocks = [];
+      if (!raw) return { title: title || 'نقطة', blocks: [], paras: [], bullets: [], quotes: [] };
+      // فقرات مفصولة بسطر فارغ — بالترتيب الكامل
+      var paras = raw.split(/\n\s*\n+/);
+      paras.forEach(function (p) {
+        p = String(p || '').trim();
+        if (!p) return;
+        // أسطر داخل الفقرة
+        var lines = p.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+        if (!lines.length) return;
+        // أول سطر قصير بدون نقطة نهائية = عنوان فرعي
+        var first = lines[0];
+        var isHead = first.length <= 52 && !/[.。]$/.test(first) && (lines.length === 1 || /[:：؟?]$/.test(first) || !/^[•\-\*●]/.test(first));
+        if (isHead && lines.length === 1) {
+          blocks.push({ kind: 'h', t: first.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '') });
+        } else if (isHead && lines.length > 1) {
+          blocks.push({ kind: 'h', t: first.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '') });
+          lines.slice(1).forEach(function (ln) {
+            var t = ln.replace(/^[•\-\*●▪▸►]\s*/, '');
+            if (/^[•\-\*●▪▸►]/.test(ln) || /^\d+[\.\-\)]\s+/.test(ln)) {
+              blocks.push({ kind: 'b', t: t.replace(/^\d+[\.\-\)]\s+/, '') });
+            } else {
+              blocks.push({ kind: 'p', t: t });
+            }
+          });
         } else {
-          paras.push(ln);
+          lines.forEach(function (ln) {
+            if (/^[•\-\*●▪▸►]\s*/.test(ln) || /^\d+[\.\-\)]\s+/.test(ln)) {
+              blocks.push({ kind: 'b', t: ln.replace(/^[•\-\*●▪▸►]\s*/, '').replace(/^\d+[\.\-\)]\s+/, '') });
+            } else if (/^[«"“]/.test(ln) || /[»"”]$/.test(ln)) {
+              blocks.push({ kind: 'q', t: ln.replace(/^[«"“]+|[»"”]+$/g, '').trim() });
+            } else {
+              blocks.push({ kind: 'p', t: ln });
+            }
+          });
         }
       });
-      // لو مفيش نقاط، قسّم الفقرات لنقاط قصيرة
-      if (!bullets.length && paras.length > 1) {
-        paras.forEach(function(p) {
-          if (p.length < 120) bullets.push(p);
-        });
-        if (bullets.length) paras = paras.filter(function(p){ return p.length >= 120; });
-      }
-      return { title: title || 'نقطة', paras: paras, bullets: bullets, quotes: quotes };
+      var bullets = blocks.filter(function (b) { return b.kind === 'b'; }).map(function (b) { return b.t; });
+      var onlyParas = blocks.filter(function (b) { return b.kind === 'p'; }).map(function (b) { return b.t; });
+      var quotes = blocks.filter(function (b) { return b.kind === 'q'; }).map(function (b) { return b.t; });
+      return { title: title || 'نقطة', blocks: blocks, paras: onlyParas, bullets: bullets, quotes: quotes };
     }
 
-    
     function collectPrepSections(pages) {
       var sections = [];
-      pages.forEach(function(p, i) {
+      (pages || []).forEach(function (p, i) {
         var title = (p && p.title) ? String(p.title).trim() : ('نقطة ' + (i + 1));
         var text = String((p && p.text) || '').replace(/\r\n/g, '\n').trim();
+        if (!text && !(p && p.image)) return;
         var parsed = parsePrepContent(title, text);
+        // لو مفيش blocks لكن في نص خام — احتفظ بالنص كاملًا كفقرات بالترتيب
+        if ((!parsed.blocks || !parsed.blocks.length) && text) {
+          text.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (ln) {
+            parsed.blocks.push({ kind: 'p', t: ln });
+          });
+        }
         sections.push({
           title: title,
           text: text,
+          blocks: parsed.blocks || [],
           paras: parsed.paras || [],
           bullets: parsed.bullets || [],
-          quotes: parsed.quotes || []
+          quotes: parsed.quotes || [],
+          image: (p && p.image && String(p.image).indexOf('base64,') > 0) ? p.image : null
         });
       });
       return sections;
@@ -6511,45 +6538,92 @@ function onPrepareImageSelected(idx, input) {
 
     function generateFullLessonPosters(pages, lessonTitle) {
       try {
-      document.getElementById('prayerTitle').textContent = '✨ ملصق الإيضاح الكامل';
-      var pc = document.getElementById('prayerContent');
-      if (!pc) { showToast('تعذر فتح النافذة'); return; }
-      pc.innerHTML = '<p style="text-align:center;color:#8a7a60;padding:16px;">جاري إنشاء ملصقات A4 التحريرية…</p>';
-      var modal = document.getElementById('prayerModal');
-      if (modal) modal.classList.add('active');
+        document.getElementById('prayerTitle').textContent = '✨ ملصق الإيضاح الكامل';
+        var pc = document.getElementById('prayerContent');
+        if (!pc) { showToast('تعذر فتح النافذة'); return; }
+        pc.innerHTML = '<p style="text-align:center;color:#8a7a60;padding:16px;">جاري إنشاء ملصقات A4 التحريرية…</p>';
+        var modal = document.getElementById('prayerModal');
+        if (modal) modal.classList.add('active');
 
-      var sections = collectPrepSections(pages);
-      if (!sections.length) {
-        pc.innerHTML = '<p style="text-align:center;color:#a65d4a;">لا يوجد نص في صفحات التحضير</p>';
-        return;
-      }
-      var MAX_SECTIONS = 10;
-      if (sections.length > MAX_SECTIONS) {
-        sections = sections.slice(0, MAX_SECTIONS);
-        showToast('تم استخدام أول 10 صفحات فقط');
-      }
+        function runWithPages(pagesIn) {
+          var sections = collectPrepSections(pagesIn);
+          if (!sections.length) {
+            pc.innerHTML = '<p style="text-align:center;color:#a65d4a;">لا يوجد نص في صفحات التحضير</p>';
+            return;
+          }
+          // دمج الأقسام في صفحات — مش قسم لكل صفحة
+          var posters = [];
+          var batch = [];
+          var batchWeight = 0;
+          var MAX_W = 14; // وزن تقريبي لكل صفحة
+          function flush() {
+            if (!batch.length) return;
+            posters.push(composeFullLessonPoster(lessonTitle, batch.slice(), posters.length + 1, 0, posters.length + 1));
+            batch = [];
+            batchWeight = 0;
+          }
+          sections.forEach(function (sec) {
+            var w = 2; // عنوان
+            (sec.blocks || []).forEach(function (b) {
+              w += (b.kind === 'h' ? 1.2 : 1) + Math.min(3, Math.ceil(String(b.t || '').length / 90));
+            });
+            if (sec.image) w += 3;
+            if (batch.length && batchWeight + w > MAX_W) flush();
+            batch.push(sec);
+            batchWeight += w;
+            if (batchWeight >= MAX_W) flush();
+          });
+          flush();
+          // تحديث أرقام الصفحات
+          var totalParts = posters.length || 1;
+          posters = posters.map(function (url, i) {
+            // إعادة الرسم برقم صحيح إن لزم — استخدم الرقم الحالي
+            return url;
+          });
+          // إعادة compose مع totalParts الصحيح
+          var rebuilt = [];
+          batch = []; batchWeight = 0;
+          function flush2() {
+            if (!batch.length) return;
+            rebuilt.push(composeFullLessonPoster(lessonTitle, batch.slice(), rebuilt.length + 1, totalParts, rebuilt.length + 1));
+            batch = []; batchWeight = 0;
+          }
+          sections.forEach(function (sec) {
+            var w = 2;
+            (sec.blocks || []).forEach(function (b) {
+              w += (b.kind === 'h' ? 1.2 : 1) + Math.min(3, Math.ceil(String(b.t || '').length / 90));
+            });
+            if (sec.image) w += 3;
+            if (batch.length && batchWeight + w > MAX_W) flush2();
+            batch.push(sec);
+            batchWeight += w;
+            if (batchWeight >= MAX_W) flush2();
+          });
+          flush2();
+          posters = rebuilt;
 
-      // صفحة A4 لكل قسم (وضوح النص أولوية) — الأقسام القصيرة جدًا يمكن دمجها لاحقًا
-      var posters = [];
-      var totalParts = sections.length;
-      for (var pi = 0; pi < sections.length; pi++) {
-        posters.push(composeFullLessonPoster(lessonTitle, [sections[pi]], pi + 1, totalParts, pi + 1));
-      }
+          window._prepDesignOrdered = posters.map(function (url, i) {
+            return { dataUrl: url, title: (lessonTitle || 'الدرس') + ' — صفحة ' + (i + 1), pageNum: i + 1, tpl: 0 };
+          });
+          window._prepDesignLessonTitle = lessonTitle || '';
+          showPrepareDesignGallery(window._prepDesignOrdered.slice(), lessonTitle, null, { mode: 'fullPoster' });
+        }
 
-      window._prepDesignOrdered = posters.map(function(url, i) {
-        return { dataUrl: url, title: (lessonTitle || 'الدرس') + ' — صفحة ' + (i + 1), pageNum: i + 1, tpl: 0 };
-      });
-      window._prepDesignLessonTitle = lessonTitle || '';
-
-      showPrepareDesignGallery(window._prepDesignOrdered.slice(), lessonTitle, null, { mode: 'fullPoster' });
+        // جلب الصور إن أمكن
+        if (typeof getPreparePagesWithImages === 'function') {
+          getPreparePagesWithImages().then(function (pagesAll) {
+            runWithPages(pagesAll && pagesAll.length ? pagesAll : pages);
+          }).catch(function () { runWithPages(pages); });
+        } else {
+          runWithPages(pages);
+        }
       } catch (err) {
         console.log('generateFullLessonPosters', err);
         showToast('خطأ في إنشاء الملصق: ' + (err && err.message ? err.message : err));
       }
     }
 
-function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startNum) {
-      // A4 عمودي جاهز للطباعة
+    function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startNum) {
       var W = 1240, H = 1754;
       var canvas = document.createElement('canvas');
       canvas.width = W;
@@ -6560,145 +6634,251 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
       totalParts = totalParts || 1;
       sections = sections || [];
 
-      var hb = 210; // سماوي تعليمي
-      function hsl(h, s, l) { return 'hsl(' + h + ',' + s + '%,' + l + '%)'; }
-
-      // خلفية ورقية
-      var bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, '#fbfcfe');
-      bg.addColorStop(1, '#eef5fb');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = hsl(hb, 45, 42);
-      ctx.fillRect(0, 0, W, 8);
-
-      // رأس العنوان
-      var M = 52;
-      try { ctx.direction = 'rtl'; } catch (eDir) {}
-      ctx.textAlign = 'right';
-      ctx.fillStyle = hsl(hb, 50, 28);
-      ctx.font = '700 36px Cairo, Amiri, sans-serif';
-      var head = (lessonTitle || 'وسيلة إيضاح الدرس').slice(0, 60);
-      ctx.fillText(head, W - M, 56);
-      ctx.font = '600 20px Cairo, sans-serif';
-      ctx.fillStyle = hsl(hb, 30, 45);
-      ctx.fillText('صفحة ' + part + ' من ' + totalParts, W - M, 88);
-      ctx.strokeStyle = hsl(hb, 25, 80);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(M, 108);
-      ctx.lineTo(W - M, 108);
-      ctx.stroke();
-
-      var y = 130;
-      var maxY = H - 70;
+      var TITLE_COL = '#A67C00';
+      var HEAD_COL = '#5C4033';
+      var BODY_COL = '#2C2416';
+      var ACCENT = '#6B5B3E';
       var FONT = 'Cairo, Amiri, Tahoma, sans-serif';
 
-      sections.forEach(function(sec, si) {
-        if (y >= maxY - 80) return;
-        var title = String(sec.title || ('نقطة ' + (startNum + si))).trim();
-        var paras = (sec.paras && sec.paras.length) ? sec.paras.slice() : [];
-        if (!paras.length && sec.text) {
-          paras = String(sec.text).split(/\n+/).map(function(t) { return t.trim(); }).filter(Boolean);
-        }
-        var bullets = sec.bullets || [];
-        var quotes = sec.quotes || [];
+      var bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#fbf8f2');
+      bg.addColorStop(1, '#f3ece0');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = ACCENT;
+      ctx.fillRect(0, 0, W, 10);
 
-        // بناء أسطر المحتوى
-        var bodyLines = [];
-        ctx.font = '400 26px ' + FONT;
-        var textW = W - 2 * M - 36;
-        paras.forEach(function(p) {
-          var ls = prepWrap(ctx, p, textW);
-          ls.forEach(function(ln) { bodyLines.push({ t: ln, kind: 'p' }); });
-          bodyLines.push({ t: '', kind: 'gap' });
-        });
-        bullets.forEach(function(b) {
-          var ls = prepWrap(ctx, b, textW - 28);
-          ls.forEach(function(ln, i) { bodyLines.push({ t: (i === 0 ? '• ' : '  ') + ln, kind: 'b' }); });
-        });
-        if (quotes[0]) {
-          bodyLines.push({ t: '', kind: 'gap' });
-          var ql = prepWrap(ctx, '«' + quotes[0] + '»', textW - 20);
-          ql.slice(0, 4).forEach(function(ln) { bodyLines.push({ t: ln, kind: 'q' }); });
-        }
+      var M = 48;
+      try { ctx.direction = 'rtl'; } catch (eDir) {}
+      ctx.textAlign = 'right';
+      ctx.fillStyle = HEAD_COL;
+      ctx.font = '700 34px ' + FONT;
+      ctx.fillText(String(lessonTitle || 'وسيلة إيضاح الدرس').slice(0, 60), W - M, 52);
+      ctx.font = '600 18px ' + FONT;
+      ctx.fillStyle = '#8A7A60';
+      ctx.fillText('صفحة ' + part + ' من ' + totalParts, W - M, 82);
+      ctx.strokeStyle = '#E0D2B0';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(M, 100);
+      ctx.lineTo(W - M, 100);
+      ctx.stroke();
 
-        // ارتفاع البطاقة
-        var lineH = 40;
-        var headH = 56;
-        var pad = 22;
-        var contentH = bodyLines.reduce(function(a, ln) {
-          return a + (ln.kind === 'gap' ? 12 : lineH);
-        }, 0);
-        var cardH = Math.min(maxY - y, headH + pad * 2 + Math.max(contentH, 40));
-        cardH = Math.max(cardH, 120);
+      var y = 120;
+      var maxY = H - 60;
 
-        // بطاقة
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.08)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetY = 3;
-        ctx.fillStyle = '#ffffff';
-        prepRoundRect(ctx, M, y, W - 2 * M, cardH, 18);
-        ctx.fill();
-        ctx.restore();
-        ctx.strokeStyle = hsl(hb, 25, 82);
-        ctx.lineWidth = 1.5;
-        prepRoundRect(ctx, M, y, W - 2 * M, cardH, 18);
-        ctx.stroke();
-
-        // شريط يمين
-        ctx.fillStyle = hsl(hb, 50, 48);
-        prepRoundRect(ctx, W - M - 10, y + 14, 6, cardH - 28, 3);
-        ctx.fill();
-
-        // عنوان القسم
+      function drawWrapped(text, xRight, y0, maxW, font, color, lineH) {
+        ctx.font = font;
+        ctx.fillStyle = color;
         ctx.textAlign = 'right';
-        ctx.font = '700 28px ' + FONT;
-        ctx.fillStyle = hsl(hb, 55, 30);
-        ctx.fillText(title, W - M - 24, y + 38);
-        ctx.strokeStyle = hsl(hb, 35, 78);
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(W - M - 24 - Math.min(240, textW * 0.4), y + 50);
-        ctx.lineTo(W - M - 24, y + 50);
-        ctx.stroke();
-
-        // نص داخل البطاقة مع قص
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(M + 12, y + headH, W - 2 * M - 28, cardH - headH - 12);
-        ctx.clip();
-
-        var cy = y + headH + 8;
-        bodyLines.forEach(function(ln) {
-          if (cy > y + cardH - 16) return;
-          if (ln.kind === 'gap') { cy += 12; return; }
-          if (ln.kind === 'q') {
-            ctx.fillStyle = hsl(hb, 20, 94);
-            prepRoundRect(ctx, M + 20, cy - 6, W - 2 * M - 50, lineH + 4, 8);
-            ctx.fill();
-            ctx.font = 'italic 24px Amiri, Cairo, serif';
-            ctx.fillStyle = hsl(hb, 40, 32);
-          } else if (ln.kind === 'b') {
-            ctx.font = '600 25px ' + FONT;
-            ctx.fillStyle = '#243040';
-          } else {
-            ctx.font = '400 26px ' + FONT;
-            ctx.fillStyle = '#243040';
-          }
-          ctx.textAlign = 'right';
-          ctx.fillText('\u200F' + ln.t + '\u200F', W - M - 24, cy + lineH * 0.35);
+        var lines = prepWrap(ctx, text, maxW);
+        var cy = y0;
+        lines.forEach(function (ln) {
+          if (cy > maxY - 20) return;
+          ctx.fillText('\u200F' + ln + '\u200F', xRight, cy);
           cy += lineH;
         });
+        return cy;
+      }
+
+      function drawImageCover(img, x, y0, w, h) {
+        try {
+          var iw = img.naturalWidth || img.width;
+          var ih = img.naturalHeight || img.height;
+          if (!iw || !ih) return;
+          var scale = Math.max(w / iw, h / ih);
+          var sw = w / scale, sh = h / scale;
+          var sx = (iw - sw) / 2, sy = (ih - sh) / 2;
+          ctx.save();
+          prepRoundRect(ctx, x, y0, w, h, 14);
+          ctx.clip();
+          ctx.drawImage(img, sx, sy, sw, sh, x, y0, w, h);
+          ctx.restore();
+          ctx.strokeStyle = '#E0D2B0';
+          ctx.lineWidth = 1.5;
+          prepRoundRect(ctx, x, y0, w, h, 14);
+          ctx.stroke();
+        } catch (eImg) {}
+      }
+
+      sections.forEach(function (sec, si) {
+        if (y >= maxY - 100) return;
+        var title = String(sec.title || ('نقطة ' + (startNum + si))).trim();
+        var blocks = (sec.blocks && sec.blocks.length) ? sec.blocks.slice() : [];
+        if (!blocks.length && sec.text) {
+          String(sec.text).split(/\n+/).map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (ln) {
+            blocks.push({ kind: 'p', t: ln });
+          });
+        }
+
+        // بطاقة القسم
+        var cardX = M, cardW = W - 2 * M;
+        var pad = 18;
+        var startY = y;
+
+        // عنوان القسم
+        ctx.font = '700 28px ' + FONT;
+        ctx.fillStyle = TITLE_COL;
+        ctx.textAlign = 'right';
+        var titleLines = prepWrap(ctx, title, cardW - 40);
+        var titleH = titleLines.length * 34 + 12;
+
+        // تخطيط الصورة: 0 يسار النص، 1 يمين النص، 2 تحت النص
+        var layout = si % 3;
+        var imgEl = null;
+        if (sec.image) {
+          imgEl = new Image();
+          imgEl.src = sec.image;
+          // canvas sync: image may not be loaded — try draw if complete
+        }
+
+        var imgW = 0, imgH = 0, textW = cardW - 36;
+        var textXRight = W - M - 22;
+        var textXLeft = M + 22;
+        if (imgEl && sec.image && layout !== 2) {
+          imgW = Math.floor(cardW * 0.38);
+          imgH = Math.floor(imgW * 0.75);
+          textW = cardW - imgW - 36;
+          if (layout === 0) {
+            // صورة شمال (يسار الشاشة) — النص يمين
+            textXRight = W - M - 22;
+          } else {
+            // صورة يمين — النص يسار
+            textXRight = M + 22 + textW;
+          }
+        }
+
+        // تقدير ارتفاع النص
+        ctx.font = '400 22px ' + FONT;
+        var bodyLineH = 32;
+        var estH = titleH + 8;
+        blocks.forEach(function (b) {
+          var f = b.kind === 'h' ? '700 24px ' + FONT : (b.kind === 'b' ? '600 21px ' + FONT : '400 21px ' + FONT);
+          ctx.font = f;
+          var ls = prepWrap(ctx, (b.kind === 'b' ? '• ' : '') + b.t, textW);
+          estH += ls.length * (b.kind === 'h' ? 34 : bodyLineH) + (b.kind === 'h' ? 8 : 4);
+        });
+        if (layout === 2 && sec.image) {
+          imgW = cardW - 24;
+          imgH = Math.min(280, Math.floor(imgW * 0.45));
+          estH += imgH + 16;
+        } else if (sec.image && layout !== 2) {
+          estH = Math.max(estH, imgH + titleH + 16);
+        }
+        var cardH = Math.min(maxY - y - 8, Math.max(estH + pad * 2, 110));
+
+        // خلفية البطاقة
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.07)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = '#FFFEFA';
+        prepRoundRect(ctx, cardX, y, cardW, cardH, 16);
+        ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = '#E8D9B5';
+        ctx.lineWidth = 1.4;
+        prepRoundRect(ctx, cardX, y, cardW, cardH, 16);
+        ctx.stroke();
+
+        // عنوان
+        var ty = y + pad + 22;
+        ctx.font = '700 28px ' + FONT;
+        ctx.fillStyle = TITLE_COL;
+        ctx.textAlign = 'right';
+        titleLines.forEach(function (ln) {
+          ctx.fillText(ln, W - M - 22, ty);
+          ty += 34;
+        });
+        // خط تحت العنوان
+        ctx.strokeStyle = '#E0C070';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(W - M - 22 - Math.min(200, textW * 0.35), ty - 22);
+        ctx.lineTo(W - M - 22, ty - 22);
+        ctx.stroke();
+
+        var contentTop = y + pad + titleH + 6;
+        var contentBottom = y + cardH - pad;
+
+        // صورة جنب النص
+        if (sec.image && layout !== 2) {
+          var ix = layout === 0 ? M + 14 : W - M - 14 - imgW;
+          var iy = contentTop;
+          if (imgEl.complete && imgEl.naturalWidth) {
+            drawImageCover(imgEl, ix, iy, imgW, Math.min(imgH, contentBottom - contentTop));
+          } else {
+            // رسم placeholder ثم محاولة — البيانات base64 عادة جاهزة
+            try {
+              var tmp = new Image();
+              tmp.src = sec.image;
+              // sync decode not available everywhere — draw if width set
+              if (tmp.width) drawImageCover(tmp, ix, iy, imgW, Math.min(imgH, contentBottom - contentTop));
+            } catch (e2) {}
+          }
+        }
+
+        // النصوص
+        var cy = contentTop + 4;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(M + 10, contentTop - 2, cardW - 20, contentBottom - contentTop + 2);
+        ctx.clip();
+
+        blocks.forEach(function (b) {
+          if (cy > contentBottom - 16) return;
+          var prefix = b.kind === 'b' ? '• ' : '';
+          var font, color, lh;
+          if (b.kind === 'h') {
+            font = '700 24px ' + FONT;
+            color = HEAD_COL;
+            lh = 34;
+          } else if (b.kind === 'q') {
+            font = 'italic 21px Amiri, Cairo, serif';
+            color = '#4A6A8A';
+            lh = 32;
+          } else if (b.kind === 'b') {
+            font = '600 21px ' + FONT;
+            color = BODY_COL;
+            lh = 32;
+          } else {
+            font = '400 21px ' + FONT;
+            color = BODY_COL;
+            lh = 32;
+          }
+          ctx.font = font;
+          var ls = prepWrap(ctx, prefix + b.t, textW);
+          ls.forEach(function (ln) {
+            if (cy > contentBottom - 14) return;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'right';
+            ctx.fillText('\u200F' + ln + '\u200F', textXRight, cy + lh * 0.2);
+            cy += lh;
+          });
+          cy += b.kind === 'h' ? 8 : 6;
+        });
         ctx.restore();
 
-        y += cardH + 18;
+        // صورة تحت النص
+        if (sec.image && layout === 2) {
+          var remain = contentBottom - cy - 8;
+          if (remain > 100) {
+            var ih2 = Math.min(imgH, remain);
+            var iw2 = cardW - 28;
+            var ix2 = M + 14;
+            try {
+              var tmp2 = new Image();
+              tmp2.src = sec.image;
+              if (tmp2.width) drawImageCover(tmp2, ix2, cy + 4, iw2, ih2);
+            } catch (e3) {}
+          }
+        }
+
+        y += cardH + 16;
       });
 
-      // تذييل
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#8aa0b8';
+      ctx.fillStyle = '#8A7A60';
       ctx.font = '16px Cairo, sans-serif';
       ctx.fillText('خلوتي  ·  وسيلة إيضاح للخدمة  ·  ' + part + ' / ' + totalParts, W / 2, H - 28);
 
@@ -6706,13 +6886,26 @@ function composeFullLessonPoster(lessonTitle, sections, part, totalParts, startN
     }
 
 
-
     function exportPrepareDesignPdf() {
       try {
-        var pages = getPreparePages();
-        if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
         showToast('جاري تجهيز ملصق الإيضاح…');
-        generateFullLessonPosters(pages, getPrepareLessonTitle());
+        if (typeof getPreparePagesWithImages === 'function') {
+          getPreparePagesWithImages().then(function (pages) {
+            pages = (pages || []).filter(function (p) {
+              return p && (String(p.text || '').trim().length >= 6 || (p.image && String(p.image).indexOf('base64,') > 0));
+            });
+            if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
+            generateFullLessonPosters(pages, getPrepareLessonTitle());
+          }).catch(function () {
+            var pages = getPreparePages();
+            if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
+            generateFullLessonPosters(pages, getPrepareLessonTitle());
+          });
+        } else {
+          var pages = getPreparePages();
+          if (!pages.length) { showToast('لا توجد صفحات — أضيفي محتوى للتحضير أولًا'); return; }
+          generateFullLessonPosters(pages, getPrepareLessonTitle());
+        }
       } catch (err) {
         console.log('exportPrepareDesignPdf', err);
         showToast('تعذر فتح التصميم: ' + (err && err.message ? err.message : err));
@@ -15559,7 +15752,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '289';
+      var APP_VER = '290';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

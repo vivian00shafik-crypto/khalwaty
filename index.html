@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html data-app-ver="271" lang="ar" dir="rtl">
+<html data-app-ver="272" lang="ar" dir="rtl">
 <head>
+<script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="theme-color" content="#f5e6c8">
@@ -1743,7 +1744,7 @@
       <div class="jesus-wheel" id="jesusWheel">
         <img class="wheel-layer" src="wheel-bg-v270.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v271.webp" alt="" draggable="false">
+          <img src="wheel-inner-v272.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات ومسموعة" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -9135,6 +9136,7 @@ function openTextModal(type) {
     }
 
     function queueMissedNotificationsForLater() {
+      if (window.KH_NATIVE) { window._missedNotifQueue = []; return []; }
       var now = new Date();
       var day = (typeof getDateKey === 'function') ? getDateKey(now) : '';
       var mins = now.getHours() * 60 + now.getMinutes();
@@ -9187,6 +9189,7 @@ function openTextModal(type) {
     }
 
     function scheduleMissedNotificationsAfterHymn() {
+      if (window.KH_NATIVE) return;
       if (window._missedNotifTimer) {
         try { clearTimeout(window._missedNotifTimer); } catch (e) {}
         window._missedNotifTimer = null;
@@ -9402,6 +9405,7 @@ function openTextModal(type) {
 
     /** جدولة إشعار صوت يسوع في الوقت اللي المستخدم محدداه — حتى والتطبيق مقفول */
     async function scheduleJesusNotificationForUserTime() {
+      if (window.KH_NATIVE) { return window.khNativeReschedule && window.khNativeReschedule(); }
       try {
         if (!('Notification' in window) || Notification.permission !== 'granted') {
           console.log('jesus schedule: no permission');
@@ -9586,6 +9590,7 @@ function openTextModal(type) {
 
 
     function tickScheduledAlarms() {
+      if (window.KH_NATIVE) return;
       if (!('Notification' in window)) return;
       if (Notification.permission !== 'granted') return;
       // أثناء الترنيمة أو أول دقيقتين بعدها: متبعتش فائت هنا (بيتسلم من طابور ما بعد الترنيمة)
@@ -13249,6 +13254,7 @@ function showDesignSavePreview(url, name, silent, blob) {
 
     /** إعادة جدولة كل التنبيهات للخلفية (أجبية + صوت يسوع) */
     async function rescheduleAllBackgroundNotifications() {
+      if (window.KH_NATIVE) { return window.khNativeReschedule && window.khNativeReschedule(); }
       try {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         // أجبية
@@ -13283,6 +13289,7 @@ function showDesignSavePreview(url, name, silent, blob) {
     }
 
     async function scheduleAgpeyaNotifications() {
+      if (window.KH_NATIVE) { return window.khNativeReschedule && window.khNativeReschedule(); }
       try {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         const list = (typeof getAgpeyaAlarms === 'function' ? getAgpeyaAlarms() : []).filter(function(a){ return a.enabled; });
@@ -13682,6 +13689,7 @@ function showDesignSavePreview(url, name, silent, blob) {
     }
 
     async function showAppNotification(title, body, opts) {
+      if (window.KH_NATIVE) { return window.khNativeShowNow ? window.khNativeShowNow(title, body, (opts && opts.data) || {}) : false; }
       opts = opts || {};
       try {
         if (!('Notification' in window)) {
@@ -13732,6 +13740,7 @@ function showDesignSavePreview(url, name, silent, blob) {
     }
 
 function requestNotifyPermission() {
+      if (window.KH_NATIVE) { window.khNativeRequestPermission().then(function(p) { if (p === 'granted') { if (typeof showToast === 'function') showToast('تم تفعيل الإشعارات ✓'); window.khNativeReschedule(); window.khNativeCheckExact(); setTimeout(function(){ if (typeof testNotificationNow === 'function') testNotificationNow(); }, 800); } else { alert('الإشعارات مرفوضة. فعّليها من إعدادات الموبايل ← التطبيقات ← خلوتي ← الإشعارات.'); } }); return; }
       // تشخيص واضح لحالة الإذن
       if (typeof window.isSecureContext !== 'undefined' && !window.isSecureContext) {
         alert('الإشعارات لا تعمل إلا على رابط آمن (https).\nافتحي التطبيق من رابط GitHub Pages مش من ملف محلي.');
@@ -15044,6 +15053,7 @@ function dayScore(d) {
     
     // فاحص مواعيد صلوات الأجبية والتطبيق مفتوح
     function tickAgpeyaAlarmsForeground() {
+      if (window.KH_NATIVE) return;
       try {
         if (typeof getAgpeyaAlarms !== 'function') return;
         var now = new Date();
@@ -15069,6 +15079,7 @@ function dayScore(d) {
     }
     
     function scheduleNextAgpeyaTimeouts() {
+      if (window.KH_NATIVE) return;
       try {
         if (window._agpeyaTimeouts) {
           window._agpeyaTimeouts.forEach(function(t){ clearTimeout(t); });
@@ -15483,7 +15494,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '271';
+      var APP_VER = '272';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -15574,5 +15585,198 @@ function dayScore(d) {
     });
   </script>
   <script src="khalwaty-poster.js?v=229"></script>
+<script>
+/* ===== خلوتي — الإشعارات الأصلية لأندرويد (Capacitor Local Notifications) =====
+   بتجدول كل صلاة + صوت يسوع + التذكيرات كمنبّه يومي على الموبايل نفسه،
+   فتوصل في ميعادها بالظبط حتى لو التطبيق مقفول أو الموبايل نايم.
+   بتشتغل بس جوه تطبيق Capacitor؛ في المتصفح العادي الكود القديم هو اللي بيشتغل. */
+(function() {
+  if (!window.KH_NATIVE) return;
+  var CH_ID = 'khalwati-prayers-v1';
+  var CH_SOUND = 'prayer_alarm.mp3'; /* لازم الملف يكون في android/app/src/main/res/raw/prayer_alarm.mp3 */
+  var LN = null;
+  function ln() {
+    if (LN) return LN;
+    try { LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications; } catch (e) {}
+    return LN;
+  }
+  var permState = 'prompt';
+  window.khNativePermission = function() { return permState; };
+
+  /* ---- شيم لـ Notification عشان باقي الكود (اللي بيفحص Notification.permission) يكمّل شغل ---- */
+  (function installShim() {
+    function KhNotification(title, opts) { khShowNow(title, (opts && opts.body) || '', (opts && opts.data) || {}); }
+    Object.defineProperty(KhNotification, 'permission', { get: function() { return permState; } });
+    KhNotification.requestPermission = function(cb) {
+      var p = khRequestPermission().then(function() { return permState; });
+      if (typeof cb === 'function') p.then(cb);
+      return p;
+    };
+    try { window.Notification = KhNotification; } catch (e) {}
+  })();
+
+  async function khRequestPermission() {
+    var p = ln();
+    if (!p) { permState = 'denied'; return permState; }
+    try {
+      var cur = await p.checkPermissions();
+      var res = (cur && cur.display === 'granted') ? cur : await p.requestPermissions();
+      permState = (res && res.display === 'granted') ? 'granted' : 'denied';
+    } catch (e) { permState = 'denied'; console.log('khRequestPermission', e); }
+    if (permState === 'granted') { try { await khEnsureChannel(); await khCheckExact(false); } catch (e) {} }
+    return permState;
+  }
+  window.khNativeRequestPermission = khRequestPermission;
+
+  async function khEnsureChannel() {
+    var p = ln(); if (!p || !p.createChannel) return;
+    try {
+      await p.createChannel({
+        id: CH_ID, name: 'مواعيد الصلاة وصوت يسوع', description: 'تنبيهات الأجبية وصوت يسوع والتذكيرات',
+        importance: 5, visibility: 1, vibration: true, lights: true, sound: CH_SOUND
+      });
+    } catch (e) { console.log('createChannel', e); }
+  }
+
+  /* أندرويد 12+ : لازم المستخدم يفعّل "المنبهات والتذكيرات" عشان الميعاد يبقى بالثانية */
+  async function khCheckExact(askUser) {
+    var p = ln(); if (!p || !p.checkExactNotificationSetting) return true;
+    try {
+      var r = await p.checkExactNotificationSetting();
+      if (r && r.exact_alarm === 'granted') return true;
+      if (askUser && p.changeExactNotificationSetting) {
+        if (confirm('عشان إشعار الصلاة يوصل في ميعاده بالظبط، فعّلي «المنبهات والتذكيرات» لخلوتي من الشاشة اللي هتفتح.')) {
+          await p.changeExactNotificationSetting();
+        }
+      }
+      return false;
+    } catch (e) { return true; }
+  }
+  window.khNativeCheckExact = function() { return khCheckExact(true); };
+
+  function hm(t) {
+    if (!t || String(t).indexOf(':') < 0) return null;
+    var p = String(t).split(':'); var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+    return { hour: h, minute: m };
+  }
+
+  function buildList() {
+    var out = [];
+    /* الأجبية */
+    try {
+      var al = (typeof getAgpeyaAlarms === 'function') ? getAgpeyaAlarms() : [];
+      al.forEach(function(a, i) {
+        if (!a || !a.enabled) return;
+        var t = hm(a.time); if (!t) return;
+        out.push({
+          id: 1101 + i, title: 'خلوتي — حان وقت صلاة ' + (a.name || ''),
+          body: 'قوموا يا بني النور 🔔', hour: t.hour, minute: t.minute,
+          extra: { type: 'agpeya', hour: a.name || a.id, playAlarm: true, sound: 'prayer-alarm' }
+        });
+      });
+    } catch (e) { console.log('kh buildList agpeya', e); }
+    /* صوت يسوع اليومي */
+    try {
+      var jt = hm(localStorage.getItem('khalwati_msg_time') || '21:00');
+      if (jt) out.push({
+        id: 1201, title: 'خلوتي — صوت يسوع اليومي', body: 'اضغطي لتسمعي صوت يسوع وآية اليوم 🔔',
+        hour: jt.hour, minute: jt.minute, extra: { type: 'jesus', play: true }
+      });
+    } catch (e) {}
+    /* تذكيرات مخصصة */
+    try {
+      var cr = JSON.parse(localStorage.getItem('khalwati_custom_reminders') || '[]');
+      if (Array.isArray(cr)) cr.forEach(function(r, i) {
+        if (!r || !r.enabled || !r.time) return;
+        var t = hm(r.time); if (!t) return;
+        out.push({
+          id: 1301 + i, title: r.title || 'خلوتي — تذكير', body: r.body || 'حان موعد تذكيرك',
+          hour: t.hour, minute: t.minute, extra: { type: 'custom', id: r.id || i }
+        });
+      });
+    } catch (e) {}
+    return out;
+  }
+
+  var chain = Promise.resolve();
+  var debounceT = null;
+  function khNativeReschedule() {
+    return new Promise(function(resolve) {
+      if (debounceT) clearTimeout(debounceT);
+      debounceT = setTimeout(function() {
+        chain = chain.then(doReschedule).then(resolve, resolve);
+      }, 400);
+    });
+  }
+  window.khNativeReschedule = khNativeReschedule;
+
+  async function doReschedule() {
+    var p = ln(); if (!p) return;
+    try {
+      if (permState !== 'granted') {
+        var c = await p.checkPermissions();
+        permState = (c && c.display === 'granted') ? 'granted' : permState;
+      }
+      if (permState !== 'granted') return; /* هيتفعّل لما المستخدمة تدوس تفعيل الإشعارات */
+      await khEnsureChannel();
+      /* امسحي القديم بتاعنا فقط */
+      try {
+        var pend = await p.getPending();
+        var mine = ((pend && pend.notifications) || []).filter(function(n) { return n.id >= 1000 && n.id < 2000; });
+        if (mine.length) await p.cancel({ notifications: mine.map(function(n) { return { id: n.id }; }) });
+      } catch (e) {}
+      var list = buildList();
+      if (!list.length) return;
+      await p.schedule({
+        notifications: list.map(function(n) {
+          return {
+            id: n.id, title: n.title, body: n.body, channelId: CH_ID, extra: n.extra,
+            schedule: { on: { hour: n.hour, minute: n.minute }, allowWhileIdle: true }
+          };
+        })
+      });
+      console.log('KH native: scheduled', list.length, 'daily notifications');
+    } catch (e) { console.log('doReschedule', e); }
+  }
+
+  async function khShowNow(title, body, data) {
+    var p = ln(); if (!p) return false;
+    try {
+      if (permState !== 'granted') { await khRequestPermission(); if (permState !== 'granted') return false; }
+      await khEnsureChannel();
+      await p.schedule({ notifications: [{
+        id: 1900 + Math.floor(Math.random() * 90), title: title, body: body || '', channelId: CH_ID,
+        extra: data || {}, schedule: { at: new Date(Date.now() + 700), allowWhileIdle: true }
+      }] });
+      return true;
+    } catch (e) { console.log('khShowNow', e); return false; }
+  }
+  window.khNativeShowNow = khShowNow;
+
+  /* ---- لما المستخدمة تضغط على الإشعار ---- */
+  function onTap(d) {
+    d = d || {};
+    try {
+      if (d.type === 'agpeya' || d.playAlarm) {
+        if (typeof playPrayerAlarmSound === 'function') playPrayerAlarmSound();
+        if (typeof showToast === 'function') showToast('🔔 حان وقت صلاة ' + (d.hour || ''));
+      }
+      if (d.type === 'jesus' || d.play) {
+        if (typeof playSawtRabina === 'function') playSawtRabina();
+        if (typeof deliverJesusVoiceVerse === 'function') { window._forceJesusTest = true; deliverJesusVoiceVerse(); }
+      }
+    } catch (e) { console.log('kh onTap', e); }
+  }
+  function bind() {
+    var p = ln(); if (!p || !p.addListener) return;
+    try { p.addListener('localNotificationActionPerformed', function(ev) { onTap(ev && ev.notification && ev.notification.extra); }); } catch (e) {}
+    khRequestPermission().then(function() { if (permState === 'granted') khNativeReschedule(); });
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) khNativeReschedule(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+</script>
+
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="285" lang="ar" dir="rtl">
+<html data-app-ver="287" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v285.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v287.webp" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v285.webp" alt="" draggable="false">
+          <img src="wheel-inner-v287.webp" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v285.webp" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v287.webp" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6168,52 +6168,63 @@ function onPrepareImageSelected(idx, input) {
           await _pptxYield();
 
           if (hasImg) {
-            // صورة + نصوص مهمة بألوان وأحجام متنوعة
-            shapes += _pptxPic(5, 'Image', 457200, 1500000, 4800000, 4200000, embedId);
-            shapes += _pptxRect(6, 'card', 5500000, 1500000, 6200000, 4200000, 'FFFDF8', 'E8D9B5');
-            // عنوان فرعي بلون ذهبي
-            if (points.length) {
-              shapes += _pptxTextBox(7, 'BodyMain', 5750000, 1650000, 5800000, 1200000, [displayLines[0]], {
-                sz: bodySz + 200, bold: true, color: 'A67C00', align: 'r'
-              });
-              if (displayLines.length > 1) {
-                shapes += _pptxTextBox(8, 'BodyRest', 5750000, 2900000, 5800000, 2600000, displayLines.slice(1), {
-                  sz: bodySz - 200, bold: false, color: accentColor, align: 'r'
+            // صورة يسار + بطاقة نصوص يمين — كل نقطة في صندوق منفصل بلا تداخل
+            shapes += _pptxPic(5, 'Image', 400000, 1500000, 4600000, 4600000, embedId);
+            shapes += _pptxRect(6, 'card', 5200000, 1500000, 6600000, 4600000, 'FFFDF8', 'E8D9B5');
+            (function layoutSidePoints() {
+              var colors = ['A67C00', '5C4033', '3E2F1C', '4A6A8A', '6B5B3E', 'C45C26'];
+              var boxX = 5400000, boxW = 6200000;
+              var topY = 1650000, bottomY = 5900000;
+              var avail = bottomY - topY;
+              var n = Math.max(1, Math.min(displayLines.length, 5));
+              var gap = 80000;
+              var slot = Math.floor((avail - gap * (n - 1)) / n);
+              if (slot < 320000) slot = 320000;
+              for (var li = 0; li < n; li++) {
+                var ln = displayLines[li];
+                var isShort = (ln || '').length < 90;
+                var sz = isShort ? 2400 : (li === 0 ? 2200 : 1800);
+                var y = topY + li * (slot + gap);
+                var h = slot;
+                if (y + h > bottomY) h = Math.max(280000, bottomY - y);
+                shapes += _pptxTextBox(20 + li, 'Pt' + li, boxX, y, boxW, h, [ln], {
+                  sz: sz, bold: li === 0 || isShort, color: colors[li % colors.length], align: 'r', spcAft: 160
                 });
               }
-            } else {
-              shapes += _pptxTextBox(7, 'Body', 5750000, 1650000, 5800000, 3900000, displayLines, {
-                sz: bodySz, bold: true, color: bodyColor, align: 'r'
-              });
-            }
+            })();
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            // بدون صورة: بطاقة نصوص كبيرة واضحة — فقرات قصيرة بحجم أكبر وتباعد
-            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4500000, 'FFFDF8', 'E8D9B5');
-            if (points.length && hasLarge) {
-              // أول فقرة كبيرة بلون بني غامق
-              shapes += _pptxTextBox(6, 'BodyMain', 700000, 1700000, 10800000, 1600000, [displayLines[0]], {
-                sz: 2800, bold: true, color: '5C4033', align: 'r'
-              });
-              if (displayLines.length > 1) {
-                shapes += _pptxTextBox(7, 'BodyRest', 700000, 3400000, 10800000, 2300000, displayLines.slice(1), {
-                  sz: 2200, bold: false, color: '3E2F1C', align: 'r'
+            // بدون صورة: كل نقطة في صف مستقل بمسافات واضحة
+            shapes += _pptxRect(5, 'card', 457200, 1500000, 11277600, 4800000, 'FFFDF8', 'E8D9B5');
+            (function layoutFullPoints() {
+              var colors = ['5C4033', 'A67C00', '3E2F1C', '4A6A8A', '6B5B3E', 'C45C26'];
+              var boxX = 700000, boxW = 10800000;
+              var topY = 1680000, bottomY = 6100000;
+              var avail = bottomY - topY;
+              var n = Math.max(1, Math.min(displayLines.length, 6));
+              var gap = 100000;
+              var slot = Math.floor((avail - gap * (n - 1)) / n);
+              if (slot < 360000) slot = 360000;
+              for (var li = 0; li < n; li++) {
+                var ln = displayLines[li];
+                var isShort = (ln || '').length < 100;
+                var sz = isShort ? 2600 : (li === 0 ? 2400 : 1900);
+                var y = topY + li * (slot + gap);
+                var h = slot;
+                if (y + h > bottomY) h = Math.max(300000, bottomY - y);
+                shapes += _pptxTextBox(20 + li, 'Pt' + li, boxX, y, boxW, h, [ln], {
+                  sz: sz, bold: li === 0 || isShort, color: colors[li % colors.length], align: 'r', spcAft: 180
                 });
               }
-            } else {
-              shapes += _pptxTextBox(6, 'Body', 700000, 1700000, 10800000, 4100000, displayLines, {
-                sz: bodySz, bold: true, color: bodyColor, align: 'r'
-              });
-            }
-            // تلميح لإضافة صورة
-            shapes += _pptxTextBox(10, 'ImgHint', 457200, 6100000, 11277600, 350000,
-              ['💡 لإضافة صورة: افتحي الصفحة في التحضير ← أرفقي صورة من الموبايل ثم أعيدي تصدير البوربوينت'],
+            })();
+            shapes += _pptxTextBox(10, 'ImgHint', 457200, 6350000, 11277600, 280000,
+              ['💡 لإضافة صورة: افتحي الصفحة في التحضير ← أرفقي صورة ثم أعيدي التصدير'],
               { sz: 1100, color: '8A7A60', align: 'ctr' });
             slideRels[sn] = [];
           }
 
           // رقم الشريحة LTR حتى لا ينعكس
-          shapes += _pptxTextBox(11, 'Num', 457200, 6450000, 11277600, 280000,
+          shapes += _pptxTextBox(11, 'Num', 457200, 6580000, 11277600, 220000,
             ['\u200E' + (idx + 1) + ' / ' + pages.length],
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
@@ -15520,7 +15531,7 @@ function dayScore(d) {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '285';
+      var APP_VER = '287';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

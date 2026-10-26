@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="296" lang="ar" dir="rtl">
+<html data-app-ver="297" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v296.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v296.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v297.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v296.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v296.webp'" alt="" draggable="false">
+          <img src="wheel-inner-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v297.webp'" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v296.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v296.webp'" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v297.webp'" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -1888,44 +1888,82 @@
         var email = 'vivian00shafik@gmail.com';
         var subject = 'رسالة من تطبيق خلوتي';
         var msg = 'مرحباً، أود التواصل بخصوص تطبيق خلوتي';
-        var mailto = 'mailto:' + email +
+        var mailto = 'mailto:' + encodeURIComponent(email).replace(/%40/g, '@') +
           '?subject=' + encodeURIComponent(subject) +
           '&body=' + encodeURIComponent(msg);
-        // Gmail ويب (يُستخدم لو mailto غير متاح)
-        var gmailWeb = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) +
+        // ملاحظة: encodeURIComponent على الإيميل كامل يكسّر mailto — نستخدم الإيميل خام
+        mailto = 'mailto:' + email +
+          '?subject=' + encodeURIComponent(subject) +
+          '&body=' + encodeURIComponent(msg);
+        var gmailWeb = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=' + encodeURIComponent(email) +
           '&su=' + encodeURIComponent(subject) +
           '&body=' + encodeURIComponent(msg);
-        try {
-          // أولاً: فتح تطبيق البريد / Gmail عبر mailto
-          var a = document.createElement('a');
-          a.href = mailto;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          if (typeof showToast === 'function') {
-            showToast('جاري فتح رسالة إلى ' + email);
-          }
-          // احتياطي بعد لحظة: Gmail في المتصفح
-          setTimeout(function () {
-            try {
-              // لا نفتح تلقائيًا دائمًا حتى لا تتكرر نافذتان — فقط لو المستخدم ما زال في الصفحة
-            } catch (e0) {}
-          }, 800);
-        } catch (e) {
+
+        function tryOpen(url) {
           try {
-            window.location.href = mailto;
-          } catch (e2) {
-            window.open(gmailWeb, '_blank', 'noopener');
-          }
+            var w = window.open(url, '_blank');
+            if (w) { try { w.focus(); } catch (eF) {} return true; }
+          } catch (e1) {}
+          try {
+            var a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () { try { document.body.removeChild(a); } catch (eR) {} }, 100);
+            return true;
+          } catch (e2) {}
+          try {
+            window.location.href = url;
+            return true;
+          } catch (e3) {}
+          return false;
         }
+
+        // 1) Capacitor Browser إن وُجد
+        try {
+          var Cap = window.Capacitor;
+          if (Cap && Cap.Plugins && Cap.Plugins.Browser && typeof Cap.Plugins.Browser.open === 'function') {
+            Cap.Plugins.Browser.open({ url: gmailWeb });
+            if (typeof showToast === 'function') showToast('فتحنا Gmail…');
+            return;
+          }
+        } catch (eCap) {}
+
+        // 2) Gmail ويب (أوثق من mailto داخل المتصفح/PWA)
+        var ok = tryOpen(gmailWeb);
+        if (ok) {
+          if (typeof showToast === 'function') showToast('فتحنا رسالة Gmail إلى ' + email);
+          return;
+        }
+
+        // 3) mailto لتطبيق البريد على الجهاز
+        ok = tryOpen(mailto);
+        if (ok) {
+          if (typeof showToast === 'function') showToast('فتحنا تطبيق البريد…');
+          return;
+        }
+
+        // 4) آخر حل: نسخ العنوان
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(email).then(function () {
+              if (typeof showToast === 'function') showToast('تعذر الفتح — تم نسخ: ' + email);
+              else alert('راسلينا على: ' + email);
+            });
+            return;
+          }
+        } catch (eCl) {}
+        alert('راسلينا على: ' + email);
       };
       function fallbackContact(msg) {
         var email = 'vivian00shafik@gmail.com';
-        window.location.href = 'mailto:' + email +
-          '?subject=' + encodeURIComponent('رسالة من تطبيق خلوتي') +
+        var url = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=' + encodeURIComponent(email) +
+          '&su=' + encodeURIComponent('رسالة من تطبيق خلوتي') +
           '&body=' + encodeURIComponent(msg || 'مرحباً، أود التواصل بخصوص تطبيق خلوتي');
+        try { window.open(url, '_blank'); } catch (e) { window.location.href = url; }
       }
     })();
     </script>
@@ -6848,7 +6886,7 @@ function onPrepareImageSelected(idx, input) {
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=296';
+            s.src = 'khalwaty-poster.js?v=297';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -15695,7 +15733,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '296';
+      var APP_VER = '297';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -15785,7 +15823,7 @@ function playProgressFinalVideo() {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=296"></script>
+  <script src="khalwaty-poster.js?v=297"></script>
 <script>
 /* ===== خلوتي — الإشعارات الأصلية لأندرويد (Capacitor Local Notifications) =====
    بتجدول كل صلاة + صوت يسوع + التذكيرات كمنبّه يومي على الموبايل نفسه،

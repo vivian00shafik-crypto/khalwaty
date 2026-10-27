@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="300" lang="ar" dir="rtl">
+<html data-app-ver="301" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -7623,10 +7623,24 @@ function onPrepareImageSelected(idx, input) {
     
     function openInAppPage(url, title) {
       if (!url) return;
-      // مواقع ترفض iframe (جوجل وغيره)
-      if (/google\./i.test(String(url)) || /facebook\.|youtube\.|accounts\./i.test(String(url))) {
-        var w = window.open(url, '_blank', 'noopener');
-        if (!w) { try { location.href = url; } catch (e) {} }
+      url = String(url).trim();
+      if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
+        url = 'https://' + url.replace(/^\/+/, '');
+      }
+      // مواقع ترفض iframe أو تعمل بشكل أفضل خارجيًا
+      var forceExt = /google\.|facebook\.|youtube\.|accounts\.|drive\.google|docs\.google|github\.|archive\.org|scribd\.|pdf|dropbox\.|mediafire\.|whatsapp\.|t\.me\.|telegram\./i.test(url);
+      if (forceExt) {
+        var w = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!w) {
+          try {
+            var a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener';
+            document.body.appendChild(a); a.click();
+            setTimeout(function(){ try { document.body.removeChild(a); } catch(e){} }, 100);
+          } catch (e0) {
+            try { location.href = url; } catch (e1) {}
+          }
+        }
         if (typeof showToast === 'function') showToast('تم الفتح في المتصفح');
         return;
       }
@@ -7662,8 +7676,21 @@ function onPrepareImageSelected(idx, input) {
       var loaded = false;
 
       function openExternal() {
-        try { window.open(url, '_blank', 'noopener'); }
-        catch (e) { location.href = url; }
+        try {
+          var w = window.open(url, '_blank', 'noopener,noreferrer');
+          if (w) return;
+        } catch (e0) {}
+        try {
+          var a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { try { document.body.removeChild(a); } catch (eR) {} }, 100);
+          return;
+        } catch (e1) {}
+        try { location.href = url; } catch (e2) {}
       }
 
       if (frame) {
@@ -14490,17 +14517,41 @@ function requestNotifyPermission() {
     window.spOpenBookUrl = function (i) {
       var book = getSpiritualBooks()[i];
       if (!book || !book.url) { showToast('لا يوجد رابط'); return; }
-      spShowLoading('جاري فتح الرابط…');
-      setTimeout(function () {
+      var url = String(book.url || '').trim();
+      if (!url) { showToast('لا يوجد رابط'); return; }
+      // تطبيع الرابط
+      if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
+        url = 'https://' + url.replace(/^\/+/, '');
+      }
+      try {
+        // فتح مباشر خارجي (أوثق — كثير من المواقع تمنع iframe)
+        var w = window.open(url, '_blank', 'noopener,noreferrer');
+        if (w) {
+          if (typeof showToast === 'function') showToast('تم فتح الرابط');
+          return;
+        }
+        // لو المتصفح منع النافذة: عارض داخلي مع زر فتح خارجي
+        if (typeof openInAppPage === 'function') {
+          openInAppPage(url, book.name || 'كتاب');
+          return;
+        }
+        // آخر حل
+        var a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { try { document.body.removeChild(a); } catch (eR) {} }, 100);
+        if (typeof showToast === 'function') showToast('تم فتح الرابط');
+      } catch (e) {
         try {
-          if (typeof openInAppPage === 'function') openInAppPage(book.url, book.name || 'كتاب');
-          else window.open(book.url, '_blank');
-          spHideLoading('تم فتح الرابط');
-        } catch (e) {
-          spHideLoading();
+          if (typeof openInAppPage === 'function') openInAppPage(url, book.name || 'كتاب');
+          else window.location.href = url;
+        } catch (e2) {
           showToast('تعذر فتح الرابط');
         }
-      }, 150);
+      }
     };
 
     window.spOpenBookFile = function (i) {
@@ -15886,7 +15937,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '300';
+      var APP_VER = '301';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

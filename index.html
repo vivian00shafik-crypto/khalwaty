@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="298" lang="ar" dir="rtl">
+<html data-app-ver="299" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -4088,7 +4088,7 @@
 
       window._fromSearch = false;
       bibleState.testament = testament || 'OT';
-      document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
+      document.getElementById('prayerTitle').textContent = (typeof getAppLang==='function' && getAppLang()==='en') ? 'Holy Bible — WEB' : 'الكتاب المقدس';
       document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">جاري تحميل الكتاب المقدس…</p>';
       document.getElementById('prayerModal').classList.add('active');
       ensureBibleLoaded(function() {
@@ -4430,7 +4430,58 @@ function bibleSpeakText(text, onEnd) {
     }
 
 
-    function renderBible() {
+    
+    var WEB_BOOK_NAMES = {
+      Gen:'Genesis', Exod:'Exodus', Lev:'Leviticus', Num:'Numbers', Deut:'Deuteronomy',
+      Josh:'Joshua', Judg:'Judges', Ruth:'Ruth', '1Sam':'1 Samuel', '2Sam':'2 Samuel',
+      '1Kgs':'1 Kings', '2Kgs':'2 Kings', '1Chr':'1 Chronicles', '2Chr':'2 Chronicles',
+      Ezra:'Ezra', Neh:'Nehemiah', Esth:'Esther', Job:'Job', Ps:'Psalms', Prov:'Proverbs',
+      Eccl:'Ecclesiastes', Song:'Song of Solomon', Isa:'Isaiah', Jer:'Jeremiah', Lam:'Lamentations',
+      Ezek:'Ezekiel', Dan:'Daniel', Hos:'Hosea', Joel:'Joel', Amos:'Amos', Obad:'Obadiah',
+      Jonah:'Jonah', Mic:'Micah', Nah:'Nahum', Hab:'Habakkuk', Zeph:'Zephaniah', Hag:'Haggai',
+      Zech:'Zechariah', Mal:'Malachi', Matt:'Matthew', Mark:'Mark', Luke:'Luke', John:'John',
+      Acts:'Acts', Rom:'Romans', '1Cor':'1 Corinthians', '2Cor':'2 Corinthians', Gal:'Galatians',
+      Eph:'Ephesians', Phil:'Philippians', Col:'Colossians', '1Thess':'1 Thessalonians',
+      '2Thess':'2 Thessalonians', '1Tim':'1 Timothy', '2Tim':'2 Timothy', Titus:'Titus',
+      Phlm:'Philemon', Heb:'Hebrews', Jas:'James', '1Pet':'1 Peter', '2Pet':'2 Peter',
+      '1John':'1 John', '2John':'2 John', '3John':'3 John', Jude:'Jude', Rev:'Revelation'
+    };
+    window._webChapterCache = window._webChapterCache || {};
+    function getAppLang() {
+      return (localStorage.getItem('khalwati_lang') || 'ar').toLowerCase().indexOf('en') === 0 ? 'en' : 'ar';
+    }
+    function webBookQuery(book) {
+      if (!book) return '';
+      var code = String(book.code || '').trim();
+      if (WEB_BOOK_NAMES[code]) return WEB_BOOK_NAMES[code];
+      if (book.nameEn) return book.nameEn;
+      return code || '';
+    }
+    function fetchWebChapter(book, chapterIndex, cb) {
+      var q = webBookQuery(book);
+      if (!q) { cb(null); return; }
+      var ch = (chapterIndex | 0) + 1;
+      var key = q + '|' + ch;
+      if (window._webChapterCache[key]) { cb(window._webChapterCache[key]); return; }
+      var url = 'https://bible-api.com/' + encodeURIComponent(q + ' ' + ch) + '?translation=web';
+      fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+          var verses = [];
+          if (data && data.verses && data.verses.length) {
+            verses = data.verses.map(function (v) {
+              return String(v.text || '').replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ');
+            });
+          } else if (data && data.text) {
+            verses = [String(data.text).trim()];
+          }
+          window._webChapterCache[key] = verses;
+          cb(verses);
+        })
+        .catch(function () { cb(null); });
+    }
+
+function renderBible() {
       const bible = window.BIBLE_SVD;
       if (!bible) return;
       const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : bible.books;
@@ -4439,7 +4490,20 @@ function bibleSpeakText(text, onEnd) {
       if (!book) return;
       const chCount = book.chapters.length;
       if (bibleState.chapter >= chCount) bibleState.chapter = 0;
-      const verses = book.chapters[bibleState.chapter] || [];
+      var appLang = (typeof getAppLang === 'function') ? getAppLang() : 'ar';
+      var verses = book.chapters[bibleState.chapter] || [];
+      if (appLang === 'en' && typeof fetchWebChapter === 'function') {
+        var wkey = (webBookQuery(book) || '') + '|' + (bibleState.chapter + 1);
+        if (window._webChapterCache && window._webChapterCache[wkey] && window._webChapterCache[wkey].length) {
+          verses = window._webChapterCache[wkey];
+        } else if (!window._webLoadingChapter) {
+          window._webLoadingChapter = true;
+          fetchWebChapter(book, bibleState.chapter, function (webVerses) {
+            window._webLoadingChapter = false;
+            if (webVerses && webVerses.length) { try { renderBible(); } catch (eR) {} }
+          });
+        }
+      }
       const booksSame = allBooks.filter(b => b.t === book.t);
 
       const bookOptions = booksSame.map(b => {
@@ -7976,7 +8040,7 @@ function openKatameros(dateObj) {
         if (tod) tod.onclick = function () { openKatameros(new Date()); };
       }
 
-      var url = 'https://api.katameros.app/readings/gregorian/' + key + '?languageId=3';
+      var url = 'https://api.katameros.app/readings/gregorian/' + key + '?languageId=' + ((typeof getAppLang==='function' && getAppLang()==='en') ? '2' : '3');
       fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store' })
         .then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -8151,7 +8215,7 @@ function openKatameros(dateObj) {
       }
 
       // استخراج السنكسار من القطمارس
-      var url = 'https://api.katameros.app/readings/gregorian/' + key + '?languageId=3';
+      var url = 'https://api.katameros.app/readings/gregorian/' + key + '?languageId=' + ((typeof getAppLang==='function' && getAppLang()==='en') ? '2' : '3');
       fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store' })
         .then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -10422,7 +10486,7 @@ function openTextModal(type) {
           showToast('الكتاب المقدس غير محمّل');
           return;
         }
-        document.getElementById('prayerTitle').textContent = 'الكتاب المقدس';
+        document.getElementById('prayerTitle').textContent = (typeof getAppLang==='function' && getAppLang()==='en') ? 'Holy Bible — WEB' : 'الكتاب المقدس';
         document.getElementById('prayerModal').classList.add('active');
         renderBible();
         try {
@@ -14498,22 +14562,22 @@ function requestNotifyPermission() {
         } catch (_e) {
           blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
         }
+        var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
         body =
           '<div style="flex:1;display:flex;flex-direction:column;min-height:0;height:100%;">' +
-            '<div style="padding:8px 12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
-              '<button type="button" id="spPdfReload" style="padding:10px 14px;border-radius:12px;border:none;background:#5a7d4a;color:#fff;font-weight:700;cursor:pointer;">عرض داخل التطبيق</button>' +
+            '<div style="padding:10px 12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
+              '<button type="button" id="spPdfOpenTab" style="padding:10px 14px;border-radius:12px;border:none;background:#5a7d4a;color:#fff;font-weight:700;cursor:pointer;">فتح الملف</button>' +
               '<a id="spPdfDl" href="' + blobUrl + '" download="' + spEsc(name).replace(/"/g, '') + '.pdf" style="padding:10px 14px;border-radius:12px;background:#6b5b3e;color:#fff;text-decoration:none;font-weight:700;">تحميل</a>' +
             '</div>' +
-            '<div id="spPdfViewerHost" style="flex:1;min-height:0;position:relative;background:#fff;">' +
+            '<div id="spPdfViewerHost" style="flex:1;min-height:0;position:relative;background:#f0f0f0;">' +
               '<iframe id="spPdfFrame" src="' + blobUrl + '#toolbar=1&navpanes=0&view=FitH" title="PDF" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;"></iframe>' +
-              '<object id="spPdfObject" data="' + blobUrl + '#toolbar=1&navpanes=0" type="application/pdf" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:none;">' +
-                '<embed src="' + blobUrl + '" type="application/pdf" style="width:100%;height:100%;border:0;" />' +
-              '</object>' +
-              '<div id="spPdfFallback" style="display:none;padding:24px;text-align:center;color:#5a4a2a;line-height:1.8;">' +
-                'تعذر عرض PDF داخل الصفحة على هذا الجهاز.<br>يمكنك تحميل الملف وقراءته من ملفات الموبايل.' +
+              '<div id="spPdfFallback" style="display:none;padding:28px 18px;text-align:center;color:#5a4a2a;line-height:1.9;">' +
+                '<p style="font-size:1.05em;font-weight:700;">اضغطي «فتح الملف» لعرض PDF</p>' +
+                '<p style="color:#8a7a60;">بعض المتصفحات لا تعرض PDF داخل الصفحة.</p>' +
               '</div>' +
             '</div>' +
           '</div>';
+        if (isMobile && blobUrl) { try { window.open(blobUrl, '_blank'); } catch (eOpen) {} }
       } else {
         blobUrl = dataUrlToBlobUrl(book.dataUrl) || book.dataUrl;
         body = '<iframe src="' + blobUrl + '" style="flex:1;width:100%;border:0;background:#fff;"></iframe>';
@@ -14521,6 +14585,7 @@ function requestNotifyPermission() {
       wrap.innerHTML =
         '<div style="display:flex;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;align-items:center;">' +
           '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">رجوع</button>' +
+          '<button type="button" id="spFileExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">فتح خارجي</button>' +
           '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + spEsc(name) + '</div>' +
         '</div>' + body;
       document.body.appendChild(wrap);
@@ -14528,24 +14593,33 @@ function requestNotifyPermission() {
         try { if (blobUrl && blobUrl.indexOf('blob:') === 0) URL.revokeObjectURL(blobUrl); } catch (e) {}
         wrap.remove();
       };
+      var _extEarly = document.getElementById('spFileExt');
+      if (_extEarly && !isPdf) {
+        _extEarly.onclick = function () {
+          try {
+            var u = blobUrl || book.dataUrl;
+            var w = window.open(u, '_blank');
+            if (!w && u) window.location.href = u;
+          } catch (eE) {}
+        };
+      }
       if (isPdf) {
-        var reloadBtn = document.getElementById('spPdfReload');
+        var reloadBtn = document.getElementById('spPdfOpenTab') || document.getElementById('spPdfReload');
         var frame = document.getElementById('spPdfFrame');
         var obj = document.getElementById('spPdfObject');
         var fb = document.getElementById('spPdfFallback');
-        if (reloadBtn) {
-          reloadBtn.onclick = function () {
-            try {
-              if (frame) {
-                frame.style.display = 'block';
-                frame.src = blobUrl + '#toolbar=1&navpanes=0&view=FitH&t=' + Date.now();
-              }
-              if (obj) obj.style.display = 'none';
-              if (fb) fb.style.display = 'none';
-              if (typeof showToast === 'function') showToast('جاري العرض داخل التطبيق…');
-            } catch (eR) {}
-          };
+        function openPdfNow() {
+          try {
+            var w = window.open(blobUrl, '_blank');
+            if (!w) { try { window.location.href = blobUrl; } catch (eN) {} }
+            if (typeof showToast === 'function') showToast('جاري فتح الملف…');
+          } catch (eO) {
+            if (fb) fb.style.display = 'block';
+          }
         }
+        if (reloadBtn) reloadBtn.onclick = openPdfNow;
+        var extBtn = document.getElementById('spFileExt');
+        if (extBtn) extBtn.onclick = openPdfNow;
         // If iframe fails to load on some mobiles, fall back to object after a short delay
         try {
           if (frame) {
@@ -15804,7 +15878,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '298';
+      var APP_VER = '299';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="301" lang="ar" dir="rtl">
+<html data-app-ver="302" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -14297,17 +14297,19 @@ function requestNotifyPermission() {
       if (!filtered.length) {
         listHtml = '<div style="text-align:center;padding:18px;color:#8a7a60;line-height:1.7;">📭 لا توجد كتب بعد<br><span style="font-size:0.9em;">أضيفي اسمًا + رابط أو ملف ثم «إضافة»</span></div>';
       } else {
-        filtered.forEach(function (b) {
-          var realIndex = books.indexOf(b);
-          if (realIndex < 0) {
-            for (var bi = 0; bi < books.length; bi++) {
-              if (books[bi].name === b.name && books[bi].url === b.url && books[bi].fileName === b.fileName) { realIndex = bi; break; }
+        filtered.forEach(function (b, fi) {
+          var realIndex = -1;
+          for (var bi = 0; bi < books.length; bi++) {
+            if (books[bi] === b || (books[bi].name === b.name && books[bi].url === b.url && books[bi].fileName === b.fileName && books[bi].addedAt === b.addedAt)) {
+              realIndex = bi; break;
             }
           }
+          if (realIndex < 0) realIndex = books.indexOf(b);
+          if (realIndex < 0) realIndex = fi;
           listHtml += '<div style="margin:10px 0;padding:12px;border-radius:16px;background:linear-gradient(135deg,#fffdf8,#f7f0e0);border:1px solid rgba(180,150,80,0.35);text-align:right;">';
           listHtml += '<div style="font-weight:700;color:#5a4a2a;font-size:1.05em;">📖 ' + spEsc(b.name || 'كتاب') + '</div>';
           if (b.note) listHtml += '<div style="font-size:0.85em;color:#7a6a50;margin-top:4px;">' + spEsc(b.note) + '</div>';
-          if (b.url) listHtml += '<div style="font-size:0.8em;color:#8a7040;margin-top:4px;">🔗 رابط محفوظ</div>';
+          if (b.url) listHtml += '<div style="font-size:0.8em;color:#8a7040;margin-top:4px;direction:ltr;word-break:break-all;">🔗 ' + spEsc(b.url) + '</div>';
           if (b.fileName) listHtml += '<div style="font-size:0.8em;color:#8a7040;margin-top:4px;">📄 ' + spEsc(b.fileName) + '</div>';
           listHtml += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">';
           if (b.url) listHtml += '<button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="window.spOpenBookUrl(' + realIndex + ')">فتح الرابط</button>';
@@ -14360,7 +14362,8 @@ function requestNotifyPermission() {
         '</div>';
     }
 
-    window.spSearchLib = function (val) {
+    
+window.spSearchLib = function (val) {
       openBooksSection(val || '');
       setTimeout(function () {
         var s2 = document.getElementById('bookSearch');
@@ -14515,42 +14518,75 @@ function requestNotifyPermission() {
     window.spRemoveBook = function (i) { removeBook(i); };
 
     window.spOpenBookUrl = function (i) {
-      var book = getSpiritualBooks()[i];
-      if (!book || !book.url) { showToast('لا يوجد رابط'); return; }
+      var books = getSpiritualBooks();
+      var book = books[i];
+      if (!book) { showToast('الكتاب غير موجود'); return; }
       var url = String(book.url || '').trim();
-      if (!url) { showToast('لا يوجد رابط'); return; }
-      // تطبيع الرابط
+      if (!url) { showToast('لا يوجد رابط محفوظ لهذا الكتاب'); return; }
       if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
         url = 'https://' + url.replace(/^\/+/, '');
       }
+
+      // إزالة أي طبقة قديمة
+      var old = document.getElementById('spLinkOpenSheet');
+      if (old) old.remove();
+
+      var sheet = document.createElement('div');
+      sheet.id = 'spLinkOpenSheet';
+      sheet.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(40,30,15,0.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+      var safeUrl = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      var title = String(book.name || 'كتاب').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      sheet.innerHTML =
+        '<div style="width:100%;max-width:420px;background:#fffdf8;border-radius:18px 18px 12px 12px;padding:18px 16px 16px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);text-align:center;">' +
+          '<div style="font-weight:800;color:#5a4a2a;font-size:1.1em;margin-bottom:6px;">🔗 ' + title + '</div>' +
+          '<div style="font-size:0.8em;color:#8a7a60;word-break:break-all;margin-bottom:14px;direction:ltr;">' + safeUrl + '</div>' +
+          '<a id="spLinkOpenA" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" ' +
+            'style="display:block;padding:14px 16px;border-radius:14px;background:#5a7d4a;color:#fff;font-weight:800;text-decoration:none;margin-bottom:10px;">فتح الرابط الآن</a>' +
+          '<button type="button" id="spLinkCopy" style="display:block;width:100%;padding:12px 16px;border-radius:14px;border:1px solid #c9a227;background:#fff;color:#5a4a2a;font-weight:700;margin-bottom:10px;font-family:inherit;">نسخ الرابط</button>' +
+          '<button type="button" id="spLinkInApp" style="display:block;width:100%;padding:12px 16px;border-radius:14px;border:1px solid #e8d9b5;background:#f7f0e0;color:#5a4a2a;font-weight:700;margin-bottom:10px;font-family:inherit;">عرض داخل التطبيق</button>' +
+          '<button type="button" id="spLinkClose" style="display:block;width:100%;padding:12px 16px;border-radius:14px;border:none;background:transparent;color:#8a7a60;font-weight:700;font-family:inherit;">إغلاق</button>' +
+        '</div>';
+      document.body.appendChild(sheet);
+
+      // محاولة فتح تلقائي فورًا
       try {
-        // فتح مباشر خارجي (أوثق — كثير من المواقع تمنع iframe)
-        var w = window.open(url, '_blank', 'noopener,noreferrer');
+        var w = window.open(url, '_blank');
         if (w) {
-          if (typeof showToast === 'function') showToast('تم فتح الرابط');
-          return;
+          try { w.focus(); } catch (eF) {}
         }
-        // لو المتصفح منع النافذة: عارض داخلي مع زر فتح خارجي
-        if (typeof openInAppPage === 'function') {
-          openInAppPage(url, book.name || 'كتاب');
-          return;
-        }
-        // آخر حل
-        var a = document.createElement('a');
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { try { document.body.removeChild(a); } catch (eR) {} }, 100);
-        if (typeof showToast === 'function') showToast('تم فتح الرابط');
-      } catch (e) {
+      } catch (eO) {}
+
+      document.getElementById('spLinkClose').onclick = function () { sheet.remove(); };
+      sheet.addEventListener('click', function (ev) {
+        if (ev.target === sheet) sheet.remove();
+      });
+      document.getElementById('spLinkCopy').onclick = function () {
         try {
-          if (typeof openInAppPage === 'function') openInAppPage(url, book.name || 'كتاب');
-          else window.location.href = url;
-        } catch (e2) {
-          showToast('تعذر فتح الرابط');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+              showToast('تم نسخ الرابط');
+            }).catch(function () {
+              window.prompt('انسخ الرابط:', url);
+            });
+          } else {
+            window.prompt('انسخ الرابط:', url);
+          }
+        } catch (eC) {
+          window.prompt('انسخ الرابط:', url);
         }
+      };
+      document.getElementById('spLinkInApp').onclick = function () {
+        sheet.remove();
+        if (typeof openInAppPage === 'function') openInAppPage(url, book.name || 'كتاب');
+        else window.location.href = url;
+      };
+      // الرابط نفسه <a> يفتح بالضغط — هذا الأضمن على الموبايل
+      var a = document.getElementById('spLinkOpenA');
+      if (a) {
+        a.addEventListener('click', function () {
+          // لا تمنع الافتراضي
+          setTimeout(function () { try { sheet.remove(); } catch (e) {} }, 400);
+        });
       }
     };
 
@@ -15937,7 +15973,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '301';
+      var APP_VER = '302';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

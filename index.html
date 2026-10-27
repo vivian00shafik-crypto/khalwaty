@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="297" lang="ar" dir="rtl">
+<html data-app-ver="298" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1744,9 +1744,9 @@
 
     <div class="wheel-wrapper">
       <div class="jesus-wheel" id="jesusWheel">
-        <img class="wheel-layer" src="wheel-bg-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v297.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
+        <img class="wheel-layer" src="wheel-bg-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v298.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v297.webp'" alt="" draggable="false">
+          <img src="wheel-inner-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v298.webp'" alt="" draggable="false">
           <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
           <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
           <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
@@ -1754,7 +1754,7 @@
           <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
           <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
-        <img class="wheel-layer wheel-front" src="wheel-bg-v297.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v297.webp'" alt="" aria-hidden="true" draggable="false">
+        <img class="wheel-layer wheel-front" src="wheel-bg-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v298.webp'" alt="" aria-hidden="true" draggable="false">
       </div>
       <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
@@ -6886,7 +6886,7 @@ function onPrepareImageSelected(idx, input) {
           var existing = document.querySelector('script[src*="khalwaty-poster"]');
           if (!existing) {
             var s = document.createElement('script');
-            s.src = 'khalwaty-poster.js?v=297';
+            s.src = 'khalwaty-poster.js?v=298';
             s.onload = function () { try { openPrepPosterDesigner(); } catch (e1) {} };
             s.onerror = function () { showToast('تعذر تحميل مصمم البوستر'); };
             document.head.appendChild(s);
@@ -7798,6 +7798,77 @@ function onPrepareImageSelected(idx, input) {
       paint('verse');
     }
 
+
+    /** شهور القبطي: 1 توت … 12 مسري + النسيء */
+    var COPTIC_MONTHS_AR = ['توت','بابة','هاتور','كيهك','طوبة','أمشير','برمهات','برمودة','بشنس','بؤونة','أبيب','مسري','النسيء'];
+    function toArabDigits(n) {
+      var map = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      return String(n).replace(/\d/g, function (d) { return map[parseInt(d, 10)]; });
+    }
+    /** تحويل ميلادي → قبطي (يوم، شهر، سنة الشهداء) */
+    function gregorianToCoptic(dateObj) {
+      var d = dateObj instanceof Date ? dateObj : new Date();
+      var Y = d.getFullYear(), M = d.getMonth() + 1, D = d.getDate();
+      // Julian Day Number (Gregorian)
+      var aa = Math.floor((14 - M) / 12);
+      var yy = Y + 4800 - aa;
+      var mm = M + 12 * aa - 3;
+      var JDN = D + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045;
+      // خوارزمية كبيسة قبطية صحيحة (كل 4 سنين)
+      var a = JDN - 1825030;
+      var year0 = Math.floor((4 * a + 3) / 1461);
+      var b = a - Math.floor((1461 * year0) / 4);
+      var month = Math.floor(b / 30) + 1;
+      var day = (b % 30) + 1;
+      var year = year0 + 1; // سنة الشهداء للعرض
+      if (month < 1) month = 1;
+      if (month > 13) month = 13;
+      if (day < 1) day = 1;
+      var monthName = COPTIC_MONTHS_AR[month - 1] || ('شهر ' + month);
+      return {
+        day: day,
+        month: month,
+        year: year,
+        monthName: monthName,
+        formatted: toArabDigits(day) + ' ' + monthName + ' ' + toArabDigits(year) + ' ش.م'
+      };
+    }
+    /** لو الـ API رجّع رقم شهر أو نص غامض، نوضّحه بأسماء الشهور */
+    function clarifyCopticDateStr(str, dateObj) {
+      var computed = gregorianToCoptic(dateObj || new Date());
+      if (!str) return computed.formatted;
+      var s = String(str).trim();
+      // أنماط شائعة: 15/1/1742 أو 1-15-1742 أو month 1
+      var m = s.match(/(\d{1,2})\s*[\/\-\.]\s*(\d{1,2})\s*[\/\-\.]\s*(\d{3,4})/);
+      if (m) {
+        var a = parseInt(m[1], 10), b = parseInt(m[2], 10), y = parseInt(m[3], 10);
+        // غالبًا يوم/شهر/سنة أو شهر/يوم/سنة
+        var day, month;
+        if (a >= 1 && a <= 30 && b >= 1 && b <= 13) { day = a; month = b; }
+        else if (b >= 1 && b <= 30 && a >= 1 && a <= 13) { day = b; month = a; }
+        else { return computed.formatted; }
+        var name = COPTIC_MONTHS_AR[month - 1] || ('شهر ' + month);
+        return toArabDigits(day) + ' ' + name + ' ' + toArabDigits(y) + ' ش.م';
+      }
+      // استبدال "شهر 1" أو "1" إن وُجدت لوحدها
+      if (/شهر\s*(\d{1,2})/.test(s)) {
+        s = s.replace(/شهر\s*(\d{1,2})/g, function (_, n) {
+          var mi = parseInt(n, 10);
+          return COPTIC_MONTHS_AR[mi - 1] || ('شهر ' + n);
+        });
+        return s;
+      }
+      // لو النص فيه رقم شهر بدون اسم
+      for (var i = 13; i >= 1; i--) {
+        var re = new RegExp('(?:^|\\s|\\/)' + i + '(?:\\s|\\/|$)');
+        // لا نستبدل عشوائيًا — نفضّل المحسوب
+      }
+      // إن كان النص لا يحتوي اسم شهر قبطي معروف، استخدم المحسوب
+      var hasName = COPTIC_MONTHS_AR.some(function (n) { return s.indexOf(n) >= 0; });
+      if (!hasName) return computed.formatted;
+      return s;
+    }
+
 function openKatameros(dateObj) {
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch (e) {}
       setPrayerJesusBg(false);
@@ -7807,7 +7878,7 @@ function openKatameros(dateObj) {
       var key = dd + '-' + mm + '-' + yyyy;
       var titleEl = document.getElementById('prayerTitle');
       var content = document.getElementById('prayerContent');
-      if (titleEl) titleEl.textContent = 'القطمارس — ' + key;
+      if (titleEl) titleEl.textContent = 'القطمارس — ' + key + '  |  ' + gregorianToCoptic(d).formatted;
       if (!content) return;
       content.innerHTML = '<p style="text-align:center;padding:24px;color:#8a7a60;">جاري تحميل قراءات اليوم من القطمارس القبطي…</p>';
       document.getElementById('prayerModal').classList.add('active');
@@ -7822,9 +7893,9 @@ function openKatameros(dateObj) {
         html += '<button type="button" id="kataToday" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:var(--gold);color:#fff;">اليوم</button>';
         html += '<button type="button" id="kataNext" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:#fff;">التالي ▶</button>';
         html += '</div>';
-        if (data.copticDate) {
-          html += '<p style="text-align:center;color:#6b5b3e;margin:0 0 12px;">التاريخ القبطي: <b>' + esc(data.copticDate) + '</b></p>';
-        }
+        var copticShown = clarifyCopticDateStr(data.copticDate, d);
+        html += '<p style="text-align:center;color:#6b5b3e;margin:0 0 12px;line-height:1.7;">التاريخ القبطي: <b>' + esc(copticShown) + '</b></p>';
+        html += '<p style="text-align:center;color:#8a7a60;font-size:0.82em;margin:0 0 10px;">الشهور: ١ توت · ٢ بابة · ٣ هاتور · ٤ كيهك · ٥ طوبة · ٦ أمشير · ٧ برمهات · ٨ برمودة · ٩ بشنس · ١٠ بؤونة · ١١ أبيب · ١٢ مسري · ١٣ النسيء</p>';
         if (data.periodInfo) {
           var pi = data.periodInfo;
           var piText = typeof pi === 'string' ? pi : (pi.name || pi.title || '');
@@ -15733,7 +15804,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '297';
+      var APP_VER = '298';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -15823,7 +15894,7 @@ function playProgressFinalVideo() {
       else setTimeout(run, 4000);
     });
   </script>
-  <script src="khalwaty-poster.js?v=297"></script>
+  <script src="khalwaty-poster.js?v=298"></script>
 <script>
 /* ===== خلوتي — الإشعارات الأصلية لأندرويد (Capacitor Local Notifications) =====
    بتجدول كل صلاة + صوت يسوع + التذكيرات كمنبّه يومي على الموبايل نفسه،

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="313" lang="ar" dir="rtl">
+<html data-app-ver="314" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -8097,7 +8097,8 @@ function openKatameros(dateObj) {
           html += '<div style="margin:14px 0;padding:12px;border-radius:16px;background:rgba(255,255,255,0.75);border:1px solid rgba(180,150,80,0.25);">';
           html += '<h3 style="margin:0 0 10px;color:#5a4a2a;text-align:center;">' + esc(sec.title || 'قسم') + '</h3>';
           (sec.subSections || []).forEach(function (sub, ui) {
-            var isSynax = (sub.title && sub.title.indexOf('سنكس') >= 0) || sub.id === 10;
+            var st = String(sub.title || '').toLowerCase();
+              var isSynax = (st.indexOf('سنكس') >= 0) || (st.indexOf('synax') >= 0) || Number(sub.id) === 10;
             html += '<div style="margin:10px 0 14px;padding:10px;border-radius:12px;background:rgba(250,246,236,0.9);">';
             html += '<h4 style="margin:0 0 8px;color:#7a5c2e;">' + esc(sub.title || '') + '</h4>';
             (sub.readings || []).forEach(function (rd, ri) {
@@ -8225,9 +8226,10 @@ function openKatameros(dateObj) {
       var key = dd + '-' + mm + '-' + yyyy;
       var titleEl = document.getElementById('prayerTitle');
       var content = document.getElementById('prayerContent');
-      if (titleEl) titleEl.textContent = 'تمثلوا بإيمانهم — السنكسار';
+      var isEn = (typeof getAppLang==='function' && getAppLang()==='en');
+      if (titleEl) titleEl.textContent = isEn ? 'Follow their faith — Synaxarium' : 'تمثلوا بإيمانهم — السنكسار';
       if (!content) return;
-      content.innerHTML = '<p style="text-align:center;padding:20px;color:#8a7a60;">جاري تحميل سنكسار اليوم…</p>';
+      content.innerHTML = '<p style="text-align:center;padding:20px;color:#8a7a60;">' + (isEn ? 'Loading today\'s Synaxarium…' : 'جاري تحميل سنكسار اليوم…') + '</p>';
       document.getElementById('prayerModal').classList.add('active');
 
       function esc(s) {
@@ -8238,20 +8240,20 @@ function openKatameros(dateObj) {
         var html = '';
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">';
         html += '<button type="button" id="faithPrev" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:#fff;">◀</button>';
-        html += '<button type="button" id="faithToday" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:var(--gold);color:#fff;">اليوم ' + esc(key) + '</button>';
+        html += '<button type="button" id="faithToday" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:var(--gold);color:#fff;">' + (isEn ? 'Today ' : 'اليوم ') + esc(key) + '</button>';
         html += '<button type="button" id="faithNext" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:#fff;">▶</button>';
         html += '</div>';
 
-        html += '<h3 style="text-align:center;color:#5a4a2a;margin:8px 0;">سنكسار اليوم</h3>';
+        html += '<h3 style="text-align:center;color:#5a4a2a;margin:8px 0;">' + (isEn ? 'Today\'s Synaxarium' : 'سنكسار اليوم') + '</h3>';
         if (!synaxList.length) {
-          html += '<p style="text-align:center;color:#8a7a60;">لا يوجد سنكسار محمول لهذا اليوم (أو يلزم إنترنت).</p>';
+          html += '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No Synaxarium for this day (or internet required).' : 'لا يوجد سنكسار محمول لهذا اليوم (أو يلزم إنترنت).') + '</p>';
         }
         synaxList.forEach(function (item, idx) {
           var sid = 'faith-syn-' + idx;
           html += '<div style="margin:8px 0;padding:4px;border-radius:14px;background:rgba(255,255,255,0.5);">';
           html += '<button type="button" class="faith-saint-btn" data-target="' + sid + '" style="display:block;width:100%;text-align:right;margin:0;padding:12px;border-radius:14px;border:1px solid rgba(180,140,60,0.35);background:linear-gradient(135deg,#fff8e7,#f0e0c0);color:#4a3a18;font-weight:700;cursor:pointer;">⛪ ' + esc(item.title) + '</button>';
           html += '<div id="' + sid + '" style="display:none;margin:4px 0 0;padding:12px;border-radius:12px;background:#fff;border:1px solid rgba(180,150,80,0.2);line-height:1.85;">' + sanitizeKataHtml(item.html || '');
-          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="margin-top:10px;padding:8px 14px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-weight:600;">مشاركة القصة</button>';
+          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="margin-top:10px;padding:8px 14px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-weight:600;">' + (isEn ? 'Share story' : 'مشاركة القصة') + '</button>';
           html += '</div></div>';
         });
 
@@ -8349,10 +8351,11 @@ function openKatameros(dateObj) {
           var list = [];
           (data.sections || []).forEach(function (sec) {
             (sec.subSections || []).forEach(function (sub) {
-              var isSynax = (sub.title && sub.title.indexOf('سنكس') >= 0) || sub.id === 10;
+              var st = String(sub.title || '').toLowerCase();
+              var isSynax = (st.indexOf('سنكس') >= 0) || (st.indexOf('synax') >= 0) || Number(sub.id) === 10;
               if (!isSynax) return;
               (sub.readings || []).forEach(function (rd) {
-                list.push({ title: rd.title || 'سنكسار', html: rd.html || rd.introduction || '' });
+                list.push({ title: rd.title || ((typeof getAppLang==='function' && getAppLang()==='en') ? 'Synaxarium' : 'سنكسار'), html: rd.html || rd.introduction || rd.text || '' });
               });
             });
           });
@@ -16499,7 +16502,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '313';
+      var APP_VER = '314';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="308" lang="ar" dir="rtl">
+<html data-app-ver="309" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1492,6 +1492,34 @@
       50% { filter: brightness(1.28) saturate(1.15); }
     }
 
+  
+    /* مايك الكتابة الصوتية */
+    .voice-mic-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1.5px solid rgba(201,162,39,0.55);
+      background: linear-gradient(145deg, #fff9ef, #f0e4c8);
+      color: #6b5b3e; font-size: 18px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
+    .voice-mic-btn.listening {
+      background: linear-gradient(145deg, #ffe0e0, #ffb0b0);
+      border-color: #c0392b; color: #a02820;
+      animation: voicePulse 1s ease-in-out infinite;
+    }
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(192,57,43,0); }
+    }
+    .voice-mic-wrap {
+      display: flex; align-items: center; gap: 8px;
+      margin: 6px 0 8px; justify-content: flex-end;
+    }
+    .voice-mic-status {
+      font-size: 12px; color: #8a7a60; min-height: 1em;
+    }
+
   </style>
 </head>
 <body>
@@ -2001,7 +2029,11 @@
         <div class="modal-title" id="modalTitle">تأملاتي اليوم</div>
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
-      <textarea id="modalTextarea" placeholder="اكتب هنا..."></textarea>
+      <div class="voice-mic-wrap">
+        <span class="voice-mic-status" id="voiceMicStatus"></span>
+        <button type="button" class="voice-mic-btn" id="modalVoiceMic" title="كتابة صوتية" onclick="toggleVoiceTyping('modalTextarea', this)">🎤</button>
+      </div>
+      <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث"></textarea>
       <button class="save-btn" onclick="saveText()">حفظ</button>
       <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;">تحميل PDF</button>
       <button id="deleteTextBtn" onclick="deleteText()" style="display:none; width:100%; margin-top:10px; background:#c0392b; color:white; border:none; border-radius:25px; padding:12px; font-family:inherit; font-size:15px; cursor:pointer;">مسح النص</button>
@@ -8330,6 +8362,199 @@ function openKatameros(dateObj) {
           paint([]);
         });
     }
+
+
+    // —— كتابة صوتية (Web Speech API) ——
+    window._voiceRec = null;
+    window._voiceTargetId = null;
+    window._voiceBtn = null;
+
+    function voiceSpeechLang() {
+      try {
+        var lang = (localStorage.getItem('khalwati_lang') || 'ar').toLowerCase();
+        if (lang.indexOf('en') === 0) return 'en-US';
+        return 'ar-EG';
+      } catch (e) { return 'ar-EG'; }
+    }
+
+    function stopVoiceTyping() {
+      try {
+        if (window._voiceRec) {
+          window._voiceRec.onend = null;
+          window._voiceRec.onerror = null;
+          window._voiceRec.stop();
+        }
+      } catch (e) {}
+      window._voiceRec = null;
+      if (window._voiceBtn) {
+        window._voiceBtn.classList.remove('listening');
+        window._voiceBtn.textContent = '🎤';
+      }
+      window._voiceBtn = null;
+      window._voiceTargetId = null;
+      var st = document.getElementById('voiceMicStatus');
+      if (st) st.textContent = '';
+      document.querySelectorAll('.voice-mic-btn.listening').forEach(function (b) {
+        b.classList.remove('listening');
+        b.textContent = '🎤';
+      });
+    }
+
+    function toggleVoiceTyping(targetId, btn) {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        if (typeof showToast === 'function') showToast('الكتابة الصوتية غير مدعومة في هذا المتصفح — جرّبي Chrome');
+        return;
+      }
+      // لو شغال على نفس الحقل → إيقاف
+      if (window._voiceRec && window._voiceTargetId === targetId) {
+        stopVoiceTyping();
+        if (typeof showToast === 'function') showToast('توقفت الكتابة الصوتية');
+        return;
+      }
+      stopVoiceTyping();
+
+      var el = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
+      if (!el) {
+        if (typeof showToast === 'function') showToast('لم يُعثر على حقل الكتابة');
+        return;
+      }
+
+      var rec = new SR();
+      rec.lang = voiceSpeechLang();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      window._voiceRec = rec;
+      window._voiceTargetId = (typeof targetId === 'string') ? targetId : (el.id || null);
+      window._voiceBtn = btn || null;
+      if (btn) {
+        btn.classList.add('listening');
+        btn.textContent = '⏹';
+      }
+      var st = document.getElementById('voiceMicStatus');
+      if (st) st.textContent = 'جاري الاستماع… تحدّثي';
+
+      var base = ('value' in el) ? (el.value || '') : (el.textContent || '');
+      if (base && !/\s$/.test(base)) base += ' ';
+      var committed = base;
+
+      rec.onresult = function (event) {
+        var interim = '';
+        var finalText = '';
+        for (var i = event.resultIndex; i < event.results.length; i++) {
+          var t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalText += t;
+          else interim += t;
+        }
+        if (finalText) {
+          committed += finalText;
+          if (!/\s$/.test(committed)) committed += ' ';
+        }
+        var shown = committed + interim;
+        if ('value' in el) {
+          el.value = shown;
+          try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (eI) {}
+        } else {
+          el.textContent = shown;
+        }
+      };
+      rec.onerror = function (ev) {
+        var err = (ev && ev.error) || '';
+        if (err === 'not-allowed') {
+          if (typeof showToast === 'function') showToast('فعّلي إذن الميكروفون للمتصفح');
+        } else if (err === 'no-speech') {
+          if (typeof showToast === 'function') showToast('لم يُلتقط كلام — حاولِ مرة أخرى');
+        } else if (err !== 'aborted') {
+          if (typeof showToast === 'function') showToast('خطأ في الكتابة الصوتية');
+        }
+        stopVoiceTyping();
+      };
+      rec.onend = function () {
+        // إعادة تشغيل لو لسه المستخدم مستمع (continuous أحيانًا بينتهي)
+        if (window._voiceRec === rec && window._voiceBtn && window._voiceBtn.classList.contains('listening')) {
+          try { rec.start(); } catch (e2) { stopVoiceTyping(); }
+        }
+      };
+
+      try {
+        rec.start();
+        if (typeof showToast === 'function') showToast('🎤 تحدّثي الآن');
+      } catch (eStart) {
+        stopVoiceTyping();
+        if (typeof showToast === 'function') showToast('تعذر تشغيل الميكروفون');
+      }
+    }
+
+    /** يضيف زر مايك بجانب حقل (input/textarea) إن لم يكن موجودًا */
+    function attachVoiceMicToField(el) {
+      if (!el || el.nodeType !== 1) return;
+      if (el.getAttribute('data-voice-attached') === '1') return;
+      var tag = (el.tagName || '').toLowerCase();
+      if (tag !== 'textarea' && !(tag === 'input' && (/text|search|url|email|tel/.test((el.type || 'text').toLowerCase()) || !el.type))) return;
+      // تجاهل حقول مخفية أو صغيرة جدًا
+      if (el.type === 'hidden' || el.disabled || el.readOnly) return;
+      el.setAttribute('data-voice-attached', '1');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'voice-mic-btn';
+      btn.title = 'كتابة صوتية';
+      btn.textContent = '🎤';
+      btn.style.margin = '4px';
+      btn.onclick = function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        toggleVoiceTyping(el.id || el, btn);
+      };
+      // ضع الزر بعد الحقل أو في الأب
+      try {
+        if (el.parentNode) {
+          var wrap = document.createElement('div');
+          wrap.className = 'voice-mic-wrap';
+          wrap.style.justifyContent = 'flex-start';
+          el.parentNode.insertBefore(wrap, el);
+          wrap.appendChild(el);
+          wrap.appendChild(btn);
+        }
+      } catch (eA) {
+        try { el.parentNode.insertBefore(btn, el.nextSibling); } catch (eB) {}
+      }
+    }
+
+    function attachVoiceMicsIn(root) {
+      root = root || document;
+      try {
+        root.querySelectorAll('textarea, input[type="text"], input[type="search"], input:not([type])').forEach(attachVoiceMicToField);
+      } catch (e) {}
+    }
+
+    // ربط تلقائي عند فتح النوافذ
+    (function setupVoiceMicObserver() {
+      try {
+        document.addEventListener('DOMContentLoaded', function () {
+          attachVoiceMicsIn(document);
+        });
+        var obs = new MutationObserver(function (muts) {
+          muts.forEach(function (m) {
+            if (!m.addedNodes) return;
+            m.addedNodes.forEach(function (n) {
+              if (n.nodeType !== 1) return;
+              if (n.matches && (n.matches('textarea, input') )) attachVoiceMicToField(n);
+              if (n.querySelectorAll) attachVoiceMicsIn(n);
+            });
+          });
+        });
+        if (document.body) {
+          obs.observe(document.body, { childList: true, subtree: true });
+        } else {
+          document.addEventListener('DOMContentLoaded', function () {
+            obs.observe(document.body, { childList: true, subtree: true });
+            attachVoiceMicsIn(document);
+          });
+        }
+      } catch (eO) {}
+    })();
 
 function openTextModal(type) {
       currentTextType = type;
@@ -16200,7 +16425,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '308';
+      var APP_VER = '309';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="306" lang="ar" dir="rtl">
+<html data-app-ver="307" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1472,6 +1472,26 @@
     * { box-sizing: border-box; }
     img, video, canvas, svg { max-width: 100%; }
 
+  
+    .service-item.khalwa-excellence .service-circle {
+      animation: khalwaGlowPulse 2.2s ease-in-out infinite;
+      box-shadow:
+        0 0 0 3px rgba(255, 220, 100, 0.95),
+        0 0 18px 6px rgba(255, 200, 60, 0.85),
+        0 0 36px 12px rgba(201, 162, 39, 0.55) !important;
+      filter: brightness(1.15) saturate(1.1);
+      border-radius: 50%;
+    }
+    .service-item.khalwa-excellence .service-label {
+      color: #8a6a10 !important;
+      font-weight: 800 !important;
+      text-shadow: 0 0 8px rgba(255, 215, 100, 0.7);
+    }
+    @keyframes khalwaGlowPulse {
+      0%, 100% { filter: brightness(1.12); }
+      50% { filter: brightness(1.28) saturate(1.15); }
+    }
+
   </style>
 </head>
 <body>
@@ -2691,6 +2711,8 @@
         console.log('saveData', e);
         if (typeof showToast === 'function') showToast('تعذّر الحفظ — مساحة التخزين ممتلئة ربما');
       }
+    
+      try { if (typeof refreshKhalwaExcellenceIcon === "function") refreshKhalwaExcellenceIcon(); } catch (eR) {}
     }
 
     /** قراءة بيانات يوم معيّن بدون تغيير اليوم الحالي */
@@ -4741,8 +4763,15 @@ function renderBible() {
                            (item.id === 'jesusPrayer' ? "openPrayer('jesus')" : 
                            (item.id === 'kyrie' ? "openPrayer('kyrie')" : 
                            (item.id === 'progressChart' ? "openProgressChart()" : `toggleService('${item.id}')`)));
+        var excelClass = '';
+        if (item.id === 'progressChart') {
+          try {
+            var ex = (typeof hasKhalwaExcellence === 'function') ? hasKhalwaExcellence() : { ok: false };
+            if (ex && ex.ok) excelClass = ' khalwa-excellence';
+          } catch (eEx) {}
+        }
         container.innerHTML += `
-          <div class="service-item ${posClass[item.id] || ''} ${checked ? 'checked' : ''}" onclick="${clickAction}">
+          <div class="service-item ${posClass[item.id] || ''} ${checked ? 'checked' : ''}${excelClass}" onclick="${clickAction}" data-id="${item.id}">
             <div class="service-circle" style="position:relative;">
               ${item.icon}
               ${countBadge}
@@ -15053,7 +15082,53 @@ function dayScore(d) {
       return Math.min(12, score);
     }
 
-    function openProgressChart(period) {
+    
+    function refreshKhalwaExcellenceIcon() {
+      try {
+        if (typeof renderServices === 'function') renderServices();
+      } catch (e) {}
+    }
+    /** هل يوجد امتياز حالي في أسبوع أو شهر أو سنة؟ (≈ 5 من 7) */
+    function hasKhalwaExcellence() {
+      function isDaySuccess(d) {
+        try { return dayScore(d) >= 4; } catch (e) { return false; }
+      }
+      function countSuccess(from, to) {
+        var n = 0;
+        var cur = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 12);
+        var end = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 12);
+        while (cur <= end) {
+          if (isDaySuccess(cur)) n++;
+          cur.setDate(cur.getDate() + 1);
+        }
+        return n;
+      }
+      try {
+        var base = (typeof currentDate !== 'undefined' && currentDate) ? currentDate : new Date();
+        var now = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 12);
+
+        var weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - 6);
+        var wN = countSuccess(weekStart, now);
+        if (wN >= Math.max(1, Math.ceil(7 * (5 / 7)))) return { ok: true, period: 'week', score: wN, max: 7 };
+
+        var mStart = new Date(now.getFullYear(), now.getMonth(), 1, 12);
+        var mN = countSuccess(mStart, now);
+        var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        if (mN >= Math.max(1, Math.ceil(daysInMonth * (5 / 7)))) return { ok: true, period: 'month', score: mN, max: daysInMonth };
+
+        var yStart = new Date(now.getFullYear(), 0, 1, 12);
+        var yN = countSuccess(yStart, now);
+        var daysInYear = ((new Date(now.getFullYear(), 11, 31, 12) - yStart) / 86400000) + 1;
+        if (yN >= Math.max(1, Math.ceil(daysInYear * (5 / 7)))) return { ok: true, period: 'year', score: yN, max: daysInYear };
+
+        return { ok: false };
+      } catch (e) {
+        return { ok: false };
+      }
+    }
+
+function openProgressChart(period) {
       period = period || 'week';
       var gender = localStorage.getItem('khalwati_gender') || 'girl';
       var personEmoji = gender === 'boy' ? '👦' : '👧';
@@ -16107,7 +16182,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '306';
+      var APP_VER = '307';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -16393,3 +16468,9 @@ function playProgressFinalVideo() {
 
 </body>
 </html>
+    function refreshKhalwaExcellenceIcon() {
+      try {
+        if (typeof renderServices === 'function') renderServices();
+      } catch (e) {}
+    }
+

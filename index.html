@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="318" lang="ar" dir="rtl">
+<html data-app-ver="319" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2035,7 +2035,7 @@
       </div>
       <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث"></textarea>
       <button class="save-btn" onclick="saveText()" data-i18n-btn="save">حفظ</button>
-      <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;">' + t('downloadPdf') + '</button>
+      <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;" data-i18n-btn="downloadPdf">تحميل PDF</button>
       <button id="deleteTextBtn" onclick="deleteText()" style="display:none; width:100%; margin-top:10px; background:#c0392b; color:white; border:none; border-radius:25px; padding:12px; font-family:inherit; font-size:15px; cursor:pointer;">مسح النص</button>
     </div>
   </div>
@@ -2049,7 +2049,7 @@
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
       <div class="prayer-text" id="prayerContent"></div>
-      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()">' + t('downloadPdf') + '</button>
+      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()" data-i18n-btn="downloadPdf">تحميل PDF</button>
     </div>
   </div>
 
@@ -5977,42 +5977,49 @@ function openSaintsPraises() {
     function openPreparePages() {
       try { if (typeof enterContentAudioPage === 'function') enterContentAudioPage(); } catch (e) {}
       try { setPrayerJesusBg(false); } catch (e) {}
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
       var browsing = !!prepareBrowseDateKey;
       var dayLabel = browsing ? prepareBrowseDateKey : (typeof getDateKey === 'function' ? getDateKey(currentDate) : '');
       var titleEl = document.getElementById('prayerTitle');
-      if (titleEl) titleEl.textContent = browsing ? ('تحضير — ' + dayLabel) : 'تحضير الدرس';
+      if (titleEl) titleEl.textContent = browsing
+        ? ((isEn ? 'Prepare — ' : 'تحضير — ') + dayLabel)
+        : (isEn ? 'Lesson preparation' : 'تحضير الدرس');
       var pages = getPreparePages();
       var lessonTitle = getPrepareLessonTitle();
       var h = '';
-      h += '<div id="prepRoot" style="text-align:right;line-height:1.85;">';
+      h += '<div id="prepRoot" style="text-align:' + (isEn ? 'left' : 'right') + ';direction:' + (isEn ? 'ltr' : 'rtl') + ';line-height:1.85;">';
       if (browsing) {
-        h += '<p style="font-size:13px;background:#f5efe0;padding:8px 12px;border-radius:10px;margin-bottom:12px;">📅 عرض درس تاريخ <b>' + dayLabel + '</b> — التعديل هيتحفظ على نفس اليوم.</p>';
+        h += '<p style="font-size:13px;background:#f5efe0;padding:8px 12px;border-radius:10px;margin-bottom:12px;">📅 ' + (isEn
+          ? ('Viewing lesson of <b>' + dayLabel + '</b> — edits save to the same day.')
+          : ('عرض درس تاريخ <b>' + dayLabel + '</b> — التعديل هيتحفظ على نفس اليوم.')) + '</p>';
       }
-      h += '<label style="display:block;margin-bottom:6px;font-weight:600;">عنوان الدرس</label>';
+      h += '<label style="display:block;margin-bottom:6px;font-weight:600;">' + (isEn ? 'Lesson title' : 'عنوان الدرس') + '</label>';
       h += '<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">';
-      h += '<input id="prepLessonTitle" type="text" value="' + String(lessonTitle).replace(/"/g, '&quot;') + '" placeholder="اكتبي عنوان الدرس..." style="flex:1;min-width:160px;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;box-sizing:border-box;">';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="saveTitle" style="margin:0;background:#5a7d4a;white-space:nowrap;">حفظ العنوان</button>';
+      h += '<input id="prepLessonTitle" type="text" value="' + String(lessonTitle).replace(/"/g, '&quot;') + '" placeholder="' + (isEn ? 'Enter lesson title...' : 'اكتبي عنوان الدرس...') + '" style="flex:1;min-width:160px;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;box-sizing:border-box;">';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="saveTitle" style="margin:0;background:#5a7d4a;white-space:nowrap;">' + (isEn ? 'Save title' : 'حفظ العنوان') + '</button>';
       h += '</div>';
       h += '<div class="prep-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px 0;">';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="addPage" style="margin:0;background:#5a7d4a;">＋ إضافة صفحة <span style="opacity:.85;font-size:12px;">(' + pages.length + '/10)</span></button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfAll" style="margin:0;background:#6b5b3e;">📄 PDF كل الصفحات</button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfEach" style="margin:0;background:#8a7a60;">📄 PDF صفحة بصفحة</button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="pptx" style="margin:0;background:#c45c26;">📊 بوربوينت PowerPoint</button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="designChoose" style="margin:0;background:#6b8f5a;">✨ تنسيقات لكل صفحة</button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="posterAI" style="margin:0;background:#7a5a9a;">🎨 بوستر A4</button>';
-      h += '<button type="button" class="save-btn prep-act" data-prep-act="archive" style="margin:0;background:#4a6a8a;">📚 دروس سابقة</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="addPage" style="margin:0;background:#5a7d4a;">＋ ' + (isEn ? 'Add page' : 'إضافة صفحة') + ' <span style="opacity:.85;font-size:12px;">(' + pages.length + '/10)</span></button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfAll" style="margin:0;background:#6b5b3e;">📄 ' + (isEn ? 'PDF all pages' : 'PDF كل الصفحات') + '</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="pdfEach" style="margin:0;background:#8a7a60;">📄 ' + (isEn ? 'PDF page by page' : 'PDF صفحة بصفحة') + '</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="pptx" style="margin:0;background:#c45c26;">📊 ' + (isEn ? 'PowerPoint' : 'بوربوينت PowerPoint') + '</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="designChoose" style="margin:0;background:#6b8f5a;">✨ ' + (isEn ? 'Layouts per page' : 'تنسيقات لكل صفحة') + '</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="posterAI" style="margin:0;background:#7a5a9a;">🎨 ' + (isEn ? 'A4 Poster' : 'بوستر A4') + '</button>';
+      h += '<button type="button" class="save-btn prep-act" data-prep-act="archive" style="margin:0;background:#4a6a8a;">📚 ' + (isEn ? 'Past lessons' : 'دروس سابقة') + '</button>';
       if (browsing) {
-        h += '<button type="button" class="save-btn prep-act" data-prep-act="today" style="margin:0;background:#8a7a60;">اليوم الحالي</button>';
+        h += '<button type="button" class="save-btn prep-act" data-prep-act="today" style="margin:0;background:#8a7a60;">' + (isEn ? 'Back to today' : 'اليوم الحالي') + '</button>';
       }
       h += '</div>';
-      h += '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">كل درس يقدر يبقى على كذا صفحة. تقدري تضيفي صورة جوه كل صفحة.</p>';
+      h += '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">' + (isEn
+        ? 'A lesson can have several pages. You can add an image inside each page.'
+        : 'كل درس يقدر يبقى على كذا صفحة. تقدري تضيفي صورة جوه كل صفحة.') + '</p>';
       h += '<div id="preparePagesList" style="display:flex;flex-direction:column;gap:8px;">';
       pages.forEach(function(p, idx) {
         var preview = String(p.text || '').trim().replace(/\s+/g, ' ').slice(0, 40);
-        var sub = preview ? preview + (String(p.text||'').length > 40 ? '…' : '') : 'فارغة';
+        var sub = preview ? preview + (String(p.text||'').length > 40 ? '…' : '') : (isEn ? 'Empty' : 'فارغة');
         var imgMark = p.image ? ' 📷' : '';
-        h += '<button type="button" class="save-btn prep-act" data-prep-act="openPage" data-prep-idx="' + idx + '" style="margin:0;text-align:right;background:#8a7a60;">' +
-          (p.title || ('الصفحة ' + (idx + 1))).replace(/</g,'&lt;') + imgMark +
+        h += '<button type="button" class="save-btn prep-act" data-prep-act="openPage" data-prep-idx="' + idx + '" style="margin:0;text-align:' + (isEn ? 'left' : 'right') + ';background:#8a7a60;">' +
+          (p.title || ((isEn ? 'Page ' : 'الصفحة ') + (idx + 1))).replace(/</g,'&lt;') + imgMark +
           ' <span style="font-weight:400;font-size:12px;opacity:.9;">— ' + sub.replace(/</g,'&lt;') + '</span></button>';
       });
       h += '</div></div>';
@@ -8857,7 +8864,7 @@ function openTextModal(type) {
             <button type="button" class="align-btn" title="أزرق" onclick="highlightTextModal('blue')">🔵</button>
             <button type="button" class="align-btn" title="وردي" onclick="highlightTextModal('pink')">🩷</button>
             <button type="button" class="align-btn" onclick="highlightTextModal('clear')">✕</button>
-            <button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="openVerseDesign(document.getElementById('modalTextarea').value, document.getElementById('modalTitle').textContent)">🎨 تصميم وحفظ</button>
+            <button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="openVerseDesign(document.getElementById('modalTextarea').value, document.getElementById('modalTitle').textContent)">🎨 ' + ((typeof getAppLang==='function'&&getAppLang()==='en')?'Design & save':'تصميم وحفظ') + '</button>
           </div>`;
       } else {
         tools.style.display = 'none';
@@ -16733,7 +16740,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '318';
+      var APP_VER = '319';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="316" lang="ar" dir="rtl">
+<html data-app-ver="317" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2034,8 +2034,8 @@
         <button type="button" class="voice-mic-btn" id="modalVoiceMic" title="كتابة صوتية" onclick="toggleVoiceTyping('modalTextarea', this)">🎤</button>
       </div>
       <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث"></textarea>
-      <button class="save-btn" onclick="saveText()">حفظ</button>
-      <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;">تحميل PDF</button>
+      <button class="save-btn" onclick="saveText()" data-i18n-btn="save">حفظ</button>
+      <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;">' + t('downloadPdf') + '</button>
       <button id="deleteTextBtn" onclick="deleteText()" style="display:none; width:100%; margin-top:10px; background:#c0392b; color:white; border:none; border-radius:25px; padding:12px; font-family:inherit; font-size:15px; cursor:pointer;">مسح النص</button>
     </div>
   </div>
@@ -2049,7 +2049,7 @@
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
       <div class="prayer-text" id="prayerContent"></div>
-      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()">تحميل PDF</button>
+      <button class="save-btn" style="margin-top:10px; background:#5a7d4a;" onclick="printPrayer()">' + t('downloadPdf') + '</button>
     </div>
   </div>
 
@@ -3933,7 +3933,7 @@
         body = '<div style="text-align:right;">' +
           '<p style="font-size:13px;color:#8a7a60;margin-bottom:8px;">نص صلاة ' + name + ' سيُضاف قريباً. يمكنك كتابة ملاحظاتك هنا:</p>' +
           '<textarea id="agpeyaText" style="width:100%;min-height:180px;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;font-size:15px;line-height:1.8;resize:vertical;">' + saved.replace(/</g, '&lt;') + '</textarea>' +
-          '<button class="save-btn" style="margin-top:8px;" onclick="saveAgpeyaHour(\'' + name + '\')">حفظ</button>' +
+          '<button class="save-btn" style="margin-top:8px;" onclick="saveAgpeyaHour(\'' + name + '\')">' + t('save') + '</button>' +
           '<button class="save-btn" style="margin-top:8px;background:#8a7a60;" onclick="openAgpeya()">رجوع للأجبية</button></div>';
       }
       document.getElementById('prayerContent').innerHTML = body;
@@ -3955,7 +3955,7 @@
       const data = loadData();
       data['agpeya_' + name] = document.getElementById('agpeyaText').value;
       saveData(data);
-      showToast('تم الحفظ');
+      showToast(t('saved'));
     }
 
     let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
@@ -4649,7 +4649,20 @@ function bibleSpeakText(text, onEnd) {
         reflectionToday: 'تأملاتي اليوم', psalmsToday: 'مزاميري اليوم',
         tapToWrite: 'اضغط للكتابة...', thanksLabel: 'شكراً يارب على', tellLabel: 'عاوز أقولك يارب',
         requestLabel: 'طلبة من أجل', wheelHint: 'لفّي الطارة الداخلية • اضغطي على أي أيقونة',
-        save: 'حفظ', today: 'اليوم', settings: 'الإعدادات'
+        save: 'حفظ', back: 'رجوع', cancel: 'إلغاء', delete: 'حذف', share: 'مشاركة',
+        download: 'تحميل', downloadPdf: 'تحميل PDF', loading: 'جاري التحميل…',
+        saved: 'تم الحفظ', deleted: 'تم الحذف', copied: 'تم النسخ',
+        add: 'إضافة', choose: 'اختيار', open: 'فتح', settings: 'الإعدادات',
+        close: 'إغلاق', edit: 'تعديل', yes: 'نعم', no: 'لا', ok: 'حسنًا',
+        error: 'حدث خطأ', notFound: 'غير موجود', noData: 'لا يوجد بيانات',
+        tryAgain: 'حاولي مرة أخرى', shareOk: 'تمت المشاركة ✓', saveOk: 'تم الحفظ ✓',
+        openExternal: 'فتح خارجي', print: 'طباعة', copy: 'نسخ', search: 'بحث',
+        next: 'التالي', prev: 'السابق', weekly: 'أسبوعي', monthly: 'شهري', yearly: 'سنوي',
+        excellence: 'امتياز', level: 'المستوى', poster: 'بوستر', pptx: 'بوربوينت',
+        prayers: 'صلوات', myVerses: 'آياتي المحفوظة', contactUs: 'راسلنا',
+        altar: 'على المذبح', readings: 'قراءات مستنى',
+        noInternet: 'يلزم اتصال بالإنترنت', fileUnavailable: 'الملف غير متاح',
+        allowPopups: 'اسمحي بالنوافذ المنبثقة', writing: 'اضغط للكتابة...', done: 'تم', today: 'اليوم'
       },
       en: {
         baker: 'Prime', sunset: 'Sunset', sleep: 'Sleep', mass: 'Liturgy', praise: 'Praise',
@@ -4663,7 +4676,20 @@ function bibleSpeakText(text, onEnd) {
         reflectionToday: 'My reflection', psalmsToday: 'My psalms today',
         tapToWrite: 'Tap to write...', thanksLabel: 'Thank You Lord for', tellLabel: 'I want to tell You Lord',
         requestLabel: 'A request for', wheelHint: 'Spin the inner wheel • Tap any icon',
-        save: 'Save', today: 'Today', settings: 'Settings'
+        save: 'Save', back: 'Back', cancel: 'Cancel', delete: 'Delete', share: 'Share',
+        download: 'Download', downloadPdf: 'Download PDF', loading: 'Loading…',
+        saved: 'Saved', deleted: 'Deleted', copied: 'Copied',
+        add: 'Add', choose: 'Choose', open: 'Open', settings: 'Settings',
+        close: 'Close', edit: 'Edit', yes: 'Yes', no: 'No', ok: 'OK',
+        error: 'Something went wrong', notFound: 'Not found', noData: 'No data',
+        tryAgain: 'Please try again', shareOk: 'Shared ✓', saveOk: 'Saved ✓',
+        openExternal: 'Open externally', print: 'Print', copy: 'Copy', search: 'Search',
+        next: 'Next', prev: 'Previous', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly',
+        excellence: 'Excellence', level: 'Level', poster: 'Poster', pptx: 'PowerPoint',
+        prayers: 'Prayers', myVerses: 'Saved verses', contactUs: 'Contact us',
+        altar: 'On the altar', readings: 'Readings for me',
+        noInternet: 'Internet required', fileUnavailable: 'File unavailable',
+        allowPopups: 'Please allow pop-ups', writing: 'Tap to write...', done: 'Done', today: 'Today'
       }
     };
     function t(key) {
@@ -4715,6 +4741,13 @@ function bibleSpeakText(text, onEnd) {
       });
       try { if (typeof renderDailyIcons === 'function') renderDailyIcons(); } catch (e3) {}
       try { if (typeof renderServices === 'function') renderServices(); } catch (e5) {}
+      try {
+        document.querySelectorAll('[data-i18n-btn]').forEach(function (el) {
+          var k = el.getAttribute('data-i18n-btn');
+          if (k) el.textContent = t(k);
+        });
+      } catch (eBtn) {}
+
     }
     function setAppLang(lang) {
       localStorage.setItem('khalwati_lang', lang === 'en' ? 'en' : 'ar');
@@ -5633,7 +5666,7 @@ function openSaintsPraises() {
       body += '<textarea id="newSaintText" rows="10" placeholder="الصقي أو اكتبي نص المديح هنا..." style="width:100%;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;line-height:1.8;resize:vertical;box-sizing:border-box;"></textarea>';
       body += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">';
       body += '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="saveNewSaintPraise()">حفظ المديح</button>';
-      body += '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openSaintsPraises()">إلغاء</button>';
+      body += '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openSaintsPraises()">' + t('cancel') + '</button>';
       body += '</div></div>';
       document.getElementById('prayerTitle').textContent = 'إضافة مديح';
       document.getElementById('prayerContent').innerHTML = body;
@@ -5667,7 +5700,7 @@ function openSaintsPraises() {
       if (customIdx < 0 || customIdx >= arr.length) return;
       arr.splice(customIdx, 1);
       saveCustomSaintsPraises(arr);
-      showToast('تم الحذف');
+      showToast(t('deleted'));
       openSaintsPraises();
     }
 
@@ -6077,7 +6110,7 @@ function savePrepareLessonTitleFromUI() {
       body += '<textarea id="prepText" rows="12" style="width:100%;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;line-height:1.9;resize:vertical;box-sizing:border-box;">' +
         String(p.text || '').replace(/</g, '&lt;') + '</textarea>';
       body += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">';
-      body += '<button type="button" class="save-btn prep-act" data-prep-act="savePage" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">حفظ</button>';
+      body += '<button type="button" class="save-btn prep-act" data-prep-act="savePage" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">' + t('save') + '</button>';
       body += '<button type="button" class="save-btn prep-act" data-prep-act="pdfOne" data-prep-idx="' + idx + '" style="margin:0;background:#6b5b3e;">📄 PDF لهذه الصفحة</button>';
       body += '<button type="button" class="save-btn prep-act" data-prep-act="designOne" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">✨ تصميم إيضاح لهذه الصفحة</button>';
       body += '<button type="button" class="save-btn prep-act" data-prep-act="backPages" style="margin:0;background:#8a7a60;">كل الصفحات</button>';
@@ -6208,7 +6241,7 @@ function onPrepareImageSelected(idx, input) {
       savePreparePages(pages);
       var lt = document.getElementById('prepLessonTitle');
       if (lt) savePrepareLessonTitle(lt.value);
-      showToast('تم الحفظ ✓');
+      showToast(t('saveOk'));
       openPreparePages();
     }
 
@@ -6236,13 +6269,13 @@ function onPrepareImageSelected(idx, input) {
           });
           return Promise.all(writes);
         }).then(function () {
-          showToast('تم الحذف');
+          showToast(t('deleted'));
           openPreparePages();
         });
       }).catch(function () {
         pages.splice(idx, 1);
         savePreparePages(pages);
-        showToast('تم الحذف');
+        showToast(t('deleted'));
         openPreparePages();
       });
     }
@@ -7937,8 +7970,8 @@ function onPrepareImageSelected(idx, input) {
       wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#faf6ec;display:flex;flex-direction:column;';
       wrap.innerHTML = ''
         + '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;">'
-        +   '<button type="button" id="inAppBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">رجوع</button>'
-        +   '<button type="button" id="inAppOpenExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">فتح خارجي</button>'
+        +   '<button type="button" id="inAppBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">' + t('back') + '</button>'
+        +   '<button type="button" id="inAppOpenExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">' + t('openExternal') + '</button>'
         +   '<div style="flex:1;font-weight:700;font-size:0.95em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(title || '').replace(/</g,'&lt;') + '</div>'
         + '</div>'
         + '<div id="inAppStatus" style="padding:8px 14px;font-size:0.85em;color:#6a5a40;background:#fff8e7;">لو رابط السفر لم يفتح، اضغطي «فتح خارجي»</div>'
@@ -8037,7 +8070,7 @@ function onPrepareImageSelected(idx, input) {
               html += '</button>';
               html += '<div class="bc-body" data-body="' + idx + '" style="display:none;padding:0 14px 14px;line-height:1.9;color:#3a3020;border-top:1px solid rgba(180,150,80,0.2);">';
               html += '<div style="padding-top:10px;white-space:pre-wrap;">' + esc(item.text) + '</div>';
-              html += '<div style="margin-top:10px;"><button type="button" class="bc-share save-btn" data-i="' + idx + '" style="padding:8px 14px;">مشاركة</button></div>';
+              html += '<div style="margin-top:10px;"><button type="button" class="bc-share save-btn" data-i="' + idx + '" style="padding:8px 14px;">' + t('share') + '</button></div>';
               html += '</div></div>';
             });
           }
@@ -8449,8 +8482,8 @@ function openKatameros(dateObj) {
           html += '<button type="button" class="faith-saint-btn" data-target="' + sid + '" style="display:block;width:100%;text-align:right;padding:8px;border:none;background:transparent;color:#4a3a18;font-weight:700;cursor:pointer;">✨ ' + esc(item.title) + '</button>';
           html += '<div id="' + sid + '" style="display:none;margin-top:6px;line-height:1.8;white-space:pre-wrap;">' + esc(item.text) + '</div>';
           html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">';
-          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="custom" style="padding:6px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-size:0.85em;">مشاركة</button>';
-          html += '<button type="button" data-del="' + idx + '" class="faith-del-btn" style="padding:6px 12px;border-radius:12px;border:1px solid #c99;background:#fff5f5;color:#a33;font-size:0.85em;">حذف</button>';
+          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="custom" style="padding:6px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-size:0.85em;">' + t('share') + '</button>';
+          html += '<button type="button" data-del="' + idx + '" class="faith-del-btn" style="padding:6px 12px;border-radius:12px;border:1px solid #c99;background:#fff5f5;color:#a33;font-size:0.85em;">' + t('delete') + '</button>';
           html += '</div></div>';
         });
 
@@ -8865,7 +8898,7 @@ function openTextModal(type) {
       renderTexts();
       renderServices();
       closeModal();
-      showToast('تم الحفظ ✓');
+      showToast(t('saveOk'));
     }
 
     function deleteText() {
@@ -9262,7 +9295,7 @@ function openTextModal(type) {
             <p id="selectedSinsCount" style="margin-top:10px;font-size:13px;color:var(--gold-dark);"></p>
             <button class="save-btn" onclick="copySinsToConfession()">حفظ الخطايا في كتابة الاعتراف</button>
           </div>
-          <button class="save-btn" onclick="renderConfessionHome()" style="margin-top:8px;background:#8a7a60;">رجوع</button>
+          <button class="save-btn" onclick="renderConfessionHome()" style="margin-top:8px;background:#8a7a60;">' + t('back') + '</button>
         `;
         setTimeout(renderSelectableSins, 30);
       } else if (page === 'during') {
@@ -9271,7 +9304,7 @@ function openTextModal(type) {
             <p>يجب على المعترف أن يكون صادقًا وفي حالة خشوع، منصتًا لإرشاد أب الاعتراف، طالبًا أن ينال توبة وإرشاد الروح القدس من خلال فم الكاهن.</p>
             <p>وأثناء صلاة الأب الكاهن للتحليل يتلو أيضًا المعترف صلوات طلب رحمة الله والثبات على التوبة للنفس الأخير.</p>
           </div>
-          <button class="save-btn" onclick="renderConfessionHome()">رجوع</button>
+          <button class="save-btn" onclick="renderConfessionHome()">' + t('back') + '</button>
         `;
       } else if (page === 'after') {
         html = `
@@ -9279,7 +9312,7 @@ function openTextModal(type) {
             <h3>صلاة بعد الاعتراف</h3>
             <p>أشكر صلاحك أيها الآب محب البشر، لأنك لم تشأ هلاكي. بل أيقظتني من غفلتي، وهديتني إلى طريقك، ورددتني من وادي الهلاك إلى حمى حصنك الأمين. فاملأني بالرجاء والإيمان. لقد أقبلت إليك يا رب كالمريض إلى الطبيب الشافي، وكالمفتقر الجائع إلى الغذاء المشبع، وكالعطشان إلى ينابيع المياه الحية، وكالفقير إلى مصدر الغنى، وكالخاطئ إلى المخلص، وكالمائت إلى ينبوع الحياة. لأنك خلاصي، وطبيبي، وقوتي، وتعزيتي، وسعادتي، وفيك راحتي. فأعني واحفظني وسيّج حولي. وعلمني أن أضع بين يديك كل إرادتي، لأسير حسب ما تشاء. أعن ضعفي كي أثبت، وأدوم أمينًا لك إلى النهاية.</p>
           </div>
-          <button class="save-btn" onclick="renderConfessionHome()">رجوع</button>
+          <button class="save-btn" onclick="renderConfessionHome()">' + t('back') + '</button>
         `;
       }
 
@@ -9322,7 +9355,7 @@ function openTextModal(type) {
             : 'border:2px solid #c9a227; padding:20px; border-radius:12px; min-height:70vh;')
         : (opts.compact ? 'padding:0;min-height:auto;' : '');
       const w = window.open('', '_blank');
-      if (!w) { showToast('اسمحي بالنوافذ المنبثقة للطباعة'); return; }
+      if (!w) { showToast(t('allowPopups')); return; }
       // خطوط PDF مفهومة + رابط جوجل عشان تظهر صح في الطباعة
       const fontLink = 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=El+Messiri:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Reem+Kufi:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&family=Almarai:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap';
       w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
@@ -9706,7 +9739,7 @@ function openTextModal(type) {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        if (typeof showToast === 'function') showToast('تم النسخ');
+        if (typeof showToast === 'function') showToast(t('copied'));
       } catch (e) {
         if (typeof showToast === 'function') showToast('تعذر النسخ');
       }
@@ -11033,7 +11066,7 @@ function openTextModal(type) {
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
               <button class="save-btn" style="flex:1;padding:8px;margin:0;" onclick="designSavedVerse(${i})">🎨 تصميم</button>
               <button class="save-btn" style="flex:1;padding:8px;margin:0;background:#5a7d4a;" onclick="useSavedAsToday(${i})">آية اليوم</button>
-              <button class="save-btn" style="padding:8px 12px;margin:0;background:#8a7a60;" onclick="deleteSavedVerse(${i})">حذف</button>
+              <button class="save-btn" style="padding:8px 12px;margin:0;background:#8a7a60;" onclick="deleteSavedVerse(${i})">' + t('delete') + '</button>
             </div>
           </div>`;
       }).join('');
@@ -11069,7 +11102,7 @@ function openTextModal(type) {
       list.splice(index, 1);
       localStorage.setItem('khalwati_saved_verses', JSON.stringify(list));
       openSavedVerses();
-      showToast('تم الحذف');
+      showToast(t('deleted'));
     }
 
     
@@ -12195,7 +12228,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           }
           throw new Error('no-share');
         }).then(function() {
-          showToast('تمت المشاركة ✓');
+          showToast(t('shareOk'));
         }).catch(function() {
           showToast('احفظي بالضغط المطوّل على الصورة ثم شاركيها من المعرض');
         });
@@ -14980,7 +15013,7 @@ function getSpiritualBooks() {
           listHtml += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">';
           if (b.url) listHtml += '<button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="window.spOpenBookUrl(' + realIndex + ')">فتح الرابط</button>';
           if (b.dataUrl || b.fileId) listHtml += '<button type="button" class="save-btn" style="padding:8px 12px;margin:0;background:#5a7d4a;" onclick="window.spOpenBookFile(' + realIndex + ')">فتح الملف</button>';
-          listHtml += '<button type="button" class="save-btn" style="padding:8px 12px;margin:0;background:#c0392b;" onclick="window.spRemoveBook(' + realIndex + ')">حذف</button>';
+          listHtml += '<button type="button" class="save-btn" style="padding:8px 12px;margin:0;background:#c0392b;" onclick="window.spRemoveBook(' + realIndex + ')">' + t('delete') + '</button>';
           listHtml += '</div></div>';
         });
       }
@@ -15272,7 +15305,7 @@ window.spSearchLib = function (val) {
 
     function openSpiritualFile(book) {
       if (!book) {
-        if (typeof showToast === 'function') showToast('الملف غير متاح');
+        if (typeof showToast === 'function') showToast(t('fileUnavailable'));
         return;
       }
       var name = book.name || book.fileName || 'ملف';
@@ -15297,7 +15330,7 @@ window.spSearchLib = function (val) {
               '<div style="padding:12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;text-align:center;">' +
                 '<p style="margin:0 0 10px;color:#5a4a2a;font-weight:700;">لو لم يظهر المحتوى: «فتح» أو «تحميل»</p>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
-                  '<button type="button" id="spPdfOpenTab" style="padding:12px 18px;border-radius:14px;border:none;background:#5a7d4a;color:#fff;font-weight:800;">فتح</button>' +
+                  '<button type="button" id="spPdfOpenTab" style="padding:12px 18px;border-radius:14px;border:none;background:#5a7d4a;color:#fff;font-weight:800;">' + t('open') + '</button>' +
                   '<a id="spPdfDl" href="' + safeUrl + '" download="' + String(fname || name).replace(/[^\w\u0600-\u06FF\-\.]+/g, '_') + '" style="padding:12px 18px;border-radius:14px;background:#6b5b3e;color:#fff;text-decoration:none;font-weight:800;">تحميل</a>' +
                 '</div>' +
               '</div>' +
@@ -15311,8 +15344,8 @@ window.spSearchLib = function (val) {
         wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#faf6ec;display:flex;flex-direction:column;';
         wrap.innerHTML =
           '<div style="display:flex;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;align-items:center;">' +
-            '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">رجوع</button>' +
-            '<button type="button" id="spFileExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">فتح خارجي</button>' +
+            '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">' + t('back') + '</button>' +
+            '<button type="button" id="spFileExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">' + t('openExternal') + '</button>' +
             '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (typeof spEsc==='function'?spEsc(name):String(name).replace(/</g,'&lt;')) + '</div>' +
           '</div>' + body;
         document.body.appendChild(wrap);
@@ -15397,7 +15430,7 @@ function openSpiritualNotes() {
             return '<div style="padding:12px;margin:8px 0;border-radius:14px;background:#fff;border:1px solid #e8d9b5;text-align:right;">' +
               '<div style="font-size:0.8em;color:#8a7a60;">' + spEsc(n.date || '') + '</div>' +
               '<div style="margin-top:6px;line-height:1.8;white-space:pre-wrap;">' + spEsc(n.text || '') + '</div>' +
-              '<button type="button" class="save-btn" style="margin-top:8px;background:#c0392b;padding:6px 10px;" onclick="window.spDeleteNote(' + i + ')">حذف</button>' +
+              '<button type="button" class="save-btn" style="margin-top:8px;background:#c0392b;padding:6px 10px;" onclick="window.spDeleteNote(' + i + ')">' + t('delete') + '</button>' +
             '</div>';
           }).join('')
         : '<p style="text-align:center;color:#8a7a60;">لا توجد مذكرات بعد</p>';
@@ -15431,7 +15464,7 @@ function openSpiritualNotes() {
       try { notes = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { notes = []; }
       notes.splice(i, 1);
       localStorage.setItem(key, JSON.stringify(notes));
-      showToast('تم الحذف');
+      showToast(t('deleted'));
       openSpiritualNotes();
     };
 
@@ -15567,7 +15600,7 @@ function openSpiritualNotes() {
       if (removed && removed.fileId && typeof spIdbDel === 'function') {
         spIdbDel(removed.fileId);
       }
-      showToast('تم الحذف');
+      showToast(t('deleted'));
       openBooksSection();
     }
 
@@ -15868,7 +15901,7 @@ function playProgressFinalVideo() {
                 '<button type="button" onclick="shareServedPdf(' + i + ')" style="font-size:11px;margin:2px;background:#3d6b8a;color:#fff;border:none;border-radius:6px;padding:4px 8px;">مشاركة PDF</button>' +
                 (p.phone ? '<a href="tel:' + p.phone + '" style="font-size:11px;margin:2px;">اتصال</a>' : '') +
                 (p.phone ? '<a href="https://wa.me/' + String(p.phone || '').replace(/[^0-9]/g, '') + '" target="_blank" rel="noopener" style="font-size:11px;margin:2px;">واتساب</a>' : '') +
-                '<button type="button" onclick="removeServed(' + i + ')" style="font-size:11px;color:#c0392b;margin:2px;">حذف</button>' +
+                '<button type="button" onclick="removeServed(' + i + ')" style="font-size:11px;color:#c0392b;margin:2px;">' + t('delete') + '</button>' +
               '</td></tr>';
           }).join('')
         : '<tr><td colspan="3" style="padding:16px;text-align:center;color:#8a7a60;">لا يوجد مخدومين بعد</td></tr>';
@@ -16006,8 +16039,8 @@ function playProgressFinalVideo() {
           '<label style="' + labelStyle + '">ملاحظات الخادم / الخلوة</label>' +
           '<textarea id="sNotes" dir="rtl" placeholder="ملاحظات عن الخلوة والمتابعة..." style="' + inputStyle + 'min-height:90px;">' + String(existing.notes || '').replace(/</g, '&lt;') + '</textarea>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' +
-            '<button type="button" class="save-btn" style="margin:0;" id="servedSaveBtn" onclick="saveServed()">حفظ</button>' +
-            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">رجوع</button>' +
+            '<button type="button" class="save-btn" style="margin:0;" id="servedSaveBtn" onclick="saveServed()">' + t('save') + '</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">' + t('back') + '</button>' +
           '</div>' +
         '</div>'
       );
@@ -16041,7 +16074,7 @@ function playProgressFinalVideo() {
       var list = JSON.parse(localStorage.getItem('khalwati_served') || '[]');
       list.push(data);
       localStorage.setItem('khalwati_served', JSON.stringify(list));
-      showToast('تم الحفظ');
+      showToast(t('saved'));
       openServantSection();
     }
 
@@ -16111,7 +16144,7 @@ function playProgressFinalVideo() {
           '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">' +
             '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="sendKhalwaReportToServant()">📤 إرسال للخادم (مشاركة)</button>' +
             '<button type="button" class="save-btn" style="margin:0;background:#6b5b3e;" onclick="printKhalwaReport()">📄 PDF</button>' +
-            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">رجوع</button>' +
+            '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="openServantSection()">' + t('back') + '</button>' +
           '</div>' +
         '</div>';
     }
@@ -16684,7 +16717,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '316';
+      var APP_VER = '317';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

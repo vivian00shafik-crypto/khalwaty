@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="320" lang="ar" dir="rtl">
+<html data-app-ver="321" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9373,20 +9373,45 @@ function openTextModal(type) {
 
     function showConfessionPage(page) {
       confessionView = page;
-      const titles = {
-        before: 'قبل الاعتراف',
-        during: 'أثناء الاعتراف',
-        after: 'بعد الاعتراف'
-      };
-      document.getElementById('confessionTitle').textContent = titles[page];
-      let html = '';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var titles = isEn
+        ? { before: 'Before confession', during: 'During confession', after: 'After confession' }
+        : { before: 'قبل الاعتراف', during: 'أثناء الاعتراف', after: 'بعد الاعتراف' };
+      document.getElementById('confessionTitle').textContent = titles[page] || '';
+      var backBtn = '<button class="save-btn" onclick="renderConfessionHome()" style="margin-top:8px;background:#8a7a60;">' + (isEn ? 'Back' : 'رجوع') + '</button>';
+      var html = '';
 
       if (page === 'before') {
-        html = `
+        if (isEn) {
+          html =
+            '<div class="guide-text" style="direction:ltr;text-align:left;">' +
+            '<h3>How do I confess?</h3>' +
+            '<p>Confession has three elements:</p>' +
+            '<p><strong>1 — With myself:</strong> Begin with repentance in your heart. Confession without repentance is empty. It is not only words spoken to the priest; it is true repentance.</p>' +
+            '<p>Conditions of repentance:</p>' +
+            '<p>• A contrite heart, grieving over sin.<br>• A firm resolve to change.<br>• Hope in Christ, His compassion and forgiveness.<br>• Oral confession of sins before the father of confession.</p>' +
+            '<p>Repentance is essential to the Mystery of Confession. This time is your preparation before you go to confess.</p>' +
+            '<p><strong>2 — A session with God:</strong> When you feel the weight of your sins, pour out your sorrow to God in prayer. Speak with Him in detail, as one person to another — not in vague generalities.</p>' +
+            '<p><strong>3 — Then confession to the priest.</strong> In confession keep these in mind:</p>' +
+            '<p>• Confess every kind of sin. A sin left unconfessed remains and troubles you. Be honest and open with your father of confession.<br>• Do not make excuses; we are all sinners.<br>• Also mention positive neglect: prayer neglected, commandments not kept.<br>• Listen carefully to your spiritual father’s advice and accept it.</p>' +
+            '<p>After this the priest prays the prayer of absolution and you receive forgiveness. After absolution, be sure that God has lifted your sins.</p>' +
+            '<h3>Prayer before confession</h3>' +
+            '<p>O holy Father, who loves the return of sinners and has promised to receive them: look now upon a sinful soul that has wandered long in the valleys of disobedience, tasted bitterness, and felt its misery far from the fountain of salvation. It comes to You asking cleansing from the defilements in which it was stuck. Receive it; do not reject it. If You look on it with Your kindness and deal with it in mercy, it will be purified and saved; if You forsake it, it will perish. Grant me grace to draw near to You with firm faith and full hope, to confess my sins and hate returning to them. Let Your Spirit convict me of my faults. Enlighten my heart to see how I have sinned, failed, and neglected. Give me resolve not to return to iniquity, that I may keep Your commandments and live for the glory of Your holy name. Amen.</p>' +
+            '<h3>Prayer of repentance</h3>' +
+            '<p>My Lord, my God, and my Savior Jesus Christ, treasure of mercy and fountain of salvation: I come to You acknowledging my sins. I confess that I boldly defiled Your holy temple with my sins. Now I take refuge in Your mercy and compassion, for Your mercies are beyond number, and You do not turn away a sinner who comes to You. Here I am, O Lord, confessing that my iniquities have risen above my head like a heavy burden, and my strength has left me. Do not hide Your face from me, lest I be terrified. Do not rebuke me in Your anger, nor discipline me in Your wrath, nor judge me according to what I deserve. Have mercy on me, O Lord, for I am weak. Remember that I am the work of Your hands and have pity on me. Do not enter into judgment with Your servant, for no living one will be justified before You. Restore me and clothe me with a new garment worthy of Your glory. Forgive me and pardon me, that I may sing: Blessed is the one whose iniquity is forgiven and whose sin is covered. I confess my sin to You and do not hide my iniquity. I said, I will confess my transgressions to the Lord — and You forgave the guilt of my sin. Amen.</p>' +
+            '<h3>Self-examination guide before confession</h3>' +
+            '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">Tap any sin to select it, then move the selection into writing your confession</p>' +
+            '<div id="sinsContainer"></div>' +
+            '<p id="selectedSinsCount" style="margin-top:10px;font-size:13px;color:var(--gold-dark);"></p>' +
+            '<button class="save-btn" onclick="copySinsToConfession()">Save sins into confession writing</button>' +
+            '</div>' + backBtn;
+          setTimeout(renderSelectableSins, 30);
+        } else {
+          html = `
           <div class="guide-text">
             <h3>كيف أعترف؟</h3>
             <p>للإعتراف ثلاث عناصر:</p>
-            <p><strong>1- بينى وبين نفسى:</strong> ابدأ بالتوبة مع نفسك، لأنه لا معنى للإعتراف بلا توبة، فالإعتراف ليس مجرد كلمات نتلوها على مسامع الأب الكاهن إنما هو توبة.</p>
+            <p><strong>1- بينى وبين نفسى:</strong> ابدأ بالتوبة مع نفسك، لأنه لا معنى للإعتراف بلا توبة، فالاعتراف ليس مجرد كلمات نتلوها على مسامع الأب الكاهن إنما هو توبة.</p>
             <p>ومن شروط التوبة:</p>
             <p>• إنسحاق القلب وندمه على خطاياه.<br>• عزم ثابت على التغيير.<br>• رجاء فى المسيح وفى حنانه، وغفرانه.<br>• إعتراف شفوى بالخطايا أمام الأب الكاهن.</p>
             <p>فالتوبة ركن أساسى فى سر الإعتراف، وهذه الجلسة بمثابة الإستعداد قبل التوجه للإعتراف.</p>
@@ -9394,38 +9419,46 @@ function openTextModal(type) {
             <p><strong>3- ثم بعد هذا الإعتراف على يد الأب الكاهن</strong> وفى الإعتراف راعِ الآتى:</p>
             <p>• أن تعترف بكل أنواع الخطايا، فكل خطية لا تعترف بها تظل باقية، وستظل مصدر قلق لك، فكن أمينًا فى إعترافك، وصارح أب إعترافك بكل ما بداخلك.<br>• لا تحاول إيجاد الأعذار، فكلنا خطاة.<br>• اهتم بالنواحى الإيجابية أيضًا من تقصير فى صلاة أو عدم تنفيذ للوصية.<br>• استمع جيدًا لنصائح أبيك الروحى واقبلها.</p>
             <p>وبعد هذا يصلى الأب الكاهن لك صلاة التحليل فتنال غفران الخطية، وبعد صلاة التحليل تأكد أن الله رفع عنك خطاياك.</p>
-
             <h3>صلاة قبل الاعتراف</h3>
             <p>أيها الآب القدوس، الذي يحب رجوع الخطاة، وقد وعدت أنك مستعد لقبولهم، انظر يا رب الآن إلى نفس خاطئة قد ضلت وتاهت في أودية العصيان زمانًا طويلًا، فيه تمررت وشعرت بشقاوتها، لبعدها عن ينبوع خلاصها. والآن تتقدم إليك، تطلب منك تطهيرها من الأدناس والأقذار التي توحلت فيها. اقبلها ولا ترفضها، فإنك إن نظرت إليها بحنوك وعاملتها برحمتك، تنقت وخلصت، وإن أهملتها بادت وهلكت. امنحني يا رب نعمة بها أتجاسر على الدنو منك بإيمان وطيد ورجاء تام. لأعترف بذنوبي وأكره العودة إليها. وليبكتني روحك على آثامي. أنر قلبي لأرى كم أخطأت وأسأت وتركت وأهملت. وامنحني عزمًا على عدم الرجوع إلى الإثم، لأثبت فى حفظ وصاياك، وأحيا لمجد اسمك القدوس. آمين.</p>
-
             <h3>صلاة التوبة</h3>
             <p>ربي وإلهي ومخلصي يسوع المسيح، كنز الرحمة ونبع الخلاص، آتي إليك مقرًا بذنوبي. أعترف بأني بوقاحة تجاسرت ودنست هيكلك المقدس بخطاياي. والآن ألجأ إلى رحمتك وتحننك، لأن مراحمك لا تُحصى، وأنك لا ترد خاطئًا قد أقبل إليك. فها أنا آتي يا رب معترفًا بأن آثامي قد طمت فوق رأسي كحمل ثقيل، وقد فارقتني قوتي. فلا تحجب يا رب وجهك عني لئلا أرتاع. ولا توبخني بغضبك. ولا تؤدبني بغيظك. ولا تحاكمني بحسب استحقاقي. ارحمني يا رب فإني ضعيف. اذكر يا رب أني عمل يديك وارأف بي. لا تدخل فى المحاكمة مع عبدك، لأنه لن يتبرر قدامك أي حي. عد وألبسني حلة جديدة تليق بمجدك. اغفر لي وسامحني، لأترنم قائلًا: طوبى لمن غفر إثمه، وسترت خطيته. أعترف لك بخطيئتي، ولا أكتم إثمي. قلت أعترف للرب بذنبي. وأنك رفعت آثام خطيتي. آمين.</p>
-
             <h3>مرشد محاسبة النفس قبل الاعتراف</h3>
             <p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">اضغطي على أي خطية لاختيارها، ثم انقليها لكتابة الاعتراف</p>
             <div id="sinsContainer"></div>
             <p id="selectedSinsCount" style="margin-top:10px;font-size:13px;color:var(--gold-dark);"></p>
             <button class="save-btn" onclick="copySinsToConfession()">حفظ الخطايا في كتابة الاعتراف</button>
-          </div>
-          <button class="save-btn" onclick="renderConfessionHome()" style="margin-top:8px;background:#8a7a60;">' + t('back') + '</button>
-        `;
-        setTimeout(renderSelectableSins, 30);
+          </div>` + backBtn;
+          setTimeout(renderSelectableSins, 30);
+        }
       } else if (page === 'during') {
-        html = `
-          <div class="guide-text">
-            <p>يجب على المعترف أن يكون صادقًا وفي حالة خشوع، منصتًا لإرشاد أب الاعتراف، طالبًا أن ينال توبة وإرشاد الروح القدس من خلال فم الكاهن.</p>
-            <p>وأثناء صلاة الأب الكاهن للتحليل يتلو أيضًا المعترف صلوات طلب رحمة الله والثبات على التوبة للنفس الأخير.</p>
-          </div>
-          <button class="save-btn" onclick="renderConfessionHome()">' + t('back') + '</button>
-        `;
+        if (isEn) {
+          html =
+            '<div class="guide-text" style="direction:ltr;text-align:left;">' +
+            '<p>The penitent should be sincere and reverent, listening to the guidance of the father of confession, asking for repentance and the guidance of the Holy Spirit through the priest.</p>' +
+            '<p>While the priest prays the prayer of absolution, the penitent also prays, asking God for mercy and for steadfastness in repentance until the last breath.</p>' +
+            '</div>' + backBtn;
+        } else {
+          html =
+            '<div class="guide-text">' +
+            '<p>يجب على المعترف أن يكون صادقًا وفي حالة خشوع، منصتًا لإرشاد أب الاعتراف، طالبًا أن ينال توبة وإرشاد الروح القدس من خلال فم الكاهن.</p>' +
+            '<p>وأثناء صلاة الأب الكاهن للتحليل يتلو أيضًا المعترف صلوات طلب رحمة الله والثبات على التوبة للنفس الأخير.</p>' +
+            '</div>' + backBtn;
+        }
       } else if (page === 'after') {
-        html = `
-          <div class="guide-text">
-            <h3>صلاة بعد الاعتراف</h3>
-            <p>أشكر صلاحك أيها الآب محب البشر، لأنك لم تشأ هلاكي. بل أيقظتني من غفلتي، وهديتني إلى طريقك، ورددتني من وادي الهلاك إلى حمى حصنك الأمين. فاملأني بالرجاء والإيمان. لقد أقبلت إليك يا رب كالمريض إلى الطبيب الشافي، وكالمفتقر الجائع إلى الغذاء المشبع، وكالعطشان إلى ينابيع المياه الحية، وكالفقير إلى مصدر الغنى، وكالخاطئ إلى المخلص، وكالمائت إلى ينبوع الحياة. لأنك خلاصي، وطبيبي، وقوتي، وتعزيتي، وسعادتي، وفيك راحتي. فأعني واحفظني وسيّج حولي. وعلمني أن أضع بين يديك كل إرادتي، لأسير حسب ما تشاء. أعن ضعفي كي أثبت، وأدوم أمينًا لك إلى النهاية.</p>
-          </div>
-          <button class="save-btn" onclick="renderConfessionHome()">' + t('back') + '</button>
-        `;
+        if (isEn) {
+          html =
+            '<div class="guide-text" style="direction:ltr;text-align:left;">' +
+            '<h3>Prayer after confession</h3>' +
+            '<p>I thank Your goodness, O Father who loves mankind, for You did not desire my destruction. You woke me from my neglect, guided me to Your path, and brought me from the valley of ruin into the shelter of Your sure fortress. Fill me with hope and faith. I have come to You, O Lord, as the sick to the healing Physician, as the hungry poor to satisfying food, as the thirsty to living springs, as the poor to the source of riches, as the sinner to the Savior, as the dead to the fountain of life. For You are my salvation, my Physician, my strength, my comfort, and my joy, and in You is my rest. Help me, keep me, and hedge me about. Teach me to place all my will in Your hands, that I may walk according to what You will. Help my weakness that I may stand firm and remain faithful to You to the end.</p>' +
+            '</div>' + backBtn;
+        } else {
+          html =
+            '<div class="guide-text">' +
+            '<h3>صلاة بعد الاعتراف</h3>' +
+            '<p>أشكر صلاحك أيها الآب محب البشر، لأنك لم تشأ هلاكي. بل أيقظتني من غفلتي، وهديتني إلى طريقك، ورددتني من وادي الهلاك إلى حمى حصنك الأمين. فاملأني بالرجاء والإيمان. لقد أقبلت إليك يا رب كالمريض إلى الطبيب الشافي، وكالمفتقر الجائع إلى الغذاء المشبع، وكالعطشان إلى ينابيع المياه الحية، وكالفقير إلى مصدر الغنى، وكالخاطئ إلى المخلص، وكالمائت إلى ينبوع الحياة. لأنك خلاصي، وطبيبي، وقوتي، وتعزيتي، وسعادتي، وفيك راحتي. فأعني واحفظني وسيّج حولي. وعلمني أن أضع بين يديك كل إرادتي، لأسير حسب ما تشاء. أعن ضعفي كي أثبت، وأدوم أمينًا لك إلى النهاية.</p>' +
+            '</div>' + backBtn;
+        }
       }
 
       document.getElementById('confessionBody').innerHTML = html;
@@ -9966,34 +9999,40 @@ function openTextModal(type) {
       'خطايا روحية': ['عدم الصلاة','عدم الصوم','عدم قراءة الكتاب المقدس','عدم الاعتراف والتناول','عدم احترام بيت الله','شك في الأسرار المقدسة','السرحان أثناء الصلاة']
     };
 
-    function renderSelectableSins() {
-      const container = document.getElementById('sinsContainer');
-      if (!container) return;
-      let html = '';
-      Object.keys(SIN_CATEGORIES).forEach(cat => {
-        html += `<div class="sin-cat"><h4>${cat}</h4><div class="sin-chips">`;
-        SIN_CATEGORIES[cat].forEach(sin => {
-          const sel = selectedSins.includes(sin) ? 'selected' : '';
-          html += `<button type="button" class="sin-chip ${sel}" onclick="toggleSin('${sin.replace(/'/g,"\\'")}')">${sin}</button>`;
-        });
-        html += `</div></div>`;
-      });
-      container.innerHTML = html;
-      updateSelectedSinsCount();
-    }
-
     function toggleSin(sin) {
       const idx = selectedSins.indexOf(sin);
       if (idx > -1) selectedSins.splice(idx, 1);
       else selectedSins.push(sin);
       renderSelectableSins();
-      // نقل تلقائي لكتابة الاعتراف بتاريخ اليوم
       autoSyncSinsToConfession();
     }
 
-    function updateSelectedSinsCount() {
+    function renderSelectableSins() {
+      const container = document.getElementById('sinsContainer');
+      if (!container) return;
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var cats = (isEn && typeof SIN_CATEGORIES_EN !== 'undefined') ? SIN_CATEGORIES_EN : SIN_CATEGORIES;
+      let html = '';
+      Object.keys(cats).forEach(cat => {
+        html += '<div class="sin-cat"><h4>' + cat + '</h4><div class="sin-chips">';
+        cats[cat].forEach(sin => {
+          const sel = selectedSins.includes(sin) ? 'selected' : '';
+          html += '<button type="button" class="sin-chip ' + sel + '" onclick="toggleSin(\'' + sin.replace(/'/g, "\\'") + '\')">' + sin + '</button>';
+        });
+        html += '</div></div>';
+      });
+      container.innerHTML = html;
+      updateSelectedSinsCount();
+    }
+
+function updateSelectedSinsCount() {
       const el = document.getElementById('selectedSinsCount');
-      if (el) el.textContent = selectedSins.length ? `المختارة: ${selectedSins.length} خطية` : 'لم يتم اختيار خطايا بعد';
+      if (el) {
+        var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+        el.textContent = selectedSins.length
+          ? (isEn ? ('Selected: ' + selectedSins.length) : ('المختارة: ' + selectedSins.length + ' خطية'))
+          : (isEn ? 'No sins selected yet' : 'لم يتم اختيار خطايا بعد');
+      }
     }
 
     function getTodayDateLabel() {
@@ -10035,7 +10074,7 @@ function openTextModal(type) {
 
     function copySinsToConfession() {
       if (!selectedSins.length) {
-        showToast('اختاري خطايا أولاً');
+        showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Select sins first':'اختاري خطايا أولاً');
         return;
       }
       autoSyncSinsToConfession();
@@ -10047,7 +10086,7 @@ function openTextModal(type) {
       selectedSins = [];
       document.getElementById('confessionModal').classList.remove('active');
       openTextModal('confession');
-      showToast('تم حفظ الخطايا في كتابة الاعتراف ✓');
+      showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Sins saved into confession writing ✓':'تم حفظ الخطايا في كتابة الاعتراف ✓');
     }
 
     // ===== Audio + Settings =====
@@ -16845,7 +16884,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '320';
+      var APP_VER = '321';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

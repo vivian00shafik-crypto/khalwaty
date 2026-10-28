@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="315" lang="ar" dir="rtl">
+<html data-app-ver="316" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1721,7 +1721,7 @@
 
     <!-- أهدافى النهاردة -->
     <div class="card">
-      <div class="card-title">
+      <div class="card-title" data-i18n="goalsTitle">
         <span class="icon">🍃</span> أهدافى اليوم
       </div>
       <div class="goals-list" id="goalsList">
@@ -1737,7 +1737,7 @@
 
     <!-- أقسام تفتح — أيقونات بدون ورقة -->
     <div class="card">
-      <div class="card-title"><span class="icon">📂</span> أقسام الخلوة</div>
+      <div class="card-title" data-i18n="openSections"><span class="icon">📂</span> أقسام الخلوة</div>
       <div class="daily-icons" id="openIcons"></div>
     </div>
 
@@ -1752,11 +1752,11 @@
     <div class="card">
       <div class="text-section">
         <div class="text-box" onclick="openTextModal('verse')">
-          <div class="text-box-title">🍃 آية اليوم</div>
+          <div class="text-box-title" data-i18n="verseToday">🍃 آية اليوم</div>
           <div class="text-preview" id="versePreview">اضغط للكتابة...</div>
         </div>
         <div class="text-box" onclick="openTextModal('reflection')">
-          <div class="text-box-title">🍃 تأملاتي اليوم</div>
+          <div class="text-box-title" data-i18n="reflectionToday">🍃 تأملاتي اليوم</div>
           <div class="text-preview" id="reflectionPreview">اضغط للكتابة...</div>
         </div>
       </div>
@@ -1765,7 +1765,7 @@
     <!-- مزاميري اليوم -->
     <div class="card">
       <div class="card-title" style="justify-content: space-between;">
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;" data-i18n="psalmsToday">
           <span class="icon">🎵</span> مزاميري اليوم
           <span class="psalm-count" id="psalmCount" style="font-weight:normal;">العدد: 0</span>
         </div>
@@ -1776,15 +1776,15 @@
       <div id="selectedPsalmsHome" style="margin:8px 0 4px;font-size:13px;"></div>
       <div class="psalm-fields">
         <div class="psalm-field">
-          <label>شكراً يارب على</label>
+          <label data-i18n="thanksLabel">شكراً يارب على</label>
           <input type="text" id="psalmThanks" placeholder="...">
         </div>
         <div class="psalm-field">
-          <label>عاوز أقولك يارب</label>
+          <label data-i18n="tellLabel">عاوز أقولك يارب</label>
           <input type="text" id="psalmTell" placeholder="...">
         </div>
         <div class="psalm-field">
-          <label>طلبة من أجل</label>
+          <label data-i18n="requestLabel">طلبة من أجل</label>
           <input type="text" id="psalmRequest" placeholder="...">
         </div>
       </div>
@@ -1804,7 +1804,7 @@
         </div>
         <img class="wheel-layer wheel-front" src="wheel-bg-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v298.webp'" alt="" aria-hidden="true" draggable="false">
       </div>
-      <div class="wheel-hint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
+      <div class="wheel-hint" data-i18n="wheelHint">لفّي الطارة الداخلية • اضغطي على أي أيقونة</div>
     </div>
     <script>
     (function() {
@@ -4635,6 +4635,93 @@ function bibleSpeakText(text, onEnd) {
     function getAppLang() {
       return (localStorage.getItem('khalwati_lang') || 'ar').toLowerCase().indexOf('en') === 0 ? 'en' : 'ar';
     }
+
+    var UI_STRINGS = {
+      ar: {
+        baker: 'باكر', sunset: 'غروب', sleep: 'نوم', mass: 'قداس', praise: 'تسبيحة',
+        fast: 'صوم', silence: 'ساعة صمت', service: 'خدمة اليوم',
+        oldTestament: 'العهد القديم', newTestament: 'العهد الجديد', agpeya: 'الأجبية',
+        howStart: 'كيف أبدأ خلوة', fathers: 'آبائيات', bibleComment: 'تفسير الكتاب',
+        katameros: 'قطمارس', faithExamples: 'تمثلوا بإيمانهم', prepare: 'تحضير',
+        spiritualReading: 'قراءات روحية', saintsPraises: 'مدائح القديسين', servantFollow: 'متابعة الخادم',
+        jesusPrayer: 'صلاة يسوع', confession: 'مساعد الاعتراف', kyrie: 'كيرياليسون', progressChart: 'مستوى الخلوة',
+        goalsTitle: 'أهدافى اليوم', openSections: 'أقسام الخلوة', verseToday: 'آية اليوم',
+        reflectionToday: 'تأملاتي اليوم', psalmsToday: 'مزاميري اليوم',
+        tapToWrite: 'اضغط للكتابة...', thanksLabel: 'شكراً يارب على', tellLabel: 'عاوز أقولك يارب',
+        requestLabel: 'طلبة من أجل', wheelHint: 'لفّي الطارة الداخلية • اضغطي على أي أيقونة',
+        save: 'حفظ', today: 'اليوم', settings: 'الإعدادات'
+      },
+      en: {
+        baker: 'Prime', sunset: 'Sunset', sleep: 'Sleep', mass: 'Liturgy', praise: 'Praise',
+        fast: 'Fast', silence: 'Silence hour', service: "Today's service",
+        oldTestament: 'Old Testament', newTestament: 'New Testament', agpeya: 'Agpeya',
+        howStart: 'How to start', fathers: 'Fathers', bibleComment: 'Bible commentary',
+        katameros: 'Katameros', faithExamples: 'Follow their faith', prepare: 'Prepare',
+        spiritualReading: 'Spiritual readings', saintsPraises: "Saints' praises", servantFollow: 'Servant follow-up',
+        jesusPrayer: 'Jesus Prayer', confession: 'Confession helper', kyrie: 'Kyrie eleison', progressChart: 'Khalwa level',
+        goalsTitle: "Today's goals", openSections: 'Khalwa sections', verseToday: 'Verse of the day',
+        reflectionToday: 'My reflection', psalmsToday: 'My psalms today',
+        tapToWrite: 'Tap to write...', thanksLabel: 'Thank You Lord for', tellLabel: 'I want to tell You Lord',
+        requestLabel: 'A request for', wheelHint: 'Spin the inner wheel • Tap any icon',
+        save: 'Save', today: 'Today', settings: 'Settings'
+      }
+    };
+    function t(key) {
+      var lang = (typeof getAppLang === 'function') ? getAppLang() : 'ar';
+      var pack = UI_STRINGS[lang] || UI_STRINGS.ar;
+      if (pack && pack[key] != null) return pack[key];
+      return (UI_STRINGS.ar && UI_STRINGS.ar[key]) || key;
+    }
+    function refreshItemLabels() {
+      try {
+        if (typeof toggleItems !== 'undefined') toggleItems.forEach(function (it) { if (it && it.id) it.label = t(it.id); });
+        if (typeof openItems !== 'undefined') openItems.forEach(function (it) { if (it && it.id) it.label = t(it.id); });
+        if (typeof serviceItems !== 'undefined') serviceItems.forEach(function (it) { if (it && it.id) it.label = t(it.id); });
+      } catch (e) {}
+    }
+    function applyAppLanguage() {
+      var lang = (typeof getAppLang === 'function') ? getAppLang() : 'ar';
+      try {
+        document.documentElement.lang = (lang === 'en') ? 'en' : 'ar';
+        document.documentElement.dir = (lang === 'en') ? 'ltr' : 'rtl';
+      } catch (e0) {}
+      refreshItemLabels();
+      var pairs = [
+        ['[data-i18n="goalsTitle"]', 'goalsTitle'],
+        ['[data-i18n="openSections"]', 'openSections'],
+        ['[data-i18n="verseToday"]', 'verseToday'],
+        ['[data-i18n="reflectionToday"]', 'reflectionToday'],
+        ['[data-i18n="psalmsToday"]', 'psalmsToday'],
+        ['[data-i18n="thanksLabel"]', 'thanksLabel'],
+        ['[data-i18n="tellLabel"]', 'tellLabel'],
+        ['[data-i18n="requestLabel"]', 'requestLabel'],
+        ['[data-i18n="wheelHint"]', 'wheelHint']
+      ];
+      pairs.forEach(function (pair) {
+        try {
+          document.querySelectorAll(pair[0]).forEach(function (el) {
+            var icon = el.querySelector('.icon');
+            if (icon) {
+              el.innerHTML = icon.outerHTML + ' ' + t(pair[1]);
+            } else {
+              var txt = (el.textContent || '').trim();
+              var prefix = '';
+              var sp = txt.split(/\s+/);
+              if (sp[0] && sp[0].length <= 2 && /[^\w\u0600-\u06FF]/.test(sp[0])) prefix = sp[0] + ' ';
+              el.textContent = prefix + t(pair[1]);
+            }
+          });
+        } catch (e1) {}
+      });
+      try { if (typeof renderDailyIcons === 'function') renderDailyIcons(); } catch (e3) {}
+      try { if (typeof renderServices === 'function') renderServices(); } catch (e5) {}
+    }
+    function setAppLang(lang) {
+      localStorage.setItem('khalwati_lang', lang === 'en' ? 'en' : 'ar');
+      applyAppLanguage();
+      if (typeof showToast === 'function') showToast(lang === 'en' ? 'Language: English' : 'اللغة: العربية');
+    }
+
     function webBookQuery(book) {
       if (!book) return '';
       var code = String(book.code || '').trim();
@@ -14426,7 +14513,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           <button class="save-btn" style="background:#8a7a60;margin-bottom:8px;" onclick="resetTypography()">رجوع للإعدادات الافتراضية</button>
 
           <p style="margin-top:14px;"><strong>اللغة / Language</strong></p>
-          <select id="appLang" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_lang', this.value); showToast(this.value==='en'?'Language: English':'اللغة: العربية');">
+          <select id="appLang" style="width:100%;padding:8px;font-family:inherit;" onchange="setAppLang(this.value);">
             <option value="ar" ${lang==='ar'?'selected':''}>العربية</option>
             <option value="en" ${lang==='en'?'selected':''}>English</option>
           </select>
@@ -16597,7 +16684,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '315';
+      var APP_VER = '316';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -16879,6 +16966,11 @@ function playProgressFinalVideo() {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
 })();
+
+    document.addEventListener('DOMContentLoaded', function () {
+      try { if (typeof applyAppLanguage === 'function') applyAppLanguage(); } catch (e) {}
+    });
+
 </script>
 
 </body>

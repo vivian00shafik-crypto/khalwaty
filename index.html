@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="310" lang="ar" dir="rtl">
+<html data-app-ver="311" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2911,7 +2911,7 @@
               <button type="button" class="goal-mark-btn goal-mark-yes${yesOn ? ' on' : ''}" onclick="setGoalMark(${i},'yes')" title="تم" aria-label="تم">✓</button>
               <button type="button" class="goal-mark-btn goal-mark-no${noOn ? ' on' : ''}" onclick="setGoalMark(${i},'no')" title="لم يتم" aria-label="لم يتم">×</button>
             </div>
-            <input type="text" class="goal-text-input" id="goalText${i}" value="${text.replace(/"/g, '&quot;')}" placeholder="اكتب هدفك هنا..." oninput="saveGoalText(${i})">
+            <input type="text" class="goal-text-input" id="goalText${i}" value="${text.replace(/"/g, '&quot;')}" placeholder="اكتب هدفك هنا..." class="no-voice goal-input" oninput="saveGoalText(${i})">
             <div style="width:100%; display:flex; gap:8px; margin-top:4px; padding-right:4px; align-items:center; font-size:12px; color:var(--brown);">
               <span>من</span>
               <input type="time" id="goalFrom${i}" value="${from}" onchange="saveGoalTime(${i})" style="border:1px solid #d4c4a0; border-radius:8px; padding:4px; font-family:inherit; font-size:12px;">
@@ -8487,13 +8487,46 @@ function openKatameros(dateObj) {
       }
     }
 
-    /** يضيف زر مايك بجانب حقل (input/textarea) إن لم يكن موجودًا */
+    /** مايك فقط للنصوص الكبيرة — مش حقول الأهداف/الشكر الخارجية */
+    var VOICE_ALLOW_IDS = {
+      modalTextarea: 1,
+      verseText: 1,
+      reflectionText: 1,
+      bibleNote: 1,
+      spiritualNote: 1,
+      prepText: 1,
+      bookNote: 1,
+      confessionText: 1
+    };
+    function voiceFieldAllowed(el) {
+      if (!el) return false;
+      var id = el.id || '';
+      if (VOICE_ALLOW_IDS[id]) return true;
+      // textareas كبيرة داخل مودال الصلاة / التصميم / القراءات
+      if ((el.tagName || '').toLowerCase() === 'textarea') {
+        var rows = parseInt(el.getAttribute('rows') || '0', 10);
+        if (rows >= 4) return true;
+        // داخل نوافذ معروفة
+        if (el.closest && (
+          el.closest('#textModal') ||
+          el.closest('#prayerModal') ||
+          el.closest('#prayerContent') ||
+          el.closest('.spiritual-note')
+        )) {
+          // استثناء حقول قصيرة داخل نفس النوافذ إن وُجدت class
+          if (el.classList && (el.classList.contains('no-voice') || el.classList.contains('goal-input') || el.classList.contains('thanks-input'))) return false;
+          var ph = (el.placeholder || '').toLowerCase();
+          // placeholders قصيرة للأهداف
+          if (/هدفك|اكتب هدف|شكرا|عاوز أقول|طلبة/.test(ph)) return false;
+          return true;
+        }
+      }
+      return false;
+    }
     function attachVoiceMicToField(el) {
       if (!el || el.nodeType !== 1) return;
       if (el.getAttribute('data-voice-attached') === '1') return;
-      var tag = (el.tagName || '').toLowerCase();
-      if (tag !== 'textarea' && !(tag === 'input' && (/text|search|url|email|tel/.test((el.type || 'text').toLowerCase()) || !el.type))) return;
-      // تجاهل حقول مخفية أو صغيرة جدًا
+      if (!voiceFieldAllowed(el)) return;
       if (el.type === 'hidden' || el.disabled || el.readOnly) return;
       el.setAttribute('data-voice-attached', '1');
       var btn = document.createElement('button');
@@ -8507,7 +8540,6 @@ function openKatameros(dateObj) {
         ev.stopPropagation();
         toggleVoiceTyping(el.id || el, btn);
       };
-      // ضع الزر بعد الحقل أو في الأب
       try {
         if (el.parentNode) {
           var wrap = document.createElement('div');
@@ -8525,11 +8557,11 @@ function openKatameros(dateObj) {
     function attachVoiceMicsIn(root) {
       root = root || document;
       try {
-        root.querySelectorAll('textarea, input[type="text"], input[type="search"], input:not([type])').forEach(attachVoiceMicToField);
+        root.querySelectorAll('textarea').forEach(attachVoiceMicToField);
       } catch (e) {}
     }
 
-    // ربط تلقائي عند فتح النوافذ
+    // ربط تلقائي محدود: textarea كبيرة فقط (مش input الأهداف)
     (function setupVoiceMicObserver() {
       try {
         document.addEventListener('DOMContentLoaded', function () {
@@ -8540,7 +8572,7 @@ function openKatameros(dateObj) {
             if (!m.addedNodes) return;
             m.addedNodes.forEach(function (n) {
               if (n.nodeType !== 1) return;
-              if (n.matches && (n.matches('textarea, input') )) attachVoiceMicToField(n);
+              if (n.matches && n.matches('textarea')) attachVoiceMicToField(n);
               if (n.querySelectorAll) attachVoiceMicsIn(n);
             });
           });
@@ -16463,7 +16495,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '310';
+      var APP_VER = '311';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

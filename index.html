@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="319" lang="ar" dir="rtl">
+<html data-app-ver="320" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -6072,63 +6072,64 @@ function openSaintsPraises() {
 function savePrepareLessonTitleFromUI() {
       var el = document.getElementById('prepLessonTitle');
       savePrepareLessonTitle(el ? el.value : '');
-      showToast('تم حفظ عنوان الدرس ✓');
+      showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Lesson title saved ✓':'تم حفظ عنوان الدرس ✓');
     }
 
     function addPreparePage() {
       var pages = getPreparePages();
       var MAX_PREPARE_PAGES = 10;
       if (pages.length >= MAX_PREPARE_PAGES) {
-        showToast('الحد الأقصى 10 صفحات للتحضير / البوستر');
+        showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Maximum 10 pages for prepare / poster':'الحد الأقصى 10 صفحات للتحضير / البوستر');
         return;
       }
       var n = pages.length + 1;
-      pages.push({ id: 'p' + Date.now(), title: 'الصفحة ' + n, text: '', image: '' });
+      pages.push({ id: 'p' + Date.now(), title: ((typeof getAppLang==='function'&&getAppLang()==='en')?'Page ':'الصفحة ') + n, text: '', image: '' });
       savePreparePages(pages);
       showToast('تمت إضافة صفحة (' + n + ' من ' + MAX_PREPARE_PAGES + ')');
       openPreparePage(pages.length - 1);
     }
 
     function openPreparePage(idx) {
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
       var pages = getPreparePages();
       var p = pages[idx];
-      if (!p) { showToast('الصفحة غير موجودة'); return; }
+      if (!p) { showToast(isEn ? 'Page not found' : 'الصفحة غير موجودة'); return; }
       var lessonTitle = getPrepareLessonTitle();
-      var body = '<div id="prepPageRoot" style="text-align:right;line-height:1.85;">';
+      var body = '<div id="prepPageRoot" style="text-align:' + (isEn ? 'left' : 'right') + ';direction:' + (isEn ? 'ltr' : 'rtl') + ';line-height:1.85;">';
       if (prepareBrowseDateKey) {
         body += '<p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">📅 ' + prepareBrowseDateKey + '</p>';
       }
       if (lessonTitle) {
         body += '<p style="margin:0 0 10px;font-size:14px;color:var(--gold-dark);font-weight:700;">📘 ' + String(lessonTitle).replace(/</g,'&lt;') + '</p>';
       }
-      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">عنوان الصفحة</label>';
+      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">' + (isEn ? 'Page title' : 'عنوان الصفحة') + '</label>';
       body += '<input id="prepTitle" type="text" value="' + String(p.title || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
-      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">صورة (اختياري)</label>';
+      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">' + (isEn ? 'Image (optional)' : 'صورة (اختياري)') + '</label>';
       body += '<input id="prepImageFile" type="file" accept="image/*" style="width:100%;margin-bottom:8px;font-family:inherit;">';
       if (p.image) {
         body += '<div id="prepImagePreview" style="margin-bottom:12px;text-align:center;">';
         body += '<img src="' + p.image + '" alt="صورة التحضير" style="max-width:100%;max-height:220px;border-radius:12px;border:1px solid #e8d9b5;">';
-        body += '<div style="margin-top:6px;"><button type="button" class="save-btn prep-act" data-prep-act="delImage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;font-size:13px;">حذف الصورة</button></div>';
+        body += '<div style="margin-top:6px;"><button type="button" class="save-btn prep-act" data-prep-act="delImage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;font-size:13px;">' + (isEn ? 'Remove image' : 'حذف الصورة') + '</button></div>';
         body += '</div>';
       } else {
         body += '<div id="prepImagePreview" style="margin-bottom:12px;"></div>';
       }
-      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">محتوى التحضير</label>';
+      body += '<label style="display:block;margin-bottom:6px;font-weight:600;">' + (isEn ? 'Preparation content' : 'محتوى التحضير') + '</label>';
       body += '<textarea id="prepText" rows="12" style="width:100%;padding:12px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;line-height:1.9;resize:vertical;box-sizing:border-box;">' +
         String(p.text || '').replace(/</g, '&lt;') + '</textarea>';
       body += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">';
       body += '<button type="button" class="save-btn prep-act" data-prep-act="savePage" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">' + t('save') + '</button>';
-      body += '<button type="button" class="save-btn prep-act" data-prep-act="pdfOne" data-prep-idx="' + idx + '" style="margin:0;background:#6b5b3e;">📄 PDF لهذه الصفحة</button>';
-      body += '<button type="button" class="save-btn prep-act" data-prep-act="designOne" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">✨ تصميم إيضاح لهذه الصفحة</button>';
-      body += '<button type="button" class="save-btn prep-act" data-prep-act="backPages" style="margin:0;background:#8a7a60;">كل الصفحات</button>';
+      body += '<button type="button" class="save-btn prep-act" data-prep-act="pdfOne" data-prep-idx="' + idx + '" style="margin:0;background:#6b5b3e;">📄 ' + (isEn ? 'PDF for this page' : 'PDF لهذه الصفحة') + '</button>';
+      body += '<button type="button" class="save-btn prep-act" data-prep-act="designOne" data-prep-idx="' + idx + '" style="margin:0;background:#5a7d4a;">✨ ' + (isEn ? 'Design this page' : 'تصميم إيضاح لهذه الصفحة') + '</button>';
+      body += '<button type="button" class="save-btn prep-act" data-prep-act="backPages" style="margin:0;background:#8a7a60;">' + (isEn ? 'All pages' : 'كل الصفحات') + '</button>';
       if (pages.length > 1) {
-        body += '<button type="button" class="save-btn prep-act" data-prep-act="delPage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;">حذف الصفحة</button>';
+        body += '<button type="button" class="save-btn prep-act" data-prep-act="delPage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;">' + (isEn ? 'Delete page' : 'حذف الصفحة') + '</button>';
       }
       body += '</div></div>';
       var titleEl = document.getElementById('prayerTitle');
       var pc = document.getElementById('prayerContent');
       var modal = document.getElementById('prayerModal');
-      if (titleEl) titleEl.textContent = p.title || ('الصفحة ' + (idx + 1));
+      if (titleEl) titleEl.textContent = p.title || ((isEn ? 'Page ' : 'الصفحة ') + (idx + 1));
       if (pc) pc.innerHTML = body;
       if (modal) modal.classList.add('active');
       var fileInput = document.getElementById('prepImageFile');
@@ -6165,7 +6166,7 @@ function savePrepareLessonTitleFromUI() {
         }
         if (!box) return;
         box.innerHTML = '<img src="' + url + '" alt="صورة التحضير" style="max-width:100%;max-height:220px;border-radius:12px;border:1px solid #e8d9b5;">' +
-          '<div style="margin-top:6px;"><button type="button" class="save-btn prep-act" data-prep-act="delImage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;font-size:13px;">حذف الصورة</button></div>';
+          '<div style="margin-top:6px;"><button type="button" class="save-btn prep-act" data-prep-act="delImage" data-prep-idx="' + idx + '" style="margin:0;background:#a65d4a;font-size:13px;">' + (isEn ? 'Remove image' : 'حذف الصورة') + '</button></div>';
         bindPrepareActions(box);
       }).catch(function () {});
     }
@@ -8894,6 +8895,24 @@ function openTextModal(type) {
       data[currentTextType] = textVal;
       if (currentTextType === 'confession') {
         data.confessionDone = !!(textVal && textVal.trim());
+        try {
+          if (textVal && textVal.trim()) {
+            var hist = [];
+            try { hist = JSON.parse(localStorage.getItem('khalwati_confession_history') || '[]'); } catch (eH) { hist = []; }
+            if (!Array.isArray(hist)) hist = [];
+            var dayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate) : new Date().toISOString().slice(0, 10);
+            // لو آخر محفوظ في نفس اليوم بنفس النص تقريبًا، حدّثه بدل تكرار
+            var nowTs = Date.now();
+            var entry = { date: dayKey, text: textVal.trim(), ts: nowTs };
+            if (hist.length && hist[0].date === dayKey && hist[0].text === entry.text) {
+              hist[0].ts = nowTs;
+            } else {
+              hist.unshift(entry);
+            }
+            if (hist.length > 60) hist = hist.slice(0, 60);
+            localStorage.setItem('khalwati_confession_history', JSON.stringify(hist));
+          }
+        } catch (eHist) {}
       }
       if (currentTextType === 'likedReadings' && textVal) {
         const monthKey = 'readings_' + currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0');
@@ -9246,6 +9265,10 @@ function openTextModal(type) {
     }
 
     function closeConfession() {
+      if (confessionView === 'historyItem') {
+        renderConfessionHistory();
+        return;
+      }
       if (confessionView !== 'home') {
         renderConfessionHome();
         return;
@@ -9255,16 +9278,98 @@ function openTextModal(type) {
 
     function renderConfessionHome() {
       confessionView = 'home';
-      document.getElementById('confessionTitle').textContent = 'مساعد الاعتراف';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      document.getElementById('confessionTitle').textContent = isEn ? 'Confession helper' : 'مساعد الاعتراف';
       document.getElementById('confessionBody').innerHTML = `
         <div class="helper-grid">
-          <button class="helper-btn" onclick="showConfessionPage('before')">🌿<br>قبل الاعتراف</button>
-          <button class="helper-btn" onclick="showConfessionPage('during')">🙏<br>أثناء الاعتراف</button>
-          <button class="helper-btn" onclick="showConfessionPage('after')">✨<br>بعد الاعتراف</button>
-          <button class="helper-btn" onclick="openTextModal('confession'); document.getElementById('confessionModal').classList.remove('active');">✍️<br>كتابة الاعتراف</button>
+          <button class="helper-btn" onclick="showConfessionPage('before')">🌿<br>${isEn ? 'Before confession' : 'قبل الاعتراف'}</button>
+          <button class="helper-btn" onclick="showConfessionPage('during')">🙏<br>${isEn ? 'During confession' : 'أثناء الاعتراف'}</button>
+          <button class="helper-btn" onclick="showConfessionPage('after')">✨<br>${isEn ? 'After confession' : 'بعد الاعتراف'}</button>
+          <button class="helper-btn" onclick="openTextModal('confession'); document.getElementById('confessionModal').classList.remove('active');">✍️<br>${isEn ? 'Write confession' : 'كتابة الاعتراف'}</button>
+          <button class="helper-btn" onclick="renderConfessionHistory()">📂<br>${isEn ? 'Saved history' : 'المحفوظات'}</button>
         </div>
       `;
     }
+
+    function getConfessionHistory() {
+      try {
+        var hist = JSON.parse(localStorage.getItem('khalwati_confession_history') || '[]');
+        return Array.isArray(hist) ? hist : [];
+      } catch (e) { return []; }
+    }
+
+    function renderConfessionHistory() {
+      confessionView = 'history';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      document.getElementById('confessionTitle').textContent = isEn ? 'Confession history' : 'محفوظات الاعتراف';
+      var hist = getConfessionHistory();
+      var html = '';
+      html += '<button type="button" class="save-btn" style="margin-bottom:12px;background:#8a7a60;" onclick="renderConfessionHome()">' + (isEn ? 'Back' : 'رجوع') + '</button>';
+      if (!hist.length) {
+        html += '<p style="text-align:center;color:#8a7a60;padding:20px;">' + (isEn ? 'No saved confessions yet.' : 'لا توجد محفوظات بعد.') + '</p>';
+      } else {
+        hist.forEach(function (item, i) {
+          var d = item.date || '';
+          var tstr = '';
+          try {
+            if (item.ts) {
+              var dt = new Date(item.ts);
+              tstr = dt.toLocaleString(isEn ? 'en-GB' : 'ar-EG');
+            }
+          } catch (e0) {}
+          var preview = String(item.text || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+          html += '<div style="margin:0 0 10px;padding:12px;border-radius:14px;border:1px solid #e8d9b5;background:rgba(255,253,248,0.95);text-align:' + (isEn ? 'left' : 'right') + ';">';
+          html += '<div style="font-weight:700;color:#5a4a2a;margin-bottom:4px;">📅 ' + d + (tstr ? (' · ' + tstr) : '') + '</div>';
+          html += '<div style="font-size:13px;color:#6a5a3a;line-height:1.7;margin-bottom:8px;">' + preview.replace(/</g,'&lt;') + (String(item.text||'').length > 80 ? '…' : '') + '</div>';
+          html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+          html += '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;font-size:13px;" onclick="openConfessionHistoryItem(' + i + ')">' + (isEn ? 'Open' : 'فتح') + '</button>';
+          html += '<button type="button" class="save-btn" style="margin:0;background:#a65d4a;font-size:13px;" onclick="deleteConfessionHistoryItem(' + i + ')">' + (isEn ? 'Delete' : 'حذف') + '</button>';
+          html += '</div></div>';
+        });
+      }
+      document.getElementById('confessionBody').innerHTML = html;
+    }
+
+    function openConfessionHistoryItem(i) {
+      var hist = getConfessionHistory();
+      var item = hist[i];
+      if (!item) return;
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      confessionView = 'historyItem';
+      document.getElementById('confessionTitle').textContent = (isEn ? 'Saved · ' : 'محفوظ · ') + (item.date || '');
+      var body = '';
+      body += '<button type="button" class="save-btn" style="margin-bottom:12px;background:#8a7a60;" onclick="renderConfessionHistory()">' + (isEn ? 'Back to list' : 'رجوع للقائمة') + '</button>';
+      body += '<div style="padding:14px;border-radius:14px;border:1px solid #e8d9b5;background:#fff;line-height:1.9;white-space:pre-wrap;">' + String(item.text || '').replace(/</g,'&lt;') + '</div>';
+      body += '<button type="button" class="save-btn" style="margin-top:12px;background:#5a7d4a;" onclick="loadConfessionHistoryToEditor(' + i + ')">' + (isEn ? 'Load into editor' : 'فتح في الكتابة') + '</button>';
+      document.getElementById('confessionBody').innerHTML = body;
+    }
+
+    function loadConfessionHistoryToEditor(i) {
+      var hist = getConfessionHistory();
+      var item = hist[i];
+      if (!item) return;
+      try {
+        document.getElementById('confessionModal').classList.remove('active');
+      } catch (e) {}
+      openTextModal('confession');
+      setTimeout(function () {
+        var ta = document.getElementById('modalTextarea');
+        if (ta) {
+          ta.value = item.text || '';
+          try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (e2) {}
+        }
+      }, 50);
+    }
+
+    function deleteConfessionHistoryItem(i) {
+      var hist = getConfessionHistory();
+      if (i < 0 || i >= hist.length) return;
+      hist.splice(i, 1);
+      localStorage.setItem('khalwati_confession_history', JSON.stringify(hist));
+      renderConfessionHistory();
+      if (typeof showToast === 'function') showToast((typeof getAppLang === 'function' && getAppLang() === 'en') ? 'Deleted' : 'تم الحذف');
+    }
+
 
     function showConfessionPage(page) {
       confessionView = page;
@@ -16740,7 +16845,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '319';
+      var APP_VER = '320';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

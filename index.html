@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="321" lang="ar" dir="rtl">
+<html data-app-ver="322" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -14623,7 +14623,8 @@ function showDesignSavePreview(url, name, silent, blob) {
 
 
     function openSettings() {
-      document.getElementById('prayerTitle').textContent = 'إعدادات التطبيق';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      document.getElementById('prayerTitle').textContent = isEn ? 'App settings' : 'إعدادات التطبيق';
       const muted = isMuted();
       const fontSize = localStorage.getItem('khalwati_font_size') || '16';
       const fontColor = localStorage.getItem('khalwati_font_color') || '#3e2f1c';
@@ -14642,122 +14643,122 @@ function showDesignSavePreview(url, name, silent, blob) {
         'Roboto','Open Sans','Montserrat','Merriweather','Playfair Display'
       ];
       const fontOptionsHtml = fontList.map(f => {
-        const label = (f === 'Aref Ruqaa') ? '✍ خط اليد (Aref Ruqaa)' : f;
-        return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — نموذج خلوتي</div>`;
+        const label = (f === 'Aref Ruqaa') ? (isEn ? '✍ Handwriting (Aref Ruqaa)' : '✍ خط اليد (Aref Ruqaa)') : f;
+        return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — ${isEn ? 'Khalwaty sample' : 'نموذج خلوتي'}</div>`;
       }).join('');
       let cd = '', cm = '', cy = '';
       if (confDate && confDate.length >= 8) {
         const p = confDate.split('-');
         cy = p[0] || ''; cm = p[1] || ''; cd = p[2] || '';
       }
-      let dayOpts = '<option value="">يوم</option>';
+      let dayOpts = '<option value="">'+(isEn?'Day':'يوم')+'</option>';
       for (let i = 1; i <= 31; i++) {
         const v = String(i).padStart(2,'0');
         dayOpts += '<option value="'+v+'" '+(cd===v?'selected':'')+'>'+i+'</option>';
       }
-      const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-      let monthOpts = '<option value="">شهر</option>';
+      const monthNames = isEn ? ['January','February','March','April','May','June','July','August','September','October','November','December'] : ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      let monthOpts = '<option value="">'+(isEn?'Month':'شهر')+'</option>';
       for (let i = 1; i <= 12; i++) {
         const v = String(i).padStart(2,'0');
         monthOpts += '<option value="'+v+'" '+(cm===v?'selected':'')+'>'+monthNames[i-1]+'</option>';
       }
       const thisYear = new Date().getFullYear();
-      let yearOpts = '<option value="">سنة</option>';
+      let yearOpts = '<option value="">'+(isEn?'Year':'سنة')+'</option>';
       for (let y = thisYear; y >= thisYear - 15; y--) {
         yearOpts += '<option value="'+y+'" '+(cy===String(y)?'selected':'')+'>'+y+'</option>';
       }
       document.getElementById('prayerContent').innerHTML = `
-        <div style="text-align:right; line-height:1.9; font-size:14px;">
-          <button type="button" class="save-btn" style="margin:0 0 12px 0;background:#5a7d4a;" onclick="openDataRecoveryPanel()">💾 استرجاع بياناتي / نسخة احتياطية</button>
-          <p><strong>صوت الترنيمة</strong></p>
-          <p>الحالة: ${muted ? 'مكتوم 🔇' : 'مفعّل 🔊'}</p>
-          <button class="save-btn" onclick="toggleMute(); openSettings();">${muted ? 'تفعيل الصوت' : 'كتم الصوت'}</button>
+        <div style="text-align:${isEn?'left':'right'};direction:${isEn?'ltr':'rtl'}; line-height:1.9; font-size:14px;">
+          <button type="button" class="save-btn" style="margin:0 0 12px 0;background:#5a7d4a;" onclick="openDataRecoveryPanel()">${isEn?'💾 Restore my data / Backup':'💾 استرجاع بياناتي / نسخة احتياطية'}</button>
+          <p><strong>${isEn?'Hymn sound':'صوت الترنيمة'}</strong></p>
+          <p>${isEn?'Status: ':'الحالة: '}${muted ? (isEn?'Muted 🔇':'مكتوم 🔇') : (isEn?'On 🔊':'مفعّل 🔊')}</p>
+          <button class="save-btn" onclick="toggleMute(); openSettings();">${muted ? (isEn?'Unmute':'تفعيل الصوت') : (isEn?'Mute':'كتم الصوت')}</button>
 
-          <p style="margin-top:14px;"><strong>شكل التطبيق</strong></p>
-          <label>حجم الخط</label>
+          <p style="margin-top:14px;"><strong>${isEn?'App look':'شكل التطبيق'}</strong></p>
+          <label>${isEn?'Font size':'حجم الخط'}</label>
           <input type="range" id="appFontSize" min="14" max="22" value="${fontSize}" style="width:100%;" oninput="applyAppFont(this.value)">
-          <label>لون الخط</label>
+          <label>${isEn?'Font color':'لون الخط'}</label>
           <input type="color" id="appFontColor" value="${fontColor}" style="width:100%;height:36px;" onchange="localStorage.setItem('khalwati_font_color', this.value); document.body.style.color=this.value;">
 
-          <p style="margin-top:14px;"><strong>تخصيص الخط والمحاذاة</strong></p>
-          <p style="font-size:12px;color:#8a7a60;">الخط (اضغطي للمعاينة):</p>
+          <p style="margin-top:14px;"><strong>${isEn?'Font & alignment':'تخصيص الخط والمحاذاة'}</strong></p>
+          <p style="font-size:12px;color:#8a7a60;">${isEn?'Font (tap to preview):':'الخط (اضغطي للمعاينة):'}</p>
           <div style="max-height:180px;overflow-y:auto;border:1px solid #e8d9b5;border-radius:12px;padding:6px;margin-bottom:8px;">
             ${fontOptionsHtml}
           </div>
-          <p style="font-size:12px;color:#8a7a60;">حجم الخط:</p>
+          <p style="font-size:12px;color:#8a7a60;">${isEn?'Size:':'حجم الخط:'}</p>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
             ${[12,14,16,18].map(s => `<button type="button" class="align-btn ${fontSize==String(s)?'active':''}" onclick="setAppFontSize('${s}'); openSettings();">${s}</button>`).join('')}
           </div>
-          <p style="font-size:12px;color:#8a7a60;">محاذاة النص:</p>
+          <p style="font-size:12px;color:#8a7a60;">${isEn?'Text alignment:':'محاذاة النص:'}</p>
           <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <button type="button" class="align-btn ${align==='right'?'active':''}" onclick="setAppAlign('right'); openSettings();" title="يمين">⇥ يمين</button>
-            <button type="button" class="align-btn ${align==='center'?'active':''}" onclick="setAppAlign('center'); openSettings();" title="منتصف">≡ منتصف</button>
-            <button type="button" class="align-btn ${align==='left'?'active':''}" onclick="setAppAlign('left'); openSettings();" title="يسار">⇤ يسار</button>
+            <button type="button" class="align-btn ${align==='right'?'active':''}" onclick="setAppAlign('right'); openSettings();" title="Right">⇥ ${isEn?'Right':'يمين'}</button>
+            <button type="button" class="align-btn ${align==='center'?'active':''}" onclick="setAppAlign('center'); openSettings();" title="Center">≡ ${isEn?'Center':'منتصف'}</button>
+            <button type="button" class="align-btn ${align==='left'?'active':''}" onclick="setAppAlign('left'); openSettings();" title="Left">⇤ ${isEn?'Left':'يسار'}</button>
           </div>
-          <button class="save-btn" style="background:#8a7a60;margin-bottom:8px;" onclick="resetTypography()">رجوع للإعدادات الافتراضية</button>
+          <button class="save-btn" style="background:#8a7a60;margin-bottom:8px;" onclick="resetTypography()">${isEn?'Reset to defaults':'رجوع للإعدادات الافتراضية'}</button>
 
-          <p style="margin-top:14px;"><strong>اللغة / Language</strong></p>
+          <p style="margin-top:14px;"><strong>${isEn?'Language':'اللغة / Language'}</strong></p>
           <select id="appLang" style="width:100%;padding:8px;font-family:inherit;" onchange="setAppLang(this.value);">
-            <option value="ar" ${lang==='ar'?'selected':''}>العربية</option>
-            <option value="en" ${lang==='en'?'selected':''}>English</option>
+            <option value="ar" ${lang==='ar'?'selected':''}>${isEn?'Arabic':'العربية'}</option>
+            <option value="en" ${lang==='en'?'selected':''}>${isEn?'English':'English'}</option>
           </select>
 
-          <p style="margin-top:14px;"><strong>نوع المستخدم (للرسم البياني)</strong></p>
+          <p style="margin-top:14px;"><strong>${isEn?'User type (for progress chart)':'نوع المستخدم (للرسم البياني)'}</strong></p>
           <select id="appGender" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_gender', this.value); try { var p=serviceItems.find(function(s){return s.id==='progressChart';}); if(p)p.icon=progressIcon(); var k=serviceItems.find(function(s){return s.id==='kyrie';}); if(k)k.icon=kyrieIcon(); if(typeof renderDailyIcons==='function')renderDailyIcons(); if(typeof renderServices==='function')renderServices(); } catch(e){}" >
-            <option value="girl" ${gender==='girl'?'selected':''}>بنت / Girl</option>
-            <option value="boy" ${gender==='boy'?'selected':''}>ولد / Boy</option>
+            <option value="girl" ${gender==='girl'?'selected':''}>${isEn?'Girl':'بنت / Girl'}</option>
+            <option value="boy" ${gender==='boy'?'selected':''}>${isEn?'Boy':'ولد / Boy'}</option>
           </select>
 
-          <p style="margin-top:14px;"><strong>ميعاد الاعتراف القادم</strong></p>
-          <label>آخر اعتراف (يوم / شهر / سنة)</label>
+          <p style="margin-top:14px;"><strong>${isEn?'Next confession date':'ميعاد الاعتراف القادم'}</strong></p>
+          <label>${isEn?'Last confession (day / month / year)':'آخر اعتراف (يوم / شهر / سنة)'}</label>
           <div style="display:flex;gap:6px;margin-bottom:6px;direction:ltr;">
             <select id="confDay" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${dayOpts}</select>
             <select id="confMonth" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${monthOpts}</select>
             <select id="confYear" style="flex:1;padding:8px;font-family:inherit;" onchange="saveConfDateParts()">${yearOpts}</select>
           </div>
-          <label>التذكير كل</label>
+          <label>${isEn?'Remind every':'التذكير كل'}</label>
           <select id="confEvery" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_conf_every', this.value); updateNextConfInfo();">
-            <option value="40" ${confEvery==='40'?'selected':''}>40 يوم</option>
-            <option value="30" ${confEvery==='30'?'selected':''}>كل شهر (30 يوم)</option>
+            <option value="40" ${confEvery==='40'?'selected':''}>${isEn?'40 days':'40 يوم'}</option>
+            <option value="30" ${confEvery==='30'?'selected':''}>${isEn?'Every month (30 days)':'كل شهر (30 يوم)'}</option>
           </select>
           <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
 
-          <p style="margin-top:14px;"><strong>♿ وضع المكفوفين وإمكانية الوصول</strong></p>
+          <p style="margin-top:14px;"><strong>${isEn?'♿ Accessibility / blind mode':'♿ وضع المكفوفين وإمكانية الوصول'}</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">
-            يساعد المكفوفين وضعاف البصر: أزرار أكبر، دعم قارئ الشاشة (TalkBack / VoiceOver)، ونطق صوتي للمحتوى بالعربية.
+            ${isEn?'Larger buttons, screen reader support (TalkBack / VoiceOver), and spoken content.':'يساعد المكفوفين وضعاف البصر: أزرار أكبر، دعم قارئ الشاشة (TalkBack / VoiceOver)، و${isEn?'Speak content aloud':'نطق صوتي للمحتوى'} بالعربية.'}
           </p>
           <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
             <input type="checkbox" id="a11yMode" ${isA11yMode()?'checked':''} onchange="setA11yMode(this.checked); openSettings();">
-            تفعيل وضع المكفوفين
+            ${isEn?'Enable accessibility mode':'تفعيل وضع المكفوفين'}
           </label>
           <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
             <input type="checkbox" id="a11ySpeak" ${isA11ySpeak()?'checked':''} onchange="setA11ySpeak(this.checked)">
-            نطق صوتي للمحتوى
+            ${isEn?'Speak content aloud':'نطق صوتي للمحتوى'}
           </label>
           <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
             <input type="checkbox" id="a11yContrast" ${isA11yContrast()?'checked':''} onchange="setA11yContrast(this.checked)">
-            تباين أعلى للنصوص
+            ${isEn?'Higher text contrast':'تباين أعلى للنصوص'}
           </label>
-          <label style="display:block;margin:8px 0;font-size:13px;">سرعة النطق
+          <label style="display:block;margin:8px 0;font-size:13px;">${isEn?'Speech rate':'سرعة النطق'}
             <input type="range" min="0.6" max="1.2" step="0.1" value="${localStorage.getItem('khalwati_a11y_rate')||'0.9'}"
-              style="width:100%;" onchange="localStorage.setItem('khalwati_a11y_rate', this.value); speakA11y('هذه سرعة النطق', {force:true});">
+              style="width:100%;" onchange="localStorage.setItem('khalwati_a11y_rate', this.value); speakA11y('هذه ${isEn?'Speech rate':'سرعة النطق'}', {force:true});">
           </label>
-          <button type="button" class="save-btn" style="margin:8px 0;background:#5a7d4a;" onclick="speakCurrentScreen()">🔊 اقرأ ملخص الشاشة الحالية</button>
-          <button type="button" class="save-btn" style="margin:0 0 12px;background:#8a7a60;" onclick="stopA11ySpeak()">⏹ إيقاف النطق</button>
+          <button type="button" class="save-btn" style="margin:8px 0;background:#5a7d4a;" onclick="speakCurrentScreen()">${isEn?'🔊 Read current screen summary':'🔊 اقرأ ملخص الشاشة الحالية'}</button>
+          <button type="button" class="save-btn" style="margin:0 0 12px;background:#8a7a60;" onclick="stopA11ySpeak()">${isEn?'⏹ Stop speaking':'⏹ إيقاف النطق'}</button>
 
-          <p style="margin-top:14px;"><strong>حفظ النشاط والأيام السابقة</strong></p>
+          <p style="margin-top:14px;"><strong>${isEn?'Save activity & past days':'حفظ النشاط والأيام السابقة'}</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">
             نشاطك متسجّل على الموبايل لكل يوم على حدة. <b>تحديث ملفات التطبيق لا يمسح الأيام اللي فاتت</b>.
             يُفضّل أخذ نسخة احتياطية قبل مسح بيانات المتصفح أو تغيير الجهاز.
           </p>
-          <button class="save-btn" style="margin-bottom:8px;background:#5a7d4a;" onclick="exportKhalwatiBackup()">⬇️ نسخ احتياطي لكل النشاط</button>
+          <button class="save-btn" style="margin-bottom:8px;background:#5a7d4a;" onclick="exportKhalwatiBackup()">${isEn?'⬇️ Backup all activity':'⬇️ نسخ احتياطي لكل النشاط'}</button>
           <label class="save-btn" style="display:block;text-align:center;margin-bottom:8px;background:#8a7a60;cursor:pointer;">
-            ⬆️ استرجاع من ملف
+            ${isEn?'⬆️ Restore from file':'⬆️ استرجاع من ملف'}
             <input type="file" accept="application/json,.json" style="display:none" onchange="importKhalwatiBackupFromFile(this.files[0]); this.value='';">
           </label>
-          <p style="font-size:11px;color:#8a7a60;margin:0 0 12px;">عدد أيام مسجّل نشاطها: <b id="historyDaysCount">…</b></p>
+          <p style="font-size:11px;color:#8a7a60;margin:0 0 12px;">${isEn?'Days with recorded activity:':'عدد أيام مسجّل نشاطها:'} <b id="historyDaysCount">…</b></p>
 
-          <p style="margin-top:14px;"><strong>أوقات تنبيه صلوات الأجبية</strong></p>
+          <p style="margin-top:14px;"><strong>${isEn?'Agpeya prayer alarm times':'أوقات تنبيه صلوات الأجبية'}</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">فعّلي الساعة وحددي وقتها — هيوصلك تنبيه في الموعد (حتى والتطبيق في الخلفية إن سمحتِ بالإشعارات).</p>
           <div id="agpeyaAlarmsBox" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
             ${(typeof getAgpeyaAlarms === "function" ? getAgpeyaAlarms() : []).map(function(a) {
@@ -14770,14 +14771,14 @@ function showDesignSavePreview(url, name, silent, blob) {
               '</div>';
             }).join('')}
           </div>
-          <label>صوت يسوع اليومي (آية كتابية)</label>
+          <label>${isEn?'Daily Jesus voice (Bible verse)':'صوت يسوع اليومي (آية كتابية)'}</label>
           <input type="time" id="msgTime" value="${msgTime}" style="width:100%;padding:8px;" onchange="localStorage.setItem('khalwati_msg_time', this.value); scheduleJesusNotificationForUserTime();">
           <p style="font-size:12px;color:#8a7a60;">والتطبيق مقفول: يوصلك إشعار بصوت نظام الموبايل + نص الآية. صوت يسوع الخاص يشتغل لما تضغطي الإشعار (قيود أندرويد/آيفون تمنع تشغيل ملف صوتي والتطبيق مقفول تمامًا). فعّلي الإشعارات وارفعي صوت الإعلامات من إعدادات الموبايل.</p>
-          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="requestNotifyPermission();">تفعيل إشعارات صوت يسوع في الخلفية</button>
-          <button class="save-btn" style="margin-top:8px;background:#6b5b3e;" onclick="testNotificationNow();">🔔 اختبار إشعار الآن</button>
-          <button class="save-btn" style="margin-top:8px;background:#4a6a8a;" onclick="rescheduleAllNotifications();">⏰ إعادة جدولة المواعيد</button>
-          <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast('تم حفظ الإعدادات');">حفظ وطلب إذن الإشعارات</button>
-          <button class="save-btn" style="margin-top:8px;background:#c9a227;" onclick="requestNotifyPermission(); testJesusVoiceNow();">تجربة صوت يسوع الآن (آية + صوت)</button>
+          <button class="save-btn" style="margin-top:8px;background:#5a7d4a;" onclick="requestNotifyPermission();">${isEn?'Enable Jesus-voice notifications in background':'تفعيل إشعارات صوت يسوع في الخلفية'}</button>
+          <button class="save-btn" style="margin-top:8px;background:#6b5b3e;" onclick="testNotificationNow();">${isEn?'🔔 Test notification now':'🔔 اختبار إشعار الآن'}</button>
+          <button class="save-btn" style="margin-top:8px;background:#4a6a8a;" onclick="rescheduleAllNotifications();">${isEn?'⏰ Reschedule times':'⏰ إعادة جدولة المواعيد'}</button>
+          <button class="save-btn" style="margin-top:10px;background:#5a7d4a;" onclick="requestNotifyPermission(); showToast(isEn?'Settings saved':'تم حفظ الإعدادات');">${isEn?'Save & request notification permission':'حفظ وطلب إذن الإشعارات'}</button>
+          <button class="save-btn" style="margin-top:8px;background:#c9a227;" onclick="requestNotifyPermission(); testJesusVoiceNow();">${isEn?'Try Jesus voice now (verse + audio)':'تجربة صوت يسوع الآن (آية + صوت)'}</button>
           <p style="font-size:12px;color:#8a7a60;margin-top:8px;line-height:1.7;">لكي يوصل الإشعار في ميعاده والتطبيق <b>مقفول أو في الخلفية</b>:<br>
 1) ثبّتي «خلوتي» على الشاشة الرئيسية (إضافة إلى الشاشة الرئيسية).<br>
 2) اسمحي بالإشعارات من الزر أعلاه.<br>
@@ -16884,7 +16885,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '321';
+      var APP_VER = '322';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

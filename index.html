@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="317" lang="ar" dir="rtl">
+<html data-app-ver="318" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -15665,9 +15665,13 @@ function dayScore(d) {
 
 function openProgressChart(period) {
       period = period || 'week';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
       var gender = localStorage.getItem('khalwati_gender') || 'girl';
       var personEmoji = gender === 'boy' ? '👦' : '👧';
-      var person = gender === 'boy' ? 'ولد' : 'بنت';
+      var person = gender === 'boy' ? (isEn ? 'boy' : 'ولد') : (isEn ? 'girl' : 'بنت');
+      var dayNamesLocal = isEn
+        ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        : (typeof dayNames !== 'undefined' ? dayNames : ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']);
 
       // يوم ناجح = درجة يومية معقولة من أنشطة الخلوة
       function isDaySuccess(d) {
@@ -15685,7 +15689,7 @@ function openProgressChart(period) {
           var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 12);
           var ok = isDaySuccess(d);
           if (ok) successCount++;
-          levels.push({ label: dayNames[d.getDay()], score: ok ? 1 : 0, raw: dayScore(d) });
+          levels.push({ label: dayNamesLocal[d.getDay()], score: ok ? 1 : 0, raw: dayScore(d) });
         }
       } else if (period === 'month') {
         var y = now.getFullYear(), m = now.getMonth();
@@ -15742,35 +15746,43 @@ function openProgressChart(period) {
         if (level === 'final') {
           progressImg = 'progress-boy-final.jpg?' + cacheBust;
           progressVideo = 'progress-boy-final.mp4?' + cacheBust;
-          stageText = 'امتياز — الولد في حضن يسوع 🤗';
+          stageText = isEn ? 'Excellence — the boy in Jesus’ embrace 🤗' : 'امتياز — الولد في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-boy-high.jpg?' + cacheBust;
-          stageText = 'قرب الولد من يسوع — يمسك بيده';
+          stageText = isEn ? 'Closer to Jesus — holding His hand' : 'قرب الولد من يسوع — يمسك بيده';
         } else {
           progressImg = 'progress-boy-low.jpg?' + cacheBust;
-          stageText = 'الولد في بداية السلم نحو يسوع';
+          stageText = isEn ? 'Beginning the path toward Jesus' : 'الولد في بداية السلم نحو يسوع';
         }
       } else {
         if (level === 'final') {
           progressImg = 'progress-girl-final.jpg?' + cacheBust;
           progressVideo = 'progress-girl-final.mp4?' + cacheBust;
-          stageText = 'امتياز — البنت في حضن يسوع 🤗';
+          stageText = isEn ? 'Excellence — the girl in Jesus’ embrace 🤗' : 'امتياز — البنت في حضن يسوع 🤗';
         } else if (level === 'high') {
           progressImg = 'progress-girl-high.jpg?' + cacheBust;
-          stageText = 'قرب البنت من يسوع — تمد يدها إليه';
+          stageText = isEn ? 'Closer to Jesus — reaching for His hand' : 'قرب البنت من يسوع — تمد يدها إليه';
         } else {
           progressImg = 'progress-girl-low.jpg?' + cacheBust;
-          stageText = 'البنت في بداية السلم نحو يسوع';
+          stageText = isEn ? 'Beginning the path toward Jesus' : 'البنت في بداية السلم نحو يسوع';
         }
       }
 
-      var levelLabel = level === 'final' ? 'امتياز ⭐' : (level === 'high' ? 'جيد' : 'مبتدئ');
-      var periodLabel = period === 'week' ? 'أسبوعي' : (period === 'month' ? 'شهري' : 'سنوي');
+      var levelLabel = level === 'final'
+        ? (isEn ? 'Excellence ⭐' : 'امتياز ⭐')
+        : (level === 'high' ? (isEn ? 'Good' : 'جيد') : (isEn ? 'Beginner' : 'مبتدئ'));
+      var periodLabel = period === 'week' ? t('weekly') : (period === 'month' ? t('monthly') : t('yearly'));
       var unitHint = period === 'week'
-        ? ('من 7 أيام — الامتياز من ' + excelThreshold + ' أيام ناجحة')
+        ? (isEn
+            ? ('Out of 7 days — excellence from ' + excelThreshold + ' successful days')
+            : ('من 7 أيام — الامتياز من ' + excelThreshold + ' أيام ناجحة'))
         : (period === 'month'
-          ? ('من ' + displayMax + ' يومًا في الشهر — الامتياز من ' + excelThreshold)
-          : ('من ' + displayMax + ' يومًا في السنة — الامتياز من ' + excelThreshold));
+          ? (isEn
+              ? ('Out of ' + displayMax + ' days this month — excellence from ' + excelThreshold)
+              : ('من ' + displayMax + ' يومًا في الشهر — الامتياز من ' + excelThreshold))
+          : (isEn
+              ? ('Out of ' + displayMax + ' days this year — excellence from ' + excelThreshold)
+              : ('من ' + displayMax + ' يومًا في السنة — الامتياز من ' + excelThreshold)));
 
       // أشرطة بيانية
       var bars = '';
@@ -15793,26 +15805,30 @@ function openProgressChart(period) {
       if (progressVideo && level === 'final') {
         mediaHtml = '<video id="progressFinalVideo" src="' + progressVideo + '" playsinline controls style="width:100%;display:block;background:#000;" poster="' + progressImg + '"></video>';
       } else {
-        mediaHtml = '<img src="' + progressImg + '" alt="مستوى الخلوة" style="width:100%;display:block;" loading="lazy">';
+        mediaHtml = '<img src="' + progressImg + '" ' + (isEn ? 'Khalwa level' : 'مستوى الخلوة') + ' style="width:100%;display:block;" loading="lazy">';
       }
 
-      document.getElementById('prayerTitle').textContent = '📊 مستوى الخلوة — ' + periodLabel;
+      document.getElementById('prayerTitle').textContent = (isEn ? '📊 Khalwa level — ' : '📊 مستوى الخلوة — ') + periodLabel;
       document.getElementById('prayerContent').innerHTML =
-        '<div style="text-align:center;padding:8px 4px 16px;">' +
+        '<div style="text-align:center;padding:8px 4px 16px;' + (isEn ? 'direction:ltr;' : '') + '">' +
           '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
-            '<button onclick="openProgressChart(\'week\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'week' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'week' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">أسبوعي</button>' +
-            '<button onclick="openProgressChart(\'month\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'month' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'month' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">شهري</button>' +
-            '<button onclick="openProgressChart(\'year\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'year' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'year' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">سنوي</button>' +
+            '<button onclick="openProgressChart(\'week\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'week' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'week' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">' + t('weekly') + '</button>' +
+            '<button onclick="openProgressChart(\'month\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'month' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'month' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">' + t('monthly') + '</button>' +
+            '<button onclick="openProgressChart(\'year\')" style="padding:6px 12px;border-radius:16px;border:1px solid var(--gold);background:' + (period === 'year' ? 'var(--gold)' : '#fff') + ';color:' + (period === 'year' ? '#fff' : 'var(--brown)') + ';font-family:inherit;">' + t('yearly') + '</button>' +
           '</div>' +
           '<div style="font-size:28px;margin-bottom:4px;">' + personEmoji + '</div>' +
-          '<div style="font-size:22px;font-weight:800;color:var(--brown);margin-bottom:4px;">' + displayScore + ' من ' + displayMax + '</div>' +
-          '<div style="font-size:14px;font-weight:700;color:#5a7d4a;margin-bottom:4px;">المستوى: ' + levelLabel + '</div>' +
+          '<div style="font-size:22px;font-weight:800;color:var(--brown);margin-bottom:4px;">' + displayScore + (isEn ? ' of ' : ' من ') + displayMax + '</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#5a7d4a;margin-bottom:4px;">' + (isEn ? 'Level: ' : 'المستوى: ') + levelLabel + '</div>' +
           '<div style="font-size:12px;color:#8a7a60;margin-bottom:8px;">' + unitHint + '</div>' +
           '<div style="font-size:13px;color:#6a5a3a;margin-bottom:10px;line-height:1.7;">' + stageText + '</div>' +
           '<div style="border-radius:16px;overflow:hidden;border:2px solid #e8d9b5;margin-bottom:12px;background:#faf6ee;">' + mediaHtml + '</div>' +
           '<div style="display:flex;justify-content:space-around;align-items:flex-end;min-height:120px;padding:10px;background:#fff9e8;border-radius:16px;border:1px solid #e8d9b5;overflow-x:auto;gap:3px;">' + bars + '</div>' +
-          '<p style="margin-top:10px;font-size:12px;color:#8a7a60;line-height:1.7;">اليوم الناجح = التزام بأنشطة الخلوة.<br>الفيديو يظهر عند الامتياز (من ' + excelThreshold + ' فأعلى على مقياس ' + displayMax + ').</p>' +
-          '<p style="font-size:12px;color:#8a7a60;">اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.</p>' +
+          '<p style="margin-top:10px;font-size:12px;color:#8a7a60;line-height:1.7;">' + (isEn
+            ? ('A successful day = commitment to khalwa activities.<br>The video appears at excellence (from ' + excelThreshold + ' and above on a scale of ' + displayMax + ').')
+            : ('اليوم الناجح = التزام بأنشطة الخلوة.<br>الفيديو يظهر عند الامتياز (من ' + excelThreshold + ' فأعلى على مقياس ' + displayMax + ').')) + '</p>' +
+          '<p style="font-size:12px;color:#8a7a60;">' + (isEn
+            ? 'Choose type (girl/boy) from ⚙️ Settings.'
+            : 'اختاري النوع (بنت/ولد) من ⚙️ الإعدادات.') + '</p>' +
         '</div>';
       document.getElementById('prayerModal').classList.add('active');
 
@@ -16717,7 +16733,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '317';
+      var APP_VER = '318';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

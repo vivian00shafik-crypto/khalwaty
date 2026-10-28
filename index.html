@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="314" lang="ar" dir="rtl">
+<html data-app-ver="315" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -3477,10 +3477,69 @@
     setPrayerJesusBg(false);
     function openAgpeya() {
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch(e) {}
-
       setPrayerJesusBg(false);
-      document.getElementById('prayerTitle').textContent = 'الأجبية — كتاب السواعي';
-      document.getElementById('prayerContent').innerHTML = `
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      document.getElementById('prayerTitle').textContent = isEn ? 'Agpeya — Book of Hours' : 'الأجبية — كتاب السواعي';
+      if (isEn) {
+        document.getElementById('prayerContent').innerHTML = `
+        <div style="text-align:left;direction:ltr;line-height:1.85;">
+          <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:14px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);font-size:15px;">Origin of the word “Agpeya”</p>
+            <p style="margin:0;">The word <b>Agpeya</b> (ajpia) is <b>Coptic</b>. It means “Book of Hours,” from a root meaning “hours.”</p>
+          </div>
+          <div style="background:rgba(255,253,248,0.9);border:1px solid #e8d9b5;border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:13.5px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);">Book of Hours</p>
+            <p style="margin:0 0 8px;">Used in the Coptic Orthodox Church, with <b>seven prayers</b> through the day. Each hour is linked to part of the life of Christ on earth.</p>
+            <p style="margin:0 0 6px;font-weight:600;">Order of each hour:</p>
+            <ol style="margin:0;padding-left:20px;">
+              <li>The Lord’s Prayer</li>
+              <li>Prayer of Thanksgiving</li>
+              <li>Psalm 50 (51)</li>
+              <li>A set of Psalms</li>
+              <li>A Gospel reading</li>
+              <li>Litanies</li>
+              <li>“Kyrie eleison” (Lord have mercy) 41 times</li>
+              <li>Short prayers (Holy God…)</li>
+              <li>Conclusion of the hour</li>
+              <li>“Have mercy on us, O God…”</li>
+              <li>Ending with the Lord’s Prayer</li>
+            </ol>
+            <p style="margin:10px 0 0;font-size:12px;color:#8a7a60;">The 41 times recall the 39 lashes + the spear + the crown of thorns.</p>
+          </div>
+          <div style="background:rgba(245,230,200,0.4);border:1px solid #e8d9b5;border-radius:14px;padding:14px 16px;margin-bottom:14px;font-size:13.5px;color:var(--brown);">
+            <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);">Suggested times</p>
+            <ul style="margin:0;padding-left:18px;">
+              <li><b>Prime:</b> about 6 a.m. — after waking</li>
+              <li><b>Terce (3rd):</b> about 9 a.m.</li>
+              <li><b>Sext (6th):</b> about noon</li>
+              <li><b>None (9th):</b> about 3 p.m.</li>
+              <li><b>Vespers (Sunset):</b> about 5 p.m.</li>
+              <li><b>Compline (Sleep):</b> evening</li>
+              <li><b>Midnight:</b> before midnight</li>
+              <li><b>Veil:</b> especially for clergy and monastics</li>
+            </ul>
+          </div>
+          <p style="margin-bottom:10px;color:#8a7a60;font-size:13px;font-weight:600;">Choose a prayer:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="save-btn" onclick="openAgpeyaHour('باكر')">☀️ Prime</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الثالثة')">🕒 Terce (3rd)</button>
+            <button class="save-btn" onclick="openAgpeyaHour('السادسة')">🕛 Sext (6th)</button>
+            <button class="save-btn" onclick="openAgpeyaHour('التاسعة')">🕒 None (9th)</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الغروب')">🌅 Vespers</button>
+            <button class="save-btn" onclick="openAgpeyaHour('النوم')">🌙 Compline</button>
+            <button class="save-btn" onclick="openAgpeyaHour('نصف الليل')">⭐ Midnight</button>
+            <button class="save-btn" onclick="openAgpeyaHour('الستار')">🕯 Veil</button>
+          </div>
+          <p style="margin:14px 0 8px;color:#8a7a60;font-size:13px;font-weight:600;">Other prayers:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="save-btn" onclick="openAgpeyaHour('قبل الأكل')">🍞 Before meals</button>
+            <button class="save-btn" onclick="openAgpeyaHour('بعد الأكل')">🙏 After meals</button>
+            <button class="save-btn" onclick="openAgpeyaHour('قبل التناول')">✝ Before Communion</button>
+            <button class="save-btn" onclick="openAgpeyaHour('بعد التناول')">🕊 After Communion</button>
+          </div>
+        </div>`;
+      } else {
+        document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;line-height:1.85;">
           <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:14px;color:var(--brown);">
             <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);font-size:15px;">أصل كلمة «أجبية»</p>
@@ -3538,6 +3597,8 @@
             <button class="save-btn" style="background:#6b4c9a;" onclick="openAgpeyaHour('بعد التناول')">🍷 بعد التناول</button>
           </div>
         </div>`;
+      }
+
       document.getElementById('prayerModal').classList.add('active');
       try {
         var pcA = document.getElementById('prayerContent');
@@ -3786,28 +3847,62 @@
 
     function openAgpeyaHour(name) {
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch(e) {}
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var hourLabels = {
+        'باكر': isEn ? 'Prime' : 'باكر',
+        'الثالثة': isEn ? 'Terce (3rd Hour)' : 'الثالثة',
+        'السادسة': isEn ? 'Sext (6th Hour)' : 'السادسة',
+        'التاسعة': isEn ? 'None (9th Hour)' : 'التاسعة',
+        'الغروب': isEn ? 'Vespers' : 'الغروب',
+        'النوم': isEn ? 'Compline' : 'النوم',
+        'نصف الليل': isEn ? 'Midnight' : 'نصف الليل',
+        'الستار': isEn ? 'Veil' : 'الستار',
+        'أخرى': isEn ? 'Other' : 'أخرى',
+        'قبل الأكل': isEn ? 'Before meals' : 'قبل الأكل',
+        'بعد الأكل': isEn ? 'After meals' : 'بعد الأكل',
+        'قبل التناول': isEn ? 'Before Communion' : 'قبل التناول',
+        'بعد التناول': isEn ? 'After Communion' : 'بعد التناول'
+      };
+      var label = hourLabels[name] || name;
 
-      if (!window.AGPEYA_TEXTS && window.loadExtra && !window._agpeyaTried) {
-        window._agpeyaTried = true;
-        document.getElementById('prayerTitle').textContent = 'الأجبية — ' + name;
-        document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">جاري التحميل…</p>';
-        document.getElementById('prayerModal').classList.add('active');
-      try {
-        var pc = document.getElementById('prayerContent');
-        if (pc && typeof renderContentMusicBar === 'function' && !pc.querySelector('.content-music-bar')) {
-          pc.insertAdjacentHTML('afterbegin', renderContentMusicBar());
+      function ensureAgpeyaTexts(cb) {
+        if (isEn) {
+          if (window.AGPEYA_TEXTS_EN) { cb(); return; }
+          var s = document.createElement('script');
+          s.src = 'agpeya-texts-en.js?v=315';
+          s.onload = function () { cb(); };
+          s.onerror = function () { cb(); };
+          document.head.appendChild(s);
+          return;
         }
-      } catch(e) {}
+        if (window.AGPEYA_TEXTS) { cb(); return; }
+        if (window.loadExtra) {
+          window.loadExtra('agpeya-texts.js').then(function () { cb(); }).catch(function () { cb(); });
+        } else { cb(); }
+      }
 
-        window.loadExtra('agpeya-texts.js').then(function() { openAgpeyaHour(name); });
+      if ((isEn && !window.AGPEYA_TEXTS_EN) || (!isEn && !window.AGPEYA_TEXTS && window.loadExtra && !window._agpeyaTried)) {
+        if (!isEn) window._agpeyaTried = true;
+        document.getElementById('prayerTitle').textContent = (isEn ? 'Agpeya — ' : 'الأجبية — ') + label;
+        document.getElementById('prayerContent').innerHTML = '<p style="text-align:center;padding:24px;">' + (isEn ? 'Loading…' : 'جاري التحميل…') + '</p>';
+        document.getElementById('prayerModal').classList.add('active');
+        try {
+          var pc = document.getElementById('prayerContent');
+          if (pc && typeof renderContentMusicBar === 'function' && !pc.querySelector('.content-music-bar')) {
+            pc.insertAdjacentHTML('afterbegin', renderContentMusicBar());
+          }
+        } catch(e) {}
+        ensureAgpeyaTexts(function () { openAgpeyaHour(name); });
         return;
       }
       setPrayerJesusBg(false);
       const data = loadData();
       const key = 'agpeya_' + name;
       const saved = data[key] || '';
-      const fixed = (window.AGPEYA_TEXTS && window.AGPEYA_TEXTS[name]) ? window.AGPEYA_TEXTS[name] : '';
-      document.getElementById('prayerTitle').textContent = 'الأجبية — ' + name;
+      var fixed = '';
+      if (isEn && window.AGPEYA_TEXTS_EN && window.AGPEYA_TEXTS_EN[name]) fixed = window.AGPEYA_TEXTS_EN[name];
+      else if (window.AGPEYA_TEXTS && window.AGPEYA_TEXTS[name]) fixed = window.AGPEYA_TEXTS[name];
+      document.getElementById('prayerTitle').textContent = (isEn ? 'Agpeya — ' : 'الأجبية — ') + label;
       let body = '';
       if (fixed) {
         const html = String(fixed).split(/\n\n+/).map(function(para) {
@@ -16502,7 +16597,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '314';
+      var APP_VER = '315';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

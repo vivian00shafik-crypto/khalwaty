@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="327" lang="ar" dir="rtl">
+<html data-app-ver="328" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -8640,11 +8640,14 @@ function openKatameros(dateObj) {
     }
 
     function stopVoiceTyping() {
+      window._voiceKeepGoing = false;
       try {
         if (window._voiceRec) {
           window._voiceRec.onend = null;
           window._voiceRec.onerror = null;
-          window._voiceRec.stop();
+          window._voiceRec.onresult = null;
+          try { window._voiceRec.abort(); } catch (eA) {}
+          try { window._voiceRec.stop(); } catch (eS) {}
         }
       } catch (e) {}
       window._voiceRec = null;
@@ -8684,11 +8687,12 @@ function openKatameros(dateObj) {
 
       var rec = new SR();
       rec.lang = voiceSpeechLang();
-      rec.continuous = true;
+      rec.continuous = false;
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
       window._voiceRec = rec;
+      window._voiceKeepGoing = true;
       window._voiceTargetId = (typeof targetId === 'string') ? targetId : (el.id || null);
       window._voiceBtn = btn || null;
       if (btn) {
@@ -8696,24 +8700,23 @@ function openKatameros(dateObj) {
         btn.textContent = '⏹';
       }
       var st = document.getElementById('voiceMicStatus');
-      if (st) st.textContent = 'جاري الاستماع… تحدّثي';
+      if (st) st.textContent = (typeof getAppLang==='function'&&getAppLang()==='en') ? 'Listening… speak' : 'جاري الاستماع… تحدّثي';
 
       var base = ('value' in el) ? (el.value || '') : (el.textContent || '');
       if (base && !/\s$/.test(base)) base += ' ';
 
       rec.onresult = function (event) {
-        var finals = '';
         var interim = '';
         for (var i = 0; i < event.results.length; i++) {
           var piece = (event.results[i][0] && event.results[i][0].transcript) || '';
           if (event.results[i].isFinal) {
-            finals += piece;
-            if (piece && !/\s$/.test(piece)) finals += ' ';
+            base += piece;
+            if (piece && !/\s$/.test(piece)) base += ' ';
           } else {
             interim += piece;
           }
         }
-        var shown = base + finals + interim;
+        var shown = base + interim;
         if ('value' in el) {
           el.value = shown;
           try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (eI) {}
@@ -8723,28 +8726,26 @@ function openKatameros(dateObj) {
       };
       rec.onerror = function (ev) {
         var err = (ev && ev.error) || '';
-        if (err === 'not-allowed') {
-          if (typeof showToast === 'function') showToast('فعّلي إذن الميكروفون للمتصفح');
-        } else if (err === 'no-speech') {
-          if (typeof showToast === 'function') showToast('لم يُلتقط كلام — حاولِ مرة أخرى');
-        } else if (err !== 'aborted') {
-          if (typeof showToast === 'function') showToast('خطأ في الكتابة الصوتية');
+        if (err === 'not-allowed' || err === 'service-not-allowed') {
+          if (typeof showToast === 'function') showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Allow microphone permission':'فعّلي إذن الميكروفون للمتصفح');
+          window._voiceKeepGoing = false;
+          stopVoiceTyping();
         }
-        stopVoiceTyping();
       };
       rec.onend = function () {
-        // إعادة تشغيل لو لسه المستخدم مستمع (continuous أحيانًا بينتهي)
-        if (window._voiceRec === rec && window._voiceBtn && window._voiceBtn.classList.contains('listening')) {
+        if (window._voiceKeepGoing && window._voiceRec === rec) {
           try { rec.start(); } catch (e2) { stopVoiceTyping(); }
+        } else {
+          stopVoiceTyping();
         }
       };
 
       try {
         rec.start();
-        if (typeof showToast === 'function') showToast('🎤 تحدّثي الآن');
+        if (typeof showToast === 'function') showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'🎤 Speak now':'🎤 تحدّثي الآن');
       } catch (eStart) {
         stopVoiceTyping();
-        if (typeof showToast === 'function') showToast('تعذر تشغيل الميكروفون');
+        if (typeof showToast === 'function') showToast((typeof getAppLang==='function'&&getAppLang()==='en')?'Could not start microphone':'تعذر تشغيل الميكروفون');
       }
     }
 
@@ -8900,7 +8901,7 @@ function openTextModal(type) {
             <button type="button" class="align-btn" title="أزرق" onclick="highlightTextModal('blue')">🔵</button>
             <button type="button" class="align-btn" title="وردي" onclick="highlightTextModal('pink')">🩷</button>
             <button type="button" class="align-btn" onclick="highlightTextModal('clear')">✕</button>
-            <button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="openVerseDesign(document.getElementById('modalTextarea').value, document.getElementById('modalTitle').textContent)">🎨 ' + ((typeof getAppLang==='function'&&getAppLang()==='en')?'Design & save':'تصميم وحفظ') + '</button>
+            <button type="button" class="save-btn" style="padding:8px 12px;margin:0;" onclick="openVerseDesign(document.getElementById('modalTextarea').value, document.getElementById('modalTitle').textContent)">${(typeof getAppLang==='function'&&getAppLang()==='en')?'🎨 Design & save':'🎨 تصميم وحفظ'}</button>
           </div>`;
       } else {
         tools.style.display = 'none';
@@ -9210,22 +9211,29 @@ function openTextModal(type) {
 
     function togglePsalm(num) {
       const idx = selectedPsalms.indexOf(num);
-      if (idx > -1) {
-        selectedPsalms.splice(idx, 1);
-      } else {
-        selectedPsalms.push(num);
+      if (idx > -1) selectedPsalms.splice(idx, 1);
+      else selectedPsalms.push(num);
+      selectedPsalms.sort(function (a, b) { return a - b; });
+      // حدّث الزر الظاهر فقط
+      var el = document.querySelector('.psalm-num[data-num="' + num + '"]');
+      if (el) {
+        if (idx > -1) el.classList.remove('selected');
+        else el.classList.add('selected');
       }
-      selectedPsalms.sort((a, b) => a - b);
-      const data = loadData();
-      data.selectedPsalms = selectedPsalms;
-      saveData(data);
-      document.getElementById('psalmCount').textContent = `العدد: ${selectedPsalms.length}`;
-      const els = document.querySelectorAll('.psalm-num');
-      els.forEach(el => {
-        const n = parseInt(el.getAttribute('data-num') || el.textContent);
-        el.classList.toggle('selected', selectedPsalms.includes(n));
-      });
-      renderSelectedPsalmsBar();
+      var pc = document.getElementById('psalmCount');
+      if (pc) {
+        var isEn = (typeof getAppLang==='function'&&getAppLang()==='en');
+        pc.textContent = isEn ? ('Count: ' + selectedPsalms.length) : ('العدد: ' + selectedPsalms.length);
+      }
+      if (window._psalmSaveTimer) clearTimeout(window._psalmSaveTimer);
+      window._psalmSaveTimer = setTimeout(function () {
+        try {
+          var data = loadData();
+          data.selectedPsalms = selectedPsalms;
+          saveData(data);
+        } catch (e) {}
+      }, 300);
+      try { renderSelectedPsalmsBar(); } catch (e2) {}
     }
 
     function getVanDyckPsalmsBook() {
@@ -16936,7 +16944,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '327';
+      var APP_VER = '328';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

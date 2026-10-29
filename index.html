@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="323" lang="ar" dir="rtl">
+<html data-app-ver="324" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1794,13 +1794,13 @@
       <div class="jesus-wheel" id="jesusWheel">
         <img class="wheel-layer" src="wheel-bg-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v298.webp'" alt="يسوع ماسك عجلة الخلوة" draggable="false">
         <div class="jesus-wheel-inner" id="jesusWheelInner">
-          <img src="wheel-inner-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-inner-v298.webp'" alt="" draggable="false">
-          <div class="wheel-hotspot hotspot-altar" data-action="altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
-          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
-          <div class="wheel-hotspot hotspot-verses" data-action="verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
-          <div class="wheel-hotspot hotspot-contact" data-action="contact" title="راسلنا" style="left:49.94%;top:80.68%"></div>
-          <div class="wheel-hotspot hotspot-readings" data-action="readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
-          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
+          <img id="wheelInnerImg" src="wheel-inner-v298.webp?v=323" onerror="this.onerror=null;this.src='wheel-inner-v298.webp'" alt="" draggable="false">
+          <div class="wheel-hotspot hotspot-altar" data-action="altar" data-title-ar="على المذبح" data-title-en="On the Altar" title="على المذبح" style="left:50.11%;top:19.03%"></div>
+          <div class="wheel-hotspot hotspot-prayers" data-action="prayers" data-title-ar="صلوات" data-title-en="Prayers" title="صلوات" style="left:77.73%;top:34.09%"></div>
+          <div class="wheel-hotspot hotspot-verses" data-action="verses" data-title-ar="آياتي المحفوظة" data-title-en="My Saved Verses" title="آياتي المحفوظة" style="left:77.78%;top:66.02%"></div>
+          <div class="wheel-hotspot hotspot-contact" data-action="contact" data-title-ar="راسلنا" data-title-en="Contact Us" title="راسلنا" style="left:49.94%;top:80.68%"></div>
+          <div class="wheel-hotspot hotspot-readings" data-action="readings" data-title-ar="قراءات لمستني" data-title-en="My Mass Readings" title="قراءات لمستني" style="left:22.16%;top:66.08%"></div>
+          <div class="wheel-hotspot hotspot-pdf" data-action="pdf" data-title-ar="تحميل PDF" data-title-en="Download PDF" title="تحميل PDF" style="left:22.33%;top:34.20%"></div>
         </div>
         <img class="wheel-layer wheel-front" src="wheel-bg-v298.webp?v=292" onerror="this.onerror=null;this.src='wheel-bg-v298.webp'" alt="" aria-hidden="true" draggable="false">
       </div>
@@ -4709,7 +4709,30 @@ function bibleSpeakText(text, onEnd) {
         if (typeof serviceItems !== 'undefined') serviceItems.forEach(function (it) { if (it && it.id) it.label = t(it.id); });
       } catch (e) {}
     }
-    function applyAppLanguage() {
+    
+    function applyWheelLanguage() {
+      try {
+        var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+        var img = document.getElementById('wheelInnerImg');
+        if (img) {
+          var next = isEn ? 'wheel-inner-en-v323.webp?v=323' : 'wheel-inner-v298.webp?v=323';
+          var cur = img.getAttribute('src') || '';
+          if (cur.indexOf(isEn ? 'wheel-inner-en' : 'wheel-inner-v298') < 0) {
+            img.onerror = function () {
+              this.onerror = null;
+              this.src = isEn ? 'wheel-inner-en-v323.webp' : 'wheel-inner-v298.webp';
+            };
+            img.src = next;
+          }
+        }
+        document.querySelectorAll('.wheel-hotspot').forEach(function (el) {
+          var t = isEn ? el.getAttribute('data-title-en') : el.getAttribute('data-title-ar');
+          if (t) el.setAttribute('title', t);
+        });
+      } catch (eW) {}
+    }
+
+function applyAppLanguage() {
       var lang = (typeof getAppLang === 'function') ? getAppLang() : 'ar';
       try {
         document.documentElement.lang = (lang === 'en') ? 'en' : 'ar';
@@ -4744,6 +4767,7 @@ function bibleSpeakText(text, onEnd) {
           });
         } catch (e1) {}
       });
+      try { if (typeof applyWheelLanguage === 'function') applyWheelLanguage(); } catch (eW0) {}
       try { if (typeof renderDailyIcons === 'function') renderDailyIcons(); } catch (e3) {}
       try { if (typeof renderServices === 'function') renderServices(); } catch (e5) {}
       try {
@@ -16890,7 +16914,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '323';
+      var APP_VER = '324';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

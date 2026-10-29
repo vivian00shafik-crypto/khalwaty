@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="322" lang="ar" dir="rtl">
+<html data-app-ver="323" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1729,7 +1729,7 @@
       </div>
     </div>
 
-    <!-- أنشطة اليوم (تفعيل) — أيقونات بدون ورقة -->
+    <!-- <span data-i18n="activitiesTitle">أنشطة اليوم</span> (تفعيل) — أيقونات بدون ورقة -->
     <div class="card">
       <div class="card-title"><span class="icon">✓</span> أنشطة اليوم</div>
       <div class="daily-icons" id="dailyIcons"></div>
@@ -2837,11 +2837,15 @@
 
 
     function updateDateDisplay() {
-      const day = dayNames[currentDate.getDay()];
+      const isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      const daysEn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const day = isEn ? daysEn[currentDate.getDay()] : dayNames[currentDate.getDay()];
       const d = currentDate.getDate();
       const m = currentDate.getMonth() + 1;
       const y = currentDate.getFullYear();
-      document.getElementById('currentDate').textContent = `${day}: ${y}/${m}/${d}`;
+      document.getElementById('currentDate').textContent = isEn
+        ? `${day}, ${y}/${m}/${d}`
+        : `${day}: ${y}/${m}/${d}`;
     }
 
     function openDatePicker() {
@@ -4662,7 +4666,7 @@ function bibleSpeakText(text, onEnd) {
         prayers: 'صلوات', myVerses: 'آياتي المحفوظة', contactUs: 'راسلنا',
         altar: 'على المذبح', readings: 'قراءات مستنى',
         noInternet: 'يلزم اتصال بالإنترنت', fileUnavailable: 'الملف غير متاح',
-        allowPopups: 'اسمحي بالنوافذ المنبثقة', writing: 'اضغط للكتابة...', done: 'تم', today: 'اليوم'
+        allowPopups: 'اسمحي بالنوافذ المنبثقة', writing: 'اضغط للكتابة...', done: 'تم', today: 'اليوم', activitiesTitle: 'أنشطة اليوم'
       },
       en: {
         baker: 'Prime', sunset: 'Sunset', sleep: 'Sleep', mass: 'Liturgy', praise: 'Praise',
@@ -4689,7 +4693,7 @@ function bibleSpeakText(text, onEnd) {
         prayers: 'Prayers', myVerses: 'Saved verses', contactUs: 'Contact us',
         altar: 'On the altar', readings: 'Readings for me',
         noInternet: 'Internet required', fileUnavailable: 'File unavailable',
-        allowPopups: 'Please allow pop-ups', writing: 'Tap to write...', done: 'Done', today: 'Today'
+        allowPopups: 'Please allow pop-ups', writing: 'Tap to write...', done: 'Done', today: 'Today', activitiesTitle: 'Today\'s activities'
       }
     };
     function t(key) {
@@ -4715,6 +4719,7 @@ function bibleSpeakText(text, onEnd) {
       var pairs = [
         ['[data-i18n="goalsTitle"]', 'goalsTitle'],
         ['[data-i18n="openSections"]', 'openSections'],
+        ['[data-i18n="activitiesTitle"]', 'activitiesTitle'],
         ['[data-i18n="verseToday"]', 'verseToday'],
         ['[data-i18n="reflectionToday"]', 'reflectionToday'],
         ['[data-i18n="psalmsToday"]', 'psalmsToday'],
@@ -14725,7 +14730,7 @@ function showDesignSavePreview(url, name, silent, blob) {
 
           <p style="margin-top:14px;"><strong>${isEn?'♿ Accessibility / blind mode':'♿ وضع المكفوفين وإمكانية الوصول'}</strong></p>
           <p style="font-size:12px;color:#8a7a60;margin:0 0 8px;">
-            ${isEn?'Larger buttons, screen reader support (TalkBack / VoiceOver), and spoken content.':'يساعد المكفوفين وضعاف البصر: أزرار أكبر، دعم قارئ الشاشة (TalkBack / VoiceOver)، و${isEn?'Speak content aloud':'نطق صوتي للمحتوى'} بالعربية.'}
+            ${isEn?'Larger buttons, screen reader support (TalkBack / VoiceOver), and spoken content.':'يساعد المكفوفين وضعاف البصر: أزرار أكبر، دعم قارئ الشاشة (TalkBack / VoiceOver)، ونطق صوتي للمحتوى بالعربية.'}
           </p>
           <label style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;">
             <input type="checkbox" id="a11yMode" ${isA11yMode()?'checked':''} onchange="setA11yMode(this.checked); openSettings();">
@@ -16885,7 +16890,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '322';
+      var APP_VER = '323';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

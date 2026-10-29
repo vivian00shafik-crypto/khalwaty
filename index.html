@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="326" lang="ar" dir="rtl">
+<html data-app-ver="327" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -8700,21 +8700,20 @@ function openKatameros(dateObj) {
 
       var base = ('value' in el) ? (el.value || '') : (el.textContent || '');
       if (base && !/\s$/.test(base)) base += ' ';
-      var committed = base;
 
       rec.onresult = function (event) {
+        var finals = '';
         var interim = '';
-        var finalText = '';
-        for (var i = event.resultIndex; i < event.results.length; i++) {
-          var t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalText += t;
-          else interim += t;
+        for (var i = 0; i < event.results.length; i++) {
+          var piece = (event.results[i][0] && event.results[i][0].transcript) || '';
+          if (event.results[i].isFinal) {
+            finals += piece;
+            if (piece && !/\s$/.test(piece)) finals += ' ';
+          } else {
+            interim += piece;
+          }
         }
-        if (finalText) {
-          committed += finalText;
-          if (!/\s$/.test(committed)) committed += ' ';
-        }
-        var shown = committed + interim;
+        var shown = base + finals + interim;
         if ('value' in el) {
           el.value = shown;
           try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (eI) {}
@@ -9157,26 +9156,42 @@ function openTextModal(type) {
 
     function openPsalmSelector() {
       const grid = document.getElementById('psalmGrid');
-      grid.innerHTML = '';
-      for (let i = 1; i <= 150; i++) {
-        const selected = selectedPsalms.includes(i);
-        grid.innerHTML += `
-          <div class="psalm-num ${selected ? 'selected' : ''}"
-               data-num="${i}"
-               onclick="togglePsalm(${i})"
-               oncontextmenu="event.preventDefault(); readPsalm(${i}); return false;">${i}</div>
-        `;
+      if (!grid) return;
+      // بناء سريع دفعة واحدة بدل 150 مرة innerHTML
+      var selectedSet = {};
+      for (var s = 0; s < selectedPsalms.length; s++) selectedSet[selectedPsalms[s]] = true;
+      var parts = new Array(150);
+      for (var i = 1; i <= 150; i++) {
+        parts[i - 1] = '<div class="psalm-num' + (selectedSet[i] ? ' selected' : '') +
+          '" data-num="' + i + '">' + i + '</div>';
       }
-      // long-press support
-      let pressTimer = null;
-      grid.querySelectorAll('.psalm-num').forEach(el => {
-        el.addEventListener('touchstart', function(e) {
-          const n = parseInt(this.getAttribute('data-num'));
-          pressTimer = setTimeout(() => { readPsalm(n); }, 550);
+      grid.innerHTML = parts.join('');
+      // تفويض أحداث مرة واحدة فقط
+      if (!grid._psalmBound) {
+        grid._psalmBound = true;
+        var pressTimer = null;
+        grid.addEventListener('click', function (e) {
+          var el = e.target.closest('.psalm-num');
+          if (!el) return;
+          var n = parseInt(el.getAttribute('data-num'), 10);
+          if (n) togglePsalm(n);
+        });
+        grid.addEventListener('contextmenu', function (e) {
+          var el = e.target.closest('.psalm-num');
+          if (!el) return;
+          e.preventDefault();
+          var n = parseInt(el.getAttribute('data-num'), 10);
+          if (n) readPsalm(n);
+        });
+        grid.addEventListener('touchstart', function (e) {
+          var el = e.target.closest('.psalm-num');
+          if (!el) return;
+          var n = parseInt(el.getAttribute('data-num'), 10);
+          pressTimer = setTimeout(function () { if (n) readPsalm(n); }, 550);
         }, { passive: true });
-        el.addEventListener('touchend', function() { clearTimeout(pressTimer); });
-        el.addEventListener('touchmove', function() { clearTimeout(pressTimer); });
-      });
+        grid.addEventListener('touchend', function () { clearTimeout(pressTimer); });
+        grid.addEventListener('touchmove', function () { clearTimeout(pressTimer); });
+      }
       renderSelectedPsalmsBar();
       document.getElementById('psalmModal').classList.add('active');
     }
@@ -16921,7 +16936,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '326';
+      var APP_VER = '327';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

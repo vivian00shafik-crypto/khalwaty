@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="332" lang="ar" dir="rtl">
+<html data-app-ver="333" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -5178,6 +5178,8 @@ function renderBible() {
     // Text modal
     setPrayerJesusBg(false);
     const SAINTS_PRAISES = [
+  {"id": "john_short", "name": "يوحنا القصير (يحنس / يوأنس)", "title": "عظيم بين القديسين", "text": "عظيم بين القديسين\nفقت الكثيرين\nيا مثال للكاملين\nبنيوت آفا يوأنس\n\nاسمك حلو كان\nعلي أسم المعمدان\nيا عظيم الشأن\nبنيوت آفا يوأنس\n\nاشتقت للبرية\nمثل ابن زكريا\nوالنبي إيليا\nبنيوت آفا يوأنس\n\nملاك الرب قادك\nإلي الاسقيط مرادك\nوفقت في جهادك\nبنيوت آفا يوأنس\n\nيا نفس أمينة\nغالية وثمينة\nوصلت إلي المينا\nبنيوت آفا يوأنس\n\nأنبا بموا العظيم\nألبسك الاسكيم\nمع فرح الشاروبيم\nبنيوت آفا يوأنس\n\nملاك سار بجوارك\nوملاك لثيابك بارك\nعظيم هو مقدارك\nبنيوت آفا يوأنس\n\nأكاليل سبعة تدوم\nواحد عن كل يوم\nقديس بلا لوم\nبنيوت آفا يوأنس\n\nفي القامة قصير\nروحاني مالك نظير\nوأنت شاب صغير\nبنيوت آفا يوأنس\n\nصلاتك بكل خشوع\nدائماً عقلك مرفوع\nحتي بين الجموع\nبنيوت آفا يوأنس\n\nعقلك مع السارافيم\nتسأل عن الشاروبيم\nأيها العظيم\nبنيوت آفا يوأنس\n\nيوحنا بي كولوفوس\nتفكر في القدوس\nمع رتب ني آنجيلوس\nبنيوت آفا يوأنس\n\nطاعتك بلا جدال\nمعلم بل ومثال\nبركة لكل الأجيال\nبنيوت آفا يوأنس\n\nأنبا بموا أعطاك\nفرع جاف آتاك\nزرعته يداك\nبنيوت آفا يوأنس\n\nترويه لسنوات\nرغم المسافات\nفأعطي ثمرات\nبنيوت آفا يوأنس\n\nشجرة الطاعة نبتت\nوللعقول بهرت\nوقداستك ظهرت\nبنيوت آفا يوأنس\n\nمتواضع وعجيب\nفي طاعتك يا حبيب\nروحك للرب قريب\nبنيوت آفا يوأنس\n\nعقل الآباء احتار\nشاب عالي المقدار\nأنت حقاً بار\nبنيوت آفا يوأنس\n\nالأنبا بموا قال\nهذا ملاك عال\nمن مثلك نال\nبنيوت آفا يوأنس\n\nيحنس بين القسوس\nهتفت ني أنجيلوس\nأكسيوس أكسيوس أكسيوس\nبنيوت آفا يوأنس\n\nجمعت حولك ربوات\nفي طاعة مع ثبات\nيا ينبوع البركات\nبنيوت آفا يوأنس\n\nجاءت إليك النفوس\nالمحبة للرب إيسوس\nترشدهم للقدوس\nبنيوت آفا يوأنس\n\nعظيم في الآباء\nمضيء بعظم بهاء\nيا حبيب السماء\nبنيوت آفا يوأنس\n\nفي شيهيت محبوب\nضياء ميزان القلوب\nأذكرني لكي أتوب\nبنيوت آفا يوأنس\n\nظهرت ملائكة من نور\nلحمل روحك الطهور\nفاحت رائحة بخور\nبنيوت آفا يوأنس\n\nصل عنا أمام الديان\nليثبتنا في الإيمان\nإلي آخر الأزمان\nبنيوت آفا يوأنس\n\nتفسير اسمك في أفواه كل المؤمنين\nالكل يقولون يا إله أنبا يحنس أعنا أجمعين.", "source": "st-takla.org"},
+
   {
     "id": "abosefein",
     "name": "أبو سيفين",
@@ -5618,7 +5620,7 @@ function openSaintsPraises() {
       h += '<div id="praisesMusicBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;padding:10px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;">' +
         '<button type="button" class="save-btn" id="praisesMusicBtn" onclick="togglePraisesMusic()" style="margin:0;min-width:140px;background:#5a7d4a;">🎵 موسيقى المدائح</button>' +
         '<span style="font-size:12px;color:#8a7a60;">تفضل شغالة لحد ما تقفليها</span></div>';
-      h += '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">اختاري مديحًا للقراءة، أو أضيفي مديحًا جديدًا غير موجود.</p>';
+      h += '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">اختاري مديحًا للقراءة، أو أضيفي مديحًا جديدًا. المصدر الأساسي للنصوص: موقع الأنبا تكلا هيمانوت (st-takla.org).</p>';
       h += '<button type="button" class="save-btn" style="margin:0 0 12px 0;background:#5a7d4a;" onclick="openAddSaintPraiseForm()">＋ إضافة مديح</button>';
       h += '<input id="saintsSearch" type="search" placeholder="ابحثي باسم القديس..." oninput="filterSaintsPraises(this.value)" style="width:100%;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
       h += '<div id="saintsList" style="display:flex;flex-direction:column;gap:8px;">';
@@ -16980,7 +16982,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '332';
+      var APP_VER = '333';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

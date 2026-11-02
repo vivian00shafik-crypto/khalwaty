@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="344" lang="ar" dir="rtl">
+<html data-app-ver="345" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -3508,6 +3508,7 @@
 
     setPrayerJesusBg(false);
     function openAgpeya() {
+      window._musicCtx = 'agpeya';
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch(e) {}
       setPrayerJesusBg(false);
       var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
@@ -3515,10 +3516,6 @@
       if (isEn) {
         document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:left;direction:ltr;line-height:1.85;">
-          <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:12px 14px;margin-bottom:12px;">
-            <div style="font-weight:700;color:var(--brown);margin-bottom:6px;text-align:center;">🎵 Background music for Agpeya</div>
-            ${typeof bibleMusicControlsHtml==='function'?bibleMusicControlsHtml():''}
-          </div>
           <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:14px;color:var(--brown);">
             <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);font-size:15px;">Origin of the word “Agpeya”</p>
             <p style="margin:0;">The word <b>Agpeya</b> (ajpia) is <b>Coptic</b>. It means “Book of Hours,” from a root meaning “hours.”</p>
@@ -3577,10 +3574,6 @@
       } else {
         document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;line-height:1.85;">
-          <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:12px 14px;margin-bottom:12px;">
-            <div style="font-weight:700;color:var(--brown);margin-bottom:6px;text-align:center;">🎵 موسيقى خلفية للأجبية</div>
-            ${typeof bibleMusicControlsHtml==='function'?bibleMusicControlsHtml():''}
-          </div>
           <div style="background:rgba(245,230,200,0.55);border:1px solid var(--gold);border-radius:14px;padding:14px 16px;margin-bottom:12px;font-size:14px;color:var(--brown);">
             <p style="margin:0 0 8px;font-weight:700;color:var(--gold-dark);font-size:15px;">أصل كلمة «أجبية»</p>
             <p style="margin:0;">كلمة <b>أجبية</b> (ajpia) كلمة <b>قبطية</b> (اللغة المصرية القديمة). تعني «كتاب السواعي» أو «كتاب الساعات»، من كلمة <b>ajp</b> / «تي أجب» بمعنى «ساعات».</p>
@@ -3846,7 +3839,7 @@
         if (!verses.length) return null;
         let h = '<h3 style="text-align:center;margin:8px 0 6px;color:var(--brown);">المزمور ' + agNum + '</h3>';
         h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px;padding:8px;background:rgba(245,230,200,0.45);border-radius:12px;">' +
-          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="bibleState.bookIndex=getMergedBibleBooks().findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
+          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="window._biblePosFromPsalms=true;bibleState.bookIndex=getMergedBibleBooks().findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="biblePauseSpeak();">⏸</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#a65d4a;" onclick="bibleStopSpeak();">⏹</button>' +
           bibleMusicControlsHtml() + '</div>';
@@ -4013,12 +4006,32 @@
 
     function saveBiblePos() {
       try {
+        var t = bibleState.testament || 'OT';
+        // لا تحفظ موضع المزامير القادم من اختيار مزامير اليوم فوق موضع العهد
+        if (window._biblePosFromPsalms) return;
+        localStorage.setItem('khalwati_bible_pos_' + t, JSON.stringify({
+          bookIndex: bibleState.bookIndex|0,
+          chapter: bibleState.chapter|0
+        }));
+        // توافق قديم
         localStorage.setItem('khalwati_bible_pos', JSON.stringify({
-          testament: bibleState.testament || 'OT',
+          testament: t,
           bookIndex: bibleState.bookIndex|0,
           chapter: bibleState.chapter|0
         }));
       } catch (e) {}
+    }
+    function loadBiblePosForTestament(t) {
+      try {
+        var raw = localStorage.getItem('khalwati_bible_pos_' + t);
+        if (raw) {
+          var p = JSON.parse(raw);
+          if (p && typeof p.bookIndex === 'number') return p;
+        }
+        var old = JSON.parse(localStorage.getItem('khalwati_bible_pos') || 'null');
+        if (old && old.testament === t && typeof old.bookIndex === 'number') return old;
+      } catch (e) {}
+      return null;
     }
     function savePickedVerses() {
       try {
@@ -4309,6 +4322,7 @@
     }
 
     function openBible(testament) {
+      window._musicCtx = 'bible';
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch(e) {}
 
       window._fromSearch = false;
@@ -4327,15 +4341,26 @@
         window._mergedBooks = allBooks;
         const books = allBooks.filter(b => b.t === bibleState.testament);
         if (!books.length) return;
-        // استعادة آخر موضع محفوظ لنفس العهد، وإلا ابدأ بأول سفر
-        var curBook = allBooks[bibleState.bookIndex];
-        if (!curBook || curBook.t !== bibleState.testament) {
+        // استعادة آخر موضع لهذا العهد فقط (مستقل عن المزامير والعهد الآخر)
+        window._biblePosFromPsalms = false;
+        var saved = loadBiblePosForTestament(bibleState.testament);
+        if (saved && typeof saved.bookIndex === 'number') {
+          var sb = allBooks[saved.bookIndex];
+          if (sb && sb.t === bibleState.testament) {
+            bibleState.bookIndex = saved.bookIndex;
+            bibleState.chapter = saved.chapter|0;
+          } else {
+            saved = null;
+          }
+        }
+        if (!saved) {
           const firstId = books[0].id;
           const fullIndex = allBooks.findIndex(b => b.id === firstId);
           bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
           bibleState.chapter = 0;
         } else {
-          var chCount = (curBook.chapters && curBook.chapters.length) || 1;
+          var curBook = allBooks[bibleState.bookIndex];
+          var chCount = (curBook && curBook.chapters && curBook.chapters.length) || 1;
           if (bibleState.chapter >= chCount) bibleState.chapter = 0;
         }
         renderBible();
@@ -4369,14 +4394,19 @@
       { id: 'm2', label: 'موسيقى ٢', src: './bible-music-2.mp3' },
       { id: 'm3', label: 'موسيقى ٣', src: './bible-music-3.mp3' },
       { id: 'm4', label: 'موسيقى ٤', src: './bible-music-4.mp3' },
-      { id: 'm5', label: 'موسيقى ٥ — خلفية', src: './bible-music-5.mp3' }
+      { id: 'm5', label: 'موسيقى ٥', src: './bible-music-5.mp3' }
     ];
     function getBibleMusicEl() {
       return document.getElementById('bibleBgMusic');
     }
-    function bibleMusicTrackId() {
-      var id = localStorage.getItem('khalwati_bible_music_track') || 'm1';
-      if (id === 'flute') { id = 'm4'; try { localStorage.setItem('khalwati_bible_music_track', 'm4'); } catch (e) {} }
+    function bibleMusicContext() {
+      return window._musicCtx || 'bible';
+    }
+    function bibleMusicTrackId(ctx) {
+      ctx = ctx || bibleMusicContext();
+      var key = (ctx === 'agpeya') ? 'khalwati_agpeya_music_track' : 'khalwati_bible_music_track';
+      var id = localStorage.getItem(key) || 'm1';
+      if (id === 'flute') { id = 'm4'; try { localStorage.setItem(key, 'm4'); } catch (e) {} }
       return BIBLE_MUSIC_TRACKS.some(function(t) { return t.id === id; }) ? id : 'm1';
     }
     function bibleMusicVolume() {
@@ -4529,8 +4559,9 @@
       else startBibleMusic();
     }
     function setBibleMusicTrack(id) {
-      localStorage.setItem('khalwati_bible_music_track', id);
-      // عند اختيار مقطع: شغّليه مباشرة
+      var ctx = bibleMusicContext();
+      var key = (ctx === 'agpeya') ? 'khalwati_agpeya_music_track' : 'khalwati_bible_music_track';
+      localStorage.setItem(key, id);
       startBibleMusic();
     }
     function setBibleMusicVolume(v) {
@@ -5626,9 +5657,7 @@ function openSaintsPraises() {
       document.getElementById('prayerTitle').textContent = 'مدائح القديسين';
       var list = getAllSaintsPraises();
       var h = '<div style="text-align:right;line-height:1.85;">';
-      h += '<div id="praisesMusicBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;padding:10px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;">' +
-        '<button type="button" class="save-btn" id="praisesMusicBtn" onclick="togglePraisesMusic()" style="margin:0;min-width:140px;background:#5a7d4a;">🎵 موسيقى المدائح</button>' +
-        '<span style="font-size:12px;color:#8a7a60;">تفضل شغالة لحد ما تقفليها</span></div>';
+
       h += '<p style="font-size:13px;color:#8a7a60;margin-bottom:10px;">اختاري مديحًا للقراءة، أو أضيفي مديحًا جديدًا. المصدر الأساسي للنصوص: موقع الأنبا تكلا هيمانوت (st-takla.org).</p>';
       h += '<button type="button" class="save-btn" style="margin:0 0 12px 0;background:#5a7d4a;" onclick="openAddSaintPraiseForm()">＋ إضافة مديح</button>';
       h += '<input id="saintsSearch" type="search" placeholder="ابحثي باسم القديس..." oninput="filterSaintsPraises(this.value)" style="width:100%;padding:10px;border-radius:12px;border:1px solid #e8d9b5;font-family:inherit;margin-bottom:12px;box-sizing:border-box;">';
@@ -5717,6 +5746,9 @@ function openSaintsPraises() {
       var s = list[idx];
       if (!s) return;
       var body = '<div style="text-align:right;line-height:2;color:var(--brown);">';
+      body += '<div id="praisesMusicBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;padding:10px;background:rgba(245,230,200,0.55);border:1px solid #e8d9b5;border-radius:12px;">' +
+        '<button type="button" class="save-btn" id="praisesMusicBtn" onclick="togglePraisesMusic()" style="margin:0;min-width:140px;background:#5a7d4a;">🎵 موسيقى المدائح</button>' +
+        '<span style="font-size:12px;color:#8a7a60;">من داخل المديح</span></div>';
       body += '<h3 style="margin:0 0 6px;color:var(--gold-dark);">' + (s.name || '') + '</h3>';
       if (s.title) body += '<p style="margin:0 0 14px;font-size:13px;color:#8a7a60;">' + s.title + '</p>';
       body += '<div class="agpeya-prayer" style="white-space:pre-wrap;font-size:15px;">' + String(s.text || '').replace(/</g, '&lt;') + '</div>';
@@ -16716,8 +16748,19 @@ function playProgressFinalVideo() {
     function playPrayerAlarmSound() {
       try {
         if (typeof isMuted === 'function' && isMuted()) return;
+        var hymn = document.getElementById('hymnAudio');
+        var hymnOn = !!(hymn && !hymn.paused && window._hymnPlaying);
+        if (hymnOn) {
+          if (window._alarmDeferredTimer) clearTimeout(window._alarmDeferredTimer);
+          window._alarmDeferredTimer = setTimeout(function () {
+            window._alarmDeferredTimer = null;
+            playPrayerAlarmSound();
+          }, 60000);
+          if (typeof showToast === 'function') showToast('تم تأجيل صوت الإشعار دقيقة — موسيقى البداية شغّالة');
+          return;
+        }
         if (typeof stopAllAppAudio === 'function') stopAllAppAudio('prayer');
-        let a = document.getElementById('prayerAlarmAudio');
+        var a = document.getElementById('prayerAlarmAudio');
         if (!a) {
           a = new Audio('./prayer-alarm.mp3');
           a.id = 'prayerAlarmAudio';
@@ -16726,12 +16769,12 @@ function playProgressFinalVideo() {
         }
         a.currentTime = 0;
         a.volume = 1;
-        const p = a.play();
-        if (p && p.catch) p.catch(function(){});
+        var p = a.play();
+        if (p && p.catch) p.catch(function () {});
       } catch (e) {}
     }
 
-    
+
     function showVerseInApp(verse) {
       const existing = document.getElementById('verseAlertCard');
       if (existing) existing.remove();
@@ -17000,7 +17043,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '344';
+      var APP_VER = '345';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

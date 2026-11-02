@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="346" lang="ar" dir="rtl">
+<html data-app-ver="347" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1106,15 +1106,23 @@
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
-      transition: box-shadow 0.12s;
+      transition: box-shadow 0.15s ease, filter 0.15s ease;
       transform: translate(-50%, -50%);
       -webkit-tap-highlight-color: transparent;
       touch-action: none;
       background: transparent;
       overflow: visible;
+      will-change: transform;
+    }
+    .wheel-hotspot.is-near {
+      z-index: 12;
+      filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.75));
     }
     .wheel-hotspot:active {
       box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.55);
+    }
+    .wheel-hotspot.is-near .wheel-icon-face {
+      /* visual clarity handled by parent scale in JS */
     }
     .wheel-icon-face {
       width: 100%;
@@ -1891,10 +1899,41 @@
 
       function applyRotation() {
         inner.style.transform = 'translate(-50%, -50%) rotate(' + rotation + 'deg)';
-        var inv = 'translate(-50%, -50%) rotate(' + (-rotation) + 'deg)';
         var spots = inner.querySelectorAll('.wheel-hotspot');
+        var best = -1;
+        var bestY = -1e9;
+        var meta = [];
+        var rad = rotation * Math.PI / 180;
+        var cos = Math.cos(rad), sin = Math.sin(rad);
         for (var si = 0; si < spots.length; si++) {
-          spots[si].style.transform = inv;
+          var el = spots[si];
+          // موضع الأيقونة النسبي من منتصف العجلة (left/top %)
+          var lx = (parseFloat(el.style.left) || 50) / 100 - 0.5;
+          var ly = (parseFloat(el.style.top) || 50) / 100 - 0.5;
+          // بعد دوران العجلة: إحداثي الشاشة (y أكبر = أسفل = أقرب للمستخدم)
+          var sy = lx * sin + ly * cos;
+          meta.push({ el: el, sy: sy });
+          if (sy > bestY) { bestY = sy; best = si; }
+        }
+        for (var sj = 0; sj < meta.length; sj++) {
+          var m = meta[sj];
+          var near = (sj === best);
+          // تكبير تدريجي حسب القرب من أسفل العجلة
+          var t = 0;
+          if (meta.length > 1) {
+            var minY = meta[0].sy, maxY = meta[0].sy;
+            for (var k = 1; k < meta.length; k++) {
+              if (meta[k].sy < minY) minY = meta[k].sy;
+              if (meta[k].sy > maxY) maxY = meta[k].sy;
+            }
+            var span = (maxY - minY) || 1;
+            t = (m.sy - minY) / span; // 0 أعلى .. 1 أسفل
+          }
+          var scale = 0.92 + t * 0.48; // ~0.92 بعيد → ~1.40 قريب من الأسفل
+          if (near) scale = Math.max(scale, 1.38);
+          m.el.style.transform = 'translate(-50%, -50%) rotate(' + (-rotation) + 'deg) scale(' + scale.toFixed(3) + ')';
+          if (near) m.el.classList.add('is-near');
+          else m.el.classList.remove('is-near');
         }
       }
 
@@ -17085,7 +17124,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '346';
+      var APP_VER = '347';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="345" lang="ar" dir="rtl">
+<html data-app-ver="346" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -3839,7 +3839,7 @@
         if (!verses.length) return null;
         let h = '<h3 style="text-align:center;margin:8px 0 6px;color:var(--brown);">المزمور ' + agNum + '</h3>';
         h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px;padding:8px;background:rgba(245,230,200,0.45);border-radius:12px;">' +
-          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="window._biblePosFromPsalms=true;bibleState.bookIndex=getMergedBibleBooks().findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
+          '<button type="button" class="save-btn" style="margin:0;background:#5a7d4a;" onclick="window._biblePosFromPsalms=true;window._fromDailyPsalms=true;window._psalmAudioOnly=true;bibleState.bookIndex=getMergedBibleBooks().findIndex(function(b){return b.name===\'المزامير\'||b.code===\'Ps\';});bibleState.chapter='+(chapterNum-1)+';bibleSpeakChapter();">🔊 قراءة المزمور</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#8a7a60;" onclick="biblePauseSpeak();">⏸</button>' +
           '<button type="button" class="save-btn" style="margin:0;background:#a65d4a;" onclick="bibleStopSpeak();">⏹</button>' +
           bibleMusicControlsHtml() + '</div>';
@@ -4006,14 +4006,19 @@
 
     function saveBiblePos() {
       try {
-        var t = bibleState.testament || 'OT';
-        // لا تحفظ موضع المزامير القادم من اختيار مزامير اليوم فوق موضع العهد
-        if (window._biblePosFromPsalms) return;
+        // اختيار/قراءة مزامير اليوم لا يغيّر آخر موضع في أسفار الكتاب
+        if (window._biblePosFromPsalms || window._fromDailyPsalms) return;
+        var allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks()
+          : ((window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : []);
+        var book = allBooks[bibleState.bookIndex];
+        // لو الصفحة الحالية مزامير قادمة من مسار المزامير فقط — لا تحفظ
+        if (book && window._psalmAudioOnly) return;
+        var t = bibleState.testament || (book && book.t) || 'OT';
+        if (book && book.t) t = book.t;
         localStorage.setItem('khalwati_bible_pos_' + t, JSON.stringify({
           bookIndex: bibleState.bookIndex|0,
           chapter: bibleState.chapter|0
         }));
-        // توافق قديم
         localStorage.setItem('khalwati_bible_pos', JSON.stringify({
           testament: t,
           bookIndex: bibleState.bookIndex|0,
@@ -4341,19 +4346,21 @@
         window._mergedBooks = allBooks;
         const books = allBooks.filter(b => b.t === bibleState.testament);
         if (!books.length) return;
-        // استعادة آخر موضع لهذا العهد فقط (مستقل عن المزامير والعهد الآخر)
+        // آخر موضع محفوظ لهذا العهد فقط — لا يرث اختيار مزامير اليوم
         window._biblePosFromPsalms = false;
+        window._fromDailyPsalms = false;
+        window._psalmAudioOnly = false;
         var saved = loadBiblePosForTestament(bibleState.testament);
+        var restored = false;
         if (saved && typeof saved.bookIndex === 'number') {
           var sb = allBooks[saved.bookIndex];
           if (sb && sb.t === bibleState.testament) {
-            bibleState.bookIndex = saved.bookIndex;
+            bibleState.bookIndex = saved.bookIndex|0;
             bibleState.chapter = saved.chapter|0;
-          } else {
-            saved = null;
+            restored = true;
           }
         }
-        if (!saved) {
+        if (!restored) {
           const firstId = books[0].id;
           const fullIndex = allBooks.findIndex(b => b.id === firstId);
           bibleState.bookIndex = fullIndex >= 0 ? fullIndex : 0;
@@ -4361,7 +4368,7 @@
         } else {
           var curBook = allBooks[bibleState.bookIndex];
           var chCount = (curBook && curBook.chapters && curBook.chapters.length) || 1;
-          if (bibleState.chapter >= chCount) bibleState.chapter = 0;
+          if (bibleState.chapter < 0 || bibleState.chapter >= chCount) bibleState.chapter = 0;
         }
         renderBible();
       }, function() {
@@ -5084,6 +5091,41 @@ function renderBible() {
           3. فحص النفس واكتشاف عيوبها وإصلاحها<br>
           4. الحديث مع الله وسماع صوته<br>
           5. اقتناء الفضائل الروحية</p>
+
+
+          <h3 style="text-align:center;margin-top:22px;">قصيدة البابا شنودة الثالث</h3>
+          <h3 style="text-align:center;color:var(--gold-dark);">إغلق الباب وحاجج</h3>
+          <div style="white-space:pre-wrap;line-height:2.1;text-align:center;font-size:15px;color:var(--brown);margin:12px 0 8px;">
+إغلق الباب وحاجج    في دُجى الليل يسوعا
+وإملء الليل صلاةً      وصراعًا ودموعًا
+
+أيها الحائر يا من   تهت في فكر عميق
+تسأل الناس وتشكو  صارخًا أين الطريق؟
+هل وجدت الحل يا مسكين والقلب الشفيق؟
+هل أزال الناس ما   عندك من هم وضيق؟
+
+يا صديقي سوف لا يُجديك في الدنيا صديق
+ليس عند الناس رأي     ثابت شافّ يليق
+فحلول لفريق             ضد أخرى لفريق
+إنما عندي علاج           قد خبرناه جميعًا
+
+إغلق الباب وحاجج   في دُجى الليل يسوعا
+وإملء الليل صلاةً        وصراعًا ودموعًا
+
+أيها المصلح يا من        تملأ الدنيا لهيبًا
+ثائرا للحق والإصلاح     محتدا غضوبا
+كم لقيت العنتَ   والتجريح والقول المعيبا
+تحمل اليوم صليبًا           وغدًا أيضا صليبًا
+
+يا صديقي. إن مضى    الوقت نزاعًا وحروبًا
+واستمر الحال مثل الأمس   صعبا وعصيبا
+فأدخل المخدع واركع  واسكب النفس سكيبا
+قُل له إشتدت وضاقت فإفتح الباب الرحيبا
+قُل له يا رب إني     عاجز لن أستطيعا
+وأعرض الأمر وحاجج في دُجى الليل يسوعا
+وأملء الليل صلاةً    وصراعًا ودموعًا
+          </div>
+          <p style="text-align:center;margin:8px 0 0;">🙏</p>
 
           <p style="text-align:center; margin-top:16px; color:var(--brown); font-weight:700;">إلى هنا أعاننا الرب 🙏</p>
         </div>
@@ -17043,7 +17085,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '345';
+      var APP_VER = '346';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

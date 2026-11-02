@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="347" lang="ar" dir="rtl">
+<html data-app-ver="348" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1101,38 +1101,41 @@
     /* مناطق الضغط — مركز كل زرار */
     .wheel-hotspot {
       position: absolute;
-      width: 26%;
-      height: 26%;
+      width: 24%;
+      height: 24%;
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
-      transition: box-shadow 0.15s ease, filter 0.15s ease;
+      transition: box-shadow 0.18s ease, filter 0.18s ease;
       transform: translate(-50%, -50%);
       -webkit-tap-highlight-color: transparent;
       touch-action: none;
       background: transparent;
-      overflow: visible;
+      overflow: hidden;
       will-change: transform;
+      -webkit-mask-image: radial-gradient(circle at center, #000 70%, transparent 76%);
+      mask-image: radial-gradient(circle at center, #000 70%, transparent 76%);
     }
     .wheel-hotspot.is-near {
-      z-index: 12;
-      filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.75));
+      z-index: 14;
+      filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.65));
+      overflow: visible;
     }
     .wheel-hotspot:active {
       box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.55);
     }
-    .wheel-hotspot.is-near .wheel-icon-face {
-      /* visual clarity handled by parent scale in JS */
-    }
-    .wheel-icon-face {
+    .wheel-hotspot.is-near
+.wheel-icon-face {
       width: 100%;
       height: 100%;
       object-fit: contain;
       pointer-events: none;
       display: block;
       border-radius: 50%;
-      filter: drop-shadow(0 2px 3px rgba(40,25,0,0.3));
       background: transparent;
+      filter: drop-shadow(0 1px 2px rgba(40,25,0,0.2));
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
     /* القرص الأساسي: محور فقط بدون أيقونات مرسومة */
     .jesus-wheel-inner > img#wheelInnerImg {
@@ -1929,8 +1932,8 @@
             var span = (maxY - minY) || 1;
             t = (m.sy - minY) / span; // 0 أعلى .. 1 أسفل
           }
-          var scale = 0.92 + t * 0.48; // ~0.92 بعيد → ~1.40 قريب من الأسفل
-          if (near) scale = Math.max(scale, 1.38);
+          var scale = 0.96 + t * 0.28; // تكبير لطيف بدون تشويه
+          if (near) scale = Math.max(scale, 1.22);
           m.el.style.transform = 'translate(-50%, -50%) rotate(' + (-rotation) + 'deg) scale(' + scale.toFixed(3) + ')';
           if (near) m.el.classList.add('is-near');
           else m.el.classList.remove('is-near');
@@ -4043,37 +4046,60 @@
       window._pickedVerses = JSON.parse(localStorage.getItem('khalwati_picked_verses') || '{}') || {};
     } catch (ePk0) { window._pickedVerses = {}; }
 
+    function isPsalmsBook(book) {
+      if (!book) return false;
+      var n = (book.name || '') + '';
+      return book.code === 'Ps' || n.indexOf('المزامير') >= 0 || n.toLowerCase().indexOf('psalm') >= 0;
+    }
     function saveBiblePos() {
       try {
-        // اختيار/قراءة مزامير اليوم لا يغيّر آخر موضع في أسفار الكتاب
-        if (window._biblePosFromPsalms || window._fromDailyPsalms) return;
+        // مسار مزامير اليوم/الأجبية لا يلمس موضع أسفار الكتاب
+        if (window._biblePosFromPsalms || window._fromDailyPsalms || window._psalmAudioOnly) return;
         var allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks()
           : ((window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : []);
         var book = allBooks[bibleState.bookIndex];
-        // لو الصفحة الحالية مزامير قادمة من مسار المزامير فقط — لا تحفظ
-        if (book && window._psalmAudioOnly) return;
         var t = bibleState.testament || (book && book.t) || 'OT';
         if (book && book.t) t = book.t;
-        localStorage.setItem('khalwati_bible_pos_' + t, JSON.stringify({
-          bookIndex: bibleState.bookIndex|0,
-          chapter: bibleState.chapter|0
-        }));
+        var payload = { bookIndex: bibleState.bookIndex|0, chapter: bibleState.chapter|0 };
+        localStorage.setItem('khalwati_bible_pos_' + t, JSON.stringify(payload));
         localStorage.setItem('khalwati_bible_pos', JSON.stringify({
-          testament: t,
-          bookIndex: bibleState.bookIndex|0,
-          chapter: bibleState.chapter|0
+          testament: t, bookIndex: payload.bookIndex, chapter: payload.chapter
         }));
+        // احفظ آخر سفر «غير المزامير» لكل عهد — لفصل مزامير اليوم عن التصفح
+        if (book && !isPsalmsBook(book)) {
+          localStorage.setItem('khalwati_bible_pos_' + t + '_book', JSON.stringify(payload));
+        }
       } catch (e) {}
     }
     function loadBiblePosForTestament(t) {
       try {
+        var allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks()
+          : ((window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : []);
+        // 1) آخر سفر حقيقي (غير مزامير اليوم)
+        var rawBook = localStorage.getItem('khalwati_bible_pos_' + t + '_book');
+        if (rawBook) {
+          var pb = JSON.parse(rawBook);
+          if (pb && typeof pb.bookIndex === 'number') {
+            var bb = allBooks[pb.bookIndex];
+            if (bb && bb.t === t && !isPsalmsBook(bb)) return pb;
+          }
+        }
         var raw = localStorage.getItem('khalwati_bible_pos_' + t);
         if (raw) {
           var p = JSON.parse(raw);
-          if (p && typeof p.bookIndex === 'number') return p;
+          if (p && typeof p.bookIndex === 'number') {
+            var b = allBooks[p.bookIndex];
+            // لو المحفوظ مزامير فقط — تجاهله وابدأ بأول سفر
+            if (b && isPsalmsBook(b)) return null;
+            if (b && b.t === t) return p;
+          }
         }
         var old = JSON.parse(localStorage.getItem('khalwati_bible_pos') || 'null');
-        if (old && old.testament === t && typeof old.bookIndex === 'number') return old;
+        if (old && old.testament === t && typeof old.bookIndex === 'number') {
+          var ob = allBooks[old.bookIndex];
+          if (ob && isPsalmsBook(ob)) return null;
+          return old;
+        }
       } catch (e) {}
       return null;
     }
@@ -9420,6 +9446,9 @@ function openTextModal(type) {
         window._mergedBooks = merged;
         let idx = merged.indexOf(book);
         if (idx < 0) idx = merged.findIndex(function(b) { return b.name === book.name; });
+        window._biblePosFromPsalms = true;
+        window._fromDailyPsalms = true;
+        window._psalmAudioOnly = true;
         bibleState.testament = book.t || 'OT';
         bibleState.bookIndex = idx >= 0 ? idx : 0;
         bibleState.chapter = Math.max(0, Math.min(num - 1, book.chapters.length - 1));
@@ -17124,7 +17153,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '347';
+      var APP_VER = '348';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

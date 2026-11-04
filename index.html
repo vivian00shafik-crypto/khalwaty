@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="352" lang="ar" dir="rtl">
+<html data-app-ver="353" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -6862,8 +6862,18 @@ function onPrepareImageSelected(idx, input) {
         slideXmls[1] = _pptxSlideShell(titleShapes);
         slideRels[1] = [];
 
-        // ابنِ قائمة شرائح ممتلئة: فقرة لكل سلايد (أو سلايدين كحد أقصى) + صورة مع نصها
-        var COLORS4 = ['3E2F1C', '6B4F2A', '8B5A2B', '5C4033']; // 4 ألوان خطوط
+        // شرائح ممتلئة + 4 ألوان + أشكال متعددة حسب الموضوع
+        // ألوان خطوط واضحة ومتباينة
+        var COLORS4 = ['1F4E5F', '8B3A2B', '2F5D3A', '6B3FA0'];
+        // ثيمات متنوعة للهيدر والبطاقات
+        var THEMES = [
+          { bar: '6B5B3E', card: 'FFFDF8', border: 'E8D9B5', title: 'FAF6EC', accent: 'C9A227' },
+          { bar: '2C5F4A', card: 'F4FBF7', border: 'B8D9C8', title: 'F5FFF9', accent: '3D8B6E' },
+          { bar: '5C3D2E', card: 'FFF8F2', border: 'E5CDB8', title: 'FFF8F0', accent: 'C47A3A' },
+          { bar: '3D4A6B', card: 'F5F7FC', border: 'C5CEE3', title: 'F0F3FA', accent: '5B6FA8' },
+          { bar: '6B3A4A', card: 'FDF5F7', border: 'E5C0C8', title: 'FFF5F7', accent: 'A85B70' },
+          { bar: '4A5C2E', card: 'F7FAF2', border: 'C9D9A8', title: 'F5FAF0', accent: '6B8B3A' }
+        ];
         var slideJobs = [];
 
         function linesFromPage(pg) {
@@ -6887,7 +6897,6 @@ function onPrepareImageSelected(idx, input) {
           });
         }
 
-        // جمّع فقرات: عنوان + بنوده حتى العنوان التالي
         function groupParagraphs(lines) {
           var groups = [];
           var cur = [];
@@ -6903,27 +6912,22 @@ function onPrepareImageSelected(idx, input) {
           return groups.length ? groups : [[]];
         }
 
-        // قسّم مجموعة طويلة على سلايدين متوازنين (مش سلايد فيه سطر أو اثنين فقط)
         function splitBalanced(lines, maxPer) {
-          maxPer = maxPer || 10;
+          maxPer = maxPer || 9;
+          if (!lines.length) return [];
           if (lines.length <= maxPer) return [lines];
-          if (lines.length <= maxPer + 2) {
-            // متبقي صغير: وزّع على سلايدين متساويين تقريباً
-            var mid = Math.ceil(lines.length / 2);
+          var mid = Math.ceil(lines.length / 2);
+          // سلايدين كحد أقصى للمجموعة الطويلة — متوازنين
+          if (lines.length <= maxPer * 2) {
             return [lines.slice(0, mid), lines.slice(mid)];
           }
           var chunks = [];
           for (var i = 0; i < lines.length; i += maxPer) {
             chunks.push(lines.slice(i, i + maxPer));
           }
-          // لو آخر شريحة فيها سطر أو اثنين فقط: انقلها لنصف السابقة
-          if (chunks.length >= 2 && chunks[chunks.length - 1].length <= 2) {
+          while (chunks.length >= 2 && chunks[chunks.length - 1].length <= 2) {
             var last = chunks.pop();
-            var prev = chunks[chunks.length - 1];
-            var take = Math.min(3, Math.floor(prev.length / 2));
-            var moved = prev.splice(prev.length - take, take);
-            chunks[chunks.length - 1] = prev;
-            chunks.push(moved.concat(last));
+            chunks[chunks.length - 1] = chunks[chunks.length - 1].concat(last);
           }
           return chunks;
         }
@@ -6935,28 +6939,43 @@ function onPrepareImageSelected(idx, input) {
           var hasImg = !!(pg && pg.image && String(pg.image).indexOf('base64,') > 0);
           if (!richLines.length) {
             if (hasImg) {
-              slideJobs.push({ pg: pg, title: baseTitle, lines: [], pageIdx: idx, attachImg: true });
+              slideJobs.push({ pg: pg, title: baseTitle, lines: [], pageIdx: idx, attachImg: true, themeIdx: idx % THEMES.length });
             }
             continue;
           }
           var groups = groupParagraphs(richLines);
           var pageChunks = [];
           groups.forEach(function (g) {
-            var maxPer = hasImg ? 7 : 10;
-            splitBalanced(g, maxPer).forEach(function (ch) {
+            // لا تترك عنوانًا لوحده: ادمجه مع البنود التالية إن أمكن
+            splitBalanced(g, hasImg ? 7 : 9).forEach(function (ch) {
               if (ch && ch.length) pageChunks.push(ch);
             });
           });
-          // ادمج الشرائح الهزيلة (1-2 أسطر) مع السابقة لنفس الصفحة
+          // ادمج كل شريحة هزيلة (≤2 أسطر أو عنوان فقط) مع التالية أو السابقة
           var merged = [];
-          pageChunks.forEach(function (ch) {
-            if (merged.length && ch.length <= 2 && merged[merged.length - 1].length + ch.length <= 12) {
+          for (var ci = 0; ci < pageChunks.length; ci++) {
+            var ch = pageChunks[ci];
+            var onlyHeading = ch.length === 1 && ch[0].heading;
+            var sparse = ch.length <= 2;
+            if (merged.length && (onlyHeading || sparse) && merged[merged.length - 1].length + ch.length <= 11) {
               merged[merged.length - 1] = merged[merged.length - 1].concat(ch);
+            } else if (onlyHeading && ci + 1 < pageChunks.length) {
+              pageChunks[ci + 1] = ch.concat(pageChunks[ci + 1]);
             } else {
               merged.push(ch);
             }
-          });
-          pageChunks = merged;
+          }
+          // تمريرة ثانية: ادمج المتبقي الهزيل للأمام
+          var merged2 = [];
+          for (var ci2 = 0; ci2 < merged.length; ci2++) {
+            var ch2 = merged[ci2];
+            if (merged2.length && ch2.length <= 2 && merged2[merged2.length - 1].length + ch2.length <= 11) {
+              merged2[merged2.length - 1] = merged2[merged2.length - 1].concat(ch2);
+            } else {
+              merged2.push(ch2);
+            }
+          }
+          pageChunks = merged2;
           for (var p = 0; p < pageChunks.length; p++) {
             var t2 = baseTitle + (pageChunks.length > 1 ? (' — ' + (p + 1) + '/' + pageChunks.length) : '');
             slideJobs.push({
@@ -6966,7 +6985,10 @@ function onPrepareImageSelected(idx, input) {
               pageIdx: idx,
               part: p,
               parts: pageChunks.length,
-              attachImg: hasImg && p === 0
+              // الصورة مع أول شريحة للصفحة، ومع أي شريحة قليلة الأسطر لنفس الصفحة لملء الفراغ
+              attachImg: hasImg && (p === 0 || pageChunks[p].length <= 3),
+              themeIdx: (idx + p) % THEMES.length,
+              layout: (idx + p) % 3 // 0 نص كامل، 1 صورة+نص، 2 شريط جانبي
             });
           }
         }
@@ -6983,50 +7005,50 @@ function onPrepareImageSelected(idx, input) {
           var sn = jx + 2;
           var title = job.title;
           var richLines = job.lines || [];
+          var theme = THEMES[job.themeIdx % THEMES.length];
+          var layout = job.layout || 0;
 
           var shapes = '';
-          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1200000, '6B5B3E', null);
+          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1200000, theme.bar, null);
+          // شريط لون مميز تحت الهيدر
+          shapes += _pptxRect(12, 'accent', 0, 1200000, 12192000, 50000, theme.accent, null);
           shapes += _pptxTextBox(3, 'SlideTitle', 400000, 220000, 11400000, 800000, [title], {
-            sz: 2800, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr'
+            sz: 2800, bold: true, color: theme.title, align: 'r', anchor: 'ctr'
           });
 
-          var hasImg = !!(job.attachImg && pg && pg.image && String(pg.image).indexOf('base64,') > 0);
+          var wantImg = !!(job.attachImg && pg && pg.image && String(pg.image).indexOf('base64,') > 0);
+          // لو الشريحة قليلة الأسطر وفيه صورة للصفحة: اعرض الصورة لملء الفراغ
+          if (!wantImg && richLines.length <= 3 && pg && pg.image && String(pg.image).indexOf('base64,') > 0) {
+            wantImg = true;
+          }
           var embedId = null;
           var mediaExt = 'jpeg';
-          if (hasImg) {
+          if (wantImg) {
             embedId = await addMedia(sn, pg.image);
             var mFound = mediaFiles.filter(function (x) { return x.slideNum === sn; })[0];
             if (mFound) mediaExt = mFound.ext || 'jpeg';
           }
-          hasImg = !!embedId;
+          var hasImg = !!embedId;
           await _pptxYield();
 
           function _pptxStackLinesFilled(shapesRef, startId, x, y0, w, y1, lines) {
             var n = lines.length;
             if (!n) return shapesRef;
-            var gap = 60000;
+            var gap = 70000;
             var totalH = y1 - y0;
-            // ارتفاع ثابت تقريباً حسب عدد الأسطر لملء المساحة بدون تداخل
             var lineH = Math.floor((totalH - gap * Math.max(0, n - 1)) / n);
-            if (lineH > 720000) lineH = 720000;
-            if (lineH < 300000) lineH = 300000;
-            // لو المساحة مش كافية: صغّر الخط بدل التداخل
-            var fit = (lineH * n + gap * (n - 1));
-            if (fit > totalH) {
-              lineH = Math.floor((totalH - gap * (n - 1)) / n);
-              if (lineH < 240000) lineH = 240000;
-            }
+            if (lineH > 680000) lineH = 680000;
+            if (lineH < 280000) lineH = 280000;
             var y = y0;
             for (var i = 0; i < n; i++) {
               var L = lines[i];
-              var col = L.heading ? 'A67C00' : COLORS4[i % 4];
+              var col = L.heading ? theme.accent : COLORS4[i % 4];
               var sz;
-              if (L.heading) sz = 2300;
+              if (L.heading) sz = 2400;
               else if ((L.t || '').length > 180) sz = 1500;
               else if ((L.t || '').length > 100) sz = 1650;
-              else sz = 1800;
-              // ضبط الحجم حسب ارتفاع السطر
-              if (lineH < 320000) sz = Math.min(sz, 1500);
+              else sz = 1850;
+              if (lineH < 320000) sz = Math.min(sz, 1550);
               var h = lineH;
               if (y + h > y1) h = Math.max(200000, y1 - y);
               shapesRef += _pptxTextBox(startId + i, 'L' + i, x, y, w, h, [L.t], {
@@ -7039,14 +7061,27 @@ function onPrepareImageSelected(idx, input) {
           }
 
           if (hasImg) {
-            // صورة يسار + نص يمين في نفس الشريحة
-            shapes += _pptxPic(5, 'Image', 300000, 1400000, 4200000, 4700000, embedId);
-            shapes += _pptxRect(6, 'card', 4700000, 1400000, 7100000, 4700000, 'FFFDF8', 'E8D9B5');
-            shapes = _pptxStackLinesFilled(shapes, 20, 4900000, 1520000, 6700000, 5950000, richLines);
+            // تخطيط متغير: صورة يمين أو يسار حسب layout
+            if (layout === 1) {
+              shapes += _pptxRect(6, 'card', 300000, 1400000, 7000000, 4700000, theme.card, theme.border);
+              shapes = _pptxStackLinesFilled(shapes, 20, 500000, 1520000, 6600000, 5950000, richLines);
+              shapes += _pptxPic(5, 'Image', 7600000, 1400000, 4200000, 4700000, embedId);
+            } else {
+              shapes += _pptxPic(5, 'Image', 300000, 1400000, 4200000, 4700000, embedId);
+              shapes += _pptxRect(6, 'card', 4700000, 1400000, 7100000, 4700000, theme.card, theme.border);
+              shapes = _pptxStackLinesFilled(shapes, 20, 4900000, 1520000, 6700000, 5950000, richLines);
+            }
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            shapes += _pptxRect(5, 'card', 400000, 1400000, 11400000, 4900000, 'FFFDF8', 'E8D9B5');
-            shapes = _pptxStackLinesFilled(shapes, 20, 600000, 1550000, 11000000, 6150000, richLines);
+            // بدون صورة: بطاقة كاملة + شريط جانبي ملوّن للتنويع
+            if (layout === 2) {
+              shapes += _pptxRect(13, 'side', 0, 1250000, 280000, 5200000, theme.accent, null);
+              shapes += _pptxRect(5, 'card', 450000, 1400000, 11300000, 4900000, theme.card, theme.border);
+              shapes = _pptxStackLinesFilled(shapes, 20, 650000, 1550000, 10900000, 6150000, richLines);
+            } else {
+              shapes += _pptxRect(5, 'card', 400000, 1400000, 11400000, 4900000, theme.card, theme.border);
+              shapes = _pptxStackLinesFilled(shapes, 20, 600000, 1550000, 11000000, 6150000, richLines);
+            }
             slideRels[sn] = [];
           }
 
@@ -17388,7 +17423,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '352';
+      var APP_VER = '353';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

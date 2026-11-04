@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="351" lang="ar" dir="rtl">
+<html data-app-ver="352" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -6862,58 +6862,112 @@ function onPrepareImageSelected(idx, input) {
         slideXmls[1] = _pptxSlideShell(titleShapes);
         slideRels[1] = [];
 
-        // ابنِ قائمة شرائح من الصفحات (كل صفحة قد تُقسَّم لعدة سلايدات)
+        // ابنِ قائمة شرائح ممتلئة: فقرة لكل سلايد (أو سلايدين كحد أقصى) + صورة مع نصها
+        var COLORS4 = ['3E2F1C', '6B4F2A', '8B5A2B', '5C4033']; // 4 ألوان خطوط
         var slideJobs = [];
-        for (var idx = 0; idx < pages.length; idx++) {
-          var pg = pages[idx];
-          var title = prepExtractSlideTitle(pg, idx);
+
+        function linesFromPage(pg) {
           var points = prepSummarizeForPptx(pg.text, 200);
-          var displayLines = points.length
-            ? points.map(function (pt) { return '• ' + (pt.t || pt); })
-            : [];
-          if (!displayLines.length && pg.text) {
-            displayLines = String(pg.text).replace(/\r\n/g, '\n').split(/\n+/).map(function (x) {
-              return x.replace(/\s+/g, ' ').trim();
-            }).filter(function (x) { return x.length >= 3; }).slice(0, 200).map(function (x) {
-              return '• ' + x.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '');
+          if (points.length) {
+            return points.map(function (pt) {
+              return {
+                t: (pt.heading ? '' : '• ') + (pt.t || ''),
+                heading: !!pt.heading,
+                large: !!pt.large
+              };
             });
           }
-          var earlyHasImg = !!(pg && pg.image && String(pg.image).indexOf('base64,') > 0);
-          if (!displayLines.length) {
-            displayLines = earlyHasImg ? [] : ['• (لا يوجد نص في هذه الصفحة)'];
-          }
-          var richLines = points.length
-            ? points.map(function (pt) {
-                return {
-                  t: (pt.heading ? '' : '• ') + (pt.t || ''),
-                  heading: !!pt.heading,
-                  large: !!pt.large
-                };
-              })
-            : displayLines.map(function (ln, i) {
-                var t = String(ln || '').replace(/^•\s*/, '');
-                var heading = i === 0 && t.length <= 42 && !/[.。]/.test(t);
-                return { t: (heading ? '' : '• ') + t, heading: heading, large: t.length <= 130 };
-              });
-          // قسّم الأسطر على سلايدات: ~8 أسطر للشريحة مع صورة، ~12 بدون
-          var perSlide = earlyHasImg ? 8 : 12;
-          if (!richLines.length) {
-            slideJobs.push({ pg: pg, title: title, lines: [], pageIdx: idx, part: 0, parts: 1 });
-          } else {
-            var parts = Math.ceil(richLines.length / perSlide);
-            for (var p = 0; p < parts; p++) {
-              var chunk = richLines.slice(p * perSlide, (p + 1) * perSlide);
-              var t2 = title + (parts > 1 ? (' — ' + (p + 1) + '/' + parts) : '');
-              slideJobs.push({
-                pg: pg,
-                title: t2,
-                lines: chunk,
-                pageIdx: idx,
-                part: p,
-                parts: parts,
-                attachImg: earlyHasImg && p === 0
-              });
+          var raw = String(pg.text || '').replace(/\r\n/g, '\n').split(/\n+/).map(function (x) {
+            return x.replace(/\s+/g, ' ').trim();
+          }).filter(function (x) { return x.length >= 3; });
+          return raw.map(function (ln, i) {
+            var t = ln.replace(/^[•\-\*●▪▸►\d٠-٩]+[\-\.\)]\s*/, '');
+            var heading = i === 0 && t.length <= 48 && !/[.。]/.test(t);
+            return { t: (heading ? '' : '• ') + t, heading: heading, large: t.length <= 140 };
+          });
+        }
+
+        // جمّع فقرات: عنوان + بنوده حتى العنوان التالي
+        function groupParagraphs(lines) {
+          var groups = [];
+          var cur = [];
+          lines.forEach(function (L) {
+            if (L.heading && cur.length) {
+              groups.push(cur);
+              cur = [L];
+            } else {
+              cur.push(L);
             }
+          });
+          if (cur.length) groups.push(cur);
+          return groups.length ? groups : [[]];
+        }
+
+        // قسّم مجموعة طويلة على سلايدين متوازنين (مش سلايد فيه سطر أو اثنين فقط)
+        function splitBalanced(lines, maxPer) {
+          maxPer = maxPer || 10;
+          if (lines.length <= maxPer) return [lines];
+          if (lines.length <= maxPer + 2) {
+            // متبقي صغير: وزّع على سلايدين متساويين تقريباً
+            var mid = Math.ceil(lines.length / 2);
+            return [lines.slice(0, mid), lines.slice(mid)];
+          }
+          var chunks = [];
+          for (var i = 0; i < lines.length; i += maxPer) {
+            chunks.push(lines.slice(i, i + maxPer));
+          }
+          // لو آخر شريحة فيها سطر أو اثنين فقط: انقلها لنصف السابقة
+          if (chunks.length >= 2 && chunks[chunks.length - 1].length <= 2) {
+            var last = chunks.pop();
+            var prev = chunks[chunks.length - 1];
+            var take = Math.min(3, Math.floor(prev.length / 2));
+            var moved = prev.splice(prev.length - take, take);
+            chunks[chunks.length - 1] = prev;
+            chunks.push(moved.concat(last));
+          }
+          return chunks;
+        }
+
+        for (var idx = 0; idx < pages.length; idx++) {
+          var pg = pages[idx];
+          var baseTitle = prepExtractSlideTitle(pg, idx);
+          var richLines = linesFromPage(pg);
+          var hasImg = !!(pg && pg.image && String(pg.image).indexOf('base64,') > 0);
+          if (!richLines.length) {
+            if (hasImg) {
+              slideJobs.push({ pg: pg, title: baseTitle, lines: [], pageIdx: idx, attachImg: true });
+            }
+            continue;
+          }
+          var groups = groupParagraphs(richLines);
+          var pageChunks = [];
+          groups.forEach(function (g) {
+            var maxPer = hasImg ? 7 : 10;
+            splitBalanced(g, maxPer).forEach(function (ch) {
+              if (ch && ch.length) pageChunks.push(ch);
+            });
+          });
+          // ادمج الشرائح الهزيلة (1-2 أسطر) مع السابقة لنفس الصفحة
+          var merged = [];
+          pageChunks.forEach(function (ch) {
+            if (merged.length && ch.length <= 2 && merged[merged.length - 1].length + ch.length <= 12) {
+              merged[merged.length - 1] = merged[merged.length - 1].concat(ch);
+            } else {
+              merged.push(ch);
+            }
+          });
+          pageChunks = merged;
+          for (var p = 0; p < pageChunks.length; p++) {
+            var t2 = baseTitle + (pageChunks.length > 1 ? (' — ' + (p + 1) + '/' + pageChunks.length) : '');
+            slideJobs.push({
+              pg: pg,
+              title: t2,
+              lines: pageChunks[p],
+              pageIdx: idx,
+              part: p,
+              parts: pageChunks.length,
+              attachImg: hasImg && p === 0
+            });
           }
         }
 
@@ -6929,13 +6983,11 @@ function onPrepareImageSelected(idx, input) {
           var sn = jx + 2;
           var title = job.title;
           var richLines = job.lines || [];
-          var hasLarge = richLines.some(function (pt) { return pt && pt.large; });
-          var bodySz = hasLarge ? 2600 : 2000;
 
           var shapes = '';
-          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1300000, '6B5B3E', null);
-          shapes += _pptxTextBox(3, 'SlideTitle', 400000, 280000, 11400000, 850000, [title], {
-            sz: 3000, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr'
+          shapes += _pptxRect(2, 'topBar', 0, 0, 12192000, 1200000, '6B5B3E', null);
+          shapes += _pptxTextBox(3, 'SlideTitle', 400000, 220000, 11400000, 800000, [title], {
+            sz: 2800, bold: true, color: 'FAF6EC', align: 'r', anchor: 'ctr'
           });
 
           var hasImg = !!(job.attachImg && pg && pg.image && String(pg.image).indexOf('base64,') > 0);
@@ -6949,63 +7001,56 @@ function onPrepareImageSelected(idx, input) {
           hasImg = !!embedId;
           await _pptxYield();
 
-          function _pptxStackLines(shapesRef, startId, x, y0, w, y1, lines) {
-            var colorsHead = 'A67C00';
-            var colorsBody = '3E2F1C';
+          function _pptxStackLinesFilled(shapesRef, startId, x, y0, w, y1, lines) {
             var n = lines.length;
             if (!n) return shapesRef;
-            var gap = 70000;
+            var gap = 60000;
             var totalH = y1 - y0;
-            var weights = [];
-            var sumW = 0;
-            for (var i = 0; i < n; i++) {
-              var L = lines[i];
-              var len = (L.t || '').length;
-              var wgt = L.heading ? 1.35 : (len > 160 ? 1.5 : (len > 90 ? 1.2 : 1.0));
-              weights.push(wgt);
-              sumW += wgt;
+            // ارتفاع ثابت تقريباً حسب عدد الأسطر لملء المساحة بدون تداخل
+            var lineH = Math.floor((totalH - gap * Math.max(0, n - 1)) / n);
+            if (lineH > 720000) lineH = 720000;
+            if (lineH < 300000) lineH = 300000;
+            // لو المساحة مش كافية: صغّر الخط بدل التداخل
+            var fit = (lineH * n + gap * (n - 1));
+            if (fit > totalH) {
+              lineH = Math.floor((totalH - gap * (n - 1)) / n);
+              if (lineH < 240000) lineH = 240000;
             }
             var y = y0;
             for (var i = 0; i < n; i++) {
               var L = lines[i];
-              var h = Math.floor((totalH - gap * (n - 1)) * (weights[i] / sumW));
-              if (h < 260000) h = 260000;
-              if (y + h > y1) h = Math.max(220000, y1 - y);
-              var sz, col, bold;
-              if (L.heading) {
-                sz = 2400;
-                col = colorsHead;
-                bold = true;
-              } else if (L.large) {
-                sz = 1800;
-                col = colorsBody;
-                bold = false;
-              } else {
-                sz = 1600;
-                col = colorsBody;
-                bold = false;
-              }
+              var col = L.heading ? 'A67C00' : COLORS4[i % 4];
+              var sz;
+              if (L.heading) sz = 2300;
+              else if ((L.t || '').length > 180) sz = 1500;
+              else if ((L.t || '').length > 100) sz = 1650;
+              else sz = 1800;
+              // ضبط الحجم حسب ارتفاع السطر
+              if (lineH < 320000) sz = Math.min(sz, 1500);
+              var h = lineH;
+              if (y + h > y1) h = Math.max(200000, y1 - y);
               shapesRef += _pptxTextBox(startId + i, 'L' + i, x, y, w, h, [L.t], {
-                sz: sz, bold: bold, color: col, align: 'r', spcAft: 100
+                sz: sz, bold: !!L.heading, color: col, align: 'r', spcAft: 80
               });
               y += h + gap;
-              if (y >= y1 - 150000) break;
+              if (y >= y1 - 80000) break;
             }
             return shapesRef;
           }
 
           if (hasImg) {
-            shapes += _pptxPic(5, 'Image', 380000, 1480000, 4400000, 4800000, embedId);
-            shapes += _pptxRect(6, 'card', 5000000, 1480000, 6800000, 4800000, 'FFFDF8', 'E8D9B5');
-            shapes = _pptxStackLines(shapes, 20, 5200000, 1620000, 6400000, 6100000, richLines);
+            // صورة يسار + نص يمين في نفس الشريحة
+            shapes += _pptxPic(5, 'Image', 300000, 1400000, 4200000, 4700000, embedId);
+            shapes += _pptxRect(6, 'card', 4700000, 1400000, 7100000, 4700000, 'FFFDF8', 'E8D9B5');
+            shapes = _pptxStackLinesFilled(shapes, 20, 4900000, 1520000, 6700000, 5950000, richLines);
             slideRels[sn] = [{ id: embedId, target: '../media/image' + sn + '.' + mediaExt }];
           } else {
-            shapes += _pptxRect(5, 'card', 457200, 1480000, 11277600, 5000000, 'FFFDF8', 'E8D9B5');
-            shapes = _pptxStackLines(shapes, 20, 700000, 1650000, 10800000, 6300000, richLines);
+            shapes += _pptxRect(5, 'card', 400000, 1400000, 11400000, 4900000, 'FFFDF8', 'E8D9B5');
+            shapes = _pptxStackLinesFilled(shapes, 20, 600000, 1550000, 11000000, 6150000, richLines);
             slideRels[sn] = [];
           }
 
-          shapes += _pptxTextBox(11, 'Num', 457200, 6550000, 11277600, 220000,
+          shapes += _pptxTextBox(11, 'Num', 400000, 6480000, 11400000, 220000,
             ['\u200E' + (jx + 1) + ' / ' + slideJobs.length],
             { sz: 1200, color: '8A7A60', align: 'ctr' });
 
@@ -17343,7 +17388,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '351';
+      var APP_VER = '352';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

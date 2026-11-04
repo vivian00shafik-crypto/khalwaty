@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="348" lang="ar" dir="rtl">
+<html data-app-ver="349" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1101,8 +1101,8 @@
     /* مناطق الضغط — مركز كل زرار */
     .wheel-hotspot {
       position: absolute;
-      width: 24%;
-      height: 24%;
+      width: 23.5%;
+      height: 23.5%;
       border-radius: 50%;
       cursor: pointer;
       z-index: 10;
@@ -1932,8 +1932,10 @@
             var span = (maxY - minY) || 1;
             t = (m.sy - minY) / span; // 0 أعلى .. 1 أسفل
           }
-          var scale = 0.96 + t * 0.28; // تكبير لطيف بدون تشويه
-          if (near) scale = Math.max(scale, 1.22);
+          var scale = 0.95 + t * 0.40; // أكبر شوية
+          if (near) scale = Math.max(scale, 1.36);
+          // سقف يمنع التداخل بين الأيقونات المتجاورة
+          if (scale > 1.38) scale = 1.38;
           m.el.style.transform = 'translate(-50%, -50%) rotate(' + (-rotation) + 'deg) scale(' + scale.toFixed(3) + ')';
           if (near) m.el.classList.add('is-near');
           else m.el.classList.remove('is-near');
@@ -10504,13 +10506,14 @@ function updateSelectedSinsCount() {
         var jDay = 'khalwati_jesus_day_' + day;
         if (msgMins >= 0 && mins >= msgMins && localStorage.getItem(jKey) !== '1' && localStorage.getItem(jDay) !== '1') {
           var verse = (typeof getDailyVerse === 'function') ? getDailyVerse() : { theme: '', text: '' };
+          // فات الميعاد: يُسلَّم بصوت البابا شنودة (المسجّل مع صوت يسوع)
           queue.push({
-            kind: 'jesus',
+            kind: 'jesus_missed',
             verse: verse,
-            title: 'خلوتي — صوت يسوع اليومي (' + (verse.theme || '') + ')',
-            body: verse.text || '',
-            data: { type: 'jesus', text: verse.text, play: true },
-            tag: 'khalwati-jesus'
+            title: 'خلوتي — آية اليوم (' + (verse.theme || '') + ')',
+            body: (verse.text || '') + '\n\nبصوت البابا شنودة الثالث',
+            data: { type: 'jesus', text: verse.text, play: false, shenouda: true },
+            tag: 'khalwati-jesus-shenouda'
           });
         }
       } catch (e) {}
@@ -10527,8 +10530,8 @@ function updateSelectedSinsCount() {
         try { clearTimeout(window._missedNotifTimer); } catch (e) {}
         window._missedNotifTimer = null;
       }
-      // أول عنصر بعد دقيقتين من نهاية الترنيمة
-      var delay = 2 * 60 * 1000;
+      // أول عنصر بعد دقيقة من نهاية الترنيمة
+      var delay = 1 * 60 * 1000;
       if (window._contentAudioPage || window._bibleMusicPlaying) {
         // أجّل لو جوه محتوى صوتي
         window._missedNotifTimer = setTimeout(function() {
@@ -10537,7 +10540,7 @@ function updateSelectedSinsCount() {
         return;
       }
       if (typeof showToast === 'function' && window._missedNotifQueue && window._missedNotifQueue.length) {
-        showToast('في إشعارات فائتة — هتوصل بعد دقيقتين…');
+        showToast('في إشعارات فائتة — هتوصل بعد دقيقة…');
       }
       window._missedNotifTimer = setTimeout(function() {
         processNextMissedNotification();
@@ -10580,8 +10583,11 @@ function updateSelectedSinsCount() {
     async function deliverMissedNotificationItem(item) {
       if (!item) return;
       try {
-        if (item.kind === 'jesus') {
-          if (typeof fireJesusScheduledNow === 'function') {
+        if (item.kind === 'jesus' || item.kind === 'jesus_missed') {
+          // فائت عن ميعاده → بصوت البابا شنودة الثالث
+          if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+            deliverJesusVoiceWithShenoudaFallback();
+          } else if (typeof fireJesusScheduledNow === 'function') {
             await fireJesusScheduledNow(item.verse);
           } else if (typeof deliverJesusVoiceVerse === 'function') {
             window._forceJesusTest = true;
@@ -10681,19 +10687,114 @@ function updateSelectedSinsCount() {
       }
       if (window._contentAudioPage || window._bibleMusicPlaying) {
         window._jesusVoiceDeferred = true;
-        window._jesusDeferRemainMs = 2 * 60 * 1000;
+        window._jesusDeferRemainMs = 1 * 60 * 1000;
         window._jesusDeferStartedAt = Date.now();
         return;
       }
-      const delay = 2 * 60 * 1000;
+      const delay = 1 * 60 * 1000;
       window._jesusDeferStartedAt = Date.now();
       window._jesusDeferRemainMs = delay;
       window._jesusVoiceTimer = setTimeout(function() {
         window._jesusVoiceTimer = null;
         window._jesusDeferRemainMs = 0;
-        deliverJesusVoiceVerse();
+        // بعد الترنيمة بدقيقة: لو ميعاد يسوع فات وما اتبعتش → صوت البابا شنودة (مع تسجيل يسوع)
+        try {
+          var day = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
+          if (localStorage.getItem('khalwati_jesus_day_' + day) === '1' ||
+              localStorage.getItem('khalwati_msg_notified_' + day) === '1') {
+            return;
+          }
+          var msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+          var msgMins = (typeof timeToMinutes === 'function') ? timeToMinutes(msgTime) : -1;
+          var now = new Date();
+          var mins = now.getHours() * 60 + now.getMinutes();
+          var missed = (msgMins >= 0 && mins >= msgMins);
+          if (missed && typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+            deliverJesusVoiceWithShenoudaFallback();
+            return;
+          }
+          // لسه ميعاد يسوع مجاش: يستنى الميعاد المحدد (مش هيتشغّل دلوقتي)
+        } catch (e) {}
       }, delay);
-      showToast('صوت يسوع والآية بعد دقيقتين…');
+      try {
+        var _mt = localStorage.getItem('khalwati_msg_time') || '21:00';
+        showToast('صوت يسوع في ميعاده (' + _mt + ') — ولو فات: البابا شنودة بعد دقيقة');
+      } catch (eT) {}
+    }
+
+    function playShenoudaVoiceFallback(text) {
+      try {
+        if (typeof isMuted === 'function' && isMuted()) return;
+        if (typeof stopAllAppAudio === 'function') stopAllAppAudio('jesus');
+        var a = document.getElementById('shenoudaVoiceAudio');
+        if (!a) {
+          a = document.createElement('audio');
+          a.id = 'shenoudaVoiceAudio';
+          a.preload = 'auto';
+          a.setAttribute('playsinline', '');
+          document.body.appendChild(a);
+        }
+        // البابا شنودة المسجّل مع صوت يسوع
+        var sources = ['./shenouda-voice.mp3', './sawt-rabina.mp3', 'sawt-rabina.mp3'];
+        var si = 0;
+        function trySpeak() {
+          try {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(String(text || ''));
+            u.lang = 'ar-EG';
+            u.rate = 0.92;
+            window.speechSynthesis.speak(u);
+          } catch (e2) {}
+        }
+        function tryNext() {
+          if (si >= sources.length) { trySpeak(); return; }
+          var src = sources[si++];
+          a.onerror = function() { tryNext(); };
+          try { a.pause(); } catch (e0) {}
+          a.src = src;
+          a.currentTime = 0;
+          var p = a.play();
+          if (p && p.catch) p.catch(function() { tryNext(); });
+        }
+        tryNext();
+        var banner = document.getElementById('muteBanner');
+        if (banner) {
+          banner.classList.add('show');
+          var st = document.getElementById('muteStatus');
+          if (st) st.textContent = 'صوت البابا شنودة…';
+        }
+      } catch (e) {
+        console.log('shenouda fallback', e);
+      }
+    }
+
+
+    function deliverJesusVoiceWithShenoudaFallback() {
+      try {
+        if (window._contentAudioPage || window._bibleMusicPlaying) {
+          window._jesusVoiceDeferred = true;
+          return;
+        }
+        var todayKey = getDateKey(new Date());
+        if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1' && !window._forceJesusTest) return;
+        window._forceJesusTest = false;
+        var verse = (typeof getDailyVerse === 'function') ? getDailyVerse() : { theme: '', text: '' };
+        if (typeof showVerseInApp === 'function') showVerseInApp(verse);
+        if (typeof showAppNotification === 'function') {
+          showAppNotification(
+            'خلوتي — آية اليوم (' + (verse.theme || '') + ')',
+            (verse.text || '') + '\n\nبصوت البابا شنودة الثالث',
+            { tag: 'khalwati-jesus-shenouda', renotify: true, requireInteraction: true,
+              data: { type: 'jesus', play: false, shenouda: true, theme: verse.theme, text: verse.text } }
+          );
+        }
+        playShenoudaVoiceFallback((verse.theme ? verse.theme + '. ' : '') + (verse.text || ''));
+        try {
+          localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
+          localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+        } catch (e) {}
+      } catch (err) { console.log('shenouda fallback', err); }
     }
 
     function deliverJesusVoiceVerse() {
@@ -17153,7 +17254,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '348';
+      var APP_VER = '349';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

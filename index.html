@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="354" lang="ar" dir="rtl">
+<html data-app-ver="355" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -916,6 +916,50 @@
       margin: 14px 0 8px;
       font-size: 16px;
     }
+    .kh-acc {
+      margin: 8px 0 10px;
+      border: 1px solid #e8d9b5;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255,253,248,0.9);
+    }
+    .kh-acc-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      text-align: right;
+      direction: rtl;
+      padding: 12px 14px;
+      border: none;
+      background: rgba(245,230,200,0.55);
+      color: var(--brown);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .kh-acc-btn:active { opacity: 0.92; }
+    .kh-acc-btn .kh-acc-chev {
+      flex: 0 0 auto;
+      font-size: 14px;
+      color: var(--gold-dark);
+      transition: transform 0.18s ease;
+    }
+    .kh-acc.open .kh-acc-btn .kh-acc-chev {
+      transform: rotate(180deg);
+    }
+    .kh-acc-body {
+      display: none;
+      padding: 4px 14px 12px;
+      border-top: 1px dashed #e0cfa6;
+    }
+    .kh-acc.open .kh-acc-body {
+      display: block;
+    }
+    .kh-acc-body > *:first-child { margin-top: 8px; }
 
     /* Text areas */
     .text-section {
@@ -5112,6 +5156,87 @@ function renderBible() {
       renderBible();
     }
 
+    
+    function toggleKhAcc(btn) {
+      try {
+        var item = btn && btn.closest ? btn.closest('.kh-acc') : null;
+        if (!item) return;
+        var open = item.classList.contains('open');
+        // اختياري: إغلاق الباقي في نفس الدليل
+        var root = item.parentElement;
+        if (root) {
+          root.querySelectorAll('.kh-acc.open').forEach(function (el) {
+            if (el !== item) el.classList.remove('open');
+          });
+        }
+        if (open) item.classList.remove('open');
+        else item.classList.add('open');
+      } catch (e) {}
+    }
+
+    function enhanceGuideAccordion(root) {
+      if (!root) return;
+      var kids = Array.from(root.children);
+      if (!kids.length) return;
+      var frag = document.createDocumentFragment();
+      var i = 0;
+      // المقدمة (قبل أول عنوان قسم) تبقى ظاهرة
+      while (i < kids.length) {
+        var el = kids[i];
+        var isH3 = el.tagName === 'H3';
+        var centered = isH3 && ((el.getAttribute('style') || '').indexOf('text-align:center') >= 0 ||
+          (el.style && el.style.textAlign === 'center'));
+        // عناوين الأقسام القابلة للفتح: h3 غير المركزية (أو المركزية بعد المقدمة مثل القصيدة تُفتح أيضًا إن أردنا)
+        // نفتح كل h3 ما عدا أول عنوان رئيسي إن كان في المقدمة
+        if (isH3 && !centered) {
+          break;
+        }
+        // أول h3 مركزي "الخلوة الروحية" + الآية يبقوا في المقدمة
+        if (isH3 && centered && frag.childNodes.length > 2) {
+          // عناوين مركزية لاحقة (مثل القصيدة) تتحول لأكورديون
+          break;
+        }
+        frag.appendChild(el);
+        i++;
+      }
+      while (i < kids.length) {
+        var titleEl = kids[i];
+        if (titleEl.tagName !== 'H3') {
+          frag.appendChild(titleEl);
+          i++;
+          continue;
+        }
+        var titleText = (titleEl.textContent || '').trim();
+        i++;
+        var bodyNodes = [];
+        while (i < kids.length && kids[i].tagName !== 'H3') {
+          bodyNodes.push(kids[i]);
+          i++;
+        }
+        var wrap = document.createElement('div');
+        wrap.className = 'kh-acc';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'kh-acc-btn';
+        btn.setAttribute('onclick', 'toggleKhAcc(this)');
+        btn.innerHTML = '<span class="kh-acc-label"></span><span class="kh-acc-chev">▼</span>';
+        btn.querySelector('.kh-acc-label').textContent = titleText;
+        var body = document.createElement('div');
+        body.className = 'kh-acc-body';
+        bodyNodes.forEach(function (n) { body.appendChild(n); });
+        // لو مفيش محتوى، متضيفش أكورديون فاضي
+        if (!bodyNodes.length) {
+          frag.appendChild(titleEl);
+          continue;
+        }
+        wrap.appendChild(btn);
+        wrap.appendChild(body);
+        frag.appendChild(wrap);
+      }
+      root.innerHTML = '';
+      root.appendChild(frag);
+    }
+
     function openHowStartGuide() {
       document.getElementById('prayerTitle').textContent = 'كيف أبدأ خلوة';
       document.getElementById('prayerContent').innerHTML = `
@@ -5320,6 +5445,9 @@ function renderBible() {
           <p style="text-align:center; margin-top:16px; color:var(--brown); font-weight:700;">إلى هنا أعاننا الرب 🙏</p>
         </div>
       `;
+      try {
+        enhanceGuideAccordion(document.querySelector('#prayerContent .guide-text'));
+      } catch (eAcc) { console.log('guide accordion', eAcc); }
       document.getElementById('prayerModal').classList.add('active');
     }
 
@@ -17546,7 +17674,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '354';
+      var APP_VER = '355';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

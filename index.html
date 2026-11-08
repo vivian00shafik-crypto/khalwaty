@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="357" lang="ar" dir="rtl">
+<html data-app-ver="358" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2150,6 +2150,7 @@
         <button type="button" class="voice-mic-btn" id="modalVoiceMic" title="كتابة صوتية" onclick="toggleVoiceTyping('modalTextarea', this)">🎤</button>
       </div>
       <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث"></textarea>
+      <div id="likedReadingsHistory" style="display:none;margin-top:12px;text-align:right;"></div>
       <button class="save-btn" onclick="saveText()" data-i18n-btn="save">حفظ</button>
       <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;" data-i18n-btn="downloadPdf">تحميل PDF</button>
       <button id="deleteTextBtn" onclick="deleteText()" style="display:none; width:100%; margin-top:10px; background:#c0392b; color:white; border:none; border-radius:25px; padding:12px; font-family:inherit; font-size:15px; cursor:pointer;">مسح النص</button>
@@ -9461,15 +9462,26 @@ function openKatameros(dateObj) {
 
     function collectLikedReadingsHistory() {
       var map = {};
+      function addItem(day, text, savedAt) {
+        if (!day || !text) return;
+        var t = String(text).trim();
+        if (!t) return;
+        if (!map[day] || (savedAt && savedAt > (map[day].savedAt || 0))) {
+          map[day] = { day: day, text: t, savedAt: savedAt || 0 };
+        } else if (!map[day]) {
+          map[day] = { day: day, text: t, savedAt: 0 };
+        }
+      }
+      // 1) أرشيف موحّد جديد
       try {
         var hist = JSON.parse(localStorage.getItem('khalwati_liked_readings_history') || '[]');
         if (Array.isArray(hist)) {
           hist.forEach(function (x) {
-            if (x && x.day && x.text) map[x.day] = { day: x.day, text: String(x.text), savedAt: x.savedAt || 0 };
+            if (x && x.day && x.text) addItem(x.day, x.text, x.savedAt || 0);
           });
         }
       } catch (e1) {}
-      // دمج التخزين الشهري القديم
+      // 2) التخزين الشهري (إن وُجد)
       try {
         for (var i = 0; i < localStorage.length; i++) {
           var k = localStorage.key(i);
@@ -9478,18 +9490,37 @@ function openKatameros(dateObj) {
           try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e2) { arr = []; }
           if (!Array.isArray(arr)) continue;
           arr.forEach(function (x) {
-            if (!x || !x.day || !x.text) return;
-            if (!map[x.day]) map[x.day] = { day: x.day, text: String(x.text), savedAt: 0 };
+            if (x && x.day && x.text) addItem(x.day, x.text, 0);
           });
         }
       } catch (e3) {}
-      // القراءة الحالية في data إن وُجدت بتاريخ اليوم
+      // 3) المصدر الأساسي: بيانات كل يوم (khalwati_YYYY-M-D / YYYY-MM-DD).likedReadings
       try {
-        var data = typeof loadData === 'function' ? loadData() : null;
-        if (data && data.likedReadings && String(data.likedReadings).trim()) {
-          var todayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate || new Date()) : new Date().toISOString().slice(0, 10);
-          // لا نضيف "اليوم" كسابق إن كانت هي المعروضة حاليًا — نضيف فقط تواريخ أخرى من الأرشيف
+        var dayKeys = (typeof listSavedDayKeys === 'function') ? listSavedDayKeys() : [];
+        if (!dayKeys.length) {
+          for (var j = 0; j < localStorage.length; j++) {
+            var kk = localStorage.key(j);
+            if (kk && /^khalwati_\d{4}-\d{1,2}-\d{1,2}$/.test(kk)) dayKeys.push(kk);
+          }
         }
+        dayKeys.forEach(function (key) {
+          var m = /^khalwati_(\d{4}-\d{1,2}-\d{1,2})$/.exec(key || '');
+          if (!m) return;
+          var dayKey = (typeof normalizeDayKey === 'function')
+            ? String(normalizeDayKey(key)).replace(/^khalwati_/, '')
+            : m[1];
+          // توحيد التاريخ إلى YYYY-MM-DD
+          var parts = dayKey.split('-');
+          if (parts.length === 3) {
+            dayKey = parts[0] + '-' + String(parseInt(parts[1], 10)).padStart(2, '0') + '-' + String(parseInt(parts[2], 10)).padStart(2, '0');
+          }
+          var dayData = null;
+          try { dayData = JSON.parse(localStorage.getItem(key) || '{}'); } catch (eD) { dayData = null; }
+          if (!dayData || typeof dayData !== 'object') return;
+          if (dayData.likedReadings && String(dayData.likedReadings).trim()) {
+            addItem(dayKey, dayData.likedReadings, 0);
+          }
+        });
       } catch (e4) {}
       var list = Object.keys(map).map(function (d) { return map[d]; });
       list.sort(function (a, b) {
@@ -9519,7 +9550,8 @@ function openKatameros(dateObj) {
       var todayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate || new Date()) : '';
       // اعرض السابقة (يمكن إظهار اليوم أيضًا كمرجع)
       if (!list.length) {
-        box.innerHTML = '<div style="font-size:13px;color:#8a7a60;padding:8px 4px;">لا توجد قراءات سابقة محفوظة بعد. عند الحفظ تظهر هنا بتاريخها.</div>';
+        box.innerHTML = '<div style="font-weight:700;color:var(--brown);margin:4px 0 6px;font-size:15px;">القراءات السابقة</div>' +
+          '<div style="font-size:13px;color:#8a7a60;padding:8px 4px;">لا توجد قراءات سابقة محفوظة بعد. عند الحفظ تظهر هنا بتاريخها.</div>';
         return;
       }
       var html = '<div style="font-weight:700;color:var(--brown);margin:4px 0 8px;font-size:15px;">القراءات السابقة</div>';
@@ -9620,13 +9652,18 @@ function openKatameros(dateObj) {
         if (histBox) {
           if (type === 'likedReadings') {
             histBox.style.display = 'block';
+            histBox.style.visibility = 'visible';
+            histBox.style.minHeight = '40px';
             renderLikedReadingsHistory();
+            setTimeout(function () {
+              try { renderLikedReadingsHistory(); } catch (e2) {}
+            }, 50);
           } else {
             histBox.style.display = 'none';
             histBox.innerHTML = '';
           }
         }
-      } catch (eHistUI) {}
+      } catch (eHistUI) { console.log('liked hist ui', eHistUI); }
       document.getElementById('textModal').classList.add('active');
     }
 
@@ -9670,11 +9707,24 @@ function openKatameros(dateObj) {
           }
         } catch (eHist) {}
       }
-      if (currentTextType === 'likedReadings' && textVal) {
-        const monthKey = 'readings_' + currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0');
-        const monthNotes = JSON.parse(localStorage.getItem('khalwati_' + monthKey) || '[]');
-        monthNotes.push({ day: getDateKey(currentDate), text: textVal });
-        localStorage.setItem('khalwati_' + monthKey, JSON.stringify(monthNotes));
+      if (currentTextType === 'likedReadings' && textVal && String(textVal).trim()) {
+        try {
+          var dayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate) : new Date().toISOString().slice(0, 10);
+          var hist = [];
+          try { hist = JSON.parse(localStorage.getItem('khalwati_liked_readings_history') || '[]'); } catch (eH) { hist = []; }
+          if (!Array.isArray(hist)) hist = [];
+          hist = hist.filter(function (x) { return x && x.day !== dayKey; });
+          hist.unshift({ day: dayKey, text: String(textVal).trim(), savedAt: Date.now() });
+          if (hist.length > 120) hist = hist.slice(0, 120);
+          localStorage.setItem('khalwati_liked_readings_history', JSON.stringify(hist));
+          var monthKey = 'readings_' + currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0');
+          var monthNotes = [];
+          try { monthNotes = JSON.parse(localStorage.getItem('khalwati_' + monthKey) || '[]'); } catch (eM) { monthNotes = []; }
+          if (!Array.isArray(monthNotes)) monthNotes = [];
+          monthNotes = monthNotes.filter(function (x) { return x && x.day !== dayKey; });
+          monthNotes.push({ day: dayKey, text: String(textVal).trim() });
+          localStorage.setItem('khalwati_' + monthKey, JSON.stringify(monthNotes));
+        } catch (eLR) {}
       }
       saveData(data);
       renderTexts();
@@ -17824,7 +17874,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '357';
+      var APP_VER = '358';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

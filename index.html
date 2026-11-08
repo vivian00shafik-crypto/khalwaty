@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="356" lang="ar" dir="rtl">
+<html data-app-ver="357" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9458,7 +9458,107 @@ function openKatameros(dateObj) {
       } catch (eO) {}
     })();
 
-function openTextModal(type) {
+
+    function collectLikedReadingsHistory() {
+      var map = {};
+      try {
+        var hist = JSON.parse(localStorage.getItem('khalwati_liked_readings_history') || '[]');
+        if (Array.isArray(hist)) {
+          hist.forEach(function (x) {
+            if (x && x.day && x.text) map[x.day] = { day: x.day, text: String(x.text), savedAt: x.savedAt || 0 };
+          });
+        }
+      } catch (e1) {}
+      // دمج التخزين الشهري القديم
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || k.indexOf('khalwati_readings_') !== 0) continue;
+          var arr = [];
+          try { arr = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e2) { arr = []; }
+          if (!Array.isArray(arr)) continue;
+          arr.forEach(function (x) {
+            if (!x || !x.day || !x.text) return;
+            if (!map[x.day]) map[x.day] = { day: x.day, text: String(x.text), savedAt: 0 };
+          });
+        }
+      } catch (e3) {}
+      // القراءة الحالية في data إن وُجدت بتاريخ اليوم
+      try {
+        var data = typeof loadData === 'function' ? loadData() : null;
+        if (data && data.likedReadings && String(data.likedReadings).trim()) {
+          var todayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate || new Date()) : new Date().toISOString().slice(0, 10);
+          // لا نضيف "اليوم" كسابق إن كانت هي المعروضة حاليًا — نضيف فقط تواريخ أخرى من الأرشيف
+        }
+      } catch (e4) {}
+      var list = Object.keys(map).map(function (d) { return map[d]; });
+      list.sort(function (a, b) {
+        if (a.day < b.day) return 1;
+        if (a.day > b.day) return -1;
+        return (b.savedAt || 0) - (a.savedAt || 0);
+      });
+      return list;
+    }
+
+    function formatReadingDayLabel(dayKey) {
+      try {
+        var p = String(dayKey || '').split('-');
+        if (p.length === 3) {
+          var dt = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+          var days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+          return days[dt.getDay()] + ' ' + p[2] + '/' + p[1] + '/' + p[0];
+        }
+      } catch (e) {}
+      return dayKey || '';
+    }
+
+    function renderLikedReadingsHistory() {
+      var box = document.getElementById('likedReadingsHistory');
+      if (!box) return;
+      var list = collectLikedReadingsHistory();
+      var todayKey = (typeof getDateKey === 'function') ? getDateKey(currentDate || new Date()) : '';
+      // اعرض السابقة (يمكن إظهار اليوم أيضًا كمرجع)
+      if (!list.length) {
+        box.innerHTML = '<div style="font-size:13px;color:#8a7a60;padding:8px 4px;">لا توجد قراءات سابقة محفوظة بعد. عند الحفظ تظهر هنا بتاريخها.</div>';
+        return;
+      }
+      var html = '<div style="font-weight:700;color:var(--brown);margin:4px 0 8px;font-size:15px;">القراءات السابقة</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;">';
+      list.forEach(function (item, idx) {
+        var label = formatReadingDayLabel(item.day);
+        var preview = String(item.text || '').replace(/\s+/g, ' ').trim();
+        if (preview.length > 90) preview = preview.slice(0, 90) + '…';
+        var isToday = item.day === todayKey;
+        html += '<button type="button" onclick="openLikedReadingByDate(\'' + String(item.day).replace(/'/g, "\\'") + '\')" ' +
+          'style="text-align:right;direction:rtl;border:1px solid #e8d9b5;background:' + (isToday ? 'rgba(245,230,200,0.65)' : 'rgba(255,253,248,0.95)') +
+          ';border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--brown);">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--gold-dark);margin-bottom:4px;">' + label + (isToday ? ' (اليوم)' : '') + '</div>' +
+          '<div style="font-size:12.5px;line-height:1.6;color:#5a4a3a;">' + preview.replace(/</g, '&lt;') + '</div>' +
+          '</button>';
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    }
+
+    function openLikedReadingByDate(dayKey) {
+      try {
+        var list = collectLikedReadingsHistory();
+        var found = null;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].day === dayKey) { found = list[i]; break; }
+        }
+        if (!found) { showToast('لا توجد قراءة لهذا التاريخ'); return; }
+        var ta = document.getElementById('modalTextarea');
+        if (ta) ta.value = found.text || '';
+        showToast(formatReadingDayLabel(dayKey));
+        // تمرير لأعلى النص
+        try { if (ta) ta.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (eS) {}
+      } catch (e) {
+        showToast('تعذر فتح القراءة');
+      }
+    }
+
+    function openTextModal(type) {
       currentTextType = type;
       const data = loadData();
       const titles = {
@@ -9515,6 +9615,18 @@ function openTextModal(type) {
         tools.style.display = 'none';
         tools.innerHTML = '';
       }
+      try {
+        var histBox = document.getElementById('likedReadingsHistory');
+        if (histBox) {
+          if (type === 'likedReadings') {
+            histBox.style.display = 'block';
+            renderLikedReadingsHistory();
+          } else {
+            histBox.style.display = 'none';
+            histBox.innerHTML = '';
+          }
+        }
+      } catch (eHistUI) {}
       document.getElementById('textModal').classList.add('active');
     }
 
@@ -17712,7 +17824,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '356';
+      var APP_VER = '357';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

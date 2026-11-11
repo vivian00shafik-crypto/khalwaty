@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="360" lang="ar" dir="rtl">
+<html data-app-ver="361" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9085,6 +9085,81 @@ function openKatameros(dateObj) {
         if (typeof showToast === 'function') showToast('المشاركة غير متاحة على هذا الجهاز');
       }
     }
+    
+    // فهرس قديسين للبحث (اسم + تاريخ احتفال قبطي + نبذة)
+    var SAINT_SEARCH_INDEX = [
+      { names: ['العذراء', 'مريم', 'الست العذراء', 'ثيؤتوكوس'], feastC: [21, 1], feastNote: '21 توت — أيضًا أعياد أخرى على مدار السنة', bio: 'والدة الإله القديسة مريم، مثال الطهارة والطاعة. تحتفل الكنيسة بأعياد متعددة للعذراء منها ميلادها ودخولها الهيكل ونياحتها.' },
+      { names: ['مارجرجس', 'جرجس', 'القديس جاورجيوس', 'جورج'], feastC: [23, 8], feastNote: '23 برمودة', bio: 'القديس مارجرجس الروماني، الأمير الشهيد. استشهد في عصر دقلديانوس، ويُدعى مُبطل الشر. كنيسته من أشهر كنائس الأقباط.' },
+      { names: ['مارمينا', 'مينا', 'القديم'], feastC: [15, 11], feastNote: '15 هاتور', bio: 'القديس مارمينا العجايبي، الشهيد المصري. اشتهر بعجائب كثيرة وقبره في مريوط كان مزارًا عالميًا.' },
+      { names: ['الأنبا أنطونيوس', 'انطونيوس', 'أنطونيوس', 'أب الرهبان'], feastC: [22, 1], feastNote: '22 طوبة', bio: 'القديس أنطونيوس الكبير، أب الرهبان. أسس الحياة الرهبانية في البرية المصرية، وتتلمذ على يديه كثيرون.' },
+      { names: ['الأنبا بولا', 'بولا', 'أول السواح'], feastC: [2, 2], feastNote: '2 أمشير', bio: 'القديس بولا أول السواح، عاصر أنطونيوس وعاش في البرية منفردًا سنوات طويلة في شركة مع الله.' },
+      { names: ['الأنبا مقار', 'مقار', 'مقاريوس'], feastC: [27, 3], feastNote: '27 برمهات', bio: 'القديس مقاريوس الكبير، أب رهبان الإسقيط. من أعمدة الرهبنة القبطية وتعاليمه في الطهارة والصلاة مشهورة.' },
+      { names: ['البابا أثناسيوس', 'اثناسيوس', 'الرسولي'], feastC: [7, 11], feastNote: '7 بشنس', bio: 'القديس أثناسيوس الرسولي، بطل الأرثوذكسية ضد الآريوسية، حضر مجمع نيقية ودافع عن لاهوت المسيح.' },
+      { names: ['البابا كيرلس', 'كيرلس', 'عمود الدين'], feastC: [3, 7], feastNote: '3 أبيب — كيرلس الأول', bio: 'القديس كيرلس عمود الدين، بطريرك الإسكندرية. دافع عن وحدة طبيعة الكلمة المتجسد ضد نسطور.' },
+      { names: ['الأنبا شنوده', 'شنودة', 'شنوده رئيس المتوحدين'], feastC: [7, 3], feastNote: '7 أبيب', bio: 'القديس أنبا شنوده رئيس المتوحدين، أب الرهبنة في سوهاج، كاتب قبطي عظيم ومصلح رهباني.' },
+      { names: ['مار مرقس', 'مرقس', 'الإنجيلي', 'كاروز الديار'], feastC: [30, 11], feastNote: '30 برمودة', bio: 'القديس مرقس الإنجيلي، كاروز الديار المصرية ومؤسس الكنيسة القبطية في الإسكندرية.' },
+      { names: ['الأنبا موسى الأسود', 'موسى الأسود', 'موسى القوي'], feastC: [24, 6], feastNote: '24 بؤونة', bio: 'القديس موسى الأسود، كان لصًا ثم تاب وصار راهبًا قديسًا ومثالًا للتوبة والقوة الروحية.' },
+      { names: ['البابا كيرلس السادس', 'كيرلس السادس'], feastC: [30, 9], feastNote: '30 أمشير (نياحة)', bio: 'القديس البابا كيرلس السادس، بطريرك معاصر اشتهر بالصلاة والبساطة والعجائب، وأحب الشعب حبًا جمًا.' },
+      { names: ['الأنبا أبرآم', 'ابرام', 'أبرآم أسقف الفيوم'], feastC: [3, 6], feastNote: '3 أبيب', bio: 'القديس أنبا أبرآم أسقف الفيوم والجلين، مثال الرحمة والعطاء وحب الفقراء.' },
+      { names: ['مار إفرام', 'افرام', 'أفرام السرياني', 'مار افرام'], feastC: [15, 9], feastNote: '15 أبيب', bio: 'القديس مار إفرام السرياني، ملفان الكنيسة، شاعر ومرتل روحي صاحب تسابيح وتعاليم عميقة.' },
+      { names: ['يوحنا القصير', 'يحنس', 'يوأنس القصير'], feastC: [20, 10], feastNote: '20 بؤونة', bio: 'القديس يوحنا القصير، من آباء الإسقيط، مثال الطاعة والتواضع والبساطة الرهبانية.' },
+      { names: ['البابا بطرس', 'بطرس خاتم الشهداء', 'خاتم الشهداء'], feastC: [29, 11], feastNote: '29 هاتور', bio: 'القديس بطرس خاتم الشهداء، بطريرك الإسكندرية الذي استشهد في اضطهاد دقلديانوس.' },
+      { names: ['دميانة', 'القديسة دميانة'], feastC: [12, 5], feastNote: '12 بشنس', bio: 'القديسة دميانة وأربعين عذراء، استشهدن لأجل الإيمان المسيحي في عصر الاضطهاد.' },
+      { names: ['رفقه', 'القديسة رفقه'], feastC: [7, 7], feastNote: '7 أبيب', bio: 'القديسة رفقه، قديسة معاصرة عاشت حياة ألم وصبر وقداسة، وشفاعتها مشهورة بين الأقباط.' },
+      { names: ['الأنبا بيشوي', 'بيشوي', 'الحبيب'], feastC: [8, 7], feastNote: '8 أبيب', bio: 'القديس أنبا بيشوي، الحبيب، من آباء البرية، اشتهر بالنسك ومحبة المسيح وغسله لقدمي الرب في الرؤيا.' },
+      { names: ['تكلا', 'تكلالهيمانوت', 'تكلا هيمانوت'], feastC: [24, 8], feastNote: '24 مسري', bio: 'القديس تكلاهيمانوت الحبشي، قديس رهباني عظيم له مكانة في الكنيسة القبطية والإثيوبية.' },
+      { names: ['يوسف النجار', 'القديس يوسف'], feastC: [26, 7], feastNote: '26 أبيب', bio: 'القديس يوسف النجار، خطيب العذراء وراعي الطفل يسوع، مثال الطاعة والصمت المقدس.' },
+      { names: ['يوحنا المعمدان', 'المعمدان', 'يوحنا السابق'], feastC: [2, 1], feastNote: '2 توت — رأس السنة أيضًا تذكار', bio: 'القديس يوحنا المعمدان، السابق والصابغ، أعظم المولودين من النساء، الذي مهّد طريق الرب.' },
+      { names: ['استفانوس', 'إستفانوس', 'أول الشهداء'], feastC: [1, 1], feastNote: '1 طوبة', bio: 'القديس استفانوس رئيس الشمامسة وأول الشهداء، رُجم لأجل شهادته للمسيح.' },
+      { names: ['بولس الرسول', 'بولس', 'الرسول بولس'], feastC: [5, 7], feastNote: '5 أبيب', bio: 'القديس بولس الرسول، رسول الأمم، كاتب الرسائل ومبشر العالم اليوناني والروماني.' },
+      { names: ['بطرس الرسول', 'بطرس'], feastC: [5, 7], feastNote: '5 أبيب — مع بولس', bio: 'القديس بطرس الرسول، رئيس الرسل، اعترف بالمسيح ابن الله الحي واستشهد في روما.' },
+      { names: ['الأنبا صموئيل', 'صموئيل المعترف'], feastC: [8, 9], feastNote: '8 كهيك', bio: 'القديس أنبا صموئيل المعترف، قاوم البدع وعاش في البرية، وديره في جبل القلمون مشهور.' },
+      { names: ['الأنبا رويس', 'رويس'], feastC: [21, 10], feastNote: '21 هاتور', bio: 'القديس أنبا رويس، قديس شعبي مصري عُرف بالبساطة والتجوال والصلاة من أجل الشعب.' },
+      { names: ['البابا كيرلس الرابع', 'كيرلس الرابع', 'أبو الإصلاح'], feastC: [30, 1], feastNote: '30 طوبة', bio: 'البابا كيرلس الرابع، أبو الإصلاح، اهتم بالتعليم والمدارس والطباعة في الكنيسة القبطية.' },
+      { names: ['مريم المصرية', 'القيسية'], feastC: [6, 4], feastNote: '6 برمودة', bio: 'القديسة مريم المصرية، مثال التوبة العظيمة، عاشت في البرية بعد توبتها حياة قداسة نادرة.' },
+      { names: ['سيرانوس', 'سيرينوس'], feastC: [7, 1], feastNote: 'تذكارات متنوعة', bio: 'من آباء وشهداء الكنيسة، يُذكر في السنكسار بحسب يوم تذكاره.' }
+    ];
+
+    function findGregorianForCopticFeast(cDay, cMonth, refDate) {
+      var ref = refDate instanceof Date ? refDate : new Date();
+      for (var i = -400; i <= 400; i++) {
+        var d = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + i);
+        var cc = gregorianToCoptic(d);
+        if (cc.day === cDay && cc.month === cMonth) return d;
+      }
+      return null;
+    }
+
+    function searchSaintsByName(query) {
+      var q = String(query || '').trim().toLowerCase();
+      if (!q || q.length < 2) return [];
+      var out = [];
+      SAINT_SEARCH_INDEX.forEach(function (s) {
+        var hit = (s.names || []).some(function (n) {
+          return String(n).toLowerCase().indexOf(q) >= 0 || q.indexOf(String(n).toLowerCase()) >= 0;
+        });
+        if (hit) out.push(s);
+      });
+      return out;
+    }
+
+    function formatDualDate(dateObj) {
+      var d = dateObj instanceof Date ? dateObj : new Date();
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var gDays = isEn
+        ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+        : ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+      var gMonths = isEn
+        ? ['January','February','March','April','May','June','July','August','September','October','November','December']
+        : ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      var g = gDays[d.getDay()] + ' ' + d.getDate() + ' ' + gMonths[d.getMonth()] + ' ' + d.getFullYear() + (isEn ? ' AD' : ' م');
+      var c = gregorianToCoptic(d);
+      var cStr = isEn
+        ? (c.day + ' ' + (COPTIC_MONTHS_AR[c.month - 1] || c.month) + ' ' + c.year + ' A.M.')
+        : (toArabDigits(c.day) + ' ' + c.monthName + ' ' + toArabDigits(c.year) + ' ش.م (سنة الشهداء)');
+      return { gregorian: g, coptic: cStr, copticObj: c };
+    }
+
     function openFaithExamples(dateObj) {
       try { if (typeof enterContentAudioPage === "function") enterContentAudioPage(); } catch (e) {}
       setPrayerJesusBg(false);
@@ -9103,16 +9178,31 @@ function openKatameros(dateObj) {
       function esc(s) {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
-      function paint(synaxList) {
+      function paint(synaxList, searchQ) {
         var custom = loadSaintStories();
+        var dual = formatDualDate(d);
         var html = '';
+        html += '<div style="text-align:center;margin:0 0 12px;padding:12px;border-radius:16px;background:linear-gradient(135deg,#fffdf8,#f3ebe0);border:1px solid #e8d9b5;">';
+        html += '<div style="font-weight:800;color:#5a4a2a;font-size:1.05em;margin-bottom:6px;">📅 ' + esc(dual.gregorian) + '</div>';
+        html += '<div style="font-weight:700;color:#8a6a20;font-size:0.98em;">✝️ ' + esc(dual.coptic) + '</div>';
+        html += '</div>';
+
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">';
         html += '<button type="button" id="faithPrev" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:#fff;">◀</button>';
         html += '<button type="button" id="faithToday" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:var(--gold);color:#fff;">' + (isEn ? 'Today ' : 'اليوم ') + esc(key) + '</button>';
         html += '<button type="button" id="faithNext" style="padding:8px 14px;border-radius:16px;border:1px solid var(--gold);background:#fff;">▶</button>';
         html += '</div>';
 
-        html += '<h3 style="text-align:center;color:#5a4a2a;margin:8px 0;">' + (isEn ? 'Today\'s Synaxarium' : 'سنكسار اليوم') + '</h3>';
+        html += '<div style="margin:0 0 14px;padding:12px;border-radius:16px;background:rgba(255,248,230,0.95);border:1px solid rgba(180,150,80,0.35);">';
+        html += '<div style="font-weight:700;color:#5a4a2a;margin-bottom:8px;text-align:center;">🔎 ' + (isEn ? 'Search for a saint' : 'ابحثي عن قديس') + '</div>';
+        html += '<div style="display:flex;gap:8px;">';
+        html += '<input id="faithSearchInput" type="search" value="' + esc(searchQ || '') + '" placeholder="' + (isEn ? 'Saint name…' : 'اسم القديس…') + '" style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;font-family:inherit;" />';
+        html += '<button type="button" id="faithSearchBtn" style="padding:10px 14px;border-radius:12px;border:none;background:#6b5b3e;color:#fff;font-weight:700;">' + (isEn ? 'Search' : 'بحث') + '</button>';
+        html += '</div>';
+        html += '<div id="faithSearchResults" style="margin-top:10px;"></div>';
+        html += '</div>';
+
+        html += '<h3 style="text-align:center;color:#5a4a2a;margin:8px 0;">' + (isEn ? "Today's Synaxarium" : 'سنكسار اليوم') + '</h3>';
         if (!synaxList.length) {
           html += '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No Synaxarium for this day (or internet required).' : 'لا يوجد سنكسار محمول لهذا اليوم (أو يلزم إنترنت).') + '</p>';
         }
@@ -9206,6 +9296,81 @@ function openKatameros(dateObj) {
         if (prev) prev.onclick = function () { shift(-1); };
         if (next) next.onclick = function () { shift(1); };
         if (tod) tod.onclick = function () { openFaithExamples(new Date()); };
+
+        function runFaithSearch() {
+          var inp = document.getElementById('faithSearchInput');
+          var box = document.getElementById('faithSearchResults');
+          if (!box) return;
+          var q = (inp && inp.value || '').trim();
+          if (q.length < 2) {
+            box.innerHTML = '<p style="text-align:center;color:#8a7a60;font-size:0.9em;">' + (isEn ? 'Type at least 2 letters' : 'اكتبي حرفين على الأقل') + '</p>';
+            return;
+          }
+          var qLower = q.toLowerCase();
+          var htmlR = '';
+          // من فهرس القديسين
+          var idxHits = searchSaintsByName(q);
+          idxHits.forEach(function (s, si) {
+            var mainName = (s.names && s.names[0]) || 'قديس';
+            var feastDate = null;
+            if (s.feastC && s.feastC.length >= 2) {
+              feastDate = findGregorianForCopticFeast(s.feastC[0], s.feastC[1], d);
+            }
+            var gFeast = feastDate ? formatDualDate(feastDate) : null;
+            htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e8d9b5;text-align:right;line-height:1.75;">';
+            htmlR += '<div style="font-weight:800;color:#5a4a2a;font-size:1.05em;">⛪ ' + esc(mainName) + '</div>';
+            if (s.feastNote) htmlR += '<div style="color:#8a6a20;font-weight:700;margin-top:4px;">📅 ' + (isEn ? 'Feast: ' : 'تاريخ الاحتفال: ') + esc(s.feastNote) + '</div>';
+            if (gFeast) {
+              htmlR += '<div style="font-size:0.88em;color:#6a5a40;margin-top:2px;">' + esc(gFeast.gregorian) + '</div>';
+              htmlR += '<div style="font-size:0.88em;color:#6a5a40;">' + esc(gFeast.coptic) + '</div>';
+            }
+            htmlR += '<div style="margin-top:8px;color:#3a2a1a;">' + esc(s.bio || '') + '</div>';
+            if (feastDate) {
+              htmlR += '<button type="button" class="faith-goto-feast" data-ts="' + feastDate.getTime() + '" style="margin-top:10px;padding:8px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff8e7;color:#5a4a2a;font-weight:700;">' + (isEn ? 'Open Synaxarium of feast day' : 'فتح سنكسار يوم الاحتفال') + '</button>';
+            }
+            htmlR += '</div>';
+          });
+          // من سنكسار اليوم
+          (synaxList || []).forEach(function (item, idx) {
+            var title = String(item.title || '');
+            if (title.toLowerCase().indexOf(qLower) < 0) return;
+            htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #c9d9b5;text-align:right;">';
+            htmlR += '<div style="font-weight:800;color:#2a5a3a;">📖 ' + esc(title) + ' <span style="font-size:0.85em;font-weight:600;color:#8a7a60;">(' + (isEn ? 'today' : 'من سنكسار اليوم') + ')</span></div>';
+            htmlR += '<div style="margin-top:8px;line-height:1.85;">' + sanitizeKataHtml(item.html || '') + '</div>';
+            htmlR += '</div>';
+          });
+          // من القصص المضافة
+          (custom || []).forEach(function (item) {
+            var title = String(item.title || '');
+            var text = String(item.text || '');
+            if (title.toLowerCase().indexOf(qLower) < 0 && text.toLowerCase().indexOf(qLower) < 0) return;
+            htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #d9c5b5;text-align:right;">';
+            htmlR += '<div style="font-weight:800;color:#5a4a2a;">✨ ' + esc(title) + '</div>';
+            htmlR += '<div style="margin-top:8px;white-space:pre-wrap;line-height:1.8;">' + esc(text) + '</div>';
+            htmlR += '</div>';
+          });
+          if (!htmlR) {
+            htmlR = '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No results. Try another name.' : 'لا توجد نتائج. جرّبي اسمًا آخر أو من سنكسار يوم آخر.') + '</p>';
+          } else {
+            htmlR = '<div style="font-weight:700;color:#5a4a2a;margin-bottom:6px;">' + (isEn ? 'Results' : 'نتائج البحث') + '</div>' + htmlR;
+          }
+          box.innerHTML = htmlR;
+          box.querySelectorAll('.faith-goto-feast').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var ts = parseInt(btn.getAttribute('data-ts'), 10);
+              if (ts) openFaithExamples(new Date(ts));
+            });
+          });
+        }
+        var sBtn = document.getElementById('faithSearchBtn');
+        var sInp = document.getElementById('faithSearchInput');
+        if (sBtn) sBtn.onclick = runFaithSearch;
+        if (sInp) {
+          sInp.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); runFaithSearch(); }
+          });
+          if ((searchQ || '').trim().length >= 2) runFaithSearch();
+        }
       }
 
       // استخراج السنكسار من القطمارس
@@ -18005,7 +18170,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '360';
+      var APP_VER = '361';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

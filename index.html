@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="361" lang="ar" dir="rtl">
+<html data-app-ver="362" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9143,6 +9143,106 @@ function openKatameros(dateObj) {
       return out;
     }
 
+
+    function synaxCacheKey(dayKey) {
+      return 'khalwati_synax_v1_' + dayKey;
+    }
+    function saveSynaxCache(dayKey, list) {
+      try {
+        if (!dayKey || !list || !list.length) return;
+        var slim = list.map(function (x) {
+          return { title: x.title || '', html: String(x.html || '').slice(0, 12000) };
+        });
+        localStorage.setItem(synaxCacheKey(dayKey), JSON.stringify({ at: Date.now(), list: slim }));
+      } catch (e) {}
+    }
+    function loadSynaxCache(dayKey) {
+      try {
+        var raw = localStorage.getItem(synaxCacheKey(dayKey));
+        if (!raw) return null;
+        var o = JSON.parse(raw);
+        return (o && o.list) ? o.list : null;
+      } catch (e) { return null; }
+    }
+    function listAllSynaxCache() {
+      var out = [];
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || k.indexOf('khalwati_synax_v1_') !== 0) continue;
+          var dayKey = k.replace('khalwati_synax_v1_', '');
+          var list = loadSynaxCache(dayKey);
+          if (list && list.length) out.push({ day: dayKey, list: list });
+        }
+      } catch (e) {}
+      return out;
+    }
+    function parseSynaxFromKatameros(data, isEn) {
+      var list = [];
+      try {
+        (data.sections || []).forEach(function (sec) {
+          (sec.subSections || []).forEach(function (sub) {
+            var st = String(sub.title || '').toLowerCase();
+            var isSynax = (st.indexOf('سنكس') >= 0) || (st.indexOf('synax') >= 0) || Number(sub.id) === 10;
+            if (!isSynax) return;
+            (sub.readings || []).forEach(function (rd) {
+              list.push({
+                title: rd.title || (isEn ? 'Synaxarium' : 'سنكسار'),
+                html: rd.html || rd.introduction || rd.text || ''
+              });
+            });
+          });
+        });
+      } catch (e) {}
+      return list;
+    }
+    function fetchSynaxForDayKey(dayKey, isEn) {
+      var cached = loadSynaxCache(dayKey);
+      if (cached && cached.length) return Promise.resolve(cached);
+      var url = 'https://api.katameros.app/readings/gregorian/' + dayKey + '?languageId=' + (isEn ? '2' : '3');
+      return fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', cache: 'force-cache' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          var list = parseSynaxFromKatameros(data, isEn);
+          if (list.length) saveSynaxCache(dayKey, list);
+          return list;
+        })
+        .catch(function () { return []; });
+    }
+    function allYearDayKeys(refDate) {
+      var d0 = refDate instanceof Date ? refDate : new Date();
+      var y = d0.getFullYear();
+      var keys = [];
+      var start = new Date(y, 0, 1);
+      var end = new Date(y, 11, 31);
+      for (var t = start.getTime(); t <= end.getTime(); t += 86400000) {
+        var d = new Date(t);
+        var dd = String(d.getDate()).padStart(2, '0');
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        keys.push(dd + '-' + mm + '-' + d.getFullYear());
+      }
+      return keys;
+    }
+    function textMatchesQuery(text, q) {
+      var t = String(text || '').toLowerCase();
+      var query = String(q || '').toLowerCase().trim();
+      if (!query) return false;
+      if (t.indexOf(query) >= 0) return true;
+      // تطبيع بسيط لهمزات/ألف
+      var norm = function (s) {
+        return String(s || '').toLowerCase()
+          .replace(/[أإآا]/g, 'ا')
+          .replace(/ة/g, 'ه')
+          .replace(/ى/g, 'ي')
+          .replace(/ؤ/g, 'و')
+          .replace(/ئ/g, 'ي');
+      };
+      return norm(t).indexOf(norm(query)) >= 0;
+    }
+
     function formatDualDate(dateObj) {
       var d = dateObj instanceof Date ? dateObj : new Date();
       var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
@@ -9306,61 +9406,161 @@ function openKatameros(dateObj) {
             box.innerHTML = '<p style="text-align:center;color:#8a7a60;font-size:0.9em;">' + (isEn ? 'Type at least 2 letters' : 'اكتبي حرفين على الأقل') + '</p>';
             return;
           }
-          var qLower = q.toLowerCase();
           var htmlR = '';
-          // من فهرس القديسين
-          var idxHits = searchSaintsByName(q);
-          idxHits.forEach(function (s, si) {
-            var mainName = (s.names && s.names[0]) || 'قديس';
-            var feastDate = null;
-            if (s.feastC && s.feastC.length >= 2) {
-              feastDate = findGregorianForCopticFeast(s.feastC[0], s.feastC[1], d);
-            }
-            var gFeast = feastDate ? formatDualDate(feastDate) : null;
+          var foundKeys = {};
+
+          function addResultCard(opts) {
+            var k = (opts.title || '') + '|' + (opts.day || '');
+            if (foundKeys[k]) return;
+            foundKeys[k] = true;
             htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #e8d9b5;text-align:right;line-height:1.75;">';
-            htmlR += '<div style="font-weight:800;color:#5a4a2a;font-size:1.05em;">⛪ ' + esc(mainName) + '</div>';
-            if (s.feastNote) htmlR += '<div style="color:#8a6a20;font-weight:700;margin-top:4px;">📅 ' + (isEn ? 'Feast: ' : 'تاريخ الاحتفال: ') + esc(s.feastNote) + '</div>';
-            if (gFeast) {
-              htmlR += '<div style="font-size:0.88em;color:#6a5a40;margin-top:2px;">' + esc(gFeast.gregorian) + '</div>';
-              htmlR += '<div style="font-size:0.88em;color:#6a5a40;">' + esc(gFeast.coptic) + '</div>';
-            }
-            htmlR += '<div style="margin-top:8px;color:#3a2a1a;">' + esc(s.bio || '') + '</div>';
-            if (feastDate) {
-              htmlR += '<button type="button" class="faith-goto-feast" data-ts="' + feastDate.getTime() + '" style="margin-top:10px;padding:8px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff8e7;color:#5a4a2a;font-weight:700;">' + (isEn ? 'Open Synaxarium of feast day' : 'فتح سنكسار يوم الاحتفال') + '</button>';
+            htmlR += '<div style="font-weight:800;color:#5a4a2a;font-size:1.05em;">⛪ ' + esc(opts.title || '') + '</div>';
+            if (opts.feastNote) htmlR += '<div style="color:#8a6a20;font-weight:700;margin-top:4px;">📅 ' + esc(opts.feastNote) + '</div>';
+            if (opts.dayLabel) htmlR += '<div style="font-size:0.9em;color:#6a5a40;margin-top:4px;">📅 ' + esc(opts.dayLabel) + '</div>';
+            if (opts.bio) htmlR += '<div style="margin-top:8px;color:#3a2a1a;">' + esc(opts.bio) + '</div>';
+            if (opts.html) htmlR += '<div style="margin-top:8px;line-height:1.85;">' + sanitizeKataHtml(opts.html) + '</div>';
+            if (opts.ts) {
+              htmlR += '<button type="button" class="faith-goto-feast" data-ts="' + opts.ts + '" style="margin-top:10px;padding:8px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff8e7;color:#5a4a2a;font-weight:700;">' + (isEn ? 'Open this day' : 'فتح هذا اليوم') + '</button>';
             }
             htmlR += '</div>';
-          });
-          // من سنكسار اليوم
-          (synaxList || []).forEach(function (item, idx) {
-            var title = String(item.title || '');
-            if (title.toLowerCase().indexOf(qLower) < 0) return;
-            htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #c9d9b5;text-align:right;">';
-            htmlR += '<div style="font-weight:800;color:#2a5a3a;">📖 ' + esc(title) + ' <span style="font-size:0.85em;font-weight:600;color:#8a7a60;">(' + (isEn ? 'today' : 'من سنكسار اليوم') + ')</span></div>';
-            htmlR += '<div style="margin-top:8px;line-height:1.85;">' + sanitizeKataHtml(item.html || '') + '</div>';
-            htmlR += '</div>';
-          });
-          // من القصص المضافة
-          (custom || []).forEach(function (item) {
-            var title = String(item.title || '');
-            var text = String(item.text || '');
-            if (title.toLowerCase().indexOf(qLower) < 0 && text.toLowerCase().indexOf(qLower) < 0) return;
-            htmlR += '<div style="margin:8px 0;padding:12px;border-radius:14px;background:#fff;border:1px solid #d9c5b5;text-align:right;">';
-            htmlR += '<div style="font-weight:800;color:#5a4a2a;">✨ ' + esc(title) + '</div>';
-            htmlR += '<div style="margin-top:8px;white-space:pre-wrap;line-height:1.8;">' + esc(text) + '</div>';
-            htmlR += '</div>';
-          });
-          if (!htmlR) {
-            htmlR = '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No results. Try another name.' : 'لا توجد نتائج. جرّبي اسمًا آخر أو من سنكسار يوم آخر.') + '</p>';
-          } else {
-            htmlR = '<div style="font-weight:700;color:#5a4a2a;margin-bottom:6px;">' + (isEn ? 'Results' : 'نتائج البحث') + '</div>' + htmlR;
           }
-          box.innerHTML = htmlR;
+
+          // 1) فهرس محلي
+          searchSaintsByName(q).forEach(function (s) {
+            var mainName = (s.names && s.names[0]) || 'قديس';
+            var feastDate = (s.feastC && s.feastC.length >= 2) ? findGregorianForCopticFeast(s.feastC[0], s.feastC[1], d) : null;
+            var gFeast = feastDate ? formatDualDate(feastDate) : null;
+            var note = s.feastNote || '';
+            if (gFeast) note += (note ? ' — ' : '') + gFeast.gregorian + ' | ' + gFeast.coptic;
+            addResultCard({
+              title: mainName,
+              feastNote: note,
+              bio: s.bio || '',
+              ts: feastDate ? feastDate.getTime() : 0
+            });
+          });
+
+          // 2) سنكسار اليوم الحالي
+          (synaxList || []).forEach(function (item) {
+            if (!textMatchesQuery(item.title, q) && !textMatchesQuery(String(item.html || '').replace(/<[^>]+>/g, ' ').slice(0, 500), q)) return;
+            addResultCard({
+              title: item.title,
+              dayLabel: (isEn ? 'From today\'s Synaxarium' : 'من سنكسار اليوم') + ' (' + key + ')',
+              html: item.html || '',
+              ts: d.getTime()
+            });
+          });
+
+          // 3) القصص المضافة
+          (custom || []).forEach(function (item) {
+            if (!textMatchesQuery(item.title, q) && !textMatchesQuery(item.text, q)) return;
+            addResultCard({ title: item.title, bio: item.text || '' });
+          });
+
+          // 4) كل ما هو مخزّن من أيام سابقة
+          listAllSynaxCache().forEach(function (entry) {
+            (entry.list || []).forEach(function (item) {
+              if (!textMatchesQuery(item.title, q) && !textMatchesQuery(String(item.html || '').replace(/<[^>]+>/g, ' ').slice(0, 400), q)) return;
+              var parts = String(entry.day || '').split('-');
+              var ts = 0;
+              var dayLabel = entry.day;
+              if (parts.length === 3) {
+                var dt = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+                ts = dt.getTime();
+                var dual = formatDualDate(dt);
+                dayLabel = dual.gregorian + ' | ' + dual.coptic;
+              }
+              addResultCard({ title: item.title, dayLabel: dayLabel, html: item.html || '', ts: ts });
+            });
+          });
+
+          box.innerHTML =
+            (htmlR
+              ? ('<div style="font-weight:700;color:#5a4a2a;margin-bottom:6px;">' + (isEn ? 'Results' : 'نتائج أولية') + '</div>' + htmlR)
+              : '') +
+            '<div id="faithSearchProgress" style="margin-top:10px;padding:10px;border-radius:12px;background:#fff8e7;border:1px solid #e8d9b5;text-align:center;color:#5a4a2a;font-size:0.92em;">' +
+              (isEn ? 'Searching the full Synaxarium…' : 'جاري البحث في السنكسار كله…') +
+            '</div>';
+
           box.querySelectorAll('.faith-goto-feast').forEach(function (btn) {
             btn.addEventListener('click', function () {
               var ts = parseInt(btn.getAttribute('data-ts'), 10);
               if (ts) openFaithExamples(new Date(ts));
             });
           });
+
+          // 5) بحث شامل على مدار السنة (متوازي محدود + كاش)
+          var keys = allYearDayKeys(d);
+          var done = 0;
+          var total = keys.length;
+          var cancelled = false;
+          box.setAttribute('data-search-q', q);
+          var concurrency = 6;
+          var idx = 0;
+
+          function updateProgress() {
+            var el = document.getElementById('faithSearchProgress');
+            if (!el) return;
+            var pct = Math.min(100, Math.round(done * 100 / total));
+            el.textContent = (isEn ? ('Searching full Synaxarium… ' + pct + '%') : ('جاري البحث في السنكسار كله… ' + pct + '%'));
+            if (done >= total) {
+              el.textContent = (isEn ? 'Full Synaxarium search finished' : 'تم البحث في السنكسار كله');
+              setTimeout(function () {
+                try { if (el) el.style.display = 'none'; } catch (e) {}
+              }, 1200);
+              if (!Object.keys(foundKeys).length) {
+                box.innerHTML = '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No results in the Synaxarium.' : 'لا توجد نتائج في السنكسار لهذا الاسم.') + '</p>';
+              }
+            }
+          }
+
+          function appendLive(item, dayKey) {
+            if (box.getAttribute('data-search-q') !== q) return;
+            var parts = String(dayKey || '').split('-');
+            var ts = 0;
+            var dayLabel = dayKey;
+            if (parts.length === 3) {
+              var dt = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+              ts = dt.getTime();
+              var dual = formatDualDate(dt);
+              dayLabel = dual.gregorian + ' | ' + dual.coptic;
+            }
+            var before = Object.keys(foundKeys).length;
+            addResultCard({ title: item.title, dayLabel: dayLabel, html: item.html || '', ts: ts });
+            if (Object.keys(foundKeys).length === before) return;
+            // أعد رسم النتائج مع شريط التقدم
+            var prog = document.getElementById('faithSearchProgress');
+            var progHtml = prog ? prog.outerHTML : '';
+            var header = '<div style="font-weight:700;color:#5a4a2a;margin-bottom:6px;">' + (isEn ? 'Results' : 'نتائج البحث في السنكسار') + '</div>';
+            box.innerHTML = header + htmlR + progHtml;
+            box.querySelectorAll('.faith-goto-feast').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var ts2 = parseInt(btn.getAttribute('data-ts'), 10);
+                if (ts2) openFaithExamples(new Date(ts2));
+              });
+            });
+          }
+
+          function worker() {
+            if (cancelled) return;
+            if (box.getAttribute('data-search-q') !== q) return;
+            if (idx >= keys.length) return;
+            var my = idx++;
+            var dayKey = keys[my];
+            fetchSynaxForDayKey(dayKey, isEn).then(function (list) {
+              (list || []).forEach(function (item) {
+                if (textMatchesQuery(item.title, q) || textMatchesQuery(String(item.html || '').replace(/<[^>]+>/g, ' ').slice(0, 400), q)) {
+                  appendLive(item, dayKey);
+                }
+              });
+            }).catch(function () {}).then(function () {
+              done++;
+              updateProgress();
+              worker();
+            });
+          }
+          updateProgress();
+          for (var w = 0; w < concurrency; w++) worker();
         }
         var sBtn = document.getElementById('faithSearchBtn');
         var sInp = document.getElementById('faithSearchInput');
@@ -9373,30 +9573,17 @@ function openKatameros(dateObj) {
         }
       }
 
-      // استخراج السنكسار من القطمارس
-      var url = 'https://api.katameros.app/readings/gregorian/' + key + '?languageId=' + ((typeof getAppLang==='function' && getAppLang()==='en') ? '2' : '3');
-      fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store' })
-        .then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        })
-        .then(function (data) {
-          var list = [];
-          (data.sections || []).forEach(function (sec) {
-            (sec.subSections || []).forEach(function (sub) {
-              var st = String(sub.title || '').toLowerCase();
-              var isSynax = (st.indexOf('سنكس') >= 0) || (st.indexOf('synax') >= 0) || Number(sub.id) === 10;
-              if (!isSynax) return;
-              (sub.readings || []).forEach(function (rd) {
-                list.push({ title: rd.title || ((typeof getAppLang==='function' && getAppLang()==='en') ? 'Synaxarium' : 'سنكسار'), html: rd.html || rd.introduction || rd.text || '' });
-              });
-            });
-          });
-          paint(list);
-        })
-        .catch(function () {
-          paint([]);
-        });
+      // استخراج السنكسار من القطمارس + تخزين للبحث الشامل
+      var isEnFetch = (typeof getAppLang==='function' && getAppLang()==='en');
+      var cachedDay = loadSynaxCache(key);
+      if (cachedDay && cachedDay.length) {
+        paint(cachedDay);
+      }
+      fetchSynaxForDayKey(key, isEnFetch).then(function (list) {
+        paint(list || []);
+      }).catch(function () {
+        if (!(cachedDay && cachedDay.length)) paint([]);
+      });
     }
 
 
@@ -18170,7 +18357,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '361';
+      var APP_VER = '362';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

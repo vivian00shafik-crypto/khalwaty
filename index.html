@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="359" lang="ar" dir="rtl">
+<html data-app-ver="360" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -16460,102 +16460,123 @@ window.spSearchLib = function (val) {
       var isImg = type.indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp)$/i.test(fname);
       var isTxt = type.indexOf('text/') === 0 || /\.txt$/i.test(fname);
 
-      function forceDownload(blobUrl, downloadName) {
+      function forceDownload(blobOrUrl, downloadName) {
         try {
+          var url = blobOrUrl;
+          var revoke = false;
+          if (blobOrUrl && typeof blobOrUrl === 'object' && blobOrUrl.constructor && blobOrUrl.constructor.name === 'Blob') {
+            url = URL.createObjectURL(blobOrUrl);
+            revoke = true;
+          } else if (blobOrUrl instanceof Blob) {
+            url = URL.createObjectURL(blobOrUrl);
+            revoke = true;
+          }
           var a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = downloadName || 'file';
+          a.href = url;
+          a.download = downloadName || 'file.pdf';
           a.style.display = 'none';
           document.body.appendChild(a);
           a.click();
-          setTimeout(function () { try { document.body.removeChild(a); } catch (e) {} }, 200);
+          setTimeout(function () {
+            try { document.body.removeChild(a); } catch (e) {}
+            if (revoke) try { URL.revokeObjectURL(url); } catch (e2) {}
+          }, 800);
+          if (typeof showToast === 'function') showToast('تم بدء التحميل');
           return true;
         } catch (e) {
+          console.error(e);
           return false;
         }
       }
 
-      function showViewer(blobUrl, mime, sourceBlob) {
+      function ensurePdfJs() {
+        return new Promise(function (resolve, reject) {
+          if (window.pdfjsLib) {
+            resolve(window.pdfjsLib);
+            return;
+          }
+          var s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          s.onload = function () {
+            try {
+              if (window.pdfjsLib) {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                resolve(window.pdfjsLib);
+              } else reject(new Error('pdfjs missing'));
+            } catch (e) { reject(e); }
+          };
+          s.onerror = function () { reject(new Error('pdfjs load fail')); };
+          document.head.appendChild(s);
+        });
+      }
+
+      function renderPdfWithPdfJs(blob, shell, pagesHost) {
+        pagesHost.innerHTML = '<div style="padding:20px;text-align:center;color:#5a4a2a;">جاري عرض صفحات الملف…</div>';
+        ensurePdfJs().then(function (pdfjsLib) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var data = new Uint8Array(reader.result);
+            pdfjsLib.getDocument({ data: data }).promise.then(function (pdf) {
+              pagesHost.innerHTML = '';
+              var total = pdf.numPages || 1;
+              var i = 1;
+              function next() {
+                if (i > total) return;
+                var pageNum = i++;
+                pdf.getPage(pageNum).then(function (page) {
+                  var base = 1.25;
+                  try {
+                    var vw = Math.max(280, (pagesHost.clientWidth || window.innerWidth || 360) - 24);
+                    var vp0 = page.getViewport({ scale: 1 });
+                    base = Math.min(2.0, Math.max(0.9, vw / vp0.width));
+                  } catch (eS) {}
+                  var viewport = page.getViewport({ scale: base });
+                  var canvas = document.createElement('canvas');
+                  canvas.width = viewport.width;
+                  canvas.height = viewport.height;
+                  canvas.style.cssText = 'display:block;width:100%;height:auto;margin:0 0 12px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);';
+                  pagesHost.appendChild(canvas);
+                  var ctx = canvas.getContext('2d');
+                  page.render({ canvasContext: ctx, viewport: viewport }).promise.then(next).catch(next);
+                }).catch(next);
+              }
+              next();
+            }).catch(function (err) {
+              console.error(err);
+              pagesHost.innerHTML = '<div style="padding:16px;text-align:center;color:#8a2a2a;">تعذر عرض PDF داخل التطبيق.<br>اضغطي «تحميل» ثم افتحيه من الملفات.</div>';
+            });
+          };
+          reader.onerror = function () {
+            pagesHost.innerHTML = '<div style="padding:16px;text-align:center;">تعذر قراءة الملف</div>';
+          };
+          reader.readAsArrayBuffer(blob);
+        }).catch(function (err) {
+          console.error(err);
+          pagesHost.innerHTML =
+            '<div style="padding:16px;text-align:center;color:#5a4a2a;line-height:1.7;">' +
+              'يلزم اتصال بالإنترنت لأول مرة لتحميل عارض PDF.<br>أو استخدمي زر التحميل.' +
+            '</div>';
+        });
+      }
+
+      function showShell(titleName) {
         var existing = document.getElementById('inAppBrowser');
         if (existing) existing.remove();
-        var safeUrl = String(blobUrl || '').replace(/"/g, '&quot;');
-        var dlName = String(fname || name || 'file').replace(/[^\w\u0600-\u06FF\-\.]+/g, '_');
-        if (isPdf && !/\.pdf$/i.test(dlName)) dlName += '.pdf';
-        var body;
-        if (isImg) {
-          body = '<div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px;background:#111;"><img src="' + safeUrl + '" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>';
-        } else if (isTxt) {
-          body = '<div id="spTxtBody" style="flex:1;overflow:auto;padding:16px;white-space:pre-wrap;line-height:1.85;font-size:16px;color:#3a2a1a;background:#fff;"></div>';
-        } else {
-          body =
-            '<div style="flex:1;display:flex;flex-direction:column;min-height:0;">' +
-              '<div style="padding:12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;text-align:center;">' +
-                '<p style="margin:0 0 10px;color:#5a4a2a;font-weight:700;font-size:14px;">لو المحتوى لم يظهر: استخدمي تحميل ثم افتحي من الملفات</p>' +
-                '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
-                  '<button type="button" id="spPdfDlBtn" style="padding:12px 18px;border-radius:14px;border:none;background:#6b5b3e;color:#fff;font-weight:800;">تحميل الملف</button>' +
-                  '<button type="button" id="spPdfOpenTab" style="padding:12px 18px;border-radius:14px;border:none;background:#5a7d4a;color:#fff;font-weight:800;">فتح خارجي</button>' +
-                '</div>' +
-              '</div>' +
-              '<div style="flex:1;min-height:0;position:relative;background:#e8e8e8;">' +
-                '<iframe src="' + safeUrl + '" title="file" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;"></iframe>' +
-              '</div>' +
-            '</div>';
-        }
         var wrap = document.createElement('div');
         wrap.id = 'inAppBrowser';
         wrap.style.cssText = 'position:fixed;inset:0;z-index:100050;background:#faf6ec;display:flex;flex-direction:column;';
         wrap.innerHTML =
           '<div style="display:flex;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;align-items:center;">' +
-            '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">' + t('back') + '</button>' +
+            '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">رجوع</button>' +
             '<button type="button" id="spFileDlTop" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">تحميل</button>' +
-            '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (typeof spEsc === 'function' ? spEsc(name) : String(name).replace(/</g, '&lt;')) + '</div>' +
-          '</div>' + body;
+            '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">' +
+              (typeof spEsc === 'function' ? spEsc(titleName) : String(titleName).replace(/</g, '&lt;')) +
+            '</div>' +
+          '</div>' +
+          '<div id="spFileBody" style="flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px;background:#ece6da;"></div>';
         document.body.appendChild(wrap);
-
-        function doDownload() {
-          if (sourceBlob) {
-            var u = URL.createObjectURL(sourceBlob);
-            forceDownload(u, dlName);
-            setTimeout(function () { try { URL.revokeObjectURL(u); } catch (e) {} }, 1500);
-          } else {
-            forceDownload(blobUrl, dlName);
-          }
-          if (typeof showToast === 'function') showToast('جاري التحميل…');
-        }
-        function openExt() {
-          // على الموبايل: blob في تبويب جديد غالبًا يفشل — فضّل التحميل
-          var isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '');
-          if (isMobile && String(blobUrl).indexOf('blob:') === 0) {
-            doDownload();
-            return;
-          }
-          try {
-            var w = window.open(blobUrl, '_blank');
-            if (w) return;
-          } catch (e0) {}
-          doDownload();
-        }
-
-        document.getElementById('spFileBack').onclick = function () {
-          try { if (String(blobUrl).indexOf('blob:') === 0) URL.revokeObjectURL(blobUrl); } catch (e) {}
-          wrap.remove();
-        };
-        var topDl = document.getElementById('spFileDlTop');
-        if (topDl) topDl.onclick = doDownload;
-        var op = document.getElementById('spPdfOpenTab');
-        if (op) op.onclick = openExt;
-        var dlBtn = document.getElementById('spPdfDlBtn');
-        if (dlBtn) dlBtn.onclick = doDownload;
-
-        if (isTxt) {
-          fetch(blobUrl).then(function (r) { return r.text(); }).then(function (txt) {
-            var el = document.getElementById('spTxtBody');
-            if (el) el.textContent = txt;
-          }).catch(function () {
-            var el = document.getElementById('spTxtBody');
-            if (el) el.textContent = 'تعذر قراءة النص';
-          });
-        }
+        return wrap;
       }
 
       function openFromBlob(blob, mime) {
@@ -16568,8 +16589,46 @@ window.spSearchLib = function (val) {
         try {
           if (blob.type !== mime) blob = new Blob([blob], { type: mime });
         } catch (eT) {}
-        var url = URL.createObjectURL(blob);
-        showViewer(url, mime, blob);
+
+        var dlName = String(fname || name || 'file').replace(/[^\w\u0600-\u06FF\-\.]+/g, '_');
+        if (isPdf && !/\.pdf$/i.test(dlName)) dlName += '.pdf';
+
+        var wrap = showShell(name);
+        var body = document.getElementById('spFileBody');
+        document.getElementById('spFileBack').onclick = function () { wrap.remove(); };
+        document.getElementById('spFileDlTop').onclick = function () { forceDownload(blob, dlName); };
+
+        if (isImg) {
+          var url = URL.createObjectURL(blob);
+          body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100%;"><img src="' + url + '" style="max-width:100%;height:auto;border-radius:8px;" /></div>';
+          return;
+        }
+        if (isTxt) {
+          var fr = new FileReader();
+          fr.onload = function () {
+            body.innerHTML = '<pre style="white-space:pre-wrap;line-height:1.85;font-size:16px;color:#3a2a1a;font-family:inherit;margin:0;padding:8px;"></pre>';
+            body.querySelector('pre').textContent = String(fr.result || '');
+          };
+          fr.onerror = function () { body.textContent = 'تعذر قراءة النص'; };
+          fr.readAsText(blob);
+          return;
+        }
+
+        // PDF أو أي ملف آخر: عرض مباشر بـ PDF.js بدون iframe (اللي بيفشل على الموبايل)
+        if (isPdf || mime === 'application/pdf') {
+          renderPdfWithPdfJs(blob, wrap, body);
+          return;
+        }
+
+        // غير PDF: حمّل مباشرة
+        body.innerHTML =
+          '<div style="padding:24px;text-align:center;line-height:1.8;color:#5a4a2a;">' +
+            '<p>هذا النوع يُفتح بالتحميل.</p>' +
+            '<button type="button" id="spDlNow" style="padding:14px 22px;border:none;border-radius:14px;background:#5a7d4a;color:#fff;font-weight:800;font-size:16px;">تحميل وفتح</button>' +
+          '</div>';
+        var b = document.getElementById('spDlNow');
+        if (b) b.onclick = function () { forceDownload(blob, dlName); };
+        forceDownload(blob, dlName);
       }
 
       function openFromDataUrl() {
@@ -16582,10 +16641,6 @@ window.spSearchLib = function (val) {
         var blob = typeof spDataUrlToBlob === 'function' ? spDataUrlToBlob(book.dataUrl, mime) : null;
         if (blob) {
           openFromBlob(blob, mime);
-          return;
-        }
-        if (String(book.dataUrl).indexOf('data:') === 0) {
-          showViewer(book.dataUrl, mime, null);
           return;
         }
         showToast('تعذر فك الملف — أضيفيه من جديد');
@@ -16602,7 +16657,7 @@ window.spSearchLib = function (val) {
           } else if (book.dataUrl) {
             openFromDataUrl();
           } else {
-            showToast('الملف غير موجود في التخزين — احذفيه وأضيفيه من جديد');
+            showToast('الملف غير موجود — احذفيه وأضيفيه من جديد');
           }
         }).catch(function (err) {
           console.error(err);
@@ -17950,7 +18005,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '359';
+      var APP_VER = '360';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

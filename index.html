@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="358" lang="ar" dir="rtl">
+<html data-app-ver="359" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -16356,17 +16356,16 @@ window.spSearchLib = function (val) {
         url = 'https://' + url.replace(/^\/+/, '');
       }
 
-      // إزالة أي طبقة قديمة
       var old = document.getElementById('spLinkOpenSheet');
       if (old) old.remove();
 
       var sheet = document.createElement('div');
       sheet.id = 'spLinkOpenSheet';
-      sheet.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(40,30,15,0.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+      sheet.style.cssText = 'position:fixed;inset:0;z-index:100060;background:rgba(40,30,15,0.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;';
       var safeUrl = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       var title = String(book.name || 'كتاب').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       sheet.innerHTML =
-        '<div style="width:100%;max-width:420px;background:#fffdf8;border-radius:18px 18px 12px 12px;padding:18px 16px 16px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);text-align:center;">' +
+        '<div style="width:100%;max-width:420px;background:#fffdf8;border-radius:18px 18px 12px 12px;padding:18px 16px 16px;box-shadow:0 -4px 24px rgba(0,0,0,0.2);text-align:center;direction:rtl;">' +
           '<div style="font-weight:800;color:#5a4a2a;font-size:1.1em;margin-bottom:6px;">🔗 ' + title + '</div>' +
           '<div style="font-size:0.8em;color:#8a7a60;word-break:break-all;margin-bottom:14px;direction:ltr;">' + safeUrl + '</div>' +
           '<a id="spLinkOpenA" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" ' +
@@ -16377,13 +16376,23 @@ window.spSearchLib = function (val) {
         '</div>';
       document.body.appendChild(sheet);
 
-      // محاولة فتح تلقائي فورًا
-      try {
-        var w = window.open(url, '_blank');
-        if (w) {
-          try { w.focus(); } catch (eF) {}
-        }
-      } catch (eO) {}
+      function openByAnchor() {
+        try {
+          var a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { try { document.body.removeChild(a); } catch (e) {} }, 150);
+          return true;
+        } catch (e) { return false; }
+      }
+
+      // فتح مباشر بنفس ضغطة المستخدم (أضمن من window.open)
+      if (!openByAnchor()) {
+        try { window.open(url, '_blank', 'noopener,noreferrer'); } catch (eO) {}
+      }
 
       document.getElementById('spLinkClose').onclick = function () { sheet.remove(); };
       sheet.addEventListener('click', function (ev) {
@@ -16407,30 +16416,36 @@ window.spSearchLib = function (val) {
       document.getElementById('spLinkInApp').onclick = function () {
         sheet.remove();
         if (typeof openInAppPage === 'function') openInAppPage(url, book.name || 'كتاب');
-        else window.location.href = url;
+        else openByAnchor();
       };
-      // الرابط نفسه <a> يفتح بالضغط — هذا الأضمن على الموبايل
-      var a = document.getElementById('spLinkOpenA');
-      if (a) {
-        a.addEventListener('click', function () {
-          // لا تمنع الافتراضي
-          setTimeout(function () { try { sheet.remove(); } catch (e) {} }, 400);
+      var aBtn = document.getElementById('spLinkOpenA');
+      if (aBtn) {
+        aBtn.addEventListener('click', function () {
+          setTimeout(function () { try { sheet.remove(); } catch (e) {} }, 300);
         });
       }
     };
 
     window.spOpenBookFile = function (i) {
       var book = getSpiritualBooks()[i];
-      if (!book || (!book.dataUrl && !book.fileId)) {
-        showToast('الملف غير متاح — احذفي الكتاب وأضيفيه من جديد');
+      if (!book) {
+        showToast('الكتاب غير موجود');
         return;
       }
-      try {
-        openSpiritualFile(book);
-      } catch (e) {
-        console.error(e);
-        showToast('تعذر فتح الملف');
+      if (book.dataUrl || book.fileId) {
+        try {
+          openSpiritualFile(book);
+        } catch (e) {
+          console.error(e);
+          showToast('تعذر فتح الملف');
+        }
+        return;
       }
+      if (book.url) {
+        window.spOpenBookUrl(i);
+        return;
+      }
+      showToast('الملف غير متاح — احذفي الكتاب وأضيفيه من جديد');
     };
 
     function openSpiritualFile(book) {
@@ -16441,14 +16456,31 @@ window.spSearchLib = function (val) {
       var name = book.name || book.fileName || 'ملف';
       var type = String(book.type || '');
       var fname = String(book.fileName || book.name || '');
-      var isPdf = type.indexOf('pdf') >= 0 || /\.pdf$/i.test(fname);
+      var isPdf = type.indexOf('pdf') >= 0 || /\.pdf$/i.test(fname) || /\.pdf$/i.test(name);
       var isImg = type.indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp)$/i.test(fname);
       var isTxt = type.indexOf('text/') === 0 || /\.txt$/i.test(fname);
 
-      function showViewer(blobUrl, mime) {
+      function forceDownload(blobUrl, downloadName) {
+        try {
+          var a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = downloadName || 'file';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { try { document.body.removeChild(a); } catch (e) {} }, 200);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function showViewer(blobUrl, mime, sourceBlob) {
         var existing = document.getElementById('inAppBrowser');
         if (existing) existing.remove();
         var safeUrl = String(blobUrl || '').replace(/"/g, '&quot;');
+        var dlName = String(fname || name || 'file').replace(/[^\w\u0600-\u06FF\-\.]+/g, '_');
+        if (isPdf && !/\.pdf$/i.test(dlName)) dlName += '.pdf';
         var body;
         if (isImg) {
           body = '<div style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px;background:#111;"><img src="' + safeUrl + '" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>';
@@ -16458,56 +16490,86 @@ window.spSearchLib = function (val) {
           body =
             '<div style="flex:1;display:flex;flex-direction:column;min-height:0;">' +
               '<div style="padding:12px;background:#fff8e7;border-bottom:1px solid #e8d9b5;text-align:center;">' +
-                '<p style="margin:0 0 10px;color:#5a4a2a;font-weight:700;">لو لم يظهر المحتوى: «فتح» أو «تحميل»</p>' +
+                '<p style="margin:0 0 10px;color:#5a4a2a;font-weight:700;font-size:14px;">لو المحتوى لم يظهر: استخدمي تحميل ثم افتحي من الملفات</p>' +
                 '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
-                  '<button type="button" id="spPdfOpenTab" style="padding:12px 18px;border-radius:14px;border:none;background:#5a7d4a;color:#fff;font-weight:800;">' + t('open') + '</button>' +
-                  '<a id="spPdfDl" href="' + safeUrl + '" download="' + String(fname || name).replace(/[^\w\u0600-\u06FF\-\.]+/g, '_') + '" style="padding:12px 18px;border-radius:14px;background:#6b5b3e;color:#fff;text-decoration:none;font-weight:800;">تحميل</a>' +
+                  '<button type="button" id="spPdfDlBtn" style="padding:12px 18px;border-radius:14px;border:none;background:#6b5b3e;color:#fff;font-weight:800;">تحميل الملف</button>' +
+                  '<button type="button" id="spPdfOpenTab" style="padding:12px 18px;border-radius:14px;border:none;background:#5a7d4a;color:#fff;font-weight:800;">فتح خارجي</button>' +
                 '</div>' +
               '</div>' +
               '<div style="flex:1;min-height:0;position:relative;background:#e8e8e8;">' +
-                '<embed src="' + safeUrl + '" type="' + (mime || 'application/pdf') + '" style="position:absolute;inset:0;width:100%;height:100%;" />' +
+                '<iframe src="' + safeUrl + '" title="file" style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;"></iframe>' +
               '</div>' +
             '</div>';
         }
         var wrap = document.createElement('div');
         wrap.id = 'inAppBrowser';
-        wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#faf6ec;display:flex;flex-direction:column;';
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:100050;background:#faf6ec;display:flex;flex-direction:column;';
         wrap.innerHTML =
           '<div style="display:flex;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#5a4a2a,#7a6a40);color:#fff;align-items:center;">' +
             '<button type="button" id="spFileBack" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-weight:700;">' + t('back') + '</button>' +
-            '<button type="button" id="spFileExt" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">' + t('openExternal') + '</button>' +
-            '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (typeof spEsc==='function'?spEsc(name):String(name).replace(/</g,'&lt;')) + '</div>' +
+            '<button type="button" id="spFileDlTop" style="padding:8px 12px;border-radius:12px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;">تحميل</button>' +
+            '<div style="flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (typeof spEsc === 'function' ? spEsc(name) : String(name).replace(/</g, '&lt;')) + '</div>' +
           '</div>' + body;
         document.body.appendChild(wrap);
-        function openExt() {
-          try { var w = window.open(blobUrl, '_blank'); if (w) return; } catch (e0) {}
-          try {
-            var a = document.createElement('a');
-            a.href = blobUrl; a.target = '_blank'; a.rel = 'noopener';
-            document.body.appendChild(a); a.click();
-            setTimeout(function(){ try { document.body.removeChild(a); } catch(e){} }, 100);
-          } catch (e1) { try { location.href = blobUrl; } catch (e2) {} }
+
+        function doDownload() {
+          if (sourceBlob) {
+            var u = URL.createObjectURL(sourceBlob);
+            forceDownload(u, dlName);
+            setTimeout(function () { try { URL.revokeObjectURL(u); } catch (e) {} }, 1500);
+          } else {
+            forceDownload(blobUrl, dlName);
+          }
+          if (typeof showToast === 'function') showToast('جاري التحميل…');
         }
+        function openExt() {
+          // على الموبايل: blob في تبويب جديد غالبًا يفشل — فضّل التحميل
+          var isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '');
+          if (isMobile && String(blobUrl).indexOf('blob:') === 0) {
+            doDownload();
+            return;
+          }
+          try {
+            var w = window.open(blobUrl, '_blank');
+            if (w) return;
+          } catch (e0) {}
+          doDownload();
+        }
+
         document.getElementById('spFileBack').onclick = function () {
           try { if (String(blobUrl).indexOf('blob:') === 0) URL.revokeObjectURL(blobUrl); } catch (e) {}
           wrap.remove();
         };
-        var ext = document.getElementById('spFileExt');
-        if (ext) ext.onclick = openExt;
+        var topDl = document.getElementById('spFileDlTop');
+        if (topDl) topDl.onclick = doDownload;
         var op = document.getElementById('spPdfOpenTab');
         if (op) op.onclick = openExt;
-        if ((isPdf || (!isImg && !isTxt)) && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) {
-          setTimeout(openExt, 60);
-        }
+        var dlBtn = document.getElementById('spPdfDlBtn');
+        if (dlBtn) dlBtn.onclick = doDownload;
+
         if (isTxt) {
-          fetch(blobUrl).then(function(r){return r.text();}).then(function(t){
+          fetch(blobUrl).then(function (r) { return r.text(); }).then(function (txt) {
             var el = document.getElementById('spTxtBody');
-            if (el) el.textContent = t;
-          }).catch(function(){
+            if (el) el.textContent = txt;
+          }).catch(function () {
             var el = document.getElementById('spTxtBody');
             if (el) el.textContent = 'تعذر قراءة النص';
           });
         }
+      }
+
+      function openFromBlob(blob, mime) {
+        if (!blob) {
+          showToast('الملف فارغ أو تالف');
+          return;
+        }
+        mime = mime || blob.type || 'application/octet-stream';
+        if (isPdf) mime = 'application/pdf';
+        try {
+          if (blob.type !== mime) blob = new Blob([blob], { type: mime });
+        } catch (eT) {}
+        var url = URL.createObjectURL(blob);
+        showViewer(url, mime, blob);
       }
 
       function openFromDataUrl() {
@@ -16516,11 +16578,17 @@ window.spSearchLib = function (val) {
           return;
         }
         var mime = type || 'application/octet-stream';
-        if (isPdf || /\.pdf$/i.test(fname) || String(book.dataUrl).indexOf('pdf') >= 0) mime = 'application/pdf';
+        if (isPdf || String(book.dataUrl).indexOf('pdf') >= 0) mime = 'application/pdf';
         var blob = typeof spDataUrlToBlob === 'function' ? spDataUrlToBlob(book.dataUrl, mime) : null;
-        if (blob) showViewer(URL.createObjectURL(blob), mime);
-        else if (String(book.dataUrl).indexOf('data:') === 0) showViewer(book.dataUrl, mime);
-        else showToast('تعذر فك الملف — أضيفيه من جديد');
+        if (blob) {
+          openFromBlob(blob, mime);
+          return;
+        }
+        if (String(book.dataUrl).indexOf('data:') === 0) {
+          showViewer(book.dataUrl, mime, null);
+          return;
+        }
+        showToast('تعذر فك الملف — أضيفيه من جديد');
       }
 
       if (book.fileId && typeof spIdbGet === 'function') {
@@ -16528,21 +16596,26 @@ window.spSearchLib = function (val) {
         spIdbGet(book.fileId).then(function (rec) {
           if (typeof spHideLoading === 'function') spHideLoading();
           if (rec && rec.blob) {
-            var mime = rec.type || type || rec.blob.type || 'application/octet-stream';
-            if (isPdf || /\.pdf$/i.test(fname)) mime = 'application/pdf';
-            var blob = rec.blob;
-            try { if (blob.type !== mime) blob = new Blob([blob], { type: mime }); } catch (eT) {}
-            showViewer(URL.createObjectURL(blob), mime);
-          } else if (book.dataUrl) openFromDataUrl();
-          else showToast('الملف غير موجود — أضيفيه من جديد');
-        }).catch(function () {
+            var mime = rec.type || type || (rec.blob && rec.blob.type) || 'application/octet-stream';
+            if (isPdf) mime = 'application/pdf';
+            openFromBlob(rec.blob, mime);
+          } else if (book.dataUrl) {
+            openFromDataUrl();
+          } else {
+            showToast('الملف غير موجود في التخزين — احذفيه وأضيفيه من جديد');
+          }
+        }).catch(function (err) {
+          console.error(err);
           if (typeof spHideLoading === 'function') spHideLoading();
           if (book.dataUrl) openFromDataUrl();
-          else showToast('تعذر قراءة الملف من التخزين');
+          else showToast('تعذر قراءة الملف — أعيدي إضافته');
         });
         return;
       }
-      if (book.dataUrl) { openFromDataUrl(); return; }
+      if (book.dataUrl) {
+        openFromDataUrl();
+        return;
+      }
       showToast('لا يوجد ملف محفوظ — احذفي وأضيفي الملف من جديد');
     }
 
@@ -16668,7 +16741,10 @@ function openSpiritualNotes() {
           type: type,
           addedAt: new Date().toISOString()
         };
-        if (!idbOk && dataUrlFallback && String(dataUrlFallback).length < 900000) {
+        // احتفظ بنسخة dataUrl احتياطية إن أمكن (حتى مع نجاح IndexedDB)
+        if (dataUrlFallback && String(dataUrlFallback).length > 0 && String(dataUrlFallback).length < 900000) {
+          entry.dataUrl = dataUrlFallback;
+        } else if (!idbOk && dataUrlFallback && String(dataUrlFallback).length < 1200000) {
           entry.dataUrl = dataUrlFallback;
         }
         books.unshift(entry);
@@ -17874,7 +17950,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '358';
+      var APP_VER = '359';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

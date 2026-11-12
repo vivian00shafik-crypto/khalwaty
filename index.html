@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="373" lang="ar" dir="rtl">
+<html data-app-ver="368" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1009,76 +1009,31 @@
       margin-bottom: 10px;
     }
 
-    /* لوحة المزامير بشكل الرق */
-    .psalm-scroll {
-      position: relative;
-      margin: 10px 2px 18px;
-      padding: 18px 14px 28px;
-      border-radius: 6px;
-      background:
-        radial-gradient(ellipse at 12% 8%, rgba(255,248,230,0.4), transparent 42%),
-        radial-gradient(ellipse at 88% 92%, rgba(90,55,25,0.18), transparent 48%),
-        linear-gradient(160deg, #c9ae86 0%, #b8956a 28%, #a67c52 62%, #8f6844 100%);
-      box-shadow:
-        0 10px 28px rgba(70,45,20,0.28),
-        inset 0 1px 0 rgba(255,255,255,0.22),
-        inset 0 -2px 6px rgba(60,35,15,0.18);
-      /* حواف مهترئة خفيفة */
-      clip-path: polygon(
-        1% 2%, 4% 0%, 9% 2%, 14% 0.5%, 20% 2.5%, 28% 0%, 35% 2%, 42% 0.5%, 50% 2%, 58% 0%, 65% 2.5%, 72% 0.5%, 80% 2%, 88% 0%, 95% 2%, 99% 1%,
-        100% 8%, 98% 15%, 100% 22%, 98.5% 30%, 100% 38%, 98% 48%, 100% 58%, 98.5% 68%, 100% 78%, 98% 88%, 100% 96%,
-        96% 100%, 88% 98%, 78% 100%, 68% 98.5%, 58% 100%, 48% 98%, 38% 100%, 28% 98.5%, 18% 100%, 10% 98%, 3% 100%, 0% 95%,
-        2% 88%, 0% 78%, 1.5% 68%, 0% 58%, 2% 48%, 0% 38%, 1.5% 28%, 0% 18%, 2% 10%
-      );
-    }
-    .psalm-scroll-frame {
+    .psalm-fields {
       display: flex;
       flex-direction: column;
-      gap: 0;
-      padding: 8px;
-      border-radius: 4px;
-      border: 3px solid #6b4e2e;
-      background:
-        linear-gradient(180deg, #5c4028 0%, #7a5a38 8%, #5c4028 16%, #7a5a38 50%, #5c4028 84%, #7a5a38 92%, #5c4028 100%);
-      box-shadow:
-        inset 0 0 0 2px rgba(210, 180, 130, 0.35),
-        inset 0 0 12px rgba(0,0,0,0.25);
+      gap: 8px;
     }
-    .psalm-row {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      align-items: stretch;
-      min-height: 64px;
-      border: 1.5px solid #6b4e2e;
-      border-bottom-width: 0;
-      background: #f7f0e2;
-      overflow: hidden;
-    }
-    .psalm-row:last-child {
-      border-bottom-width: 1.5px;
-    }
-    .psalm-row label {
+
+    .psalm-field {
       display: flex;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 10px 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #3a2a18;
-      line-height: 1.4;
-      background:
-        linear-gradient(90deg, #efe4d0 0%, #f7f0e2 100%);
-      border-right: 1.5px solid #6b4e2e;
-      direction: rtl;
-      letter-spacing: 0.2px;
+      gap: 8px;
     }
-    .psalm-row input {
-      width: 100%;
+
+    .psalm-field label {
+      font-size: 13px;
+      color: var(--brown);
+      min-width: 110px;
+    }
+
+    .psalm-field input {
+      flex: 1;
       min-width: 0;
       border: none;
-      background: #faf6ec;
-      padding: 12px 12px;
+      border-bottom: 1.5px solid #c9a227;
+      background: rgba(255,253,248,0.55);
+      padding: 8px 10px;
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
@@ -1086,107 +1041,19 @@
       -webkit-text-fill-color: #2a1f14 !important;
       caret-color: #5c4033;
       outline: none;
-      text-align: right;
-      direction: rtl;
-      -webkit-user-select: text !important;
-      user-select: text !important;
-      pointer-events: auto !important;
+      border-radius: 8px 8px 0 0;
     }
-    .psalm-row input::placeholder {
-      color: #d0c4ae;
+
+    .psalm-field input::placeholder {
+      color: #b0a090;
       font-weight: 400;
-      -webkit-text-fill-color: #d0c4ae;
-    }
-    .psalm-row input:focus {
-      background: #fffdf6;
-    }
-    .psalm-seal {
-      position: absolute;
-      left: 6px;
-      bottom: -10px;
-      width: 58px;
-      height: 58px;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 10px;
-      font-weight: 800;
-      color: #f3e2c0;
-      line-height: 1.15;
-      background:
-        radial-gradient(circle at 32% 28%, #c46a55, #8a3228 55%, #5c1e18 100%);
-      box-shadow:
-        0 5px 14px rgba(70,25,15,0.4),
-        inset 0 2px 0 rgba(255,220,180,0.28),
-        inset 0 -3px 6px rgba(40,10,8,0.35);
-      border: 2px solid rgba(90,35,25,0.55);
-      transform: rotate(-8deg);
-      z-index: 2;
-      pointer-events: none;
-      padding: 4px;
-    }
-    .psalm-seal::before {
-      content: '☸';
-      font-size: 12px;
-      opacity: 0.9;
-      margin-bottom: 1px;
+      -webkit-text-fill-color: #b0a090;
     }
 
-    @media (max-width: 360px) {
-      .psalm-row {
-        grid-template-columns: 1fr minmax(88px, 42%);
-        min-height: 48px;
-      }
-      .psalm-row label { font-size: 11.5px; padding: 6px 4px; }
-      .psalm-seal { width: 46px; height: 46px; font-size: 10px; }
+    .psalm-field input:focus {
+      border-bottom-color: #8a6a20;
+      background: rgba(255,253,248,0.9);
     }
-
-
-    /* ===== v373: مستطيل المزامير = الصورة المرفقة بدون أي تعديل، والخانات فوق الخلايا اليسرى ===== */
-    .psalm-scroll {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 944 / 704;
-      margin: 10px 0 14px;
-      padding: 0;
-      background: url('psalm-frame-v373.png') center / 100% 100% no-repeat;
-      clip-path: none;
-      box-shadow: none;
-      border-radius: 0;
-    }
-    .psalm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .psalm-scroll .psalm-cell {
-      position: absolute;
-      left: 10.7%;
-      width: 31.4%;
-      height: 20.8%;
-      box-sizing: border-box;
-      margin: 0;
-      padding: 4px 6px;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      resize: none;
-      overflow-y: auto;
-      outline: none;
-      font-family: inherit;
-      font-size: clamp(12px, 3.6vw, 16px) !important;
-      font-weight: 700;
-      line-height: 1.35;
-      color: #1d1710 !important;
-      -webkit-text-fill-color: #1d1710;
-      caret-color: #5c4033;
-      text-align: right;
-      direction: rtl;
-    }
-    .psalm-scroll .psalm-cell-1 { top: 13.9%; }
-    .psalm-scroll .psalm-cell-2 { top: 37.0%; }
-    .psalm-scroll .psalm-cell-3 { top: 60.0%; }
-    .psalm-scroll .psalm-cell::placeholder { color: #b9a885; -webkit-text-fill-color: #b9a885; }
-    .psalm-scroll .psalm-cell:focus { background: rgba(255,250,235,0.45); }
 
     /* Action buttons */
     .action-buttons {
@@ -2009,13 +1876,19 @@
         </button>
       </div>
       <div id="selectedPsalmsHome" style="margin:8px 0 8px;font-size:13px;min-height:28px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div class="psalm-scroll" aria-label="مزاميري">
-        <label class="psalm-sr" data-i18n="thanksLabel" for="psalmThanks">شكراً يارب على</label>
-        <textarea id="psalmThanks" class="psalm-cell psalm-cell-1" placeholder="..." spellcheck="false" autocomplete="off" rows="2"></textarea>
-        <label class="psalm-sr" data-i18n="tellLabel" for="psalmTell">عاوز أقولك يارب</label>
-        <textarea id="psalmTell" class="psalm-cell psalm-cell-2" placeholder="..." spellcheck="false" autocomplete="off" rows="2"></textarea>
-        <label class="psalm-sr" data-i18n="requestLabel" for="psalmRequest">طلبة من أجل</label>
-        <textarea id="psalmRequest" class="psalm-cell psalm-cell-3" placeholder="..." spellcheck="false" autocomplete="off" rows="2"></textarea>
+      <div class="psalm-fields">
+        <div class="psalm-field">
+          <label data-i18n="thanksLabel">شكراً يارب على</label>
+          <input type="text" id="psalmThanks" placeholder="...">
+        </div>
+        <div class="psalm-field">
+          <label data-i18n="tellLabel">عاوز أقولك يارب</label>
+          <input type="text" id="psalmTell" placeholder="...">
+        </div>
+        <div class="psalm-field">
+          <label data-i18n="requestLabel">طلبة من أجل</label>
+          <input type="text" id="psalmRequest" placeholder="...">
+        </div>
       </div>
     </div>
 
@@ -18776,7 +18649,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '373';
+      var APP_VER = '368';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -18791,46 +18664,23 @@ function playProgressFinalVideo() {
         }
       } catch (e) {}
 
-      // ترقية قوية لمرة واحدة: امسح الكاش القديم وأعد التحميل بإصدار جديد
+      // تنظيف مفاتيح الترقية القديمة مرة واحدة (بدون reload)
       if (localStorage.getItem(KEY) !== '1') {
         try {
           localStorage.setItem(KEY, '1');
-          // امسح مفاتيح الترقية القديمة
-          try {
-            Object.keys(localStorage).forEach(function(k) {
-              if (k.indexOf('khalwati_force_v') === 0 && k !== KEY) {
-                try { localStorage.removeItem(k); } catch (e0) {}
-              }
-            });
-          } catch (eKeys) {}
-          var doReload = true;
-          try {
-            var uCheck = new URL(location.href);
-            // لو احنا بالفعل في reload إجباري متكررش
-            if (uCheck.searchParams.get('_r') === APP_VER) doReload = false;
-          } catch (eU) {}
-          var finish = function() {
-            if (!doReload) return;
-            try {
-              var u = new URL(location.href);
-              u.searchParams.set('v', APP_VER);
-              u.searchParams.set('_r', APP_VER);
-              location.replace(u.toString());
-            } catch (eR) {
-              try { location.reload(true); } catch (eR2) { location.reload(); }
-            }
-          };
+          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194',
+           'khalwati_force_v230','khalwati_force_v231','khalwati_force_v232','khalwati_force_v233',
+           'khalwati_force_v234','khalwati_force_v235','khalwati_force_v236','khalwati_force_v237','khalwati_force_v238'].forEach(function(k) {
+            try { localStorage.removeItem(k); } catch (e1) {}
+          });
+          // امسح كاشات الإصدارات القديمة في الخلفية فقط
           if (window.caches) {
             caches.keys().then(function(keys) {
-              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-            }).catch(function() {}).then(finish);
-            // أمان: لو الكاش اتأخر
-            setTimeout(finish, 900);
-          } else {
-            finish();
+              return Promise.all(keys.filter(function(k) {
+                return k.indexOf('khalwati-') === 0 && k !== ('khalwati-v' + APP_VER);
+              }).map(function(k) { return caches.delete(k); }));
+            }).catch(function() {});
           }
-          // وقف باقي تهيئة الـSW لحد ما الصفحة تتعيد
-          return;
         } catch (e2) {}
       }
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="368" lang="ar" dir="rtl">
+<html data-app-ver="369" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1009,31 +1009,76 @@
       margin-bottom: 10px;
     }
 
-    .psalm-fields {
+    /* لوحة المزامير بشكل الرق */
+    .psalm-scroll {
+      position: relative;
+      margin: 10px 2px 18px;
+      padding: 18px 14px 28px;
+      border-radius: 6px;
+      background:
+        radial-gradient(ellipse at 12% 8%, rgba(255,248,230,0.4), transparent 42%),
+        radial-gradient(ellipse at 88% 92%, rgba(90,55,25,0.18), transparent 48%),
+        linear-gradient(160deg, #c9ae86 0%, #b8956a 28%, #a67c52 62%, #8f6844 100%);
+      box-shadow:
+        0 10px 28px rgba(70,45,20,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        inset 0 -2px 6px rgba(60,35,15,0.18);
+      /* حواف مهترئة خفيفة */
+      clip-path: polygon(
+        1% 2%, 4% 0%, 9% 2%, 14% 0.5%, 20% 2.5%, 28% 0%, 35% 2%, 42% 0.5%, 50% 2%, 58% 0%, 65% 2.5%, 72% 0.5%, 80% 2%, 88% 0%, 95% 2%, 99% 1%,
+        100% 8%, 98% 15%, 100% 22%, 98.5% 30%, 100% 38%, 98% 48%, 100% 58%, 98.5% 68%, 100% 78%, 98% 88%, 100% 96%,
+        96% 100%, 88% 98%, 78% 100%, 68% 98.5%, 58% 100%, 48% 98%, 38% 100%, 28% 98.5%, 18% 100%, 10% 98%, 3% 100%, 0% 95%,
+        2% 88%, 0% 78%, 1.5% 68%, 0% 58%, 2% 48%, 0% 38%, 1.5% 28%, 0% 18%, 2% 10%
+      );
+    }
+    .psalm-scroll-frame {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
+      padding: 8px;
+      border-radius: 4px;
+      border: 3px solid #6b4e2e;
+      background:
+        linear-gradient(180deg, #5c4028 0%, #7a5a38 8%, #5c4028 16%, #7a5a38 50%, #5c4028 84%, #7a5a38 92%, #5c4028 100%);
+      box-shadow:
+        inset 0 0 0 2px rgba(210, 180, 130, 0.35),
+        inset 0 0 12px rgba(0,0,0,0.25);
     }
-
-    .psalm-field {
+    .psalm-row {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: stretch;
+      min-height: 64px;
+      border: 1.5px solid #6b4e2e;
+      border-bottom-width: 0;
+      background: #f7f0e2;
+      overflow: hidden;
+    }
+    .psalm-row:last-child {
+      border-bottom-width: 1.5px;
+    }
+    .psalm-row label {
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .psalm-field label {
+      justify-content: center;
+      text-align: center;
+      padding: 10px 8px;
       font-size: 13px;
-      color: var(--brown);
-      min-width: 110px;
+      font-weight: 700;
+      color: #3a2a18;
+      line-height: 1.4;
+      background:
+        linear-gradient(90deg, #efe4d0 0%, #f7f0e2 100%);
+      border-right: 1.5px solid #6b4e2e;
+      direction: rtl;
+      letter-spacing: 0.2px;
     }
-
-    .psalm-field input {
-      flex: 1;
+    .psalm-row input {
+      width: 100%;
       min-width: 0;
       border: none;
-      border-bottom: 1.5px solid #c9a227;
-      background: rgba(255,253,248,0.55);
-      padding: 8px 10px;
+      background: #faf6ec;
+      padding: 12px 12px;
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
@@ -1041,19 +1086,64 @@
       -webkit-text-fill-color: #2a1f14 !important;
       caret-color: #5c4033;
       outline: none;
-      border-radius: 8px 8px 0 0;
+      text-align: right;
+      direction: rtl;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
     }
-
-    .psalm-field input::placeholder {
-      color: #b0a090;
+    .psalm-row input::placeholder {
+      color: #d0c4ae;
       font-weight: 400;
-      -webkit-text-fill-color: #b0a090;
+      -webkit-text-fill-color: #d0c4ae;
+    }
+    .psalm-row input:focus {
+      background: #fffdf6;
+    }
+    .psalm-seal {
+      position: absolute;
+      left: 6px;
+      bottom: -10px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #f3e2c0;
+      line-height: 1.15;
+      background:
+        radial-gradient(circle at 32% 28%, #c46a55, #8a3228 55%, #5c1e18 100%);
+      box-shadow:
+        0 5px 14px rgba(70,25,15,0.4),
+        inset 0 2px 0 rgba(255,220,180,0.28),
+        inset 0 -3px 6px rgba(40,10,8,0.35);
+      border: 2px solid rgba(90,35,25,0.55);
+      transform: rotate(-8deg);
+      z-index: 2;
+      pointer-events: none;
+      padding: 4px;
+    }
+    .psalm-seal::before {
+      content: '☸';
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 1px;
     }
 
-    .psalm-field input:focus {
-      border-bottom-color: #8a6a20;
-      background: rgba(255,253,248,0.9);
+    @media (max-width: 360px) {
+      .psalm-row {
+        grid-template-columns: 1fr minmax(88px, 42%);
+        min-height: 48px;
+      }
+      .psalm-row label { font-size: 11.5px; padding: 6px 4px; }
+      .psalm-seal { width: 46px; height: 46px; font-size: 10px; }
     }
+
 
     /* Action buttons */
     .action-buttons {
@@ -1876,19 +1966,22 @@
         </button>
       </div>
       <div id="selectedPsalmsHome" style="margin:8px 0 8px;font-size:13px;min-height:28px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div class="psalm-fields">
-        <div class="psalm-field">
-          <label data-i18n="thanksLabel">شكراً يارب على</label>
-          <input type="text" id="psalmThanks" placeholder="...">
+      <div class="psalm-scroll" aria-label="مزاميري">
+        <div class="psalm-scroll-frame">
+          <div class="psalm-row">
+            <input type="text" id="psalmThanks" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="thanksLabel" for="psalmThanks">شكراً يارب على</label>
+          </div>
+          <div class="psalm-row">
+            <input type="text" id="psalmTell" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="tellLabel" for="psalmTell">عاوز أقولك يارب</label>
+          </div>
+          <div class="psalm-row">
+            <input type="text" id="psalmRequest" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="requestLabel" for="psalmRequest">طلبة من أجل</label>
+          </div>
         </div>
-        <div class="psalm-field">
-          <label data-i18n="tellLabel">عاوز أقولك يارب</label>
-          <input type="text" id="psalmTell" placeholder="...">
-        </div>
-        <div class="psalm-field">
-          <label data-i18n="requestLabel">طلبة من أجل</label>
-          <input type="text" id="psalmRequest" placeholder="...">
-        </div>
+        <div class="psalm-seal" title="خلوتي">خلوتي</div>
       </div>
     </div>
 
@@ -18649,7 +18742,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '368';
+      var APP_VER = '369';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

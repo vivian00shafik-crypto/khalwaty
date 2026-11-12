@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="369" lang="ar" dir="rtl">
+<html data-app-ver="370" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -18742,7 +18742,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '369';
+      var APP_VER = '370';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -18757,23 +18757,46 @@ function playProgressFinalVideo() {
         }
       } catch (e) {}
 
-      // تنظيف مفاتيح الترقية القديمة مرة واحدة (بدون reload)
+      // ترقية قوية لمرة واحدة: امسح الكاش القديم وأعد التحميل بإصدار جديد
       if (localStorage.getItem(KEY) !== '1') {
         try {
           localStorage.setItem(KEY, '1');
-          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194',
-           'khalwati_force_v230','khalwati_force_v231','khalwati_force_v232','khalwati_force_v233',
-           'khalwati_force_v234','khalwati_force_v235','khalwati_force_v236','khalwati_force_v237','khalwati_force_v238'].forEach(function(k) {
-            try { localStorage.removeItem(k); } catch (e1) {}
-          });
-          // امسح كاشات الإصدارات القديمة في الخلفية فقط
+          // امسح مفاتيح الترقية القديمة
+          try {
+            Object.keys(localStorage).forEach(function(k) {
+              if (k.indexOf('khalwati_force_v') === 0 && k !== KEY) {
+                try { localStorage.removeItem(k); } catch (e0) {}
+              }
+            });
+          } catch (eKeys) {}
+          var doReload = true;
+          try {
+            var uCheck = new URL(location.href);
+            // لو احنا بالفعل في reload إجباري متكررش
+            if (uCheck.searchParams.get('_r') === APP_VER) doReload = false;
+          } catch (eU) {}
+          var finish = function() {
+            if (!doReload) return;
+            try {
+              var u = new URL(location.href);
+              u.searchParams.set('v', APP_VER);
+              u.searchParams.set('_r', APP_VER);
+              location.replace(u.toString());
+            } catch (eR) {
+              try { location.reload(true); } catch (eR2) { location.reload(); }
+            }
+          };
           if (window.caches) {
             caches.keys().then(function(keys) {
-              return Promise.all(keys.filter(function(k) {
-                return k.indexOf('khalwati-') === 0 && k !== ('khalwati-v' + APP_VER);
-              }).map(function(k) { return caches.delete(k); }));
-            }).catch(function() {});
+              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            }).catch(function() {}).then(finish);
+            // أمان: لو الكاش اتأخر
+            setTimeout(finish, 900);
+          } else {
+            finish();
           }
+          // وقف باقي تهيئة الـSW لحد ما الصفحة تتعيد
+          return;
         } catch (e2) {}
       }
 

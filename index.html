@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="363" lang="ar" dir="rtl">
+<html data-app-ver="364" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -12998,12 +12998,21 @@ function updateSelectedSinsCount() {
     function shareAIDesignToApps() {
       var d = window._lastAIDesign;
       if (!d || !d.dataUrl) { showToast('لا توجد صورة'); return; }
+      var verseTxt = String(d.text || '').trim();
+      var verseRef = String(d.ref || '').trim();
+      var aiPrompt = 'Generate a beautiful spiritual Christian image with clear Arabic calligraphy. Verse: ' + verseTxt + (verseRef ? (' Reference: ' + verseRef) : '') + '. Sacred soft style, readable Arabic.';
+      var shareText = 'Prompt for AI image generation:\n' + aiPrompt + '\n\nالنص:\n' + verseTxt + (verseRef ? ('\n' + verseRef) : '') + '\n\nمن تطبيق خلوتي';
       fetch(d.dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
         var file = new File([blob], 'khalwati-verse-' + Date.now() + '.jpg', { type: 'image/jpeg' });
-        var canFiles = !!(navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] })));
-        if (canFiles) {
-          navigator.share({ files: [file], title: d.ref || 'آية', text: 'من تطبيق خلوتي' }).catch(function (err) {
-            if (err && err.name !== 'AbortError') showToast('تعذّر فتح قائمة المشاركة');
+        var payload = { title: 'Khalwaty AI Design', text: shareText };
+        try {
+          if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file], text: shareText }))) {
+            payload.files = [file];
+          }
+        } catch (e) {}
+        if (navigator.share) {
+          navigator.share(payload).catch(function (err) {
+            if (err && err.name !== 'AbortError') showDesignSavePreview(d.dataUrl, 'khalwati-verse-' + Date.now() + '.jpg', false, blob);
           });
         } else {
           showDesignSavePreview(d.dataUrl, 'khalwati-verse-' + Date.now() + '.jpg', false, blob);
@@ -13376,11 +13385,11 @@ function updateSelectedSinsCount() {
       document.getElementById('prayerTitle').textContent = (window._designState && window._designState.aiGenerated) ? '✨ تصميم بالذكاء للآية' : 'تصميم الآية / التأمل';
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:center;">
-          <div id="verseDesignPreview" style="position:relative;width:100%;max-width:340px;margin:0 auto;border-radius:16px;overflow:hidden;min-height:360px;height:360px;background:${verseBgCss(st.bg)};touch-action:none;">
-            <div id="verseDesignText" style="position:absolute;left:${st.posX||50}%;top:${st.posY||42}%;transform:translate(-50%,-50%);width:86%;padding:12px;color:${st.color};text-align:${st.align};font-family:'${st.font}',serif;font-size:${st.size}px;text-shadow:0 1px 2px rgba(255,255,255,.75);cursor:move;user-select:none;direction:rtl;unicode-bidi:plaintext;">
-              <p style="font-size:${Math.max(12, st.size-4)}px;font-weight:700;margin-bottom:8px;direction:rtl;unicode-bidi:plaintext;">${(st.ref||'').replace(/</g,'&lt;')}</p>
-              <p style="line-height:1.85;white-space:pre-wrap;direction:rtl;unicode-bidi:plaintext;">${(st.text||'').replace(/</g,'&lt;')}</p>
-              <p style="margin-top:12px;font-size:12px;opacity:.75;">خلوتي ✝</p>
+          <div id="verseDesignPreview" style="position:relative;width:100%;max-width:340px;margin:0 auto;border-radius:16px;overflow:hidden;min-height:420px;height:auto;aspect-ratio:4/5;background:${verseBgCss(st.bg)};touch-action:none;">
+            <div id="verseDesignText" style="position:absolute;left:${st.posX||50}%;top:${st.posY||42}%;transform:translate(-50%,-50%);width:86%;max-width:86%;max-height:88%;overflow:visible;padding:14px 12px;box-sizing:border-box;color:${st.color};text-align:${st.align};font-family:'${st.font}',Cairo,Tahoma,sans-serif;font-size:${st.size}px;line-height:1.85;text-shadow:0 0 5px rgba(255,255,255,.98),0 1px 4px rgba(0,0,0,.4),0 0 2px #fff;cursor:move;user-select:none;direction:rtl;unicode-bidi:plaintext;word-wrap:break-word;overflow-wrap:anywhere;background:rgba(255,253,248,0.18);border-radius:12px;">
+              <p style="font-size:${Math.max(12, st.size-4)}px;font-weight:700;margin:0 0 8px;direction:rtl;unicode-bidi:plaintext;word-wrap:break-word;">${(st.ref||'').replace(/</g,'&lt;')}</p>
+              <p style="margin:0;line-height:1.85;white-space:pre-wrap;direction:rtl;unicode-bidi:plaintext;word-wrap:break-word;overflow-wrap:anywhere;">${(st.text||'').replace(/</g,'&lt;')}</p>
+              <p style="margin:12px 0 0;font-size:12px;opacity:.8;">خلوتي ✝</p>
             </div>
           </div>
           <p style="font-size:12px;color:#8a7a60;margin:8px 0 4px;">👆 اسحبي النص لوضعه في المكان المناسب</p>
@@ -13564,113 +13573,145 @@ function updateSelectedSinsCount() {
 
         function wrapText(ctx, text, maxW) {
           var out = [];
-          String(text || '').split(/\n/).forEach(function (para) {
+          String(text || '').replace(/\r/g, '').split('\n').forEach(function (para) {
+            para = String(para || '').trim();
+            if (!para) { out.push(''); return; }
             var words = para.split(/\s+/).filter(Boolean);
-            if (!words.length) { out.push(''); return; }
             var line = '';
             words.forEach(function (w) {
-              var trial = line ? line + ' ' + w : w;
+              var trial = line ? (line + ' ' + w) : w;
               if (ctx.measureText(trial).width > maxW && line) {
                 out.push(line);
                 line = w;
-              } else line = trial;
+                // كلمة أطول من العرض: قسّمها
+                while (ctx.measureText(line).width > maxW && line.length > 1) {
+                  var cut = line.length - 1;
+                  while (cut > 1 && ctx.measureText(line.slice(0, cut)).width > maxW) cut--;
+                  out.push(line.slice(0, cut));
+                  line = line.slice(cut);
+                }
+              } else {
+                line = trial;
+              }
             });
             if (line) out.push(line);
           });
           return out;
         }
 
+        function fitLines(ctx, text, maxW, fontSpec) {
+          ctx.font = fontSpec;
+          return wrapText(ctx, text, maxW);
+        }
+
         function drawDesign(img) {
           try {
-            // خلفية cover بنفس نسبة المعاينة
             var cover = Math.max(W / img.width, H / img.height);
             var nw = img.width * cover, nh = img.height * cover;
             ctx.fillStyle = '#1a1208';
             ctx.fillRect(0, 0, W, H);
             ctx.drawImage(img, (W - nw) / 2, (H - nh) / 2, nw, nh);
             var dark = VERSE_BG_DARK && VERSE_BG_DARK[st.bg];
-            ctx.fillStyle = dark ? 'rgba(0,0,0,0.22)' : 'rgba(255,253,248,0.12)';
+            ctx.fillStyle = dark ? 'rgba(0,0,0,0.28)' : 'rgba(255,253,248,0.10)';
             ctx.fillRect(0, 0, W, H);
 
             var fontName = st.font || 'Cairo';
             var color = st.color || '#3e2f1c';
             var align = st.align || 'center';
-            // مقياس مطابق للمعاينة: 1px في المعاينة = scaleOut بكسل في التصدير
-            var bodySize = Math.max(12, (parseInt(st.size, 10) || 18) * scaleOut);
-            var refSize = Math.max(10, (Math.max(12, (parseInt(st.size, 10) || 18) - 4)) * scaleOut);
-            var footSize = 12 * scaleOut;
-            var pad = 12 * scaleOut;
-            var maxW = W * 0.86 - pad * 2;
-            var lineH = bodySize * 1.85;
-            var refLH = refSize * 1.35;
-            var gapRef = 8 * scaleOut;
-            var gapFoot = 12 * scaleOut;
+            // نفس حجم الخط الظاهر في المعاينة: px المعاينة × (عرض اللوحة / عرض المعاينة)
+            var baseSize = Math.max(14, parseInt(st.size, 10) || 18);
+            var bodySize = Math.max(12, Math.round(baseSize * scaleOut));
+            var refSize = Math.max(11, Math.round(Math.max(12, baseSize - 4) * scaleOut));
+            var footSize = Math.max(11, Math.round(12 * scaleOut));
+            // عرض صندوق النص في المعاينة = 82% من العرض
+            var marginX = Math.round(W * 0.09);
+            var marginY = Math.round(H * 0.06);
+            var maxW = Math.round(W * 0.82);
+            var maxBlockH = H - marginY * 2;
 
             ctx.direction = 'rtl';
-            ctx.fillStyle = color;
-            ctx.shadowColor = dark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.65)';
-            ctx.shadowBlur = dark ? 5 : 3;
+            ctx.textBaseline = 'top';
 
-            // لفّ النص بنفس عرض صندوق المعاينة (86%)
-            ctx.font = '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
-            var bodyLines = wrapText(ctx, st.text || '', maxW);
-            ctx.font = '700 ' + refSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
-            var refLines = st.ref ? wrapText(ctx, st.ref, maxW) : [];
-            var footer = 'خلوتي ✝';
-
-            var blockH = 0;
-            if (refLines.length) blockH += refLines.length * refLH + gapRef;
-            blockH += bodyLines.length * lineH;
-            blockH += gapFoot + footSize;
-            // padding رأسي تقريبي للصندوق
-            blockH += pad;
+            var bodyLines, refLines, lineH, refLH, gapRef, gapFoot, blockH;
+            // حاول بالحجم الأصلي أولاً؛ صغّر فقط لو النص يخرج تمامًا عن اللوحة
+            for (var attempt = 0; attempt < 10; attempt++) {
+              lineH = bodySize * 1.85;
+              refLH = refSize * 1.45;
+              gapRef = Math.round(8 * scaleOut);
+              gapFoot = Math.round(10 * scaleOut);
+              bodyLines = fitLines(ctx, st.text || '', maxW, '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif');
+              refLines = st.ref ? fitLines(ctx, st.ref, maxW, '700 ' + refSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif') : [];
+              blockH = 0;
+              if (refLines.length) blockH += refLines.length * refLH + gapRef;
+              blockH += Math.max(1, bodyLines.length) * lineH;
+              blockH += gapFoot + footSize;
+              if (blockH <= maxBlockH || bodySize <= 13) break;
+              // تصغير خفيف جدًا (مش قفزة كبيرة)
+              bodySize = Math.max(13, bodySize - 1);
+              refSize = Math.max(11, refSize - 1);
+            }
 
             var posX = (typeof st.posX === 'number') ? st.posX : 50;
             var posY = (typeof st.posY === 'number') ? st.posY : 42;
             var cx = (posX / 100) * W;
             var cy = (posY / 100) * H;
-            // transform: translate(-50%, -50%) — أعلى الصندوق
             var top = cy - blockH / 2;
-            if (top < 8) top = 8;
-            if (top + blockH > H - 8) top = Math.max(8, H - 8 - blockH);
+            if (top < marginY) top = marginY;
+            if (top + blockH > H - marginY) top = Math.max(marginY, H - marginY - blockH);
 
-            var x;
-            if (align === 'left') {
-              ctx.textAlign = 'left';
-              x = cx - maxW / 2;
-            } else if (align === 'right') {
-              ctx.textAlign = 'right';
-              x = cx + maxW / 2;
-            } else {
-              ctx.textAlign = 'center';
-              x = cx;
+            var x = cx;
+            if (align === 'left') { ctx.textAlign = 'left'; x = Math.round(W * 0.09); }
+            else if (align === 'right') { ctx.textAlign = 'right'; x = Math.round(W * 0.91); }
+            else { ctx.textAlign = 'center'; x = cx; }
+
+            // خلفية شفافة خفيفة خلف النص عشان ما يتآكلش في الصورة
+            try {
+              var pad = Math.round(12 * scaleOut);
+              var boxW = maxW + pad * 2;
+              var boxH = blockH + pad * 2;
+              var boxX = (align === 'left') ? (x - pad) : (align === 'right') ? (x - maxW - pad) : (cx - boxW / 2);
+              var boxY = top - pad;
+              ctx.save();
+              ctx.fillStyle = dark ? 'rgba(0,0,0,0.28)' : 'rgba(255,253,248,0.22)';
+              // rounded rect
+              var rr = Math.round(14 * scaleOut);
+              ctx.beginPath();
+              if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, rr);
+              else ctx.rect(boxX, boxY, boxW, boxH);
+              ctx.fill();
+              ctx.restore();
+            } catch (eBg) {}
+
+            function drawLine(str, y, size, weight) {
+              var s = String(str || '');
+              ctx.font = (weight || '600') + ' ' + size + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+              ctx.lineJoin = 'round';
+              ctx.miterLimit = 2;
+              // إطار أوضح يمنع أكل الحروف
+              ctx.strokeStyle = dark ? 'rgba(0,0,0,0.82)' : 'rgba(255,255,255,0.95)';
+              ctx.lineWidth = Math.max(3, size * 0.16);
+              ctx.strokeText(s, x, y);
+              ctx.fillStyle = color;
+              ctx.fillText(s, x, y);
             }
 
-            var y = top + pad * 0.6;
+            var y = top;
             if (refLines.length) {
-              ctx.font = '700 ' + refSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
               refLines.forEach(function (ln) {
-                y += refLH * 0.85;
-                ctx.fillText(ln, x, y);
-                y += refLH * 0.15;
+                drawLine(ln, y, refSize, '700');
+                y += refLH;
               });
-              y += gapRef;
+              y += gapRef * 0.45;
             }
-            ctx.font = '600 ' + bodySize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
             bodyLines.forEach(function (ln) {
-              y += lineH * 0.75;
-              var lineStr = ln || '';
-              if (/[\u0600-\u06FF]/.test(lineStr)) lineStr = '\u200F' + lineStr;
-              ctx.fillText(lineStr, x, y);
-              y += lineH * 0.25;
+              drawLine(ln, y, bodySize, '600');
+              y += lineH;
             });
-            y += gapFoot;
-            ctx.globalAlpha = 0.75;
-            ctx.font = footSize + 'px "' + fontName + '", Cairo, Tahoma, sans-serif';
+            y += gapFoot * 0.35;
+            ctx.globalAlpha = 0.9;
             ctx.textAlign = 'center';
-            ctx.fillText(footer, cx, y + footSize * 0.8);
+            drawLine('خلوتي ✝', y, footSize, '600');
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
 
             try { img.src = ''; } catch (e3) {}
             setTimeout(exportNow, 30);
@@ -13734,7 +13775,7 @@ function showDesignSavePreview(url, name, silent, blob) {
 
       var tip = document.createElement('p');
       tip.style.cssText = 'margin:0 0 8px;color:#5c4033;font-size:13px;line-height:1.7;';
-      tip.innerHTML = '✅ الصورة جاهزة<br>اضغطي <b>مطولاً</b> على الصورة → <b>حفظ الصورة</b>';
+      tip.innerHTML = '✅ الصورة جاهزة<br>اضغطي <b>مطولاً</b> للحفظ · أو <b>توليد بالذكاء</b> لفتح تطبيقات توليد الصور';
 
       var img = document.createElement('img');
       img.src = url;
@@ -13760,28 +13801,52 @@ function showDesignSavePreview(url, name, silent, blob) {
       closeBtn.textContent = 'إغلاق';
       closeBtn.style.cssText = 'flex:1;min-width:90px;padding:12px 8px;border:0;border-radius:11px;background:#8a7a60;color:#fff;font-family:inherit;font-size:14px;cursor:pointer;pointer-events:auto;touch-action:manipulation;';
 
-      shareBtn.onclick = function(ev) {
-        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      // زر مشاركة عادي + زر للتوليد بالذكاء الاصطناعي
+      var aiShareBtn = document.createElement('button');
+      aiShareBtn.type = 'button';
+      aiShareBtn.textContent = 'توليد بالذكاء';
+      aiShareBtn.style.cssText = 'flex:1;min-width:90px;padding:12px 8px;border:0;border-radius:11px;background:#6b4c9a;color:#fff;font-family:inherit;font-size:13px;cursor:pointer;pointer-events:auto;touch-action:manipulation;';
+
+      function shareDesignFile(forAI) {
         if (!navigator.share) {
-          showToast('المشاركة غير متاحة — احفظي بالضغط المطوّل ثم شاركي من المعرض');
-          return false;
+          showToast('المشاركة غير متاحة — احفظي الصورة ثم افتحيها من تطبيق التصميم');
+          return;
         }
+        var st0 = window._designState || {};
+        var verseTxt = String((st0.text || '')).trim();
+        var verseRef = String((st0.ref || '')).trim();
+        var aiPrompt = 'Generate a beautiful spiritual Christian image with clear Arabic calligraphy text. Verse: ' + verseTxt + (verseRef ? (' Reference: ' + verseRef) : '') + '. Soft sacred style, readable Arabic, high quality.';
+        var shareText = forAI
+          ? ('Prompt for AI image generation:\n' + aiPrompt + '\n\nالنص:\n' + verseTxt + (verseRef ? ('\n' + verseRef) : '') + '\n\nمن تطبيق خلوتي')
+          : ((verseRef ? verseRef + '\n' : '') + verseTxt + '\n\nمن تطبيق خلوتي ✝');
         fetch(url).then(function(r) { return r.blob(); }).then(function(b) {
           var f = null;
           try { f = new File([b], name, { type: 'image/jpeg' }); } catch (e) {}
-          if (f && navigator.canShare) {
+          var payload = { title: forAI ? 'Khalwaty AI Design Prompt' : 'خلوتي', text: shareText };
+          if (f) {
             try {
-              if (navigator.canShare({ files: [f] })) {
-                return navigator.share({ files: [f], title: 'خلوتي' });
+              if (!navigator.canShare || navigator.canShare({ files: [f], text: shareText })) {
+                payload.files = [f];
               }
             } catch (e2) {}
           }
-          throw new Error('no-share');
+          return navigator.share(payload);
         }).then(function() {
-          showToast(t('shareOk'));
-        }).catch(function() {
-          showToast('احفظي بالضغط المطوّل على الصورة ثم شاركيها من المعرض');
+          showToast(forAI ? 'اختاري تطبيق توليد صور بالذكاء الاصطناعي' : (typeof t==='function' ? t('shareOk') : 'تمت المشاركة'));
+        }).catch(function(err) {
+          if (err && err.name === 'AbortError') return;
+          showToast('احفظي الصورة ثم افتحي تطبيق التوليد (مثل Gemini / ChatGPT / Canva) وأرفقيها');
         });
+      }
+
+      shareBtn.onclick = function(ev) {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        shareDesignFile(false);
+        return false;
+      };
+      aiShareBtn.onclick = function(ev) {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        shareDesignFile(true);
         return false;
       };
 
@@ -13869,6 +13934,7 @@ function showDesignSavePreview(url, name, silent, blob) {
       closeBtn.ontouchend = function(ev) { if (ev) ev.preventDefault(); closeBtn.onclick(ev); };
 
       row.appendChild(shareBtn);
+      row.appendChild(aiShareBtn);
       row.appendChild(dlBtn);
       row.appendChild(closeBtn);
       box.appendChild(tip);
@@ -18426,7 +18492,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '363';
+      var APP_VER = '364';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

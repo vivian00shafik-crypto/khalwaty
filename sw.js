@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v372';
+const CACHE = 'khalwati-v373';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [
@@ -9,7 +9,7 @@ const CORE = [
   './silence-girl.jpg', './silence-girl-shush.jpg', './silence-boy.jpg', './silence-boy-shush.jpg',
   './icon-saints-praises.jpg', './icon-praise-david.jpg',
   './khalwaty-poster.js', './agpeya-texts.js', './psalms.js',
-  './logo.png', './psalm-frame-v372.jpg', './parchment-bg.jpg',
+  './logo.png', './psalm-frame-v373.png', './parchment-bg.jpg',
   './icon-192.png', './icon-v76-192.png', './icon-v76-512.png', './apple-touch-icon-v76.png',
   './wheel-bg-v298.webp', './wheel-inner-v298.webp', './prayer-alarm.mp3', './sawt-rabina.mp3', './bible-music-4.mp3'
 ];

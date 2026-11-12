@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="364" lang="ar" dir="rtl">
+<html data-app-ver="365" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1029,18 +1029,30 @@
 
     .psalm-field input {
       flex: 1;
+      min-width: 0;
       border: none;
-      border-bottom: 1.5px solid #d4c4a0;
-      background: transparent;
-      padding: 6px 4px;
+      border-bottom: 1.5px solid #c9a227;
+      background: rgba(255,253,248,0.55);
+      padding: 8px 10px;
       font-family: inherit;
-      font-size: 14px;
-      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      color: #2a1f14 !important;
+      -webkit-text-fill-color: #2a1f14 !important;
+      caret-color: #5c4033;
       outline: none;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .psalm-field input::placeholder {
+      color: #b0a090;
+      font-weight: 400;
+      -webkit-text-fill-color: #b0a090;
     }
 
     .psalm-field input:focus {
-      border-bottom-color: var(--gold);
+      border-bottom-color: #8a6a20;
+      background: rgba(255,253,248,0.9);
     }
 
     /* Action buttons */
@@ -1839,16 +1851,16 @@
 
     <!-- مزاميري اليوم -->
     <div class="card">
-      <div class="card-title" style="justify-content: space-between;">
-        <div style="display:flex; align-items:center; gap:8px;" data-i18n="psalmsToday">
-          <span class="icon">🎵</span> مزاميري اليوم
-          <span class="psalm-count" id="psalmCount" style="font-weight:normal;">العدد: 0</span>
+      <div class="card-title" style="justify-content: space-between; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span data-i18n="psalmsToday"><span class="icon">🎵</span> مزاميري اليوم</span>
+          <span class="psalm-count" id="psalmCount" style="font-weight:700;color:#6b5b3e;">العدد: 0</span>
         </div>
-        <button onclick="openPsalmSelector()" style="background:var(--gold); color:white; border:none; border-radius:20px; padding:6px 12px; font-size:12px; font-family:inherit; cursor:pointer;">
+        <button type="button" onclick="openPsalmSelector()" style="background:var(--gold); color:white; border:none; border-radius:20px; padding:6px 12px; font-size:12px; font-family:inherit; cursor:pointer;">
           ➕ اختيار
         </button>
       </div>
-      <div id="selectedPsalmsHome" style="margin:8px 0 4px;font-size:13px;"></div>
+      <div id="selectedPsalmsHome" style="margin:8px 0 8px;font-size:13px;min-height:28px;display:flex;flex-wrap:wrap;gap:6px;"></div>
       <div class="psalm-fields">
         <div class="psalm-field">
           <label data-i18n="thanksLabel">شكراً يارب على</label>
@@ -4972,6 +4984,7 @@ function applyWheelLanguage() {
       try { if (typeof applyWheelLanguage === 'function') applyWheelLanguage(); } catch (eW0) {}
       try { if (typeof renderDailyIcons === 'function') renderDailyIcons(); } catch (e3) {}
       try { if (typeof renderServices === 'function') renderServices(); } catch (e5) {}
+      try { if (typeof renderPsalms === 'function') renderPsalms(); } catch (ePs) {}
       try {
         document.querySelectorAll('[data-i18n-btn]').forEach(function (el) {
           var k = el.getAttribute('data-i18n-btn');
@@ -5509,21 +5522,39 @@ function renderBible() {
     }
 
     function renderPsalms() {
-      const data = loadData();
-      selectedPsalms = data.selectedPsalms || [];
-      document.getElementById('psalmCount').textContent = `العدد: ${selectedPsalms.length}`;
-      document.getElementById('psalmThanks').value = data.psalmThanks || '';
-      document.getElementById('psalmTell').value = data.psalmTell || '';
-      document.getElementById('psalmRequest').value = data.psalmRequest || '';
-      const home = document.getElementById('selectedPsalmsHome');
-      if (home) {
-        if (!selectedPsalms.length) {
-          home.innerHTML = '';
-        } else {
-          home.innerHTML = selectedPsalms.map(n =>
-            `<button onclick="readPsalm(${n})" style="margin:2px;padding:4px 10px;border-radius:14px;border:1px solid var(--gold);background:#fff9e8;font-family:inherit;font-size:12px;cursor:pointer;">مزمور ${n} 📖</button>`
-          ).join('');
+      try {
+        const data = loadData() || {};
+        var arr = data.selectedPsalms || [];
+        if (!Array.isArray(arr)) arr = [];
+        selectedPsalms = arr.map(function (n) { return parseInt(n, 10); }).filter(function (n) { return n >= 1 && n <= 150; });
+        selectedPsalms.sort(function (a, b) { return a - b; });
+
+        var pc = document.getElementById('psalmCount');
+        if (pc) {
+          var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+          pc.textContent = isEn ? ('Count: ' + selectedPsalms.length) : ('العدد: ' + selectedPsalms.length);
         }
+        var th = document.getElementById('psalmThanks');
+        var tl = document.getElementById('psalmTell');
+        var rq = document.getElementById('psalmRequest');
+        // لا تمسخ اللي المستخدم بيكتبه لو الفوكس على الحقل
+        if (th && document.activeElement !== th) th.value = data.psalmThanks || '';
+        if (tl && document.activeElement !== tl) tl.value = data.psalmTell || '';
+        if (rq && document.activeElement !== rq) rq.value = data.psalmRequest || '';
+
+        var home = document.getElementById('selectedPsalmsHome');
+        if (home) {
+          if (!selectedPsalms.length) {
+            home.innerHTML = '<span style="color:#9a8a70;font-size:12px;">لم يتم اختيار مزامير بعد — اضغطي «اختيار»</span>';
+          } else {
+            home.innerHTML = selectedPsalms.map(function (n) {
+              return '<button type="button" onclick="readPsalm(' + n + ')" style="margin:0;padding:6px 12px;border-radius:14px;border:1px solid #c9a227;background:#fff9e8;color:#3e2f1c;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">مزمور ' + n + ' 📖</button>';
+            }).join('');
+          }
+        }
+        try { if (typeof renderSelectedPsalmsBar === 'function') renderSelectedPsalmsBar(); } catch (eBar) {}
+      } catch (e) {
+        console.error('renderPsalms', e);
       }
     }
 
@@ -10386,12 +10417,29 @@ function openKatameros(dateObj) {
       if (window._psalmSaveTimer) clearTimeout(window._psalmSaveTimer);
       window._psalmSaveTimer = setTimeout(function () {
         try {
-          var data = loadData();
-          data.selectedPsalms = selectedPsalms;
+          var data = loadData() || {};
+          data.selectedPsalms = selectedPsalms.slice();
           saveData(data);
+          try { renderPsalms(); } catch (eR) {}
         } catch (e) {}
-      }, 300);
+      }, 200);
       try { renderSelectedPsalmsBar(); } catch (e2) {}
+      // حدّث الصفحة الرئيسية فورًا
+      try {
+        var home = document.getElementById('selectedPsalmsHome');
+        var pc2 = document.getElementById('psalmCount');
+        if (pc2) {
+          var isEn2 = (typeof getAppLang === 'function' && getAppLang() === 'en');
+          pc2.textContent = isEn2 ? ('Count: ' + selectedPsalms.length) : ('العدد: ' + selectedPsalms.length);
+        }
+        if (home) {
+          home.innerHTML = selectedPsalms.length
+            ? selectedPsalms.map(function (n) {
+                return '<button type="button" onclick="readPsalm(' + n + ')" style="margin:0;padding:6px 12px;border-radius:14px;border:1px solid #c9a227;background:#fff9e8;color:#3e2f1c;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">مزمور ' + n + ' 📖</button>';
+              }).join('')
+            : '<span style="color:#9a8a70;font-size:12px;">لم يتم اختيار مزامير بعد — اضغطي «اختيار»</span>';
+        }
+      } catch (eH) {}
     }
 
     function getVanDyckPsalmsBook() {
@@ -10445,12 +10493,20 @@ function openKatameros(dateObj) {
     
     // Save psalm text fields on change
     function setupPsalmInputs() {
-      ['psalmThanks', 'psalmTell', 'psalmRequest'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-          const data = loadData();
-          data[id] = document.getElementById(id).value;
-          saveData(data);
-        });
+      ['psalmThanks', 'psalmTell', 'psalmRequest'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el || el._psalmBound) return;
+        el._psalmBound = true;
+        function persist() {
+          try {
+            var data = loadData() || {};
+            data[id] = el.value || '';
+            saveData(data);
+          } catch (e) {}
+        }
+        el.addEventListener('input', persist);
+        el.addEventListener('change', persist);
+        el.addEventListener('blur', persist);
       });
     }
 
@@ -18492,7 +18548,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '364';
+      var APP_VER = '365';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

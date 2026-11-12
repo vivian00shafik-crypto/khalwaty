@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="367" lang="ar" dir="rtl">
+<html data-app-ver="368" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1464,6 +1464,21 @@
     #modalTextarea.hl-green { background: #d4edda; }
     #modalTextarea.hl-blue { background: #d6eaf8; }
     #modalTextarea.hl-pink { background: #f8d7e8; }
+
+    /* إخفاء خط التدقيق الإملائي الأحمر + تأكيد قابلية الكتابة */
+    textarea, input[type="text"], input:not([type]), #modalTextarea, #psalmThanks, #psalmTell, #psalmRequest {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
+      -webkit-touch-callout: default;
+      touch-action: manipulation;
+    }
+    textarea, #modalTextarea {
+      font-size: 16px !important; /* يمنع زوم iOS ويثبت الكيبورد */
+      color: #2a1f14 !important;
+      caret-color: #5c4033;
+    }
+
     .verse-menu {
       position: fixed; z-index: 10000; background: #fffdf8; border: 2px solid var(--gold);
       border-radius: 16px; box-shadow: 0 12px 36px rgba(0,0,0,.28); padding: 8px 12px 12px;
@@ -2161,7 +2176,7 @@
         <span class="voice-mic-status" id="voiceMicStatus"></span>
         <button type="button" class="voice-mic-btn" id="modalVoiceMic" title="كتابة صوتية" onclick="toggleVoiceTyping('modalTextarea', this)">🎤</button>
       </div>
-      <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث"></textarea>
+      <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث" spellcheck="false" autocorrect="off" autocapitalize="sentences" autocomplete="off" lang="ar" dir="rtl" inputmode="text" enterkeyhint="enter"></textarea>
       <div id="likedReadingsHistory" style="display:none;margin-top:12px;text-align:right;"></div>
       <button class="save-btn" onclick="saveText()" data-i18n-btn="save">حفظ</button>
       <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;" data-i18n-btn="downloadPdf">تحميل PDF</button>
@@ -10084,6 +10099,32 @@ function openKatameros(dateObj) {
         }
       } catch (eHistUI) { console.log('liked hist ui', eHistUI); }
       document.getElementById('textModal').classList.add('active');
+      // تفعيل لوحة المفاتيح على الموبايل + إيقاف الخط الأحمر
+      try {
+        var taFocus = document.getElementById('modalTextarea');
+        if (taFocus) {
+          taFocus.setAttribute('spellcheck', 'false');
+          taFocus.setAttribute('autocorrect', 'off');
+          taFocus.setAttribute('autocomplete', 'off');
+          taFocus.setAttribute('inputmode', 'text');
+          taFocus.readOnly = false;
+          taFocus.disabled = false;
+          // تأخير بسيط بعد فتح المودال عشان الموبايل يظهر الكيبورد
+          setTimeout(function () {
+            try {
+              taFocus.focus({ preventScroll: false });
+              // وضع المؤشر في آخر النص
+              var len = (taFocus.value || '').length;
+              try { taFocus.setSelectionRange(len, len); } catch (eS) {}
+            } catch (eF) {
+              try { taFocus.focus(); } catch (eF2) {}
+            }
+          }, 120);
+          setTimeout(function () {
+            try { taFocus.focus(); } catch (e3) {}
+          }, 320);
+        }
+      } catch (eFocus) {}
     }
 
     function highlightTextModal(color) {
@@ -10492,6 +10533,17 @@ function openKatameros(dateObj) {
 
     
     // Save psalm text fields on change
+    function disableSpellcheckEverywhere() {
+      try {
+        document.querySelectorAll('textarea, input[type="text"]').forEach(function (el) {
+          el.setAttribute('spellcheck', 'false');
+          el.setAttribute('autocorrect', 'off');
+        });
+      } catch (e) {}
+    }
+    try { document.addEventListener('DOMContentLoaded', disableSpellcheckEverywhere); } catch (e0) {}
+    try { setTimeout(disableSpellcheckEverywhere, 500); } catch (e1) {}
+
     function setupPsalmInputs() {
       ['psalmThanks', 'psalmTell', 'psalmRequest'].forEach(function (id) {
         var el = document.getElementById(id);
@@ -18597,7 +18649,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '367';
+      var APP_VER = '368';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,4 +1,4 @@
-const CACHE = 'khalwati-v298';
+const CACHE = 'khalwati-v371';
 
 // أساسيات صغيرة تُحفظ فور التثبيت
 const CORE = [

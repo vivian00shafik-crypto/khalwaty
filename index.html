@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="370" lang="ar" dir="rtl">
+<html data-app-ver="371" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1142,6 +1142,76 @@
       }
       .psalm-row label { font-size: 11.5px; padding: 6px 4px; }
       .psalm-seal { width: 46px; height: 46px; font-size: 10px; }
+    }
+
+
+    /* ===== v371: مستطيل المزامير بشكل البردي (حسب الصورة المرفقة) ===== */
+    .psalm-scroll {
+      margin: 12px 2px 22px;
+      padding: 16px 14px 30px;
+      background:
+        radial-gradient(ellipse at 10% 6%, rgba(255,240,205,0.35), transparent 40%),
+        radial-gradient(ellipse at 90% 94%, rgba(60,35,15,0.35), transparent 50%),
+        repeating-linear-gradient(95deg, rgba(60,35,15,0.07) 0 2px, transparent 2px 7px),
+        linear-gradient(160deg, #a98258 0%, #8d6a42 45%, #6f4f2c 100%);
+      box-shadow: 0 10px 26px rgba(60,38,18,0.35), inset 0 0 18px rgba(40,22,8,0.45);
+    }
+    .psalm-scroll-frame {
+      padding: 6px;
+      border: 4px solid #3f3023;
+      border-radius: 2px;
+      background: #3f3023;
+      gap: 0;
+      box-shadow: inset 0 0 0 2px rgba(120,95,65,0.5);
+    }
+    .psalm-row {
+      grid-template-columns: 1fr 1fr;
+      min-height: 76px;
+      border: none;
+      border-bottom: 3px solid #3f3023;
+      background: #e4d4b2;
+      gap: 0;
+    }
+    .psalm-row:last-child { border-bottom: none; }
+    .psalm-row label {
+      order: -1;
+      justify-content: flex-start;
+      text-align: right;
+      padding: 8px 14px 8px 8px;
+      font-size: clamp(16px, 5.2vw, 23px);
+      font-weight: 800;
+      color: #1d1710;
+      line-height: 1.35;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(255,248,225,0.55), transparent 60%),
+        #e6d8b8;
+      border-right: none;
+      border-left: 3px solid #3f3023;
+    }
+    .psalm-row input {
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(255,248,225,0.5), transparent 60%),
+        #e6d8b8;
+      font-size: 16px;
+      padding: 10px 12px;
+    }
+    .psalm-row input:focus { background: #f2e8cf; }
+    .psalm-row input::placeholder { color: #bfae8a; -webkit-text-fill-color: #bfae8a; }
+    .psalm-seal {
+      left: auto;
+      right: 8px;
+      bottom: -8px;
+      width: 62px;
+      height: 62px;
+      font-size: 11px;
+      transform: none;
+      border: 3px solid #e9d9bd;
+    }
+    .psalm-seal::before { font-size: 18px; margin-bottom: 2px; }
+    @media (max-width: 360px) {
+      .psalm-row { grid-template-columns: 1fr 1fr; min-height: 64px; }
+      .psalm-row label { font-size: 15px; padding: 6px 10px 6px 4px; }
+      .psalm-seal { width: 52px; height: 52px; }
     }
 
 
@@ -18742,7 +18812,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '370';
+      var APP_VER = '371';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

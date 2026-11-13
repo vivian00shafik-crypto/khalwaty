@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="373" lang="ar" dir="rtl">
+<html data-app-ver="374" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -8929,7 +8929,7 @@ function onPrepareImageSelected(idx, input) {
               var lb = makeCommentaryBox(ref, text); lb.id = 'bcLinksBox';
               out.parentNode.insertBefore(lb, out.nextSibling);
             } catch (e) { console.log('bc links', e); }
-            if (!TAFSIR_WORKER_URL) { out.textContent = localBody; return; }
+            if (!TAFSIR_WORKER_URL) { out.textContent = 'خدمة التفسير الذكي غير مفعّلة حاليًا.'; return; }
             out.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
             go.disabled = true;
             var ctrl2 = new AbortController();
@@ -8947,12 +8947,12 @@ function onPrepareImageSelected(idx, input) {
                 out.textContent = aiBody;
                 window._lastTafsir = { ref: ref, text: text, content: aiBody };
               } else {
-                out.textContent = 'تعذّر التفسير الذكي الآن، هذا تفسير مبسّط من التطبيق:\n\n' + localBody;
+                out.textContent = 'تعذّر توليد التفسير الذكي الآن. حاول مرة أخرى.';
               }
             }).catch(function () {
               clearTimeout(tm2);
               go.disabled = false;
-              out.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا تفسير مبسّط من التطبيق:\n\n' + localBody;
+              out.textContent = 'تعذّر الاتصال بالتفسير الذكي. تحققي من الإنترنت ثم أعدي المحاولة.';
             });
           });
         }
@@ -15458,75 +15458,163 @@ function showDesignSavePreview(url, name, silent, blob) {
           return;
         }
         closeVerseMenu();
-        window._lastTafsir = { ref: ref, text: txt, content: generateOrthodoxTafsir(ref, txt) };
-        var content = window._lastTafsir.content;
+
+        window._lastTafsir = { ref: ref, text: txt, content: '' };
+
         var titleEl2 = document.getElementById('prayerTitle');
         if (titleEl2) titleEl2.textContent = 'تفسير الآية (أرثوذكسي)';
         var modal2 = document.getElementById('prayerModal');
         if (modal2) { modal2.classList.add('active'); modal2.style.zIndex = '5000'; }
+
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'text-align:right;';
+
+        // شاشة تحميل فقط — بدون تفسير محلي
+        var loading = document.createElement('div');
+        loading.id = 'tafsirLoadingBox';
+        loading.style.cssText = 'padding:28px 12px;text-align:center;color:#5c4033;';
+        loading.innerHTML =
+          '<div style="font-size:42px;line-height:1;margin-bottom:12px;animation:tafsirPulse 1.2s ease-in-out infinite;">⏳</div>' +
+          '<div style="font-size:16px;font-weight:700;margin-bottom:6px;">جارٍ توليد التفسير…</div>' +
+          '<div style="font-size:13px;color:#8a7a60;line-height:1.6;">تفسير أرثوذكسي بالذكاء الاصطناعي<br>لحظة من فضلك</div>' +
+          (ref || txt ? ('<div style="margin-top:14px;font-size:12px;color:#6b5b3e;opacity:.9;">' + String(ref || '').replace(/</g,'&lt;') + '</div>') : '');
+
         var box = document.createElement('div');
-        box.style.cssText = 'text-align:right;line-height:1.95;font-size:14px;white-space:pre-line;';
-        box.textContent = content;
+        box.id = 'tafsirResultBox';
+        box.style.cssText = 'text-align:right;line-height:1.95;font-size:14px;white-space:pre-line;display:none;';
+
         var actions = document.createElement('div');
-        actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;';
+        actions.id = 'tafsirActionsBox';
+        actions.style.cssText = 'display:none;flex-wrap:wrap;gap:8px;margin-top:14px;';
         actions.innerHTML =
           '<button type="button" class="save-btn" id="tafsirSpeakBtn">🔊 استماع</button>' +
           '<button type="button" class="save-btn" id="tafsirPdfBtn" style="background:#5a7d4a;">📄 PDF</button>' +
-          '<button type="button" class="save-btn" id="tafsirDesignBtn">🎨 تصميم للتأمل</button>';
-        var wrap = document.createElement('div');
+          '<button type="button" class="save-btn" id="tafsirDesignBtn">🎨 تصميم للتأمل</button>' +
+          '<button type="button" class="save-btn" id="tafsirRetryBtn" style="background:#6b5b3e;">إعادة التوليد</button>';
+
+        wrap.appendChild(loading);
         wrap.appendChild(box);
         wrap.appendChild(actions);
+
         var pc = document.getElementById('prayerContent');
         pc.innerHTML = '';
         pc.appendChild(wrap);
         document.getElementById('prayerModal').classList.add('active');
-        document.getElementById('tafsirSpeakBtn').onclick = function() {
-          if (window._lastTafsir) speakText(window._lastTafsir.content);
-        };
-        document.getElementById('tafsirPdfBtn').onclick = function() {
-          if (!window._lastTafsir) return;
-          printHTML('تفسير ' + (window._lastTafsir.ref || ''), String(window._lastTafsir.content || '').replace(/\n/g, '<br>'));
-        };
-        document.getElementById('tafsirDesignBtn').onclick = function() {
-          if (!window._lastTafsir) return;
-          openVerseDesign(window._lastTafsir.content, 'تأمل — ' + (window._lastTafsir.ref || ''));
-        };
-        // روابط التفاسير الأرثوذكسية تحت التفسير
-        try { wrap.insertBefore(makeCommentaryBox(ref, txt), actions); } catch (e) { console.log('commentary links', e); }
-        // التفسير الذكي (Cloudflare Worker): لو فشل يبقى النص المحلي كما هو
-        if (TAFSIR_WORKER_URL) {
-          var aiNote = document.createElement('div');
-          aiNote.style.cssText = 'margin-top:10px;font-size:12px;color:#8a7a5a;text-align:right;';
-          aiNote.textContent = '⏳ جارٍ إعداد التفسير الذكي…';
-          wrap.insertBefore(aiNote, actions);
+
+        function bindActions() {
+          var speakBtn = document.getElementById('tafsirSpeakBtn');
+          var pdfBtn = document.getElementById('tafsirPdfBtn');
+          var designBtn = document.getElementById('tafsirDesignBtn');
+          var retryBtn = document.getElementById('tafsirRetryBtn');
+          if (speakBtn) speakBtn.onclick = function() {
+            if (window._lastTafsir && window._lastTafsir.content) speakText(window._lastTafsir.content);
+          };
+          if (pdfBtn) pdfBtn.onclick = function() {
+            if (!window._lastTafsir || !window._lastTafsir.content) return;
+            printHTML('تفسير ' + (window._lastTafsir.ref || ''), String(window._lastTafsir.content || '').replace(/\n/g, '<br>'));
+          };
+          if (designBtn) designBtn.onclick = function() {
+            if (!window._lastTafsir || !window._lastTafsir.content) return;
+            openVerseDesign(window._lastTafsir.content, 'تأمل — ' + (window._lastTafsir.ref || ''));
+          };
+          if (retryBtn) retryBtn.onclick = function() { startAiTafsir(); };
+        }
+        bindActions();
+
+        function showError(msg) {
+          loading.style.display = 'none';
+          box.style.display = 'block';
+          box.textContent = msg || 'تعذّر توليد التفسير الآن. تحققي من الإنترنت ثم اضغطي «إعادة التوليد».';
+          actions.style.display = 'flex';
+          var speakBtn = document.getElementById('tafsirSpeakBtn');
+          var pdfBtn = document.getElementById('tafsirPdfBtn');
+          var designBtn = document.getElementById('tafsirDesignBtn');
+          if (speakBtn) speakBtn.style.display = 'none';
+          if (pdfBtn) pdfBtn.style.display = 'none';
+          if (designBtn) designBtn.style.display = 'none';
+          // روابط مصادر خارجية عند الفشل فقط
+          try {
+            var oldL = document.getElementById('tafsirFailLinks');
+            if (oldL) oldL.remove();
+            if (typeof makeCommentaryBox === 'function') {
+              var lb = makeCommentaryBox(ref, txt);
+              lb.id = 'tafsirFailLinks';
+              wrap.insertBefore(lb, actions);
+            }
+          } catch (eL) {}
+        }
+
+        function showAiResult(aiContent) {
+          loading.style.display = 'none';
+          box.style.display = 'block';
+          box.textContent = aiContent;
+          actions.style.display = 'flex';
+          var speakBtn = document.getElementById('tafsirSpeakBtn');
+          var pdfBtn = document.getElementById('tafsirPdfBtn');
+          var designBtn = document.getElementById('tafsirDesignBtn');
+          if (speakBtn) speakBtn.style.display = '';
+          if (pdfBtn) pdfBtn.style.display = '';
+          if (designBtn) designBtn.style.display = '';
+          try {
+            var oldL = document.getElementById('tafsirFailLinks');
+            if (oldL) oldL.remove();
+            if (typeof makeCommentaryBox === 'function') {
+              wrap.insertBefore(makeCommentaryBox(ref, txt), actions);
+            }
+          } catch (e) { console.log('commentary links', e); }
+          window._lastTafsir = { ref: ref, text: txt, content: aiContent };
+        }
+
+        function startAiTafsir() {
+          if (!TAFSIR_WORKER_URL) {
+            showError('خدمة التفسير الذكي غير مفعّلة حاليًا.');
+            return;
+          }
+          loading.style.display = 'block';
+          box.style.display = 'none';
+          actions.style.display = 'none';
+          box.textContent = '';
+          try {
+            var oldL = document.getElementById('tafsirFailLinks');
+            if (oldL) oldL.remove();
+          } catch (e0) {}
+
           var ctrl = new AbortController();
           var tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 70000);
+          var payload = {
+            ref: ref,
+            verseText: txt,
+            sources: (typeof commentarySources === 'function' ? commentarySources(ref, txt) : []),
+            tradition: 'coptic_orthodox',
+            lang: 'ar'
+          };
           fetch(TAFSIR_WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ref: ref, verseText: txt, sources: commentarySources(ref, txt) }),
+            body: JSON.stringify(payload),
             signal: ctrl.signal
           }).then(function (res) { return res.json(); }).then(function (data) {
             clearTimeout(tm);
-            if (data && data.mode === 'ai' && data.text) {
+            if (data && (data.mode === 'ai' || data.text) && data.text) {
               var aiContent = '【 الآية 】\n' + (ref ? ref + '\n' : '') + txt + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
-              box.textContent = aiContent;
-              if (window._lastTafsir) window._lastTafsir.content = aiContent;
-              aiNote.remove();
+              showAiResult(aiContent);
             } else {
-              aiNote.textContent = 'تعذّر التفسير الذكي الآن، هذا تفسير مبسّط من التطبيق.';
+              showError('تعذّر توليد التفسير الذكي الآن. حاول مرة أخرى.');
             }
           }).catch(function () {
             clearTimeout(tm);
-            aiNote.textContent = 'تعذّر الاتصال بالتفسير الذكي، هذا تفسير مبسّط من التطبيق.';
+            showError('تعذّر الاتصال بخدمة التفسير. تحققي من الإنترنت ثم أعدي المحاولة.');
           });
         }
-        addBackToChapterBtn(document.getElementById('prayerContent'));
+
+        startAiTafsir();
+        try { if (typeof addBackToChapterBtn === 'function') addBackToChapterBtn(document.getElementById('prayerContent')); } catch (eB) {}
       } catch (err) {
         console.log('openVerseTafsir', err);
         showToast('تعذر فتح التفسير');
       }
     }
+
 
     function escapeMeaningHtml(s) {
       return String(s || '')
@@ -19024,7 +19112,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '373';
+      var APP_VER = '374';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

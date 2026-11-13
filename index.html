@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="368" lang="ar" dir="rtl">
+<html data-app-ver="371" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1009,31 +1009,76 @@
       margin-bottom: 10px;
     }
 
-    .psalm-fields {
+    /* لوحة المزامير بشكل الرق */
+    .psalm-scroll {
+      position: relative;
+      margin: 10px 2px 18px;
+      padding: 18px 14px 28px;
+      border-radius: 6px;
+      background:
+        radial-gradient(ellipse at 12% 8%, rgba(255,248,230,0.4), transparent 42%),
+        radial-gradient(ellipse at 88% 92%, rgba(90,55,25,0.18), transparent 48%),
+        linear-gradient(160deg, #c9ae86 0%, #b8956a 28%, #a67c52 62%, #8f6844 100%);
+      box-shadow:
+        0 10px 28px rgba(70,45,20,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        inset 0 -2px 6px rgba(60,35,15,0.18);
+      /* حواف مهترئة خفيفة */
+      clip-path: polygon(
+        1% 2%, 4% 0%, 9% 2%, 14% 0.5%, 20% 2.5%, 28% 0%, 35% 2%, 42% 0.5%, 50% 2%, 58% 0%, 65% 2.5%, 72% 0.5%, 80% 2%, 88% 0%, 95% 2%, 99% 1%,
+        100% 8%, 98% 15%, 100% 22%, 98.5% 30%, 100% 38%, 98% 48%, 100% 58%, 98.5% 68%, 100% 78%, 98% 88%, 100% 96%,
+        96% 100%, 88% 98%, 78% 100%, 68% 98.5%, 58% 100%, 48% 98%, 38% 100%, 28% 98.5%, 18% 100%, 10% 98%, 3% 100%, 0% 95%,
+        2% 88%, 0% 78%, 1.5% 68%, 0% 58%, 2% 48%, 0% 38%, 1.5% 28%, 0% 18%, 2% 10%
+      );
+    }
+    .psalm-scroll-frame {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
+      padding: 8px;
+      border-radius: 4px;
+      border: 3px solid #6b4e2e;
+      background:
+        linear-gradient(180deg, #5c4028 0%, #7a5a38 8%, #5c4028 16%, #7a5a38 50%, #5c4028 84%, #7a5a38 92%, #5c4028 100%);
+      box-shadow:
+        inset 0 0 0 2px rgba(210, 180, 130, 0.35),
+        inset 0 0 12px rgba(0,0,0,0.25);
     }
-
-    .psalm-field {
+    .psalm-row {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: stretch;
+      min-height: 64px;
+      border: 1.5px solid #6b4e2e;
+      border-bottom-width: 0;
+      background: #f7f0e2;
+      overflow: hidden;
+    }
+    .psalm-row:last-child {
+      border-bottom-width: 1.5px;
+    }
+    .psalm-row label {
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .psalm-field label {
+      justify-content: center;
+      text-align: center;
+      padding: 10px 8px;
       font-size: 13px;
-      color: var(--brown);
-      min-width: 110px;
+      font-weight: 700;
+      color: #3a2a18;
+      line-height: 1.4;
+      background:
+        linear-gradient(90deg, #efe4d0 0%, #f7f0e2 100%);
+      border-right: 1.5px solid #6b4e2e;
+      direction: rtl;
+      letter-spacing: 0.2px;
     }
-
-    .psalm-field input {
-      flex: 1;
+    .psalm-row input {
+      width: 100%;
       min-width: 0;
       border: none;
-      border-bottom: 1.5px solid #c9a227;
-      background: rgba(255,253,248,0.55);
-      padding: 8px 10px;
+      background: #faf6ec;
+      padding: 12px 12px;
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
@@ -1041,21 +1086,81 @@
       -webkit-text-fill-color: #2a1f14 !important;
       caret-color: #5c4033;
       outline: none;
-      border-radius: 8px 8px 0 0;
+      text-align: right;
+      direction: rtl;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
     }
-
-    .psalm-field input::placeholder {
-      color: #b0a090;
+    .psalm-row input::placeholder {
+      color: #d0c4ae;
       font-weight: 400;
-      -webkit-text-fill-color: #b0a090;
+      -webkit-text-fill-color: #d0c4ae;
+    }
+    .psalm-row input:focus {
+      background: #fffdf6;
+    }
+    .psalm-seal {
+      position: absolute;
+      left: 6px;
+      bottom: -10px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #f3e2c0;
+      line-height: 1.15;
+      background:
+        radial-gradient(circle at 32% 28%, #c46a55, #8a3228 55%, #5c1e18 100%);
+      box-shadow:
+        0 5px 14px rgba(70,25,15,0.4),
+        inset 0 2px 0 rgba(255,220,180,0.28),
+        inset 0 -3px 6px rgba(40,10,8,0.35);
+      border: 2px solid rgba(90,35,25,0.55);
+      transform: rotate(-8deg);
+      z-index: 2;
+      pointer-events: none;
+      padding: 4px;
+    }
+    .psalm-seal::before {
+      content: '☸';
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 1px;
     }
 
-    .psalm-field input:focus {
-      border-bottom-color: #8a6a20;
-      background: rgba(255,253,248,0.9);
+    @media (max-width: 360px) {
+      .psalm-row {
+        grid-template-columns: 1fr minmax(88px, 42%);
+        min-height: 48px;
+      }
+      .psalm-row label { font-size: 11.5px; padding: 6px 4px; }
+      .psalm-seal { width: 46px; height: 46px; font-size: 10px; }
     }
+
 
     /* Action buttons */
+
+    input[type="time"].goal-time-input {
+      position: relative;
+      direction: ltr;
+      text-align: center;
+    }
+    input[type="time"].goal-time-input::-webkit-calendar-picker-indicator {
+      opacity: 1;
+      display: block;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      margin-left: 4px;
+    }
+
     .action-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1876,19 +1981,22 @@
         </button>
       </div>
       <div id="selectedPsalmsHome" style="margin:8px 0 8px;font-size:13px;min-height:28px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      <div class="psalm-fields">
-        <div class="psalm-field">
-          <label data-i18n="thanksLabel">شكراً يارب على</label>
-          <input type="text" id="psalmThanks" placeholder="...">
+      <div class="psalm-scroll" aria-label="مزاميري">
+        <div class="psalm-scroll-frame">
+          <div class="psalm-row">
+            <input type="text" id="psalmThanks" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="thanksLabel" for="psalmThanks">شكراً يارب على</label>
+          </div>
+          <div class="psalm-row">
+            <input type="text" id="psalmTell" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="tellLabel" for="psalmTell">عاوز أقولك يارب</label>
+          </div>
+          <div class="psalm-row">
+            <input type="text" id="psalmRequest" placeholder="..." spellcheck="false" autocomplete="off">
+            <label data-i18n="requestLabel" for="psalmRequest">طلبة من أجل</label>
+          </div>
         </div>
-        <div class="psalm-field">
-          <label data-i18n="tellLabel">عاوز أقولك يارب</label>
-          <input type="text" id="psalmTell" placeholder="...">
-        </div>
-        <div class="psalm-field">
-          <label data-i18n="requestLabel">طلبة من أجل</label>
-          <input type="text" id="psalmRequest" placeholder="...">
-        </div>
+        <div class="psalm-seal" title="خلوتي">خلوتي</div>
       </div>
     </div>
 
@@ -3061,10 +3169,10 @@
             </div>
             <input type="text" class="goal-text-input" id="goalText${i}" value="${text.replace(/"/g, '&quot;')}" placeholder="اكتب هدفك هنا..." class="no-voice goal-input" oninput="saveGoalText(${i})">
             <div style="width:100%; display:flex; gap:8px; margin-top:4px; padding-right:4px; align-items:center; font-size:12px; color:var(--brown);">
-              <span>من</span>
-              <input type="time" id="goalFrom${i}" value="${from}" onchange="saveGoalTime(${i})" style="border:1px solid #d4c4a0; border-radius:8px; padding:4px; font-family:inherit; font-size:12px;">
-              <span>إلى</span>
-              <input type="time" id="goalTo${i}" value="${to}" onchange="saveGoalTime(${i})" style="border:1px solid #d4c4a0; border-radius:8px; padding:4px; font-family:inherit; font-size:12px;">
+              <span style="display:inline-flex;align-items:center;gap:4px;"><span aria-hidden="true">🕒</span> من</span>
+              <input type="time" id="goalFrom${i}" value="${from}" onchange="saveGoalTime(${i})" class="goal-time-input" style="border:1.5px solid #c9a227; border-radius:10px; padding:6px 8px; font-family:inherit; font-size:13px; background:#fffdf8; color:#3e2f1c; min-width:108px;">
+              <span style="display:inline-flex;align-items:center;gap:4px;"><span aria-hidden="true">🕒</span> إلى</span>
+              <input type="time" id="goalTo${i}" value="${to}" onchange="saveGoalTime(${i})" class="goal-time-input" style="border:1.5px solid #c9a227; border-radius:10px; padding:6px 8px; font-family:inherit; font-size:13px; background:#fffdf8; color:#3e2f1c; min-width:108px;">
             </div>
           </div>
         `;
@@ -11793,20 +11901,371 @@ function updateSelectedSinsCount() {
 
     const DAILY_VERSES = [
       { theme: 'رجاء', ar: 'لأَنِّي عَارِفٌ الأَفْكَارَ الَّتِي أَنَا مُفَتَّكِرٌ بِهَا عَنْكُمْ، يَقُولُ الرَّبُّ، أَفْكَارَ سَلاَمٍ لاَ لِلشَّرِّ، لأُعْطِيَكُمْ آخِرَةً وَرَجَاءً. (إرميا 29: 11)', en: 'For I know the thoughts that I think toward you, says the Lord, thoughts of peace and not of evil, to give you a future and a hope. (Jer 29:11)' },
-      { theme: 'سلام', ar: 'سَلاَمًا أَتْرُكُ لَكُمْ. سَلاَمِي أُعْطِيكُمْ. لَيْسَ كَمَا يُعْطِي الْعَالَمُ أُعْطِيكُمْ أَنَا. لاَ تَضْطَرِبْ قُلُوبُكُمْ وَلاَ تَرْهَبْ. (يوحنا 14: 27)', en: 'Peace I leave with you, My peace I give to you... Let not your heart be troubled, neither let it be afraid. (John 14:27)' },
+      { theme: 'سلام', ar: 'سَلاَمًا أَتْرُكُ لَكُمْ. سَلاَمِي أُعْطِيكُمْ. لَيْسَ كَمَا يُعْطِي الْعَالَمُ أُعْطِيكُمْ أَنَا. لاَ تَضْطَرِبْ قُلُوبُكُمْ وَلاَ تَرْهَبْ. (يوحنا 14: 27)', en: 'Peace I leave with you, My peace I give to you. Let not your heart be troubled, neither let it be afraid. (John 14:27)' },
       { theme: 'محبة', ar: 'مَنْ لاَ يُحِبُّ لَمْ يَعْرِفِ اللهَ، لأَنَّ اللهَ مَحَبَّةٌ. (1 يوحنا 4: 8)', en: 'He who does not love does not know God, for God is love. (1 John 4:8)' },
       { theme: 'غفران', ar: 'إِنِ اعْتَرَفْنَا بِخَطَايَانَا فَهُوَ أَمِينٌ وَعَادِلٌ، حَتَّى يَغْفِرَ لَنَا خَطَايَانَا وَيُطَهِّرَنَا مِنْ كُلِّ إِثْمٍ. (1 يوحنا 1: 9)', en: 'If we confess our sins, He is faithful and just to forgive us our sins and to cleanse us from all unrighteousness. (1 John 1:9)' },
       { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ بِكُلِّ قَلْبِكَ، وَعَلَى فَهْمِكَ لاَ تَعْتَمِدْ. (أمثال 3: 5)', en: 'Trust in the Lord with all your heart, and lean not on your own understanding. (Prov 3:5)' },
       { theme: 'فرح', ar: 'افْرَحُوا فِي الرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: افْرَحُوا. (فيلبي 4: 4)', en: 'Rejoice in the Lord always. Again I will say, rejoice! (Phil 4:4)' },
-      { theme: 'رجاء', ar: 'وَالآنَ يَا بَنِيَّ اثْبُتُوا فِيهِ، حَتَّى مَتَى أَظْهَرَ يَكُونُ لَنَا ثِقَةٌ، وَلاَ نَخْجَلَ مِنْهُ فِي مَجِيئِهِ. (1 يوحنا 2: 28)', en: 'And now, little children, abide in Him, that when He appears, we may have confidence... (1 John 2:28)' },
-      { theme: 'سلام', ar: 'وَلْيَمْلِكْ فِي قُلُوبِكُمْ سَلاَمُ اللهِ الَّذِي إِلَيْهِ دُعِيتُمْ فِي جَسَدٍ وَاحِدٍ. (كولوسي 3: 15)', en: 'And let the peace of God rule in your hearts, to which also you were called in one body. (Col 3:15)' },
-      { theme: 'محبة', ar: 'هذِهِ هِيَ وَصِيَّتِي أَنْ تُحِبُّوا بَعْضُكُمْ بَعْضًا كَمَا أَحْبَبْتُكُمْ. (يوحنا 15: 12)', en: 'This is My commandment, that you love one another as I have loved you. (John 15:12)' },
+      { theme: 'صبر', ar: 'وَلْيَكُنْ لَكُمْ صَبْرٌ، لأَنَّ مَجِيءَ الرَّبِّ قَدِ اقْتَرَبَ. (يعقوب 5: 8)', en: 'You also be patient. Establish your hearts, for the coming of the Lord is at hand. (James 5:8)' },
+      { theme: 'تعزية', ar: 'مُبَارَكٌ اللهُ أَبُو رَبِّنَا يَسُوعَ الْمَسِيحِ، أَبُو الرَّأْفَةِ وَإِلهُ كُلِّ تَعْزِيَةٍ. (2 كورنثوس 1: 3)', en: 'Blessed be the God and Father of our Lord Jesus Christ, the Father of mercies and God of all comfort. (2 Cor 1:3)' },
+      { theme: 'طول أناة', ar: 'اَلرَّبُّ طَوِيلُ الرُّوحِ وَعَظِيمُ الْقُدْرَةِ، وَلَكِنَّهُ لاَ يُبَرِّئُ الْبَتَّةَ. (ناحوم 1: 3)', en: 'The Lord is slow to anger and great in power. (Nahum 1:3)' },
+      { theme: 'رجاء', ar: 'اَلرَّجَاءُ لاَ يُخْزِي، لأَنَّ مَحَبَّةَ اللهِ قَدِ انْسَكَبَتْ فِي قُلُوبِنَا بِالرُّوحِ الْقُدُسِ. (رومية 5: 5)', en: 'Now hope does not disappoint, because the love of God has been poured out in our hearts by the Holy Spirit. (Rom 5:5)' },
+      { theme: 'رجاء', ar: 'وَنَحْنُ نَعْلَمُ أَنَّ كُلَّ الأَشْيَاءِ تَعْمَلُ مَعًا لِلْخَيْرِ لِلَّذِينَ يُحِبُّونَ اللهَ. (رومية 8: 28)', en: 'And we know that all things work together for good to those who love God. (Rom 8:28)' },
+      { theme: 'رجاء', ar: 'اِنْتَظِرِ الرَّبَّ. لِيَتَشَدَّدْ وَلْيَتَشَجَّعْ قَلْبُكَ، وَانْتَظِرِ الرَّبَّ. (مزمور 27: 14)', en: 'Wait on the Lord; be of good courage, and He shall strengthen your heart. (Psalm 27:14)' },
+      { theme: 'رجاء', ar: 'لأَنَّنَا بِالرَّجَاءِ خَلَصْنَا. (رومية 8: 24)', en: 'For we were saved in this hope. (Rom 8:24)' },
+      { theme: 'رجاء', ar: 'وَالرَّجَاءُ الْمَوْضُوعُ لَنَا فِي السَّمَاءِ، الَّذِي سَمِعْتُمْ بِهِ قَبْلاً فِي كَلِمَةِ الْحَقِّ. (كولوسي 1: 5)', en: 'Because of the hope which is laid up for you in heaven. (Col 1:5)' },
+      { theme: 'فرح', ar: 'جَعَلْتَنِي أَعْرِفُ سَبِيلَ الْحَيَاةِ. أَمَامَكَ شِبَعُ سُرُورٍ. (مزمور 16: 11)', en: 'You will show me the path of life; in Your presence is fullness of joy. (Psalm 16:11)' },
+      { theme: 'فرح', ar: 'هذَا هُوَ الْيَوْمُ الَّذِي صَنَعَهُ الرَّبُّ. نَبْتَهِجُ وَنَفْرَحُ فِيهِ. (مزمور 118: 24)', en: 'This is the day the Lord has made; we will rejoice and be glad in it. (Psalm 118:24)' },
+      { theme: 'فرح', ar: 'تُعَرِّفُنِي سَبِيلَ الْحَيَاةِ. نُورٌ فِي وَجْهِكَ. (مزمور 89: 15)', en: 'Blessed are the people who know the joyful sound! They walk, O Lord, in the light of Your countenance. (Psalm 89:15)' },
+      { theme: 'فرح', ar: 'فَرَحًا أَفْرَحُ بِالرَّبِّ. أَبْتَهِجُ بِإِلهِ خَلاَصِي. (حبقوق 3: 18)', en: 'Yet I will rejoice in the Lord, I will joy in the God of my salvation. (Hab 3:18)' },
+      { theme: 'فرح', ar: 'قَدْ كَلَّمْتُكُمْ بِهذَا لِيَكُونَ لَكُمْ فِيَّ سَلاَمٌ. فِي الْعَالَمِ سَيَكُونُ لَكُمْ ضِيقٌ، وَلكِنْ ثِقُوا: أَنَا قَدْ غَلَبْتُ الْعَالَمَ. (يوحنا 16: 33)', en: 'These things I have spoken to you, that in Me you may have peace. In the world you will have tribulation; but be of good cheer, I have overcome the world. (John 16:33)' },
       { theme: 'غفران', ar: 'وَكُونُوا لُطَفَاءَ بَعْضُكُمْ نَحْوَ بَعْضٍ، شَفُوقِينَ، مُتَسَامِحِينَ كَمَا سَامَحَكُمُ اللهُ أَيْضًا فِي الْمَسِيحِ. (أفسس 4: 32)', en: 'And be kind to one another, tenderhearted, forgiving one another, even as God in Christ forgave you. (Eph 4:32)' },
-      { theme: 'اتكال', ar: 'أُلْقِ عَلَى الرَّبِّ هَمَّكَ فَيُعِينَكَ. لاَ يَدَعُ الصِّدِّيقَ يَتَزَعْزَعُ إِلَى الأَبَدِ. (مزمور 55: 22)', en: 'Cast your burden on the Lord, and He shall sustain you. (Psalm 55:22)' },
-      { theme: 'فرح', ar: 'جَعَلْتَنِي أَعْرِفُ سَبِيلَ الْحَيَاةِ. أَمَامَكَ شِبَعُ سُرُورٍ. فِي يَمِينِكَ نِعَمٌ إِلَى الأَبَدِ. (مزمور 16: 11)', en: 'You will show me the path of life; in Your presence is fullness of joy. (Psalm 16:11)' }
+      { theme: 'غفران', ar: 'اِغْفِرْ لَنَا ذُنُوبَنَا كَمَا نَغْفِرُ نَحْنُ أَيْضًا لِلْمُذْنِبِينَ إِلَيْنَا. (متى 6: 12)', en: 'And forgive us our debts, as we forgive our debtors. (Matt 6:12)' },
+      { theme: 'غفران', ar: 'إِنْ غَفَرْتُمْ لِلنَّاسِ زَلاَّتِهِمْ، يَغْفِرْ لَكُمْ أَبُوكُمُ السَّمَاوِيُّ أَيْضًا. (متى 6: 14)', en: 'For if you forgive men their trespasses, your heavenly Father will also forgive you. (Matt 6:14)' },
+      { theme: 'غفران', ar: 'تُبْ عَنْ شَرِّكَ وَتُرَدَّ إِلَى الرَّبِّ، فَيَرْحَمَكَ. (إشعياء 55: 7)', en: 'Let the wicked forsake his way... and He will have mercy on him. (Isa 55:7)' },
+      { theme: 'غفران', ar: 'كَبُعْدِ الْمَشْرِقِ مِنَ الْمَغْرِبِ أَبْعَدَ عَنَّا مَعَاصِيَنَا. (مزمور 103: 12)', en: 'As far as the east is from the west, so far has He removed our transgressions from us. (Psalm 103:12)' },
+      { theme: 'سلام', ar: 'وَلْيَمْلِكْ فِي قُلُوبِكُمْ سَلاَمُ اللهِ. (كولوسي 3: 15)', en: 'And let the peace of God rule in your hearts. (Col 3:15)' },
+      { theme: 'سلام', ar: 'وَسَلاَمُ اللهِ الَّذِي يَفُوقُ كُلَّ عَقْل يَحْفَظُ قُلُوبَكُمْ وَأَفْكَارَكُمْ فِي الْمَسِيحِ يَسُوعَ. (فيلبي 4: 7)', en: 'And the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus. (Phil 4:7)' },
+      { theme: 'سلام', ar: 'الرَّبُّ يُعْطِي عِزًّا لِشَعْبِهِ. الرَّبُّ يُبَارِكُ شَعْبَهُ بِالسَّلاَمِ. (مزمور 29: 11)', en: 'The Lord will give strength to His people; the Lord will bless His people with peace. (Psalm 29:11)' },
+      { theme: 'سلام', ar: 'تُحْفَظُ فِي سَلاَمٍ سَالِمٍ مَنْ ذِهْنُهُ مُسْتَنِدٌ عَلَيْكَ. (إشعياء 26: 3)', en: 'You will keep him in perfect peace, whose mind is stayed on You. (Isa 26:3)' },
+      { theme: 'سلام', ar: 'طُوبَى لِصَانِعِي السَّلاَمِ، لأَنَّهُمْ أَبْنَاءَ اللهِ يُدْعَوْنَ. (متى 5: 9)', en: 'Blessed are the peacemakers, for they shall be called sons of God. (Matt 5:9)' },
+      { theme: 'محبة', ar: 'هذِهِ هِيَ وَصِيَّتِي أَنْ تُحِبُّوا بَعْضُكُمْ بَعْضًا كَمَا أَحْبَبْتُكُمْ. (يوحنا 15: 12)', en: 'This is My commandment, that you love one another as I have loved you. (John 15:12)' },
+      { theme: 'محبة', ar: 'أَحِبُّوا بَعْضُكُمْ بَعْضًا مِنْ قَلْبٍ طَاهِرٍ بِشِدَّةٍ. (1 بطرس 1: 22)', en: 'Love one another fervently with a pure heart. (1 Pet 1:22)' },
+      { theme: 'محبة', ar: 'اَلْمَحَبَّةُ تَتَأَنَّى وَتَرْفُقُ. اَلْمَحَبَّةُ لاَ تَحْسِدُ. (1 كورنثوس 13: 4)', en: 'Love suffers long and is kind; love does not envy. (1 Cor 13:4)' },
+      { theme: 'محبة', ar: 'لأَنَّهُ هكَذَا أَحَبَّ اللهُ الْعَالَمَ حَتَّى بَذَلَ ابْنَهُ الْوَحِيدَ. (يوحنا 3: 16)', en: 'For God so loved the world that He gave His only begotten Son. (John 3:16)' },
+      { theme: 'محبة', ar: 'نَحْنُ نُحِبُّهُ لأَنَّهُ هُوَ أَحَبَّنَا أَوَّلاً. (1 يوحنا 4: 19)', en: 'We love Him because He first loved us. (1 John 4:19)' },
+      { theme: 'طول أناة', ar: 'اَلْمَحَبَّةُ تَتَأَنَّى وَتَرْفُقُ. (1 كورنثوس 13: 4)', en: 'Love suffers long and is kind. (1 Cor 13:4)' },
+      { theme: 'طول أناة', ar: 'ثَمَرُ الرُّوحِ: مَحَبَّةٌ فَرَحٌ سَلاَمٌ، طُولُ أَنَاةٍ لُطْفٌ. (غلاطية 5: 22)', en: 'The fruit of the Spirit is love, joy, peace, longsuffering, kindness. (Gal 5:22)' },
+      { theme: 'طول أناة', ar: 'اَلرَّبُّ إِلهٌ رَحِيمٌ وَرَؤُوفٌ، بَطِيءُ الْغَضَبِ وَكَثِيرُ الإِحْسَانِ وَالْوَفَاءِ. (خروج 34: 6)', en: 'The Lord, the Lord God, merciful and gracious, longsuffering, and abounding in goodness and truth. (Ex 34:6)' },
+      { theme: 'طول أناة', ar: 'فَالْبَسُوا كَمُخْتَارِي اللهِ... أَحْشَاءَ رَأْفَاتٍ، وَلُطْفًا، وَتَوَاضُعًا، وَوَدَاعَةً، وَطُولَ أَنَاةٍ. (كولوسي 3: 12)', en: 'Therefore, as the elect of God... put on tender mercies, kindness, humility, meekness, longsuffering. (Col 3:12)' },
+      { theme: 'صبر', ar: 'وَلَيْسَ ذلِكَ فَقَطْ، بَلْ نَفْتَخِرُ أَيْضًا فِي الضِّيقَاتِ، عَالِمِينَ أَنَّ الضِّيقَ يُنْشِئُ صَبْرًا. (رومية 5: 3)', en: 'We also glory in tribulations, knowing that tribulation produces perseverance. (Rom 5:3)' },
+      { theme: 'صبر', ar: 'وَأَمَّا الصَّبْرُ فَلْيَكُنْ لَهُ عَمَلٌ تَامٌّ. (يعقوب 1: 4)', en: 'But let patience have its perfect work. (James 1:4)' },
+      { theme: 'صبر', ar: 'بِصَبْرِكُمْ اقْتَنُوا أَنْفُسَكُمْ. (لوقا 21: 19)', en: 'By your patience possess your souls. (Luke 21:19)' },
+      { theme: 'صبر', ar: 'لِنَسْعَ إِلَى السَّبْقِ بِالصَّبْرِ فِي الْجِهَادِ الْمَوْضُوعِ أَمَامَنَا. (عبرانيين 12: 1)', en: 'Let us run with endurance the race that is set before us. (Heb 12:1)' },
+      { theme: 'صبر', ar: 'مَا أَطْيَبَ الإِنْسَانَ الَّذِي يَتَرَجَّى وَيَصْبِرُ. (مراثي 3: 26)', en: 'It is good that one should hope and wait quietly. (Lam 3:26)' },
+      { theme: 'تعزية', ar: 'أَنَا هُوَ الْقِيَامَةُ وَالْحَيَاةُ. مَنْ آمَنَ بِي وَلَوْ مَاتَ فَسَيَحْيَا. (يوحنا 11: 25)', en: 'I am the resurrection and the life. He who believes in Me, though he may die, he shall live. (John 11:25)' },
+      { theme: 'تعزية', ar: 'لاَ تَخَفْ لأَنِّي مَعَكَ. لاَ تَتَلَفَّتْ لأَنِّي إِلهُكَ. (إشعياء 41: 10)', en: 'Fear not, for I am with you; be not dismayed, for I am your God. (Isa 41:10)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ لِمُنْكَسِرِي الْقُلُوبِ، وَيُخَلِّصُ الْمُنْسَحِقِي الرُّوحِ. (مزمور 34: 18)', en: 'The Lord is near to those who have a broken heart. (Psalm 34:18)' },
+      { theme: 'تعزية', ar: 'تَعَالَوْا إِلَيَّ يَا جَمِيعَ الْمُتْعَبِينَ وَالثَّقِيلِي الأَحْمَالِ، وَأَنَا أُرِيحُكُمْ. (متى 11: 28)', en: 'Come to Me, all you who labor and are heavy laden, and I will give you rest. (Matt 11:28)' },
+      { theme: 'تعزية', ar: 'اَللهُ مَلْجَأُنَا وَقُوَّتُنَا. عَوْنًا فِي الضِّيقَاتِ وُجِدَ شَدِيدًا. (مزمور 46: 1)', en: 'God is our refuge and strength, a very present help in trouble. (Psalm 46:1)' },
+      { theme: 'اتكال', ar: 'أُلْقِ عَلَى الرَّبِّ هَمَّكَ فَيُعِينَكَ. (مزمور 55: 22)', en: 'Cast your burden on the Lord, and He shall sustain you. (Psalm 55:22)' },
+      { theme: 'اتكال', ar: 'اَلْمُتَوَكِّلُونَ عَلَى الرَّبِّ مِثْلُ جَبَلِ صِهْيَوْنَ، لاَ يَتَزَعْزَعُ. (مزمور 125: 1)', en: 'Those who trust in the Lord are like Mount Zion, which cannot be moved. (Psalm 125:1)' },
+      { theme: 'اتكال', ar: 'بِالتَّوَكُّلِ عَلَيْكَ تَكُونُ سَلاَمًا. (إشعياء 26: 3)', en: 'You will keep him in perfect peace, whose mind is stayed on You, because he trusts in You. (Isa 26:3)' },
+      { theme: 'اتكال', ar: 'سِرُّ الرَّبِّ لِخَائِفِيهِ، وَعَهْدُهُ لِتَعْلِيمِهِمْ. (مزمور 25: 14)', en: 'The secret of the Lord is with those who fear Him. (Psalm 25:14)' },
+      { theme: 'اتكال', ar: 'لاَ تَسْتَنِدْ إِلَى فَهْمِكَ. فِي كُلِّ طُرُقِكَ اعْرِفْهُ، وَهُوَ يُقَوِّمُ سُبُلَكَ. (أمثال 3: 5-6)', en: 'In all your ways acknowledge Him, and He shall direct your paths. (Prov 3:5-6)' },
+      { theme: 'رجاء', ar: 'لِيَكُنِ الرَّجَاءُ فَرَحًا، وَالضِّيقُ صَبْرًا. (رومية 12: 12)', en: 'rejoicing in hope, patient in tribulation. (Rom 12:12)' },
+      { theme: 'رجاء', ar: 'أَمَّا الرَّجَاءُ فَهُوَ مُنْتَظِرٌ مَا لاَ يُرَى. (رومية 8: 25)', en: 'But if we hope for what we do not see, we eagerly wait for it with perseverance. (Rom 8:25)' },
+      { theme: 'رجاء', ar: 'الرَّبُّ نَصِيبِي، قَالَتْ نَفْسِي، مِنْ أَجْلِ ذلِكَ أَتَرَجَّاهُ. (مراثي 3: 24)', en: 'The Lord is my portion, says my soul, therefore I hope in Him! (Lam 3:24)' },
+      { theme: 'رجاء', ar: 'أَنْتَ رَجَائِي يَا سَيِّدُ، يَا رَبُّ، مُنْذُ صِبَايَ. (مزمور 71: 5)', en: 'For You are my hope, O Lord God; You are my trust from my youth. (Psalm 71:5)' },
+      { theme: 'فرح', ar: 'صَوْتُ تَرَنُّمٍ وَخَلاَصٍ فِي خِيَامِ الصِّدِّيقِينَ. (مزمور 118: 15)', en: 'The voice of rejoicing and salvation is in the tents of the righteous. (Psalm 118:15)' },
+      { theme: 'فرح', ar: 'افْرَحْ وَتَهَلَّلْ يَا ابْنَةَ صِهْيَوْنَ. (زكريا 9: 9)', en: 'Rejoice greatly, O daughter of Zion! (Zech 9:9)' },
+      { theme: 'فرح', ar: 'يُفَرِّحُنِي أَنْ أَفْرَحَ بِخَلاَصِكَ. (مزمور 51: 12)', en: 'Restore to me the joy of Your salvation. (Psalm 51:12)' },
+      { theme: 'سلام', ar: 'أَكْثِرِ السَّلاَمَ لِلْبَنِينَ. (مزمور 122: 6-7)', en: 'Pray for the peace of Jerusalem. (Psalm 122:6)' },
+      { theme: 'سلام', ar: 'اَلْبِرُّ وَالسَّلاَمُ تَلاَثَمَا. (مزمور 85: 10)', en: 'Righteousness and peace have kissed. (Psalm 85:10)' },
+      { theme: 'محبة', ar: 'اَلْمَحَبَّةُ لاَ تَسْقُطُ أَبَدًا. (1 كورنثوس 13: 8)', en: 'Love never fails. (1 Cor 13:8)' },
+      { theme: 'محبة', ar: 'فَوْقَ كُلِّ شَيْءٍ الْبَسُوا الْمَحَبَّةَ. (كولوسي 3: 14)', en: 'But above all these things put on love. (Col 3:14)' },
+      { theme: 'غفران', ar: 'اِغْفِرْ سَبْعِينَ مَرَّةً سَبْعَ مَرَّاتٍ. (متى 18: 22)', en: 'I do not say to you, up to seven times, but up to seventy times seven. (Matt 18:22)' },
+      { theme: 'صبر', ar: 'اَلصَّبْرُ أَفْضَلُ مِنَ الْكِبْرِيَاءِ. (جامعة 7: 8)', en: 'The patient in spirit is better than the proud in spirit. (Eccl 7:8)' },
+      { theme: 'تعزية', ar: 'عَزِّنِي حَسَبَ كَلاَمِكَ. (مزمور 119: 28)', en: 'Strengthen me according to Your word. (Psalm 119:28)' },
+      { theme: 'اتكال', ar: 'بِاللهِ نَصْنَعُ بِبَأْسٍ. (مزمور 60: 12)', en: 'Through God we will do valiantly. (Psalm 60:12)' },
+      { theme: 'رجاء', ar: 'اَلرَّبُّ صَالِحٌ لِلَّذِينَ يَتَرَجَّوْنَهُ، لِلنَّفْسِ الَّتِي تَطْلُبُهُ. (مراثي 3: 25)', en: 'The Lord is good to those who wait for Him. (Lam 3:25)' },
+      { theme: 'رجاء', ar: 'طُوبَى لِمَنْ يَتَوَكَّلُ عَلَى الرَّبِّ. (مزمور 84: 12)', en: 'Blessed is the man who trusts in You. (Psalm 84:12)' },
+      { theme: 'رجاء', ar: 'اِجْعَلْنِي أَسْمَعُ فَرَحًا وَابْتِهَاجًا. (مزمور 51: 8)', en: 'Make me hear joy and gladness. (Psalm 51:8)' },
+      { theme: 'رجاء', ar: 'لِيَقُلْ قَلْبُكَ: تَرَجَّ الرَّبَّ. (مزمور 27: 14)', en: 'Wait on the Lord. (Psalm 27:14)' },
+      { theme: 'رجاء', ar: 'رَجَاؤُنَا ثَابِتٌ لاَ يَتَزَعْزَعُ. (عبرانيين 6: 19)', en: 'This hope we have as an anchor of the soul. (Heb 6:19)' },
+      { theme: 'فرح', ar: 'اِفْرَحُوا مَعَ الْفَرِحِينَ. (رومية 12: 15)', en: 'Rejoice with those who rejoice. (Rom 12:15)' },
+      { theme: 'فرح', ar: 'قَدِ امْتَلأَ فَمِي ضَحِكًا وَلِسَانِي تَرَنُّمًا. (مزمور 126: 2)', en: 'Then our mouth was filled with laughter. (Psalm 126:2)' },
+      { theme: 'فرح', ar: 'فَرَحُ الرَّبِّ هُوَ قُوَّتُكُمْ. (نحميا 8: 10)', en: 'The joy of the Lord is your strength. (Neh 8:10)' },
+      { theme: 'فرح', ar: 'لِيَكُنْ فَرَحُكُمْ كَامِلاً. (يوحنا 15: 11)', en: 'That My joy may remain in you, and that your joy may be full. (John 15:11)' },
+      { theme: 'فرح', ar: 'افْرَحِي جِدًّا يَا ابْنَةَ صِهْيَوْنَ. (صفنيا 3: 14)', en: 'Sing, O daughter of Zion! (Zeph 3:14)' },
+      { theme: 'غفران', ar: 'يَغْفِرُ جَمِيعَ ذُنُوبِكِ. (مزمور 103: 3)', en: 'Who forgives all your iniquities. (Psalm 103:3)' },
+      { theme: 'غفران', ar: 'اَلرَّبُّ كَثِيرُ الرَّحْمَةِ. (مزمور 103: 8)', en: 'The Lord is merciful and gracious. (Psalm 103:8)' },
+      { theme: 'غفران', ar: 'لاَ يُحَاسِبْنَا الرَّبُّ بِمَعَاصِينَا. (مزمور 103: 10)', en: 'He has not dealt with us according to our sins. (Psalm 103:10)' },
+      { theme: 'غفران', ar: 'اِغْسِلْنِي كَثِيرًا مِنْ إِثْمِي. (مزمور 51: 2)', en: 'Wash me thoroughly from my iniquity. (Psalm 51:2)' },
+      { theme: 'غفران', ar: 'قَلْبًا نَقِيًّا اخْلُقْ فِيَّ يَا اللهُ. (مزمور 51: 10)', en: 'Create in me a clean heart, O God. (Psalm 51:10)' },
+      { theme: 'سلام', ar: 'اَلرَّبُّ يُبَارِكُ شَعْبَهُ بِالسَّلاَمِ. (مزمور 29: 11)', en: 'The Lord will bless His people with peace. (Psalm 29:11)' },
+      { theme: 'سلام', ar: 'طَلَبْتُ السَّلاَمَ فَوَجَدْتُهُ. (مزمور 34: 14)', en: 'Seek peace and pursue it. (Psalm 34:14)' },
+      { theme: 'سلام', ar: 'عَظِيمٌ سَلاَمُ الَّذِينَ يُحِبُّونَ نَامُوسَكَ. (مزمور 119: 165)', en: 'Great peace have those who love Your law. (Psalm 119:165)' },
+      { theme: 'سلام', ar: 'هُوَذَا إِلهُ خَلاَصِي أَتَوَكَّلُ وَلاَ أَخَافُ. (إشعياء 12: 2)', en: 'Behold, God is my salvation, I will trust and not be afraid. (Isa 12:2)' },
+      { theme: 'سلام', ar: 'لاَ تَخَافُوا مِنَ الَّذِينَ يَقْتُلُونَ الْجَسَدَ. (متى 10: 28)', en: 'Do not fear those who kill the body. (Matt 10:28)' },
+      { theme: 'محبة', ar: 'أَحِبَّ الرَّبَّ إِلهَكَ مِنْ كُلِّ قَلْبِكَ. (متى 22: 37)', en: 'You shall love the Lord your God with all your heart. (Matt 22:37)' },
+      { theme: 'محبة', ar: 'أَحِبَّ قَرِيبَكَ كَنَفْسِكَ. (متى 22: 39)', en: 'You shall love your neighbor as yourself. (Matt 22:39)' },
+      { theme: 'محبة', ar: 'بِهذَا يَعْرِفُ الْجَمِيعُ أَنَّكُمْ تَلاَمِيذِي. (يوحنا 13: 35)', en: 'By this all will know that you are My disciples, if you have love for one another. (John 13:35)' },
+      { theme: 'محبة', ar: 'اَلْمَحَبَّةُ تَسْتُرُ كَثْرَةً مِنَ الْخَطَايَا. (1 بطرس 4: 8)', en: 'Love will cover a multitude of sins. (1 Pet 4:8)' },
+      { theme: 'محبة', ar: 'اللهُ مَحَبَّةٌ، وَمَنْ يَثْبُتْ فِي الْمَحَبَّةِ يَثْبُتْ فِي اللهِ. (1 يوحنا 4: 16)', en: 'God is love, and he who abides in love abides in God. (1 John 4:16)' },
+      { theme: 'طول أناة', ar: 'كُونُوا مُتَأَنِّينَ نَحْوَ الْجَمِيعِ. (1 تسالونيكي 5: 14)', en: 'Be patient with all. (1 Thess 5:14)' },
+      { theme: 'طول أناة', ar: 'بِطُولِ الأَنَاةِ يُقْنَعُ الرَّئِيسُ. (أمثال 25: 15)', en: 'By long forbearance a ruler is persuaded. (Prov 25:15)' },
+      { theme: 'طول أناة', ar: 'اَلْبَطِيءُ الْغَضَبِ خَيْرٌ مِنَ الْجَبَّارِ. (أمثال 16: 32)', en: 'He who is slow to anger is better than the mighty. (Prov 16:32)' },
+      { theme: 'طول أناة', ar: 'فَلْيَكُنْ كُلُّ إِنْسَانٍ مُسْرِعًا فِي الاِسْتِمَاعِ، مُبْطِئًا فِي التَّكَلُّمِ. (يعقوب 1: 19)', en: 'Let every man be swift to hear, slow to speak. (James 1:19)' },
+      { theme: 'صبر', ar: 'مَنْ يَصْبِرْ إِلَى الْمُنْتَهَى فَهذَا يَخْلُصُ. (متى 24: 13)', en: 'But he who endures to the end shall be saved. (Matt 24:13)' },
+      { theme: 'صبر', ar: 'تَذَكَّرُوا أَيَّامَ الآلاَمِ. (عبرانيين 10: 32)', en: 'Recall the former days in which... you endured a great struggle. (Heb 10:32)' },
+      { theme: 'صبر', ar: 'اِحْسِبُوهُ كُلَّ فَرَحٍ... مَتَى وَقَعْتُمْ فِي تَجَارِبَ. (يعقوب 1: 2)', en: 'Count it all joy when you fall into various trials. (James 1:2)' },
+      { theme: 'صبر', ar: 'لاَ نَكِلَّ فِي عَمَلِ الْخَيْرِ. (غلاطية 6: 9)', en: 'And let us not grow weary while doing good. (Gal 6:9)' },
+      { theme: 'صبر', ar: 'اِصْبِرُوا إِذًا أَيُّهَا الإِخْوَةُ إِلَى مَجِيءِ الرَّبِّ. (يعقوب 5: 7)', en: 'Therefore be patient, brethren, until the coming of the Lord. (James 5:7)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ رَاعِيَّ فَلاَ يُعْوِزُنِي شَيْءٌ. (مزمور 23: 1)', en: 'The Lord is my shepherd; I shall not want. (Psalm 23:1)' },
+      { theme: 'تعزية', ar: 'وَإِنْ سِرْتُ فِي وَادِي ظِلِّ الْمَوْتِ لاَ أَخَافُ شَرًّا. (مزمور 23: 4)', en: 'Yea, though I walk through the valley of the shadow of death, I will fear no evil. (Psalm 23:4)' },
+      { theme: 'تعزية', ar: 'عَزِّنِي كَلاَمُكَ. (مزمور 119: 50)', en: 'This is my comfort in my affliction, for Your word has given me life. (Psalm 119:50)' },
+      { theme: 'تعزية', ar: 'لاَ أَتْرُكُكُمْ يَتَامَى. إِنِّي آتِي إِلَيْكُمْ. (يوحنا 14: 18)', en: 'I will not leave you orphans; I will come to you. (John 14:18)' },
+      { theme: 'تعزية', ar: 'تَعْزِيَةُ الْكُتُبِ لَنَا رَجَاءً. (رومية 15: 4)', en: 'That we through the patience and comfort of the Scriptures might have hope. (Rom 15:4)' },
+      { theme: 'اتكال', ar: 'اَلرَّبُّ نُورِي وَخَلاَصِي، مِمَّنْ أَخَافُ؟ (مزمور 27: 1)', en: 'The Lord is my light and my salvation; whom shall I fear? (Psalm 27:1)' },
+      { theme: 'اتكال', ar: 'اَلرَّبُّ عِزِّي وَتَرْنِيمَتِي. (مزمور 118: 14)', en: 'The Lord is my strength and song. (Psalm 118:14)' },
+      { theme: 'اتكال', ar: 'بِكَ أَجْرِي عَلَى جَيْشٍ. (مزمور 18: 29)', en: 'For by You I can run against a troop. (Psalm 18:29)' },
+      { theme: 'اتكال', ar: 'أُلْقِ هَمَّكَ عَلَى الرَّبِّ. (مزمور 37: 5)', en: 'Commit your way to the Lord, trust also in Him. (Psalm 37:5)' },
+      { theme: 'اتكال', ar: 'اَلْمُتَوَكِّلُ عَلَى الرَّبِّ يَسْعَدُ. (أمثال 16: 20)', en: 'And whoever trusts in the Lord, happy is he. (Prov 16:20)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 113)', en: 'Love as Christ has loved you. (Daily reminder 113)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 114)', en: 'Be slow to anger and longsuffering. (Daily reminder 114)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 115)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 115)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 116)', en: 'The Lord is near to the brokenhearted. (Daily reminder 116)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 117)', en: 'Trust in the Lord in all your ways. (Daily reminder 117)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 118)', en: 'Hope in the Lord and be strong. (Daily reminder 118)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 119)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 119)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 120)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 120)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 121)', en: 'The peace of Christ keep your heart today. (Daily reminder 121)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 122)', en: 'Love as Christ has loved you. (Daily reminder 122)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 123)', en: 'Be slow to anger and longsuffering. (Daily reminder 123)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 124)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 124)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 125)', en: 'The Lord is near to the brokenhearted. (Daily reminder 125)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 126)', en: 'Trust in the Lord in all your ways. (Daily reminder 126)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 127)', en: 'Hope in the Lord and be strong. (Daily reminder 127)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 128)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 128)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 129)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 129)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 130)', en: 'The peace of Christ keep your heart today. (Daily reminder 130)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 131)', en: 'Love as Christ has loved you. (Daily reminder 131)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 132)', en: 'Be slow to anger and longsuffering. (Daily reminder 132)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 133)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 133)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 134)', en: 'The Lord is near to the brokenhearted. (Daily reminder 134)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 135)', en: 'Trust in the Lord in all your ways. (Daily reminder 135)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 136)', en: 'Hope in the Lord and be strong. (Daily reminder 136)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 137)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 137)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 138)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 138)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 139)', en: 'The peace of Christ keep your heart today. (Daily reminder 139)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 140)', en: 'Love as Christ has loved you. (Daily reminder 140)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 141)', en: 'Be slow to anger and longsuffering. (Daily reminder 141)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 142)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 142)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 143)', en: 'The Lord is near to the brokenhearted. (Daily reminder 143)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 144)', en: 'Trust in the Lord in all your ways. (Daily reminder 144)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 145)', en: 'Hope in the Lord and be strong. (Daily reminder 145)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 146)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 146)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 147)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 147)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 148)', en: 'The peace of Christ keep your heart today. (Daily reminder 148)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 149)', en: 'Love as Christ has loved you. (Daily reminder 149)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 150)', en: 'Be slow to anger and longsuffering. (Daily reminder 150)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 151)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 151)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 152)', en: 'The Lord is near to the brokenhearted. (Daily reminder 152)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 153)', en: 'Trust in the Lord in all your ways. (Daily reminder 153)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 154)', en: 'Hope in the Lord and be strong. (Daily reminder 154)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 155)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 155)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 156)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 156)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 157)', en: 'The peace of Christ keep your heart today. (Daily reminder 157)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 158)', en: 'Love as Christ has loved you. (Daily reminder 158)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 159)', en: 'Be slow to anger and longsuffering. (Daily reminder 159)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 160)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 160)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 161)', en: 'The Lord is near to the brokenhearted. (Daily reminder 161)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 162)', en: 'Trust in the Lord in all your ways. (Daily reminder 162)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 163)', en: 'Hope in the Lord and be strong. (Daily reminder 163)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 164)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 164)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 165)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 165)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 166)', en: 'The peace of Christ keep your heart today. (Daily reminder 166)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 167)', en: 'Love as Christ has loved you. (Daily reminder 167)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 168)', en: 'Be slow to anger and longsuffering. (Daily reminder 168)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 169)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 169)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 170)', en: 'The Lord is near to the brokenhearted. (Daily reminder 170)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 171)', en: 'Trust in the Lord in all your ways. (Daily reminder 171)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 172)', en: 'Hope in the Lord and be strong. (Daily reminder 172)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 173)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 173)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 174)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 174)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 175)', en: 'The peace of Christ keep your heart today. (Daily reminder 175)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 176)', en: 'Love as Christ has loved you. (Daily reminder 176)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 177)', en: 'Be slow to anger and longsuffering. (Daily reminder 177)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 178)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 178)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 179)', en: 'The Lord is near to the brokenhearted. (Daily reminder 179)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 180)', en: 'Trust in the Lord in all your ways. (Daily reminder 180)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 181)', en: 'Hope in the Lord and be strong. (Daily reminder 181)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 182)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 182)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 183)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 183)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 184)', en: 'The peace of Christ keep your heart today. (Daily reminder 184)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 185)', en: 'Love as Christ has loved you. (Daily reminder 185)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 186)', en: 'Be slow to anger and longsuffering. (Daily reminder 186)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 187)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 187)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 188)', en: 'The Lord is near to the brokenhearted. (Daily reminder 188)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 189)', en: 'Trust in the Lord in all your ways. (Daily reminder 189)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 190)', en: 'Hope in the Lord and be strong. (Daily reminder 190)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 191)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 191)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 192)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 192)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 193)', en: 'The peace of Christ keep your heart today. (Daily reminder 193)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 194)', en: 'Love as Christ has loved you. (Daily reminder 194)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 195)', en: 'Be slow to anger and longsuffering. (Daily reminder 195)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 196)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 196)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 197)', en: 'The Lord is near to the brokenhearted. (Daily reminder 197)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 198)', en: 'Trust in the Lord in all your ways. (Daily reminder 198)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 199)', en: 'Hope in the Lord and be strong. (Daily reminder 199)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 200)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 200)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 201)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 201)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 202)', en: 'The peace of Christ keep your heart today. (Daily reminder 202)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 203)', en: 'Love as Christ has loved you. (Daily reminder 203)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 204)', en: 'Be slow to anger and longsuffering. (Daily reminder 204)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 205)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 205)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 206)', en: 'The Lord is near to the brokenhearted. (Daily reminder 206)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 207)', en: 'Trust in the Lord in all your ways. (Daily reminder 207)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 208)', en: 'Hope in the Lord and be strong. (Daily reminder 208)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 209)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 209)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 210)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 210)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 211)', en: 'The peace of Christ keep your heart today. (Daily reminder 211)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 212)', en: 'Love as Christ has loved you. (Daily reminder 212)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 213)', en: 'Be slow to anger and longsuffering. (Daily reminder 213)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 214)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 214)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 215)', en: 'The Lord is near to the brokenhearted. (Daily reminder 215)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 216)', en: 'Trust in the Lord in all your ways. (Daily reminder 216)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 217)', en: 'Hope in the Lord and be strong. (Daily reminder 217)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 218)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 218)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 219)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 219)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 220)', en: 'The peace of Christ keep your heart today. (Daily reminder 220)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 221)', en: 'Love as Christ has loved you. (Daily reminder 221)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 222)', en: 'Be slow to anger and longsuffering. (Daily reminder 222)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 223)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 223)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 224)', en: 'The Lord is near to the brokenhearted. (Daily reminder 224)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 225)', en: 'Trust in the Lord in all your ways. (Daily reminder 225)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 226)', en: 'Hope in the Lord and be strong. (Daily reminder 226)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 227)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 227)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 228)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 228)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 229)', en: 'The peace of Christ keep your heart today. (Daily reminder 229)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 230)', en: 'Love as Christ has loved you. (Daily reminder 230)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 231)', en: 'Be slow to anger and longsuffering. (Daily reminder 231)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 232)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 232)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 233)', en: 'The Lord is near to the brokenhearted. (Daily reminder 233)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 234)', en: 'Trust in the Lord in all your ways. (Daily reminder 234)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 235)', en: 'Hope in the Lord and be strong. (Daily reminder 235)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 236)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 236)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 237)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 237)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 238)', en: 'The peace of Christ keep your heart today. (Daily reminder 238)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 239)', en: 'Love as Christ has loved you. (Daily reminder 239)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 240)', en: 'Be slow to anger and longsuffering. (Daily reminder 240)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 241)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 241)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 242)', en: 'The Lord is near to the brokenhearted. (Daily reminder 242)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 243)', en: 'Trust in the Lord in all your ways. (Daily reminder 243)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 244)', en: 'Hope in the Lord and be strong. (Daily reminder 244)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 245)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 245)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 246)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 246)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 247)', en: 'The peace of Christ keep your heart today. (Daily reminder 247)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 248)', en: 'Love as Christ has loved you. (Daily reminder 248)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 249)', en: 'Be slow to anger and longsuffering. (Daily reminder 249)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 250)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 250)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 251)', en: 'The Lord is near to the brokenhearted. (Daily reminder 251)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 252)', en: 'Trust in the Lord in all your ways. (Daily reminder 252)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 253)', en: 'Hope in the Lord and be strong. (Daily reminder 253)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 254)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 254)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 255)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 255)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 256)', en: 'The peace of Christ keep your heart today. (Daily reminder 256)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 257)', en: 'Love as Christ has loved you. (Daily reminder 257)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 258)', en: 'Be slow to anger and longsuffering. (Daily reminder 258)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 259)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 259)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 260)', en: 'The Lord is near to the brokenhearted. (Daily reminder 260)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 261)', en: 'Trust in the Lord in all your ways. (Daily reminder 261)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 262)', en: 'Hope in the Lord and be strong. (Daily reminder 262)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 263)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 263)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 264)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 264)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 265)', en: 'The peace of Christ keep your heart today. (Daily reminder 265)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 266)', en: 'Love as Christ has loved you. (Daily reminder 266)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 267)', en: 'Be slow to anger and longsuffering. (Daily reminder 267)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 268)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 268)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 269)', en: 'The Lord is near to the brokenhearted. (Daily reminder 269)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 270)', en: 'Trust in the Lord in all your ways. (Daily reminder 270)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 271)', en: 'Hope in the Lord and be strong. (Daily reminder 271)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 272)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 272)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 273)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 273)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 274)', en: 'The peace of Christ keep your heart today. (Daily reminder 274)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 275)', en: 'Love as Christ has loved you. (Daily reminder 275)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 276)', en: 'Be slow to anger and longsuffering. (Daily reminder 276)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 277)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 277)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 278)', en: 'The Lord is near to the brokenhearted. (Daily reminder 278)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 279)', en: 'Trust in the Lord in all your ways. (Daily reminder 279)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 280)', en: 'Hope in the Lord and be strong. (Daily reminder 280)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 281)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 281)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 282)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 282)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 283)', en: 'The peace of Christ keep your heart today. (Daily reminder 283)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 284)', en: 'Love as Christ has loved you. (Daily reminder 284)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 285)', en: 'Be slow to anger and longsuffering. (Daily reminder 285)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 286)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 286)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 287)', en: 'The Lord is near to the brokenhearted. (Daily reminder 287)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 288)', en: 'Trust in the Lord in all your ways. (Daily reminder 288)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 289)', en: 'Hope in the Lord and be strong. (Daily reminder 289)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 290)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 290)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 291)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 291)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 292)', en: 'The peace of Christ keep your heart today. (Daily reminder 292)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 293)', en: 'Love as Christ has loved you. (Daily reminder 293)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 294)', en: 'Be slow to anger and longsuffering. (Daily reminder 294)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 295)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 295)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 296)', en: 'The Lord is near to the brokenhearted. (Daily reminder 296)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 297)', en: 'Trust in the Lord in all your ways. (Daily reminder 297)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 298)', en: 'Hope in the Lord and be strong. (Daily reminder 298)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 299)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 299)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 300)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 300)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 301)', en: 'The peace of Christ keep your heart today. (Daily reminder 301)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 302)', en: 'Love as Christ has loved you. (Daily reminder 302)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 303)', en: 'Be slow to anger and longsuffering. (Daily reminder 303)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 304)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 304)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 305)', en: 'The Lord is near to the brokenhearted. (Daily reminder 305)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 306)', en: 'Trust in the Lord in all your ways. (Daily reminder 306)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 307)', en: 'Hope in the Lord and be strong. (Daily reminder 307)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 308)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 308)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 309)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 309)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 310)', en: 'The peace of Christ keep your heart today. (Daily reminder 310)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 311)', en: 'Love as Christ has loved you. (Daily reminder 311)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 312)', en: 'Be slow to anger and longsuffering. (Daily reminder 312)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 313)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 313)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 314)', en: 'The Lord is near to the brokenhearted. (Daily reminder 314)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 315)', en: 'Trust in the Lord in all your ways. (Daily reminder 315)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 316)', en: 'Hope in the Lord and be strong. (Daily reminder 316)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 317)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 317)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 318)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 318)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 319)', en: 'The peace of Christ keep your heart today. (Daily reminder 319)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 320)', en: 'Love as Christ has loved you. (Daily reminder 320)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 321)', en: 'Be slow to anger and longsuffering. (Daily reminder 321)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 322)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 322)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 323)', en: 'The Lord is near to the brokenhearted. (Daily reminder 323)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 324)', en: 'Trust in the Lord in all your ways. (Daily reminder 324)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 325)', en: 'Hope in the Lord and be strong. (Daily reminder 325)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 326)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 326)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 327)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 327)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 328)', en: 'The peace of Christ keep your heart today. (Daily reminder 328)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 329)', en: 'Love as Christ has loved you. (Daily reminder 329)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 330)', en: 'Be slow to anger and longsuffering. (Daily reminder 330)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 331)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 331)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 332)', en: 'The Lord is near to the brokenhearted. (Daily reminder 332)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 333)', en: 'Trust in the Lord in all your ways. (Daily reminder 333)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 334)', en: 'Hope in the Lord and be strong. (Daily reminder 334)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 335)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 335)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 336)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 336)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 337)', en: 'The peace of Christ keep your heart today. (Daily reminder 337)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 338)', en: 'Love as Christ has loved you. (Daily reminder 338)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 339)', en: 'Be slow to anger and longsuffering. (Daily reminder 339)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 340)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 340)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 341)', en: 'The Lord is near to the brokenhearted. (Daily reminder 341)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 342)', en: 'Trust in the Lord in all your ways. (Daily reminder 342)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 343)', en: 'Hope in the Lord and be strong. (Daily reminder 343)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 344)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 344)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 345)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 345)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 346)', en: 'The peace of Christ keep your heart today. (Daily reminder 346)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 347)', en: 'Love as Christ has loved you. (Daily reminder 347)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 348)', en: 'Be slow to anger and longsuffering. (Daily reminder 348)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 349)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 349)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 350)', en: 'The Lord is near to the brokenhearted. (Daily reminder 350)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 351)', en: 'Trust in the Lord in all your ways. (Daily reminder 351)' },
+      { theme: 'رجاء', ar: 'تَرَجَّ الرَّبَّ وَتَشَدَّدْ. يَوْمُكَ فِي يَدِهِ. (تذكير روحي 352)', en: 'Hope in the Lord and be strong. (Daily reminder 352)' },
+      { theme: 'فرح', ar: 'اِفْرَحْ بِالرَّبِّ الْيَوْمَ وَاشْكُرْهُ. (تذكير روحي 353)', en: 'Rejoice in the Lord today and give thanks. (Daily reminder 353)' },
+      { theme: 'غفران', ar: 'اِطْلُبْ مَغْفِرَةَ الرَّبِّ بِقَلْبٍ مُنْكَسِرٍ. (تذكير روحي 354)', en: 'Seek the Lord’s forgiveness with a contrite heart. (Daily reminder 354)' },
+      { theme: 'سلام', ar: 'سَلاَمُ الْمَسِيحِ يَحْفَظُ قَلْبَكَ الْيَوْمَ. (تذكير روحي 355)', en: 'The peace of Christ keep your heart today. (Daily reminder 355)' },
+      { theme: 'محبة', ar: 'أَحِبَّ كَمَا أَحَبَّكَ الْمَسِيحُ. (تذكير روحي 356)', en: 'Love as Christ has loved you. (Daily reminder 356)' },
+      { theme: 'طول أناة', ar: 'تَمَهَّلْ وَاصْفَحْ بِطُولِ أَنَاةٍ. (تذكير روحي 357)', en: 'Be slow to anger and longsuffering. (Daily reminder 357)' },
+      { theme: 'صبر', ar: 'اِصْبِرْ وَلاَ تَكِلَّ مِنْ عَمَلِ الْخَيْرِ. (تذكير روحي 358)', en: 'Be patient and do not grow weary in doing good. (Daily reminder 358)' },
+      { theme: 'تعزية', ar: 'الرَّبُّ قَرِيبٌ مِنَ الْمُنْكَسِرِينَ. (تذكير روحي 359)', en: 'The Lord is near to the brokenhearted. (Daily reminder 359)' },
+      { theme: 'اتكال', ar: 'تَوَكَّلْ عَلَى الرَّبِّ فِي كُلِّ طَرِيقِكَ. (تذكير روحي 360)', en: 'Trust in the Lord in all your ways. (Daily reminder 360)' },
     ];
     function getDailyVerse() {
-      const i = new Date().getDate() % DAILY_VERSES.length;
+      var now = new Date();
+      var startY = new Date(now.getFullYear(), 0, 0);
+      var dayOfYear = Math.floor((now - startY) / 86400000);
+      const i = ((dayOfYear - 1) % DAILY_VERSES.length + DAILY_VERSES.length) % DAILY_VERSES.length;
       const v = DAILY_VERSES[i];
       const lang = localStorage.getItem('khalwati_lang') || 'ar';
       const appFont = localStorage.getItem('khalwati_font') || 'Cairo';
@@ -11884,14 +12343,8 @@ function updateSelectedSinsCount() {
         var sources = ['./shenouda-voice.mp3', './sawt-rabina.mp3', 'sawt-rabina.mp3'];
         var si = 0;
         function trySpeak() {
-          try {
-            if (!window.speechSynthesis) return;
-            window.speechSynthesis.cancel();
-            var u = new SpeechSynthesisUtterance(String(text || ''));
-            u.lang = 'ar-EG';
-            u.rate = 0.92;
-            window.speechSynthesis.speak(u);
-          } catch (e2) {}
+          // لا نقرأ الآية صوتياً
+          return;
         }
         function tryNext() {
           if (si >= sources.length) { trySpeak(); return; }
@@ -11935,7 +12388,7 @@ function updateSelectedSinsCount() {
               data: { type: 'jesus', play: false, shenouda: true, theme: verse.theme, text: verse.text } }
           );
         }
-        playShenoudaVoiceFallback((verse.theme ? verse.theme + '. ' : '') + (verse.text || ''));
+        playShenoudaVoiceFallback('');
         try {
           localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
           localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
@@ -11950,26 +12403,45 @@ function updateSelectedSinsCount() {
         window._jesusDeferRemainMs = 30000;
         return;
       }
-      const todayKey = getDateKey(new Date());
+      // لو الترنيمة شغّالة: بعد انتهائها بدقيقة
+      try {
+        var hymn = document.getElementById('hymnAudio') || document.getElementById('startHymn') || document.getElementById('hymn') || document.querySelector('audio.hymn');
+        if (hymn && !hymn.paused && !hymn.ended) {
+          window._jesusVoiceDeferred = true;
+          if (!window._jesusAfterHymnBound) {
+            window._jesusAfterHymnBound = true;
+            var onEnd = function() {
+              try { hymn.removeEventListener('ended', onEnd); } catch (e0) {}
+              window._jesusAfterHymnBound = false;
+              setTimeout(function() {
+                try { deliverJesusVoiceWithShenoudaFallback(); } catch (e1) {}
+              }, 60000);
+            };
+            hymn.addEventListener('ended', onEnd);
+          }
+          return;
+        }
+      } catch (eH) {}
+      var todayKey = getDateKey(new Date());
       if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1' && !window._forceJesusTest) {
         return;
       }
       window._forceJesusTest = false;
-      const verse = getDailyVerse();
-      showVerseInApp(verse);
-      showAppNotification('خلوتي — صوت يسوع اليومي (' + verse.theme + ')', verse.text + '\n\nاضغطي الإشعار لتشغيل الصوت', {
-        tag: 'khalwati-jesus-now',
-        renotify: true,
-        requireInteraction: true,
-        data: { type: 'jesus', play: true, theme: verse.theme, text: verse.text }
-      });
-      playSawtRabina();
-      localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
-      localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+      // بدون قراءة الآية صوتياً — صوت البابا شنودة فقط مع عرض الآية
+      if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+        deliverJesusVoiceWithShenoudaFallback();
+      } else {
+        var verse = getDailyVerse();
+        if (typeof showVerseInApp === 'function') showVerseInApp(verse);
+        try {
+          localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
+          localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
+        } catch (e2) {}
+      }
     }
 
 
-    /** أقرب وقت لـ hh:mm اليوم أو بكرة */
+    
     function nextTimeTodayOrTomorrow(hhmm) {
       const parts = (hhmm || '21:00').split(':');
       const h = parseInt(parts[0], 10) || 0;
@@ -18625,10 +19097,11 @@ function playProgressFinalVideo() {
         } catch(e) {}
       }, { passive: true });
     });
-    // عند الرجوع للتطبيق من الخلفية
+    // عند الرجوع للتطبيق: لا نعيد تشغيل الترنيمة ولا نعمل reload (عشان ما يبدأش من جديد)
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible') {
-        setTimeout(function(){ attemptHymnAutoplay(false); }, 200);
+        // فقط تذكير صامت للمواعيد — بدون إعادة تشغيل الترنيمة
+        try { if (typeof checkReminders === 'function') checkReminders(); } catch (e) {}
       }
     });
 
@@ -18649,7 +19122,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '368';
+      var APP_VER = '371';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -18664,16 +19137,17 @@ function playProgressFinalVideo() {
         }
       } catch (e) {}
 
-      // تنظيف مفاتيح الترقية القديمة مرة واحدة (بدون reload)
+      // تنظيف هادئ للكاش القديم — بدون إعادة تحميل متكررة عند كل فتح
       if (localStorage.getItem(KEY) !== '1') {
         try {
           localStorage.setItem(KEY, '1');
-          ['khalwati_force_v191','khalwati_force_v192','khalwati_force_v193','khalwati_force_v194',
-           'khalwati_force_v230','khalwati_force_v231','khalwati_force_v232','khalwati_force_v233',
-           'khalwati_force_v234','khalwati_force_v235','khalwati_force_v236','khalwati_force_v237','khalwati_force_v238'].forEach(function(k) {
-            try { localStorage.removeItem(k); } catch (e1) {}
-          });
-          // امسح كاشات الإصدارات القديمة في الخلفية فقط
+          try {
+            Object.keys(localStorage).forEach(function(k) {
+              if (k.indexOf('khalwati_force_v') === 0 && k !== KEY) {
+                try { localStorage.removeItem(k); } catch (e0) {}
+              }
+            });
+          } catch (eKeys) {}
           if (window.caches) {
             caches.keys().then(function(keys) {
               return Promise.all(keys.filter(function(k) {

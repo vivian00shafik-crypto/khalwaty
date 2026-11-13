@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="372" lang="ar" dir="rtl">
+<html data-app-ver="373" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -3570,7 +3570,7 @@
         { title: 'أقواله في موقع الأنبا تكلا', url: g('أقوال ' + f.name + ' بستان الرهبان site:'), note: 'نتائج الأنبا تكلا — يُفتح في المتصفح' },
         { title: 'من أقوال الآباء الشيوخ', url: g('أقوال ' + f.name + ' بستان الرهبان الآباء الشيوخ'), note: 'بحث عام — يُفتح في المتصفح' }
       ];
-      if (id === 'anthony') links.unshift({ title: 'القديس أنطونيوس: كلماته وتوجيهاته', url: 'https:///books/fr-athnasius-fahmy/patrology/anthonius.html', note: 'كتاب مدخل في علم الآبائيات — الأنبا تكلا' });
+      if (id === 'anthony') links.unshift({ title: 'القديس أنطونيوس: كلماته وتوجيهاته', url: 'https://st-takla.org/books/fr-athnasius-fahmy/patrology/anthonius.html', note: 'كتاب مدخل في علم الآبائيات — الأنبا تكلا' });
       h += '<div style="margin-top:14px;padding:10px;background:rgba(255,248,230,0.95);border-radius:12px;border:1px solid #e8d9b5;">' +
         '<div style="font-weight:700;margin-bottom:8px;color:#5a4a2a;">📚 اقرئي أقواله وتعاليمه:</div>';
       links.forEach(function (l, i) {
@@ -8676,18 +8676,29 @@ function onPrepareImageSelected(idx, input) {
       }
     ];
     var COMMENTARY_LINKS = [
-      { title: 'تفاسير القمص تادرس يعقوب ملطي', url: 'https:///pub_Bible-Interpretations/Tafseer-Al-Keta-Al-Mokadas-El-3ahd-Al-Adim-02-Abouna-Tadrus-Ya3koob.html', note: 'منشور مجانًا على موقع الأنبا تكلا بإذن المؤلف' },
-      { title: 'تفاسير القمص أنطونيوس فكري', url: 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Antonious-Fekry/', note: 'منشور مجانًا على موقع الأنبا تكلا بإذن المؤلف' },
-      { title: 'دراسات وتفاسير متنوعة — الأنبا تكلا', url: 'https:///bible/commentary/', note: 'روابط تفاسير أرثوذكسية مجانية للقراءة' },
+      { title: 'تفاسير القمص تادرس يعقوب ملطي', url: 'https://st-takla.org/pub_Bible-Interpretations/Tafseer-Al-Keta-Al-Mokadas-El-3ahd-Al-Adim-02-Abouna-Tadrus-Ya3koob.html', note: 'منشور مجانًا على موقع الأنبا تكلا بإذن المؤلف' },
+      { title: 'تفاسير القمص أنطونيوس فكري', url: 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Antonious-Fekry/', note: 'منشور مجانًا على موقع الأنبا تكلا بإذن المؤلف' },
+      { title: 'دراسات وتفاسير متنوعة — الأنبا تكلا', url: 'https://st-takla.org/bible/commentary/', note: 'روابط تفاسير أرثوذكسية مجانية للقراءة' },
       { title: 'آباء الكنيسة (نصوص كلاسيكية — CCEL)', url: 'https://www.ccel.org/fathers.html', note: 'نصوص آباء بالإنجليزية — ملكية عامة غالبًا' }
     ];
     
     function openInAppPage(url, title) {
       if (!url) return;
       url = String(url).trim();
-      if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
-        url = 'https://' + url.replace(/^\/+/, '');
+      // إصلاح روابط التفسير الناقصة: https://st-takla.org/pub_... أو /pub_...
+      if (/^https?:\/\/\/pub_/i.test(url) || /^\/\/pub_/i.test(url) || /^\/pub_/i.test(url) || /^pub_/i.test(url)) {
+        url = url.replace(/^https?:\/\/\/?/i, '').replace(/^\/+/, '');
+        url = 'https://st-takla.org/' + url.replace(/^st-takla\.org\//i, '');
       }
+      if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
+        if (/^pub_Bible/i.test(url) || /^pub_/i.test(url)) {
+          url = 'https://st-takla.org/' + url.replace(/^\/+/, '');
+        } else {
+          url = 'https://' + url.replace(/^\/+/, '');
+        }
+      }
+      // لو لسه https://st-takla.org/ بقي
+      url = url.replace(/^https:\/\/\//i, 'https://st-takla.org/');
       // مواقع ترفض iframe أو تعمل بشكل أفضل خارجيًا
       var forceExt = /google\.|facebook\.|youtube\.|accounts\.|drive\.google|docs\.google|github\.|archive\.org|scribd\.|pdf|dropbox\.|mediafire\.|whatsapp\.|t\.me\.|telegram\./i.test(url);
       if (forceExt) {
@@ -11615,26 +11626,8 @@ function updateSelectedSinsCount() {
       var mins = now.getHours() * 60 + now.getMinutes();
       var queue = [];
 
-      // صلوات الأجبية الفائتة اليوم
-      try {
-        var list = (typeof getAgpeyaAlarms === 'function' ? getAgpeyaAlarms() : []).filter(function(a){ return a.enabled; });
-        list.forEach(function(a) {
-          var am = (typeof timeToMinutes === 'function') ? timeToMinutes(a.time) : -1;
-          if (am < 0 || mins < am) return;
-          // فات على ميعاد الصلاة أكتر من نص ساعة: مفيش إشعار للساعة دي
-          if ((mins - am) > 30) return;
-          var firedKey = 'khalwati_agpeya_fired_' + a.id + '_' + day;
-          if (localStorage.getItem(firedKey) === '1') return;
-          queue.push({
-            kind: 'agpeya',
-            id: a.id,
-            title: 'خلوتي — حان وقت صلاة ' + a.id,
-            body: 'قوموا يا بني النور 🔔 (كان الميعاد ' + a.time + ')',
-            data: { type: 'agpeya', hour: a.id, playAlarm: true },
-            tag: 'khalwati-agpeya-' + a.id
-          });
-        });
-      } catch (e) {}
+      // صلوات الأجبية: لا تُعاد بعد الترنيمة — لها جدولة مستقلة فقط (منع التكرار)
+      // (كانت بتتكرر: مرة في الميعاد + مرة بعد دقيقة من الترنيمة)
 
       // صوت يسوع إن فات ميعاده النهاردة
       try {
@@ -15221,23 +15214,23 @@ function showDesignSavePreview(url, name, silent, blob) {
       var chapterNum = chMatch ? chMatch[1] : '';
       // خريطة مبسطة لصفحات الفهرس المعروفة على st-takla (أصحاح)
       var taklaChapterIndex = {
-        'تكوين': 'https:///pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/01-Genesis/Genesis-Chapter-',
-        'خروج': 'https:///pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/02-Exodus/Exodus-Chapter-',
-        'متى': 'https:///pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/01-Matthew/Matthew-Chapter-',
-        'مرقس': 'https:///pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/02-Mark/Mark-Chapter-',
-        'لوقا': 'https:///pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/03-Luke/Luke-Chapter-',
-        'يوحنا': 'https:///pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/04-John/John-Chapter-',
-        'رومية': 'https:///pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/06-Romans/Romans-Chapter-',
-        'مز': 'https:///pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/19-Psalms/Psalms-Chapter-'
+        'تكوين': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/01-Genesis/Genesis-Chapter-',
+        'خروج': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/02-Exodus/Exodus-Chapter-',
+        'متى': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/01-Matthew/Matthew-Chapter-',
+        'مرقس': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/02-Mark/Mark-Chapter-',
+        'لوقا': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/03-Luke/Luke-Chapter-',
+        'يوحنا': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/04-John/John-Chapter-',
+        'رومية': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/2-Al-3ahd-Al-Gadid/06-Romans/Romans-Chapter-',
+        'مز': 'https://st-takla.org/pub_Bible-Interpretations/Tafaseer-index/1-Al-3ahd-Al-Kadim/19-Psalms/Psalms-Chapter-'
       };
       // روابط مباشرة لتفسير تادرس لبعض الأسفار الشائعة (نمط معروف)
       var tadrosDirect = {
         // مسارات تحقّقنا من نمطها على st-takla (تفسير أصحاح كامل — ليس نصًا مسترجعًا داخل التطبيق)
-        'تكوين': 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/01-Sefr-El-Takween/Tafseer-Sefr-El-Takwin__01-Chapter-',
-        'يوحنا': 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/04-Enjeel-Youhanna/Tafseer-Engeel-Yohanna__01-Chapter-',
-        'متى': 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/01-Engeel-Matta/Tafseer-Engil-Mata__01-Chapter-',
-        'مزمور': 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/21-Sefr-El-Mazameer/Tafseer-Sefr-El-Mazamir__01-Chapter-',
-        'مز': 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/21-Sefr-El-Mazameer/Tafseer-Sefr-El-Mazamir__01-Chapter-'
+        'تكوين': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/01-Sefr-El-Takween/Tafseer-Sefr-El-Takwin__01-Chapter-',
+        'يوحنا': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/04-Enjeel-Youhanna/Tafseer-Engeel-Yohanna__01-Chapter-',
+        'متى': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Tadros-Yacoub-Malaty/01-Engeel-Matta/Tafseer-Engil-Mata__01-Chapter-',
+        'مزمور': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/21-Sefr-El-Mazameer/Tafseer-Sefr-El-Mazamir__01-Chapter-',
+        'مز': 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-01-Old-Testament/Father-Tadros-Yacoub-Malaty/21-Sefr-El-Mazameer/Tafseer-Sefr-El-Mazamir__01-Chapter-'
       };
       function padTaklaChapter(book, num) {
         var n = String(num || '');
@@ -15262,9 +15255,9 @@ function showDesignSavePreview(url, name, silent, blob) {
         }
       }
       // روابط عامة دائمًا
-      chapterLinks.push({ title: 'تفاسير القمص تادرس يعقوب ملطي — فهرس', url: 'https:///pub_Bible-Interpretations/Tafseer-Al-Keta-Al-Mokadas-El-3ahd-Al-Adim-02-Abouna-Tadrus-Ya3koob.html' });
-      chapterLinks.push({ title: 'تفاسير القمص أنطونيوس فكري — فهرس', url: 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Antonious-Fekry/' });
-      chapterLinks.push({ title: 'دراسات وتفاسير متنوعة — الأنبا تكلا', url: 'https:///bible/commentary/' });
+      chapterLinks.push({ title: 'تفاسير القمص تادرس يعقوب ملطي — فهرس', url: 'https://st-takla.org/pub_Bible-Interpretations/Tafseer-Al-Keta-Al-Mokadas-El-3ahd-Al-Adim-02-Abouna-Tadrus-Ya3koob.html' });
+      chapterLinks.push({ title: 'تفاسير القمص أنطونيوس فكري — فهرس', url: 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-02-New-Testament/Father-Antonious-Fekry/' });
+      chapterLinks.push({ title: 'دراسات وتفاسير متنوعة — الأنبا تكلا', url: 'https://st-takla.org/bible/commentary/' });
 
       // —— بناء النص النهائي ——
       var body = '';
@@ -15393,7 +15386,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         if (!t || !chapter) return '';
         if (author === 'Tadros-Yacoub-Malaty' && !t[4]) return '';
         var ch = ('000' + chapter).slice(-t[3]);
-        return 'https:///pub_Bible-Interpretations/Holy-Bible-Tafsir-' +
+        return 'https://st-takla.org/pub_Bible-Interpretations/Holy-Bible-Tafsir-' +
           (t[0] === 'nt' ? '02-New-Testament' : '01-Old-Testament') + '/Father-' + author + '/' + t[1] + '/' + t[2] + '__01-Chapter-' + ch + '.html';
       }
       function g(q) { return 'https://www.google.com/search?q=' + encodeURIComponent(q); }
@@ -16467,6 +16460,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           }
         } catch (e) {}
         localStorage.setItem(firedKey, '1');
+        try { localStorage.setItem('khalwati_agpeya_notified_' + id + '_' + day, '1'); } catch (eN) {}
         if (!ok) console.log('agpeya notif may have failed', id);
       } catch (e) { console.log('fireAgpeya', e); }
     }
@@ -18619,9 +18613,11 @@ function playProgressFinalVideo() {
           var tid = setTimeout(function() {
             var dayKey = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
             var key = 'khalwati_agpeya_notified_' + a.id + '_' + dayKey;
+            var firedKey = 'khalwati_agpeya_fired_' + a.id + '_' + dayKey;
             try {
-              if (localStorage.getItem(key) === '1') return;
+              if (localStorage.getItem(key) === '1' || localStorage.getItem(firedKey) === '1') return;
               localStorage.setItem(key, '1');
+              localStorage.setItem(firedKey, '1');
             } catch(e) {}
             var title = 'خلوتي — ' + (a.emoji || '🔔') + ' ' + a.id;
             var body = 'حان وقت صلاة ' + a.id + ' — قوموا يا بني النور';
@@ -19028,7 +19024,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '372';
+      var APP_VER = '373';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

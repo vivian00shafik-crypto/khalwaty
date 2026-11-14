@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="376" lang="ar" dir="rtl">
+<html data-app-ver="377" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -11560,6 +11560,16 @@ function updateSelectedSinsCount() {
 
       window._hymnEndedOnce = false;
       window._hymnPlaying = true;
+        try {
+          var sj = document.getElementById('sawtRabina'); if (sj) { sj.pause(); }
+          var sh = document.getElementById('shenoudaVoiceAudio'); if (sh) { sh.pause(); }
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+        } catch (eHJ) {};
+        try {
+          var sj = document.getElementById('sawtRabina'); if (sj) { sj.pause(); }
+          var sh = document.getElementById('shenoudaVoiceAudio'); if (sh) { sh.pause(); }
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+        } catch (eHJ) {};
       try {
         audio.muted = false;
         audio.volume = 1;
@@ -12179,7 +12189,11 @@ function updateSelectedSinsCount() {
         const label = (f === 'Aref Ruqaa') ? '✍ خط اليد (Aref Ruqaa)' : f;
         return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — نموذج خلوتي</div>`;
       }).join('');
-      return { theme: v.theme, text: lang === 'en' ? v.en : v.ar };
+      var text = lang === 'en' ? (v.en || v.ar) : (v.ar || v.en);
+      var ref = '';
+      var mm = String(text || '').match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
+      if (mm) ref = mm[1].trim();
+      return { theme: v.theme, text: text, ref: ref };
     }
 
 
@@ -12270,6 +12284,10 @@ function updateSelectedSinsCount() {
 
     function deliverJesusVoiceWithShenoudaFallback() {
       try {
+        if (typeof isHymnPlaying === 'function' && isHymnPlaying()) {
+          deferJesusUntilAfterHymn(function() { deliverJesusVoiceWithShenoudaFallback(); });
+          return;
+        }
         if (window._contentAudioPage || window._bibleMusicPlaying) {
           window._jesusVoiceDeferred = true;
           return;
@@ -12422,7 +12440,15 @@ function updateSelectedSinsCount() {
             { tag: 'khalwati-jesus', requireInteraction: true, data: { type: 'jesus', text: verse.text, play: true } }
           );
         }
-        try { if (typeof playSawtRabina === 'function') playSawtRabina(); } catch (e) {}
+        try {
+          if (typeof isHymnPlaying === 'function' && isHymnPlaying()) {
+            deferJesusUntilAfterHymn(function() {
+              if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') deliverJesusVoiceWithShenoudaFallback();
+            });
+          } else if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+            deliverJesusVoiceWithShenoudaFallback();
+          }
+        } catch (e) {}
         try { if (typeof showVerseInApp === 'function') showVerseInApp(verse); } catch (e) {}
         // علّم بعد المحاولة حتى لو الصوت اتقفل
         localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
@@ -12585,7 +12611,60 @@ function updateSelectedSinsCount() {
 
 
 
+
+    function isHymnPlaying() {
+      try {
+        if (window._hymnPlaying === true) return true;
+        var h = document.getElementById('hymnAudio');
+        if (h && !h.paused && !h.ended) return true;
+      } catch (e) {}
+      return false;
+    }
+
+    /** أي صوت/إشعار ليسوع: لا أثناء الترنيمة — بعد انتهائها بدقيقة */
+    function deferJesusUntilAfterHymn(fn) {
+      if (typeof fn !== 'function') return;
+      if (!isHymnPlaying()) {
+        try { fn(); } catch (e) {}
+        return;
+      }
+      var h = document.getElementById('hymnAudio');
+      if (!h) {
+        setTimeout(function() { try { fn(); } catch (e) {} }, 60000);
+        return;
+      }
+      if (window._jesusDeferAfterHymnBound) {
+        window._jesusPendingAfterHymn = fn;
+        return;
+      }
+      window._jesusDeferAfterHymnBound = true;
+      window._jesusPendingAfterHymn = fn;
+      var onEnd = function() {
+        try { h.removeEventListener('ended', onEnd); } catch (e0) {}
+        window._jesusDeferAfterHymnBound = false;
+        window._hymnPlaying = false;
+        var run = window._jesusPendingAfterHymn;
+        window._jesusPendingAfterHymn = null;
+        setTimeout(function() {
+          if (isHymnPlaying()) {
+            deferJesusUntilAfterHymn(run);
+            return;
+          }
+          try { if (run) run(); } catch (e1) {}
+        }, 60000);
+      };
+      try { h.addEventListener('ended', onEnd); } catch (e2) {
+        window._jesusDeferAfterHymnBound = false;
+        setTimeout(function() { try { fn(); } catch (e3) {} }, 90000);
+      }
+    }
+
     function playSawtRabina() {
+      if (typeof isHymnPlaying === 'function' && isHymnPlaying()) {
+        deferJesusUntilAfterHymn(function() { playSawtRabina(); });
+        if (typeof showToast === 'function') showToast('صوت يسوع بعد انتهاء الترنيمة بدقيقة');
+        return;
+      }
       const a = document.getElementById('sawtRabina');
       if (!a) return;
       if (isMuted()) {
@@ -18847,26 +18926,39 @@ function playProgressFinalVideo() {
       const existing = document.getElementById('verseAlertCard');
       if (existing) existing.remove();
       window._lastJesusVerse = verse;
+      var fullText = String((verse && verse.text) || '').trim();
+      var ref = '';
+      var body = fullText;
+      var m = fullText.match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
+      if (m) {
+        ref = m[1].trim();
+        body = fullText.replace(m[0], '').trim();
+      }
+      if (verse && verse.ref) ref = String(verse.ref).trim();
       const card = document.createElement('div');
       card.id = 'verseAlertCard';
       card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:45vh;overflow:auto;';
-      const safeTheme = String(verse.theme || '').replace(/</g,'&lt;');
-      const safeText = String(verse.text || '').replace(/</g,'&lt;');
-      card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong style="color:#5c4033;">صوت يسوع اليومي — ${safeTheme}</strong>
-          <button type="button" onclick="document.getElementById('verseAlertCard').remove()" style="border:none;background:#f5e6c8;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>
-        </div>
-        <p style="font-size:14px;line-height:1.85;color:#3e2f1c;">${safeText}</p>
-        <button class="save-btn" style="margin-top:10px;width:100%;" type="button" onclick="playSawtRabina();">▶ تشغيل صوت ربنا</button>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-          <button class="save-btn" style="flex:1;margin:0;padding:10px;" type="button" onclick="designJesusVerse();">🎨 تصميم</button>
-          <button class="save-btn" style="flex:1;margin:0;padding:10px;background:#5a7d4a;" type="button" onclick="saveJesusVerseToList();">💾 حفظ في آياتي</button>
-        </div>
-      `;
+      const safeTheme = String((verse && verse.theme) || 'آية اليوم').replace(/</g,'&lt;');
+      const safeBody = String(body || fullText).replace(/</g,'&lt;');
+      const safeRef = String(ref || '').replace(/</g,'&lt;');
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
+          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ ' + safeTheme + '</div>' +
+        '</div>' +
+        '<div style="font-size:15px;line-height:1.85;color:#3e2f1c;font-weight:600;">' + safeBody + '</div>' +
+        (safeRef ? ('<div style="margin-top:10px;font-size:13px;color:#6b5b3e;border-top:1px solid #e8dcc0;padding-top:8px;">📖 الشاهد: ' + safeRef + '</div>') : '') +
+        '<div style="margin-top:6px;font-size:11px;color:#9a8a70;">آية مختلفة كل يوم على مدار السنة</div>';
       document.body.appendChild(card);
+      setTimeout(function() {
+        try {
+          var c = document.getElementById('verseAlertCard');
+          if (c) c.remove();
+        } catch (e) {}
+      }, 120000);
     }
 
+    
     function designJesusVerse() {
       const v = window._lastJesusVerse || getDailyVerse();
       const ref = 'صوت يسوع — ' + (v.theme || '');
@@ -19112,7 +19204,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '376';
+      var APP_VER = '377';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

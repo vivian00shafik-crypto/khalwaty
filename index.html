@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="377" lang="ar" dir="rtl">
+<html data-app-ver="378" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -10975,6 +10975,15 @@ function openKatameros(dateObj) {
         text: "يا رب يسوع المسيح اذكر كل واحد وواحد باسمه، وكل واحدة وواحدة باسمها.\nالمرضى اشفِهم، الحزانى عزِّهم، الضعفاء قوِّهم، المتضايقين فك ضيقاتهم.\nيا رب اجعل بيوتهم عامرة بحسهم، واحفظ أولادهم، واجعل أولادهم يا ربي ثمرة صالحة.\nواللي ما عندهوش أولاد يا ربي فرِّح قلوبهم وأعطِهم.\nكن معنا يا رب جميعًا، لأنك أنت قادر على كل شيء، وفي يدك كل شيء، وتستطيع كل شيء، وتقول للشيء: كن فيكون."
       },
 
+
+      {
+        id: 'jabez_prayer',
+        title: 'صلاة يعبيص',
+        by: 'يعبيص',
+        label: 'صلاة يعبيص',
+        text: "وَدَعَا يَعْبِيصُ إِلَهَ إِسْرَائِيلَ قَائِلًا: «لَيْتَكَ تُبَارِكُنِي، وَتُوَسِّعُ تُخُومِي، وَتَكُونُ يَدُكَ مَعِي، وَتَحْفَظُنِي مِنَ الشَّرِّ حَتَّى لَا يُتْعِبُنِي». فَآتَاهُ اللهُ بِمَا سَأَلَ.\n(أخبار الأيام الأول 4: 10)"
+      },
+
       {
         id: 'hannah_prayer',
         title: 'صلاة حنّة أم صموئيل',
@@ -11535,6 +11544,9 @@ function updateSelectedSinsCount() {
         if (sessionStorage.getItem('khalwati_hymn_session_done') === '1' && !window._forceHymnReplay) {
           return;
         }
+        if (sessionStorage.getItem('khalwati_hymn_attempted') === '1' && !window._forceHymnReplay) {
+          return;
+        }
       } catch(e) {}
 
       if (typeof isMuted === 'function' && isMuted()) {
@@ -11546,6 +11558,7 @@ function updateSelectedSinsCount() {
 
       // أوقّف أي صوت تاني من غير ما ألمس الترنيمة
       if (typeof stopAllAppAudio === 'function') stopAllAppAudio('hymn');
+      try { sessionStorage.setItem('khalwati_hymn_attempted', '1'); } catch(eAtt) {}
 
       function onHymnReallyEnded() {
         if (window._hymnEndedOnce) return;
@@ -19106,6 +19119,17 @@ function playProgressFinalVideo() {
     });
 
     // Play hymn on open (full duration)
+    
+    // الرجوع من تطبيق آخر / bfcache: لا إعادة تحميل منطقي ولا ترنيمة من جديد
+    window.addEventListener('pageshow', function(ev) {
+      try {
+        if (ev && ev.persisted) {
+          window._hymnPlaying = false;
+          try { sessionStorage.setItem('khalwati_hymn_attempted', '1'); } catch (e0) {}
+        }
+      } catch (e) {}
+    });
+
     window.addEventListener('load', () => {
       setTimeout(function() {
         const saved = localStorage.getItem('khalwati_font') || 'Cairo';
@@ -19117,9 +19141,19 @@ function playProgressFinalVideo() {
           applyTypography();
         }
       }, 50);
-      // تشغيل الترنيمة فور فتح التطبيق
-      setTimeout(function(){ try { attemptHymnAutoplay(true); } catch(e) { console.log(e); } }, 400);
-      setTimeout(function(){ try { attemptHymnAutoplay(false); } catch(e) {} }, 2000);
+      // تشغيل الترنيمة مرة واحدة فقط لكل جلسة — مش كل ما نرجع من تطبيق تاني
+      setTimeout(function(){
+        try {
+          if (sessionStorage.getItem('khalwati_hymn_attempted') === '1' || sessionStorage.getItem('khalwati_hymn_session_done') === '1') return;
+        } catch(eS) {}
+        try { attemptHymnAutoplay(true); } catch(e) { console.log(e); }
+      }, 400);
+      setTimeout(function(){
+        try {
+          if (sessionStorage.getItem('khalwati_hymn_attempted') === '1' || sessionStorage.getItem('khalwati_hymn_session_done') === '1') return;
+        } catch(eS) {}
+        try { attemptHymnAutoplay(false); } catch(e) {}
+      }, 2000);
     });
 
     function showHymnStartGate() {
@@ -19143,6 +19177,11 @@ function playProgressFinalVideo() {
       }
       try {
         if (sessionStorage.getItem('khalwati_hymn_session_done') === '1' && !window._forceHymnReplay) {
+          if (typeof hideHymnStartGate === 'function') hideHymnStartGate();
+          return;
+        }
+        // لو اتحاول تشغيلها قبل كده في نفس الجلسة (حتى لو الصفحة اتعملت reload بعد الرجوع من تطبيق آخر) — متعيدش
+        if (sessionStorage.getItem('khalwati_hymn_attempted') === '1' && !window._forceHymnReplay) {
           if (typeof hideHymnStartGate === 'function') hideHymnStartGate();
           return;
         }
@@ -19204,7 +19243,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '377';
+      var APP_VER = '378';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

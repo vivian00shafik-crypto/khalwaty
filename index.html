@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="378" lang="ar" dir="rtl">
+<html data-app-ver="379" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -8937,13 +8937,14 @@ function onPrepareImageSelected(idx, input) {
             fetch(TAFSIR_WORKER_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ref: ref, verseText: text, sources: commentarySources(ref, text) }),
+              body: JSON.stringify({ ref: ref, verseText: text, sources: commentarySources(ref, text), lexiconAssist: (typeof buildLexiconAssist==='function'?buildLexiconAssist(text):[]), tradition: 'coptic_orthodox', lang: 'ar' }),
               signal: ctrl2.signal
             }).then(function (res) { return res.json(); }).then(function (data) {
               clearTimeout(tm2);
               go.disabled = false;
               if (data && data.mode === 'ai' && data.text) {
                 var aiBody = '【 الآية 】\n' + ref + '\n' + text + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+                try { aiBody = appendLexiconToTafsir(aiBody, text); } catch(eLx) {}
                 out.textContent = aiBody;
                 window._lastTafsir = { ref: ref, text: text, content: aiBody };
               } else {
@@ -15534,6 +15535,122 @@ function showDesignSavePreview(url, name, silent, blob) {
       return linkBox;
     }
 
+    
+    /** قاموس ألفاظ كتابية مساعد لتحسين قسم المعنى اللغوي (من جهة التطبيق) */
+    var KHALWATI_LEXICON = {
+      'محبة': 'محبة الله والناس؛ عطاء وبذل',
+      'نعمة': 'عطية الله المجانية وعونه للإنسان',
+      'إيمان': 'ثقة وتصديق وائتمان على الله ووعده',
+      'آمن': 'وثق وصدّق واعتمد',
+      'توبة': 'رجوع القلب عن الخطية إلى الله',
+      'مجد': 'بهاء وحضور الله أو كرامة تُنسب له',
+      'بر': 'استقامة أمام الله؛ برّ الله للمؤمن',
+      'سلام': 'سلامة وصلح مع الله والناس',
+      'رجاء': 'انتظار واثق لما وعد به الله',
+      'صبر': 'ثبات تحت الضيق دون يأس',
+      'أناة': 'بطء غضب وصبر على الضعف',
+      'فرح': 'ابتهاج روحي أعمق من السرور الظاهري',
+      'خلاص': 'نجاة من الخطية والموت بعمل الله',
+      'خطية': 'تعدٍّ على وصية الله وانفصال عنه',
+      'مغفرة': 'صفح الله عن الخطية',
+      'غفران': 'صفح وستر للخطية من عند الله',
+      'روح': 'الروح القدس أو روح الإنسان حسب السياق',
+      'كلمة': 'قول الله؛ وقد تشير للمسيح',
+      'عهد': 'ميثاق إلهي بين الله وشعبه',
+      'صلاة': 'حديث القلب مع الله',
+      'صوم': 'انقطاع للانشغال بالله',
+      'رحمة': 'تحنن الله على الضعف',
+      'حق': 'صدق وأمانة؛ الله هو الحق',
+      'نور': 'إعلان الله وقداسته',
+      'حياة': 'الحياة من الله؛ والحياة الأبدية في المسيح',
+      'موت': 'انفصال جسدي أو روحي عن الله',
+      'قيامة': 'نهوض من الموت بقوة الله',
+      'ملكوت': 'ملك الله وحكمه',
+      'رب': 'السيد المالك؛ لقب إلهي',
+      'قدوس': 'منفصل عن الخطية وكامل القداسة',
+      'بركة': 'خير ونعمة من عند الله',
+      'بارك': 'منح بركة أو نطق بالبركة',
+      'حفظ': 'حماية ورعاية من الله',
+      'يد': 'القوة والعون الإلهي حين تُنسب لله',
+      'قلب': 'مركز الفكر والإرادة والمشاعر',
+      'نفس': 'الذات الحية؛ الحياة الداخلية',
+      'دم': 'الحياة؛ وفي العهد كفارة وفداء',
+      'خبز': 'القوت؛ وفي السر جسد المسيح',
+      'ماء': 'ماء طبيعي ورمز للروح والحياة',
+      'صليب': 'علامة الفداء وآلام المسيح',
+      'كنيسة': 'جماعة المؤمنين جسد المسيح',
+      'إنجيل': 'البشارة المفرحة بيسوع المسيح',
+      'ناموس': 'شريعة موسى أو مبدأ الشريعة',
+      'حكمة': 'فهم من الله لحياة مستقيمة',
+      'ضيق': 'شدة وتجربة',
+      'غضب': 'سخط؛ غضب الله ضد الخطية',
+      'فداء': 'تحرير بثمن؛ عمل المسيح',
+      'سر': 'عمل نعمة كنسي يمنح نعمة غير منظورة',
+      'تخوم': 'الحدود والمجال',
+      'تخم': 'حدّ أو حدود',
+      'وسع': 'وسّع الحدود أو المجال',
+      'شر': 'الأذى والخطية',
+      'تعب': 'إرهاق أو أذى يثقل الإنسان',
+      'توكل': 'الاعتماد على الرب',
+      'اتكال': 'اعتماد القلب على الله',
+      'شهادة': 'الإقرار بالمسيح',
+      'تواضع': 'اتضاع القلب أمام الله والناس',
+      'قداسة': 'تكريس لله وطهارة السيرة',
+      'ابن': 'بنوة؛ وفي المسيح بنوة النعمة',
+      'أب': 'الله الآب أو الأب البشري حسب السياق',
+      'إخوة': 'الإخوة في الجسد أو الإيمان',
+      'قريب': 'الآخر الذي أُمرتُ أن أحبه',
+      'عالم': 'الخليقة أو نظام العالم حسب السياق',
+      'مزمور': 'تسبيحة من سفر المزامير',
+      'آية': 'نص كتابي مرقم أو علامة',
+      'شفاعة': 'طلب من أجل آخرين',
+      'نعيم': 'فرح وراحة عند الله',
+      'رجاء': 'انتظار واثق لوعود الله'
+    };
+
+    function khNormLex(s) {
+      return String(s || '').replace(/[\u064B-\u0652\u0640\u0670]/g, '')
+        .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+    }
+
+    function buildLexiconAssist(verseText) {
+      var raw = String(verseText || '').replace(/[^\u0600-\u06FF\s]/g, ' ');
+      var words = raw.split(/\s+/).filter(Boolean);
+      var seen = {};
+      var lines = [];
+      var keys = Object.keys(KHALWATI_LEXICON);
+      for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        var n = khNormLex(w).replace(/^ال/, '');
+        if (n.length < 2) continue;
+        var hitKey = null;
+        for (var k = 0; k < keys.length; k++) {
+          var kn = khNormLex(keys[k]);
+          if (kn === n || kn === khNormLex(w) || n.indexOf(kn) === 0 && kn.length >= 3) {
+            hitKey = keys[k];
+            break;
+          }
+        }
+        if (!hitKey || seen[hitKey]) continue;
+        seen[hitKey] = 1;
+        lines.push('• ' + hitKey + ' — ' + KHALWATI_LEXICON[hitKey]);
+        if (lines.length >= 10) break;
+      }
+      return lines;
+    }
+
+    function appendLexiconToTafsir(aiText, verseText) {
+      var text = String(aiText || '');
+      if (/بيان معجمي مساعد/i.test(text)) return text;
+      var lines = buildLexiconAssist(verseText);
+      if (!lines.length) return text;
+      return text.replace(/\s+$/, '') +
+        '\n\n——\nالمعنى اللغوي (بيان معجمي مساعد):\n' +
+        lines.join('\n') +
+        '\n\n(معانٍ موجزة منضبطة من التطبيق؛ راجعي التفاسير الكنسية للتفصيل.)';
+    }
+
+
     function openVerseTafsir() {
       try {
         var snap = window._verseMenuData || {};
@@ -15639,6 +15756,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         function showAiResult(aiContent) {
           loading.style.display = 'none';
           box.style.display = 'block';
+          try { aiContent = appendLexiconToTafsir(aiContent, txt); } catch (eLex) {}
           box.textContent = aiContent;
           actions.style.display = 'flex';
           var speakBtn = document.getElementById('tafsirSpeakBtn');
@@ -15673,12 +15791,15 @@ function showDesignSavePreview(url, name, silent, blob) {
 
           var ctrl = new AbortController();
           var tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 70000);
+          var lexLines = [];
+          try { lexLines = buildLexiconAssist(txt); } catch (eL0) {}
           var payload = {
             ref: ref,
             verseText: txt,
             sources: (typeof commentarySources === 'function' ? commentarySources(ref, txt) : []),
             tradition: 'coptic_orthodox',
-            lang: 'ar'
+            lang: 'ar',
+            lexiconAssist: lexLines
           };
           fetch(TAFSIR_WORKER_URL, {
             method: 'POST',
@@ -19243,7 +19364,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '378';
+      var APP_VER = '379';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="383" lang="ar" dir="rtl">
+<html data-app-ver="384" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -15922,10 +15922,30 @@ function showDesignSavePreview(url, name, silent, blob) {
     }
 
     function fetchStepJson(url) {
-      return fetch(url).then(function (res) {
-        if (!res.ok) return null;
+      function parseRes(res) {
+        if (!res || !res.ok) return null;
         return res.json().catch(function () { return null; });
-      }).catch(function () { return null; });
+      }
+      // 1) طلب مباشر
+      return fetch(url).then(parseRes).then(function (data) {
+        if (data) return data;
+        // 2) إن فشل بسبب CORS/شبكة: عبر وسيط عام
+        var proxies = [
+          'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+          'https://corsproxy.io/?' + encodeURIComponent(url)
+        ];
+        var chain = Promise.resolve(null);
+        proxies.forEach(function (p) {
+          chain = chain.then(function (prev) {
+            if (prev) return prev;
+            return fetch(p).then(parseRes).catch(function () { return null; });
+          });
+        });
+        return chain;
+      }).catch(function () {
+        var p = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        return fetch(p).then(parseRes).catch(function () { return null; });
+      });
     }
 
     function fetchStepLinguisticData(ref) {
@@ -16534,12 +16554,44 @@ function showDesignSavePreview(url, name, silent, blob) {
     function buildGeneralVerseMeaning(ref, verseText, words) {
       var txt = String(verseText || '').replace(/\s+/g, ' ').trim();
       if (!txt) return 'اختاري آية من الكتاب لعرض معناها ببساطة.';
-      // معنى عام بسيط من نص الآية العربي — جملة واضحة للمؤمن
+
+      var bits = [];
+      var seen = {};
+      try {
+        var hard = (typeof findArabicHardWords === 'function') ? (findArabicHardWords(txt) || []) : [];
+        hard.forEach(function (h) {
+          if (!h || !h.meaning || seen[h.meaning]) return;
+          seen[h.meaning] = 1;
+          bits.push({ w: h.word, m: h.meaning });
+        });
+      } catch (e0) {}
+
+      (words || []).forEach(function (e) {
+        var m = '';
+        try { m = simpleArabicMeaning(e); } catch (e1) {}
+        if (!m || seen[m]) return;
+        if (m.length < 3) return;
+        seen[m] = 1;
+        var w = (e && (e.word || e.original)) || '';
+        bits.push({ w: w, m: m });
+      });
+
+      if (bits.length) {
+        var lines = bits.slice(0, 8).map(function (b, idx) {
+          return (idx + 1) + ') ' + (b.w ? (b.w + ' = ') : '') + b.m;
+        });
+        var summary = bits.slice(0, 6).map(function (b) { return b.m; }).join('، ');
+        return 'من معاني الكلمات:\n' + lines.join('\n') +
+          '\n\nالمعنى العام للآية:\n' +
+          'الآية بتتكلم عن: ' + summary + '.' +
+          '\n\n(مبني على معاني الكلمات المستخرجة — مش تفسير روحي كامل.)';
+      }
+
       var t = txt.replace(/[«»""]/g, '').trim();
-      // اختصار لطيف بدون تشويه
-      if (t.length > 220) t = t.slice(0, 220) + '…';
-      return 'ببساطة: الآية بتقول إن ' + t + '\n\n(ده إعادة صياغة بسيطة لنص الآية، مش تفسير روحي كامل.)';
+      if (t.length > 160) t = t.slice(0, 160) + '…';
+      return 'مفيش كلمات صعبة كافية لبناء ملخص منفصل.\nنص الآية: «' + t + '»';
     }
+
 
     /** كلمات عربية كتابية صعبة → معنى بسيط بالمصري/العربي الواضح */
     var ARABIC_BIBLE_GLOSS = {
@@ -16734,21 +16786,9 @@ function showDesignSavePreview(url, name, silent, blob) {
       verseBlock.appendChild(vTxt);
       box.appendChild(verseBlock);
 
-      // المعنى العام — جملة بسيطة فقط
-      var genWrap = document.createElement('div');
-      genWrap.style.cssText = 'margin-bottom:14px;padding:14px;border-radius:12px;background:#f3ebe0;line-height:1.9;font-size:15px;border:1px solid #e0d0b0;';
-      var g1 = document.createElement('div');
-      g1.style.cssText = 'font-weight:700;margin-bottom:8px;color:#6b5b3e;font-size:16px;';
-      g1.textContent = 'المعنى العام ببساطة';
-      genWrap.appendChild(g1);
-      var g2 = document.createElement('div');
-      g2.style.cssText = 'white-space:pre-line;color:#3d3426;';
-      g2.textContent = buildGeneralVerseMeaning(ref, verseText, (data && data.words) || []);
-      genWrap.appendChild(g2);
-      box.appendChild(genWrap);
-
-      // معاني الكلمات العربية الصعبة
-      var hard = findArabicHardWords(verseText);
+      // 1) معاني الكلمات العربية الصعبة أولًا
+      var hard = [];
+      try { hard = findArabicHardWords(verseText) || []; } catch (eH) { hard = []; }
       var words = (data && Array.isArray(data.words)) ? data.words : [];
 
       var wH = document.createElement('div');
@@ -16819,10 +16859,23 @@ function showDesignSavePreview(url, name, silent, blob) {
         box.appendChild(card);
       });
 
+      // 2) المعنى العام بعد سرد معاني الكلمات
+      var genWrap = document.createElement('div');
+      genWrap.style.cssText = 'margin-top:14px;margin-bottom:10px;padding:14px;border-radius:12px;background:#f3ebe0;line-height:1.9;font-size:15px;border:1px solid #e0d0b0;';
+      var g1 = document.createElement('div');
+      g1.style.cssText = 'font-weight:700;margin-bottom:8px;color:#6b5b3e;font-size:16px;';
+      g1.textContent = 'المعنى العام للآية (من معاني الكلمات)';
+      genWrap.appendChild(g1);
+      var g2 = document.createElement('div');
+      g2.style.cssText = 'white-space:pre-line;color:#3d3426;';
+      g2.textContent = buildGeneralVerseMeaning(ref, verseText, words);
+      genWrap.appendChild(g2);
+      box.appendChild(genWrap);
+
       // ملاحظة قصيرة
       var foot = document.createElement('div');
       foot.style.cssText = 'margin-top:12px;font-size:12px;color:#9a8a70;line-height:1.6;';
-      foot.textContent = 'المعنى اللغوي هنا لفهم الكلمات العربية الصعبة ببساطة. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
+      foot.textContent = 'المعنى اللغوي لفهم الكلمات الصعبة. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
       box.appendChild(foot);
     }
 
@@ -17616,7 +17669,7 @@ function showDesignSavePreview(url, name, silent, blob) {
           var nice = (typeof generateLinguisticNote === 'function') ? generateLinguisticNote(txt, ref) : localContent;
           window._lastMeaning.content = nice;
           window._lastMeaning.source = 'local';
-          status.textContent = reasonMsg || 'معاني من معجم التطبيق (بدون إنترنت/STEP).';
+          status.textContent = 'معاني الكلمات من معجم التطبيق' + (reasonMsg && reasonMsg.indexOf('STEP') >= 0 ? ' (تعذر STEP مؤقتًا)' : '');
           bindMeaningActions();
         }
 
@@ -20535,7 +20588,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '383';
+      var APP_VER = '384';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="382" lang="ar" dir="rtl">
+<html data-app-ver="383" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -15034,41 +15034,61 @@ function showDesignSavePreview(url, name, silent, blob) {
         return 'لم يتم التعرف على نص الآية.\nاختاري الآية من الكتاب ثم اضغطي «المعنى اللغوي».';
       }
       t = t.replace(/^\s*\d+\s*[-–.]?\s*/, '');
-      var words = t.split(/\s+/).filter(Boolean).slice(0, 24);
-      var notes = [];
-      var seen = {};
-      words.forEach(function (w) {
-        var clean = w.replace(/[^\u0600-\u06FF]/g, '');
-        if (!clean || clean.length < 2) return;
-        var norm = stripTashkeel(clean);
-        if (seen[norm]) return;
-        seen[norm] = true;
-        var meaning = lexiconLookup(clean);
-        var origin = originLookup(clean);
-        if (meaning || origin) {
-          var line = '• «' + clean + '»';
-          if (meaning) line += '\n  المعنى العربي: ' + meaning;
-          else line += '\n  المعنى العربي: غير متاح في المعجم المدمج.';
-          if (origin) line += '\n  الأصل اللغوي (' + origin.lang + '): ' + origin.note;
-          else line += '\n  الأصل اللغوي: غير متاح في المعجم المدمج.';
-          notes.push(line);
-        }
-      });
+
+      // كلمات عربية صعبة من قاموس التطبيق
+      var hard = [];
+      try {
+        if (typeof findArabicHardWords === 'function') hard = findArabicHardWords(t) || [];
+      } catch (e0) { hard = []; }
+
+      // إن لم يجد: ابحث في BIBLE_LEXICON / ARABIC_BIBLE_GLOSS كلمة كلمة مع تخطي الحروف
+      if (!hard.length) {
+        var seen = {};
+        var tokens = t.replace(/[^\u0600-\u06FF\s]/g, ' ').split(/\s+/).filter(Boolean);
+        var skip = { 'على':1,'من':1,'إلى':1,'الى':1,'في':1,'عن':1,'مع':1,'هذا':1,'هذه':1,'ذلك':1,'التي':1,'الذي':1,'ما':1,'لا':1,'إن':1,'ان':1,'أو':1,'و':1 };
+        tokens.forEach(function (w) {
+          var clean = w.replace(/[^\u0600-\u06FF]/g, '');
+          if (!clean || clean.length < 3) return;
+          var nt = (typeof khStripTashkeel === 'function' ? khStripTashkeel(clean) : clean).replace(/^و/, '').replace(/^ال/, '');
+          if (skip[nt] || seen[nt]) return;
+          var meaning = null;
+          try { if (typeof lexiconLookup === 'function') meaning = lexiconLookup(clean); } catch (e1) {}
+          if (!meaning && typeof ARABIC_BIBLE_GLOSS === 'object') {
+            var keys = Object.keys(ARABIC_BIBLE_GLOSS);
+            for (var i = 0; i < keys.length; i++) {
+              var kk = (typeof khStripTashkeel === 'function' ? khStripTashkeel(keys[i]) : keys[i]).replace(/^ال/, '');
+              if (kk === nt || nt.indexOf(kk) === 0 || kk.indexOf(nt) === 0) {
+                meaning = ARABIC_BIBLE_GLOSS[keys[i]];
+                break;
+              }
+            }
+          }
+          if (!meaning) return;
+          seen[nt] = 1;
+          hard.push({ word: clean, meaning: meaning });
+        });
+      }
+
       var out = '';
-      out += '【 الآية 】\n';
+      out += 'الآية\n';
       if (r) out += r + '\n';
       out += t + '\n\n';
-      out += '【 المعنى اللغوي 】\n';
-      if (notes.length) out += notes.join('\n\n');
-      else out += '• لم تُعرف مفردات كافية في المعجم المدمج. جرّبي آية أخرى أو راجعي تفسيرًا كنسيًا.';
-      out += '\n\n【 جملة الآية 】\n';
-      out += 'اجمعي معاني المفردات مع سياق الأصحاح؛ المعنى الكامل لا يُؤخذ من كلمة مفردة فقط.';
-      out += '\n\n【 ملاحظة ومصادر 】\n';
-      out += '• المعنى العربي: معانٍ سياقية شائعة في الترجمات الكتابية الكلاسيكية والمعاجم العربية العامة — ليست تفسيرًا آبائيًا.\n';
-      out += '• الأصل اللغوي (حيث وُجد): من Strong\'s Exhaustive Concordance 1890 (ملكية عامة).\n';
-      out += '• إن لم يتوفر أصل موثوق يُذكر «غير متاح». المعجم للاستخدام الروحي اليومي وليس بديلاً عن المعاجم العلمية.';
+      out += 'المعنى العام ببساطة\n';
+      out += 'ببساطة: الآية بتقول إن ' + t + '\n\n';
+      out += 'معاني الكلمات الصعبة\n';
+      if (hard.length) {
+        hard.forEach(function (item) {
+          out += '• الكلمة: ' + item.word + '\n';
+          out += '  المعنى: ' + item.meaning + '\n\n';
+        });
+      } else {
+        out += '• مفيش كلمات صعبة متسجلة لهذه الآية في المعجم المحلي.\n';
+        out += '  اقرئي الآية فوق: معناها العام من نصها نفسه.\n\n';
+      }
+      out += 'ملاحظة: ده معنى لغوي بسيط للكلمات العربية. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
       return out;
     }
+
 
     function generateOrthodoxTafsir(ref, text) {
       var t = String(text || '').replace(/\s+/g, ' ').trim();
@@ -16606,7 +16626,26 @@ function showDesignSavePreview(url, name, silent, blob) {
       'كُلِّيَّة': 'بكمال',
       'دَهْر': 'عصر / زمن طويل',
       'أَبَدِي': 'لا ينتهي',
-      'أَبَدِيَّة': 'حياة لا تزول'
+      'أَبَدِيَّة': 'حياة لا تزول',
+
+      'فرْثَ': 'روث / نجاسة (صورة إذلال في الأعياد)',
+      'فَرْثَ': 'روث / نجاسة (صورة إذلال)',
+      'أَنْتَهِرُ': 'أزجر بشدة / أوبّخ',
+      'أنتهر': 'أزجر بشدة / أوبّخ',
+      'أمدُّ': 'أفرّق وأنشر',
+      'أَمُدُّ': 'أفرّق وأنشر',
+      'تتعرّعون': 'تتفاخرون',
+      'تَتْزَرَّعُونَ': 'تتفاخرون / تفتخرون',
+      'فتتزرعون': 'تتفاخرون',
+      'تَتْزَرَّعُون': 'تتفاخرون',
+
+      'تزرعون': 'تُزرَعون / تُدفَنون مع الزرع (صورة إذلال)',
+      'فَتُزْرَعُونَ': 'تُزرَعون معه (صورة إذلال)',
+      'فتزرعون': 'تُزرَعون معه',
+      'تُزْرَعُونَ': 'تُزرَعون',
+      'أعيادكم': 'أعيادكم واحتفالاتكم',
+      'وجوهكم': 'وجوهكم',
+
     };
 
     function khStripTashkeel(s) {
@@ -17556,12 +17595,28 @@ function showDesignSavePreview(url, name, silent, blob) {
         }
 
         function showLocalFallback(reasonMsg) {
-          box.style.whiteSpace = 'pre-line';
           while (box.firstChild) box.removeChild(box.firstChild);
-          box.textContent = localContent;
-          window._lastMeaning.content = localContent;
+          box.style.whiteSpace = 'normal';
+          var hard = [];
+          try { if (typeof findArabicHardWords === 'function') hard = findArabicHardWords(txt) || []; } catch (eH) {}
+          var fakeWords = hard.map(function (h) {
+            return { word: h.word, lexical: h.meaning, original: '', translit: '', strongs: '', language: 'ar' };
+          });
+          try {
+            if (typeof renderLinguisticResult === 'function') {
+              renderLinguisticResult(box, ref, txt, { words: fakeWords, dataNote: '', text: '' });
+            } else {
+              box.style.whiteSpace = 'pre-line';
+              box.textContent = (typeof generateLinguisticNote === 'function') ? generateLinguisticNote(txt, ref) : localContent;
+            }
+          } catch (eR) {
+            box.style.whiteSpace = 'pre-line';
+            box.textContent = (typeof generateLinguisticNote === 'function') ? generateLinguisticNote(txt, ref) : localContent;
+          }
+          var nice = (typeof generateLinguisticNote === 'function') ? generateLinguisticNote(txt, ref) : localContent;
+          window._lastMeaning.content = nice;
           window._lastMeaning.source = 'local';
-          status.textContent = reasonMsg || 'تعذّر الاتصال — نتيجة محلية من معجم التطبيق (ليست بيانات STEP).';
+          status.textContent = reasonMsg || 'معاني من معجم التطبيق (بدون إنترنت/STEP).';
           bindMeaningActions();
         }
 
@@ -20480,7 +20535,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '382';
+      var APP_VER = '383';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

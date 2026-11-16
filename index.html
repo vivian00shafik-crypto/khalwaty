@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="381" lang="ar" dir="rtl">
+<html data-app-ver="382" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -16513,95 +16513,163 @@ function showDesignSavePreview(url, name, silent, blob) {
 
     function buildGeneralVerseMeaning(ref, verseText, words) {
       var txt = String(verseText || '').replace(/\s+/g, ' ').trim();
-      var bits = [];
+      if (!txt) return 'اختاري آية من الكتاب لعرض معناها ببساطة.';
+      // معنى عام بسيط من نص الآية العربي — جملة واضحة للمؤمن
+      var t = txt.replace(/[«»""]/g, '').trim();
+      // اختصار لطيف بدون تشويه
+      if (t.length > 220) t = t.slice(0, 220) + '…';
+      return 'ببساطة: الآية بتقول إن ' + t + '\n\n(ده إعادة صياغة بسيطة لنص الآية، مش تفسير روحي كامل.)';
+    }
+
+    /** كلمات عربية كتابية صعبة → معنى بسيط بالمصري/العربي الواضح */
+    var ARABIC_BIBLE_GLOSS = {
+      'أنتهر': 'أزجر بقوة / أوبّخ بشدة',
+      'أنتهِر': 'أزجر بقوة / أوبّخ بشدة',
+      'الزَّرْعَ': 'البذار أو النسل',
+      'الزَّرْع': 'البذار أو النسل',
+      'الزرع': 'البذار أو النسل',
+      'أَمُدَّ': 'أمدّ / أفرّق وأنشر',
+      'أمد': 'أمدّ / أنشر',
+      'الْفَرْثَ': 'الروث / ما في البطن (تعبير عن الإذلال)',
+      'فرث': 'روث / نجاسة (صورة إذلال)',
+      'وُجُوهِكُمْ': 'وجوهكم',
+      'وجوهكم': 'وجوهكم',
+      'أَعْيَادِكُمْ': 'أعيادكم واحتفالاتكم',
+      'أعيادكم': 'أعيادكم واحتفالاتكم',
+      'تَتَعَرَّعُونَ': 'تتفاخرون / تفتخرون',
+      'تتعرعون': 'تتفاخرون / تفتخرون',
+      'مَعَهُ': 'مع الزرع / معه',
+      'هَأَنَذَا': 'ها أنا ذا (الله يتكلم)',
+      'هاأنذا': 'ها أنا ذا',
+      'تُبَارِكُنِي': 'تعطيني بركة',
+      'تُوَسِّعُ': 'توسّع / تكبر',
+      'تُخُومِي': 'حدودي / مجالي',
+      'تَحْفَظُنِي': 'تحرسني وتحميني',
+      'يُتْعِبُنِي': 'يسبب لي تعبًا أو أذى',
+      'مَغْفِرَة': 'صفح عن الخطية',
+      'نِعْمَة': 'عطية الله وعونه المجاني',
+      'بِرّ': 'استقامة عند الله',
+      'قَدَاسَة': 'طهارة وتكريس لله',
+      'مَلَكُوت': 'مُلك الله وحكمه',
+      'تَوْبَة': 'رجوع عن الخطية إلى الله',
+      'شَفَاعَة': 'طلبة من أجل آخرين',
+      'افْتِقَاد': 'زيارة الله بعنايته',
+      'تَعْزِيَة': 'تسلية وتقوية القلب',
+      'مَوَاعِيد': 'وعود الله',
+      'عَهْد': 'اتفاق ملزم من الله',
+      'ذَبِيحَة': 'قربان',
+      'كَفَّارَة': 'غطاء عن الخطية',
+      'فِدَاء': 'تحرير بثمن',
+      'تَجَسُّد': 'أخذ الابن جسدًا بشريًا',
+      'قِيَامَة': 'القيام من الموت',
+      'صُلِبَ': 'عُلّق على الصليب',
+      'مَجْد': 'بهاء وكرامة الله',
+      'اتِّضَاع': 'تواضع',
+      'وَدَاعَة': 'لطف ولين',
+      'أَنَاة': 'طول بال وصبر',
+      'تَقْوَى': 'مخافة الله والحرص على رضاه',
+      'رَجَاء': 'انتظار واثق لوعود الله',
+      'إِيمَان': 'ثقة وتصديق بالله',
+      'مَحَبَّة': 'حب باذل',
+      'خَلاَص': 'نجاة من الخطية والموت',
+      'هَاوِيَة': 'مكان الموت / القبر',
+      'جَحِيم': 'مكان العذاب',
+      'فِرْدَوْس': 'نعيم عند الله',
+      'مَسْكَن': 'مكان سكنى',
+      'مَقْدِس': 'مكان مقدس / هيكل',
+      'مَذْبَح': 'مكان تقديم الذبيحة',
+      'شَرِيعَة': 'ناموس / وصايا الله',
+      'نَامُوس': 'شريعة',
+      'وَصَايَا': 'أوامر الله',
+      'فَرَائِض': 'أحكام مطلوبة',
+      'أَحْكَام': 'قوانين الله',
+      'تَرْتِيل': 'ترتيل وتسبيح',
+      'تَسْبِيحَة': 'تمجيد لله',
+      'مَزْمُور': 'تسبحة من المزامير',
+      'ابْتِهَال': 'تضرع وصلاة شديدة',
+      'تَضَرُّع': 'طلب بخشوع',
+      'افْتِخَار': 'اعتزاز',
+      'عَار': 'خزي',
+      'إِثْم': 'ذنب وخطية',
+      'مَعْصِيَة': 'عصيان',
+      'نَجَاسَة': 'دنس',
+      'طَهَارَة': 'نقاء',
+      'تَقْدِيس': 'تخصيص لله',
+      'مَسْحَة': 'مسحة الروح',
+      'مَوْهِبَة': 'عطية من الروح',
+      'شَرِكَة': 'شركة ووحدة',
+      'بُنُوَّة': 'أن نكون أبناء لله',
+      'مِيرَاث': 'نصيب من الله',
+      'عَرْبُون': 'ضمان مقدَّم',
+      'شَفِيع': 'من يطلب عنا',
+      'وَسِيط': 'من يتوسط بين طرفين',
+      'كُلِّيَّة': 'بكمال',
+      'دَهْر': 'عصر / زمن طويل',
+      'أَبَدِي': 'لا ينتهي',
+      'أَبَدِيَّة': 'حياة لا تزول'
+    };
+
+    function khStripTashkeel(s) {
+      return String(s || '').replace(/[\u064B-\u0652\u0670\u0640]/g, '');
+    }
+
+    function findArabicHardWords(verseText) {
+      var txt = String(verseText || '');
+      var found = [];
       var seen = {};
-      (words || []).forEach(function (e) {
-        var m = simpleArabicMeaning(e);
-        if (!m || seen[m]) return;
-        seen[m] = 1;
-        bits.push(m);
-      });
-      var lines = [];
-      lines.push('المعنى العام للآية:');
-      if (txt) {
-        // صياغة بسيطة من نص الآية نفسه + الكلمات الأساسية
-        if (bits.length >= 3) {
-          lines.push('الآية بتقول إن ' + summarizeFromBits(txt, bits) + '.');
-        } else if (txt.length < 180) {
-          lines.push('نص الآية معناه باختصار: «' + txt + '».');
-        } else {
-          lines.push('الآية بتعرض المعنى ده: «' + txt.slice(0, 160) + '…».');
+      var keys = Object.keys(ARABIC_BIBLE_GLOSS);
+      // أطول المفاتيح أولًا
+      keys.sort(function (a, b) { return b.length - a.length; });
+      var normTxt = khStripTashkeel(txt);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var nk = khStripTashkeel(k);
+        if (nk.length < 2) continue;
+        if (normTxt.indexOf(nk) < 0 && txt.indexOf(k) < 0) continue;
+        if (seen[nk]) continue;
+        seen[nk] = 1;
+        found.push({ word: k, meaning: ARABIC_BIBLE_GLOSS[k] });
+      }
+      // كلمات من الآية نفسها: اجمع توكنات عربية طويلة غير مشروحة
+      var tokens = txt.replace(/[^\u0600-\u06FF\s]/g, ' ').split(/\s+/).filter(Boolean);
+      for (var t = 0; t < tokens.length; t++) {
+        var tok = tokens[t];
+        var nt = khStripTashkeel(tok).replace(/^و/, '').replace(/^ال/, '');
+        if (nt.length < 4) continue;
+        if (seen[nt] || seen[khStripTashkeel(tok)]) continue;
+        // لو موجودة في القاموس بمفتاح مقارب
+        for (var j = 0; j < keys.length; j++) {
+          var kk = khStripTashkeel(keys[j]).replace(/^ال/, '');
+          if (kk === nt || nt.indexOf(kk) === 0 || kk.indexOf(nt) === 0) {
+            if (seen[kk]) break;
+            seen[kk] = 1;
+            seen[nt] = 1;
+            found.push({ word: tok, meaning: ARABIC_BIBLE_GLOSS[keys[j]] });
+            break;
+          }
         }
-      } else {
-        lines.push('اختاري آية أولًا لعرض المعنى العام.');
       }
-      if (bits.length) {
-        lines.push('من الكلمات الأساسية: ' + bits.slice(0, 6).join('، ') + '.');
-      }
-      if (ref) lines.push('المرجع: ' + ref);
-      lines.push('ملخص بسيط لمعنى الآية ومعاني كلماتها — ليس تفسيرًا روحيًا كاملاً.');
-      return lines.join('\n');
+      return found.slice(0, 12);
     }
 
-    function summarizeFromBits(verseText, bits) {
-      // حاول صياغة جملة مفهومة من أهم المعاني
-      var core = bits.slice(0, 5);
-      // إن وُجدت كلمات صيد/فرح شائعة (مثال حبقوق)
-      var joined = core.join(' و');
-      if (/شِص|شبك|مصيد|صطاد|تَفْرَح|تَبْتَهِج|يَصطاد/i.test(verseText) ||
-          /صنّارة|شبكة|مصيدة|يصطاد|يفرح|يبتهج/.test(joined)) {
-        return 'العدو (أو الصياد) بيجمع الناس ويصيدهم كأنه بصنّارة وشبكة، وبعدين يفرح بما عمل';
-      }
-      if (/راع|يرعانى|لا يعوزني/i.test(verseText)) {
-        return 'الرب راعٍ، والإنسان في رعايته لا ينقصه شيء';
-      }
-      if (/في البدء|خلق|السماوات|الأرض/i.test(verseText)) {
-        return 'الله خلق السماوات والأرض من البداية';
-      }
-      if (/أحب|العالم|بذل|ابن/i.test(verseText)) {
-        return 'الله أحب العالم وبذل ابنه من أجل خلاص من يؤمن';
-      }
-      // عام
-      return 'الفكرة تدور حول: ' + core.join('، ');
-    }
-
-    function buildStepArabicTemplate(ref, words, verseText) {
-      var lines = [];
-      var general = buildGeneralVerseMeaning(ref, verseText || '', words || []);
-      lines.push(general);
-      lines.push('');
-      if (words && words.length) {
-        lines.push('تحت: معاني الكلمات واحدة واحدة بالعربي البسيط.');
-      } else {
-        lines.push('مفيش بيانات كافية للكلمات في المصدر حاليًا.');
-      }
-      lines.push('');
-      lines.push('معاني الكلمات:');
-      if (words && words.length) {
-        words.forEach(function (e) {
-          var ar = simpleArabicMeaning(e);
-          var en = shortEnglish(e);
-          var title = (e.word || e.original || '').trim() || (e.strongs || '');
-          lines.push('• ' + title);
-          if (ar) lines.push('  المعنى: ' + ar);
-          if (en) lines.push('  English: ' + en);
-        });
-      } else {
-        lines.push('• لا توجد كلمات.');
-      }
-      lines.push('');
-      lines.push('ملاحظة: ده معنى لغوي للكلمات، مش تفسير روحي كامل.');
-      return lines.join('\n');
-    }
-
-    function buildLinguisticDisplayText(ref, verseText, data) {
-      var parts = [];
-      parts.push('الآية');
-      if (ref) parts.push(ref);
-      parts.push(verseText);
-      parts.push('');
-      if (data && data.text) parts.push(String(data.text).trim());
-      return parts.join('\n');
+    /** تعريب تقريبي للنطق اليوناني/العبري للعرض بالعربي */
+    function translitToArabicLetters(tr) {
+      var s = String(tr || '').toLowerCase().trim();
+      if (!s) return '';
+      var map = [
+        [/th/g, 'ث'], [/ph/g, 'ف'], [/ch/g, 'خ'], [/ps/g, 'بس'],
+        [/sh/g, 'ش'], [/kh/g, 'خ'], [/gh/g, 'غ'], [/dh/g, 'ذ'],
+        [/aa/g, 'ا'], [/ee/g, 'ي'], [/oo/g, 'و'], [/ou/g, 'و'],
+        [/ai/g, 'اي'], [/ei/g, 'ي'], [/oi/g, 'وي'],
+        [/a/g, 'ا'], [/e/g, 'ي'], [/i/g, 'ي'], [/o/g, 'و'], [/u/g, 'و'],
+        [/b/g, 'ب'], [/c/g, 'ك'], [/d/g, 'د'], [/f/g, 'ف'], [/g/g, 'ج'],
+        [/h/g, 'ه'], [/j/g, 'ج'], [/k/g, 'ك'], [/l/g, 'ل'], [/m/g, 'م'],
+        [/n/g, 'ن'], [/p/g, 'ب'], [/q/g, 'ق'], [/r/g, 'ر'], [/s/g, 'س'],
+        [/t/g, 'ت'], [/v/g, 'ف'], [/w/g, 'و'], [/x/g, 'كس'], [/y/g, 'ي'], [/z/g, 'ز']
+      ];
+      for (var i = 0; i < map.length; i++) s = s.replace(map[i][0], map[i][1]);
+      s = s.replace(/[^؀-ۿ\s]/g, '').replace(/\s+/g, ' ').trim();
+      return s;
     }
 
     function renderLinguisticResult(box, ref, verseText, data) {
@@ -16622,131 +16690,787 @@ function showDesignSavePreview(url, name, silent, blob) {
         verseBlock.appendChild(vRef);
       }
       var vTxt = document.createElement('div');
-      vTxt.style.cssText = 'white-space:pre-line;line-height:1.9;font-size:15px;';
-      vTxt.textContent = verseText;
+      vTxt.style.cssText = 'font-size:15px;line-height:1.9;color:#3d3426;font-weight:600;';
+      vTxt.textContent = verseText || '';
       verseBlock.appendChild(vTxt);
       box.appendChild(verseBlock);
 
-      if (data && data.dataNote) {
-        var note = document.createElement('div');
-        note.style.cssText = 'font-size:13px;color:#8a5a3a;margin-bottom:10px;line-height:1.6;';
-        note.textContent = String(data.dataNote);
-        box.appendChild(note);
-      }
-
-      var words = (data && Array.isArray(data.words)) ? data.words : [];
-
-      // المعنى العام للآية (واضح وبسيط)
+      // المعنى العام — جملة بسيطة فقط
       var genWrap = document.createElement('div');
       genWrap.style.cssText = 'margin-bottom:14px;padding:14px;border-radius:12px;background:#f3ebe0;line-height:1.9;font-size:15px;border:1px solid #e0d0b0;';
       var g1 = document.createElement('div');
       g1.style.cssText = 'font-weight:700;margin-bottom:8px;color:#6b5b3e;font-size:16px;';
-      g1.textContent = 'المعنى العام للآية';
+      g1.textContent = 'المعنى العام ببساطة';
       genWrap.appendChild(g1);
-      var genText = buildGeneralVerseMeaning(ref, verseText, words);
-      // اعرض بدون عنوان مكرر
-      genText = String(genText || '').replace(/^المعنى العام للآية:\s*/m, '').trim();
       var g2 = document.createElement('div');
       g2.style.cssText = 'white-space:pre-line;color:#3d3426;';
-      g2.textContent = genText || 'اختاري آية لعرض المعنى العام.';
+      g2.textContent = buildGeneralVerseMeaning(ref, verseText, (data && data.words) || []);
       genWrap.appendChild(g2);
       box.appendChild(genWrap);
 
-      // بطاقات بسيطة: عربي أولًا + إنجليزي قصير
-      if (words.length) {
-        var wH = document.createElement('div');
-        wH.style.cssText = 'font-weight:700;margin:8px 0 10px;color:#6b5b3e;font-size:15px;';
-        wH.textContent = 'معاني الكلمات';
-        box.appendChild(wH);
+      // معاني الكلمات العربية الصعبة
+      var hard = findArabicHardWords(verseText);
+      var words = (data && Array.isArray(data.words)) ? data.words : [];
 
-        words.forEach(function (w) {
-          if (!w || typeof w !== 'object') return;
-          var ar = simpleArabicMeaning(w);
-          var en = shortEnglish(w);
-          if (!ar && !en && !w.original && !w.word) return;
-          // تخطي أدوات ربط إنجليزي فقط بلا معنى
-          if (!ar && en && /^(and|or|the|a|an|of|to|in|on|at)$/i.test(en.trim())) return;
+      var wH = document.createElement('div');
+      wH.style.cssText = 'font-weight:700;margin:8px 0 10px;color:#6b5b3e;font-size:15px;';
+      wH.textContent = 'معاني الكلمات الصعبة';
+      box.appendChild(wH);
 
-          var card = document.createElement('div');
-          card.style.cssText = 'margin:0 0 10px;padding:14px 14px;border-radius:14px;border:1px solid #e8d9b5;background:#fffdf8;';
-
-          // سطر: الكلمة في الآية (إن وُجدت)
-          var wordInVerse = String(w.word || '').trim();
-          if (wordInVerse) {
-            var wLine = document.createElement('div');
-            wLine.style.cssText = 'font-size:13px;color:#8a7a60;margin-bottom:4px;';
-            wLine.textContent = 'الكلمة: ' + wordInVerse;
-            card.appendChild(wLine);
-          }
-
-          // المعنى العربي — الأساس
-          var meaning = document.createElement('div');
-          meaning.style.cssText = 'font-weight:800;font-size:17px;color:#2c2416;margin-bottom:6px;line-height:1.7;';
-          if (ar) {
-            meaning.textContent = 'المعنى: ' + ar;
-          } else if (en) {
-            meaning.textContent = 'المعنى (مترجم تقريبي): ' + en;
-            meaning.style.color = '#5a4a32';
-            meaning.style.fontWeight = '700';
-          } else {
-            meaning.textContent = 'المعنى: غير متوفر بوضوح لهذه الكلمة';
-            meaning.style.fontWeight = '600';
-            meaning.style.color = '#8a7a60';
-          }
-          card.appendChild(meaning);
-
-          // تفاصيل صغيرة: أصل + نطق
-          var tech = [];
-          if (w.original) tech.push('الأصل: ' + w.original);
-          if (w.translit) tech.push('النطق: ' + w.translit);
-          if (tech.length) {
-            var tLine = document.createElement('div');
-            tLine.style.cssText = 'font-size:12px;color:#9a8a70;margin-top:2px;line-height:1.5;';
-            tLine.textContent = tech.join('  ·  ');
-            card.appendChild(tLine);
-          }
-
-          box.appendChild(card);
-        });
-      } else if (data && data.text) {
-        var body = document.createElement('div');
-        body.style.cssText = 'white-space:pre-line;line-height:1.95;margin-bottom:12px;';
-        body.textContent = String(data.text);
-        box.appendChild(body);
+      if (!hard.length) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'padding:12px;color:#7a6a50;font-size:14px;line-height:1.7;';
+        empty.textContent = 'مفيش كلمات صعبة ظاهرة في القاموس لهذه الآية. لو حابة كلمة معيّنة، المعنى العام فوق يلخّص الآية.';
+        box.appendChild(empty);
       }
 
-      // تفاصيل للمختصين (مطوية)
-      if (words.length) {
-        var det = document.createElement('details');
-        det.style.cssText = 'margin-top:12px;padding:10px;border-radius:10px;background:#f7f1e4;font-size:12.5px;color:#5a4a32;';
-        var sum = document.createElement('summary');
-        sum.style.cssText = 'cursor:pointer;font-weight:700;color:#6b5b3e;';
-        sum.textContent = 'تفاصيل إضافية (للمختصين)';
-        det.appendChild(sum);
-        words.forEach(function (w) {
-          var line = document.createElement('div');
-          line.style.cssText = 'margin-top:8px;line-height:1.6;border-top:1px solid #e8d9b5;padding-top:6px;';
-          var parts = [];
-          if (w.strongs) parts.push('Strong: ' + w.strongs);
-          if (w.original) parts.push(w.original);
-          if (w.translit) parts.push(w.translit);
-          if (w.lexical) parts.push(String(w.lexical).slice(0, 80));
-          line.textContent = parts.join(' — ');
-          det.appendChild(line);
-        });
-        box.appendChild(det);
-      }
+      hard.forEach(function (item) {
+        var card = document.createElement('div');
+        card.style.cssText = 'margin:0 0 10px;padding:14px;border-radius:14px;border:1px solid #e8d9b5;background:#fffdf8;';
 
-      // المصادر باختصار
-      if (data && data.sources) {
-        var src = document.createElement('div');
-        src.style.cssText = 'margin-top:14px;padding:10px;border-radius:10px;background:#f7f1e4;font-size:12px;line-height:1.7;color:#5a4a32;';
-        src.textContent = 'المصدر: معجم STEPBible (CC BY 4.0) + النص الأصلي Berean Interlinear. المعنى هنا لغوي مبسّط، مش تفسير روحي.';
-        box.appendChild(src);
-      }
+        var wLine = document.createElement('div');
+        wLine.style.cssText = 'font-size:13px;color:#8a7a60;margin-bottom:4px;';
+        wLine.textContent = 'الكلمة: ' + item.word;
+        card.appendChild(wLine);
+
+        var meaning = document.createElement('div');
+        meaning.style.cssText = 'font-weight:800;font-size:17px;color:#2c2416;line-height:1.7;';
+        meaning.textContent = 'المعنى: ' + item.meaning;
+        card.appendChild(meaning);
+
+        // حاول نربط أصل يوناني من بيانات المصدر (إن وُجد) ونعرّبه
+        try {
+          var nt = khStripTashkeel(item.word).replace(/^ال/, '');
+          var match = null;
+          for (var i = 0; i < words.length; i++) {
+            var ww = words[i];
+            var arM = simpleArabicMeaning(ww);
+            if (arM && item.meaning && arM.indexOf(item.meaning.slice(0, 4)) >= 0) { match = ww; break; }
+            var gl = String((ww && ww.lexical) || '').toLowerCase();
+            // لا نعرض إنجليزي للمستخدم — فقط نستخدمه للربط
+            if (ww && ww.language && String(ww.language).toLowerCase().indexOf('greek') >= 0) {
+              match = match || ww;
+            }
+          }
+          // إن وُجدت كلمة يونانية في القائمة مع نفس المعنى التقريبي
+          if (!match) {
+            for (var j = 0; j < words.length; j++) {
+              if (words[j] && (words[j].translit || words[j].original)) {
+                var sm = simpleArabicMeaning(words[j]);
+                if (sm && (item.meaning.indexOf(sm) >= 0 || sm.indexOf(item.meaning.slice(0, 3)) >= 0)) {
+                  match = words[j];
+                  break;
+                }
+              }
+            }
+          }
+          if (match && (match.translit || match.original)) {
+            var gr = document.createElement('div');
+            gr.style.cssText = 'font-size:13px;color:#6b5b3e;margin-top:8px;line-height:1.6;';
+            var arabized = translitToArabicLetters(match.translit || '');
+            var parts = [];
+            if (arabized) parts.push('الأصل (معرّب): ' + arabized);
+            else if (match.translit) parts.push('الأصل (نطق): ' + match.translit);
+            if (match.original) parts.push('باليوناني/العبري: ' + match.original);
+            gr.textContent = parts.join(' — ');
+            card.appendChild(gr);
+          }
+        } catch (eG) {}
+
+        box.appendChild(card);
+      });
+
+      // ملاحظة قصيرة
+      var foot = document.createElement('div');
+      foot.style.cssText = 'margin-top:12px;font-size:12px;color:#9a8a70;line-height:1.6;';
+      foot.textContent = 'المعنى اللغوي هنا لفهم الكلمات العربية الصعبة ببساطة. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
+      box.appendChild(foot);
     }
 
-    function openWordMeaning() {
+
+    function escapeMeaningHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // —— ربط STEP / Berean Interlinear من المتصفح (CORS مفتوح على helloao) ——
+    var STEP_AR_BOOK_TO_ID = {
+      "تكوين":"GEN","خروج":"EXO","لاويين":"LEV","عدد":"NUM","تثنية":"DEU",
+      "يشوع":"JOS","قضاة":"JDG","راعوث":"RUT","صموئيل الأول":"1SA","صموئيل الثاني":"2SA",
+      "الملوك الأول":"1KI","الملوك الثاني":"2KI","أخبار الأيام الأول":"1CH","أخبار الأيام الثاني":"2CH",
+      "عزرا":"EZR","نحميا":"NEH","أستير":"EST","أيوب":"JOB","مزمور":"PSA","مزامير":"PSA",
+      "أمثال":"PRO","جامعة":"ECC","نشيد الإنشاد":"SNG","نشيد":"SNG",
+      "إشعياء":"ISA","أشعياء":"ISA","إرميا":"JER","مراثي":"LAM","حزقيال":"EZK","دانيال":"DAN",
+      "هوشع":"HOS","يوئيل":"JOL","عاموس":"AMO","عوبديا":"OBA","يونان":"JON","ميخا":"MIC",
+      "ناحوم":"NAM","حبقوق":"HAB","صفنيا":"ZEP","حجي":"HAG","زكريا":"ZEC","ملاخي":"MAL",
+      "متى":"MAT","مرقس":"MRK","لوقا":"LUK","يوحنا":"JHN","أعمال":"ACT","أعمال الرسل":"ACT",
+      "رومية":"ROM","كورنثوس الأولى":"1CO","كورنثوس الثانية":"2CO","غلاطية":"GAL","أفسس":"EPH",
+      "فيلبي":"PHP","كولوسي":"COL","تسالونيكي الأولى":"1TH","تسالونيكي الثانية":"2TH",
+      "تيموثاوس الأولى":"1TI","تيموثاوس الثانية":"2TI","تيطس":"TIT","فليمون":"PHM","عبرانيين":"HEB",
+      "يعقوب":"JAS","بطرس الأولى":"1PE","بطرس الثانية":"2PE",
+      "يوحنا الأولى":"1JN","يوحنا الثانية":"2JN","يوحنا الثالثة":"3JN","يهوذا":"JUD","رؤيا":"REV","رؤيا يوحنا":"REV",
+      "تك":"GEN","خر":"EXO","لا":"LEV","عد":"NUM","تث":"DEU","يش":"JOS","قض":"JDG","را":"RUT",
+      "1صم":"1SA","2صم":"2SA","1مل":"1KI","2مل":"2KI","1أخ":"1CH","2أخ":"2CH",
+      "عز":"EZR","نح":"NEH","أس":"EST","أي":"JOB","مز":"PSA","أم":"PRO","جا":"ECC","نش":"SNG",
+      "إش":"ISA","إر":"JER","مرا":"LAM","حز":"EZK","دا":"DAN","هو":"HOS","يؤ":"JOL","عا":"AMO",
+      "عو":"OBA","يون":"JON","مي":"MIC","نا":"NAM","حب":"HAB","صف":"ZEP","حج":"HAG","زك":"ZEC","مل":"MAL",
+      "مت":"MAT","مر":"MRK","لو":"LUK","يو":"JHN","أع":"ACT","رو":"ROM","1كو":"1CO","2كو":"2CO",
+      "غل":"GAL","أف":"EPH","في":"PHP","كو":"COL","1تس":"1TH","2تس":"2TH","1تي":"1TI","2تي":"2TI",
+      "تي":"TIT","فل":"PHM","عب":"HEB","يع":"JAS","1بط":"1PE","2بط":"2PE","1يو":"1JN","2يو":"2JN","3يو":"3JN","يه":"JUD","رؤ":"REV"
+    };
+
+    function stepNormalizeDigits(s) {
+      return String(s || '').replace(/[٠-٩]/g, function (d) {
+        return '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)];
+      });
+    }
+
+    function stepParseArabicRef(ref) {
+      var raw = stepNormalizeDigits(String(ref || '').trim());
+      var m = raw.match(/^(.+?)\s+(\d+)\s*[:：]\s*(\d+)/);
+      if (!m) return null;
+      var bookName = m[1].replace(/^إنجيل\s+/u, '').replace(/^سفر\s+/u, '').trim();
+      var chapter = parseInt(m[2], 10);
+      var verse = parseInt(m[3], 10);
+      if (!chapter || !verse) return null;
+      var keys = Object.keys(STEP_AR_BOOK_TO_ID).sort(function (a, b) { return b.length - a.length; });
+      var bookId = null;
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (bookName === k || bookName.indexOf(k) >= 0) { bookId = STEP_AR_BOOK_TO_ID[k]; break; }
+      }
+      if (!bookId) return null;
+      return { bookId: bookId, chapter: chapter, verse: verse, bookName: bookName };
+    }
+
+    function stepPadStrong(s) {
+      var t = String(s || '').trim().toUpperCase();
+      var m = t.match(/^([HG])(\d+)([A-Z]?)$/);
+      if (!m) return t;
+      return m[1] + m[2].padStart(4, '0') + (m[3] || '');
+    }
+
+    function stepIsSkipStrong(strong, gloss) {
+      var base = String(strong || '').toUpperCase().replace(/[A-Z]$/, '');
+      var particles = { G3588:1, H0853:1, G2532:1, G1722:1, G1519:1, G1537:1, G4314:1, G1223:1 };
+      if (particles[base] && (!gloss || String(gloss).length < 2)) return true;
+      return false;
+    }
+
+    function fetchStepJson(url) {
+      return fetch(url).then(function (res) {
+        if (!res.ok) return null;
+        return res.json().catch(function () { return null; });
+      }).catch(function () { return null; });
+    }
+
+    function fetchStepLinguisticData(ref) {
+      var parsed = stepParseArabicRef(ref);
+      if (!parsed) {
+        return Promise.resolve({
+          mode: 'linguistic',
+          text: '',
+          words: [],
+          dataStatus: 'unmapped_ref',
+          dataNote: 'تعذر ربط مرجع الآية بنص أصلي موسوم.',
+          sources: stepSourcesBlock(),
+          disclaimer: stepDisclaimer()
+        });
+      }
+      var chUrl = 'https://bible.helloao.org/api/d/bsb-interlinear/' + parsed.bookId + '/' + parsed.chapter + '.json';
+      return fetchStepJson(chUrl).then(function (chData) {
+        if (!chData || !chData.chapter || !Array.isArray(chData.chapter.content)) {
+          return {
+            mode: 'linguistic', text: '', words: [],
+            dataStatus: 'no_interlinear',
+            dataNote: 'لا تتوفر كلمات أصلية موسومة لهذه الآية في مصدر Berean Interlinear.',
+            sources: stepSourcesBlock(), disclaimer: stepDisclaimer()
+          };
+        }
+        var item = null;
+        for (var i = 0; i < chData.chapter.content.length; i++) {
+          if (Number(chData.chapter.content[i].verse) === Number(parsed.verse)) {
+            item = chData.chapter.content[i];
+            break;
+          }
+        }
+        if (!item || !Array.isArray(item.words) || !item.words.length) {
+          return {
+            mode: 'linguistic', text: '', words: [],
+            dataStatus: 'no_interlinear',
+            dataNote: 'لا تتوفر كلمات أصلية لهذه الآية في المصدر المربوط.',
+            sources: stepSourcesBlock(), disclaimer: stepDisclaimer()
+          };
+        }
+        var seen = {};
+        var picked = [];
+        item.words.forEach(function (w) {
+          var st = stepPadStrong(w.strongs);
+          if (!st || seen[st]) return;
+          if (stepIsSkipStrong(st, w.gloss)) return;
+          seen[st] = 1;
+          picked.push(w);
+        });
+        picked = picked.slice(0, 14);
+        var chain = Promise.resolve([]);
+        picked.forEach(function (w) {
+          chain = chain.then(function (acc) {
+            var st = stepPadStrong(w.strongs);
+            var lexUrl = 'https://bible.helloao.org/api/d/stepbible-lexicon/lexicon/' + st + '.json';
+            return fetchStepJson(lexUrl).then(function (lex) {
+              var sense = lex && lex.entry && Array.isArray(lex.entry.senses) && lex.entry.senses[0]
+                ? lex.entry.senses[0] : null;
+              acc.push({
+                word: w.text || '',
+                strongs: (lex && lex.entry && lex.entry.id) || st,
+                original: (sense && sense.lemma) || w.text || '',
+                translit: (sense && sense.transliteration) || w.transliteration || '',
+                lexical: (sense && sense.gloss) || w.gloss || '',
+                definition: sense && sense.definition ? String(sense.definition).slice(0, 400) : '',
+                language: w.language || (lex && lex.entry && lex.entry.language) || '',
+                parsing: w.parsingFull || w.parsing || '',
+                verified: !!(sense && (sense.gloss || sense.lemma || sense.definition))
+              });
+              return acc;
+            });
+          });
+        });
+        return chain.then(function (wordsOut) {
+          var text = buildStepArabicTemplate(ref, wordsOut, ); // verse filled by caller when available
+          return {
+            mode: 'linguistic',
+            text: text,
+            words: wordsOut,
+            dataStatus: wordsOut.length ? 'ok' : 'no_lexicon_hits',
+            dataNote: wordsOut.length ? '' : 'وُجد النص الأصلي لكن لم تُسترجع مداخل معجمية كافية.',
+            sources: stepSourcesBlock(),
+            disclaimer: stepDisclaimer()
+          };
+        });
+      });
+    }
+
+    function stepSourcesBlock() {
+      return {
+        interlinear: {
+          name: 'Berean Standard Bible Interlinear (bsb-interlinear)',
+          url: 'https://bible.helloao.org/docs/reference/datasets/',
+          license: 'Public domain (Berean interlinear tables)'
+        },
+        lexicon: {
+          name: 'STEPBible Brief Lexicons (TBESH / TBESG)',
+          url: 'https://github.com/STEPBible/STEPBible-Data',
+          license: 'CC BY 4.0 — STEP Bible / Tyndale House Cambridge',
+          attribution: 'Data: STEP Bible (www.STEPBible.org), CC BY 4.0'
+        },
+        api: 'https://bible.helloao.org'
+      };
+    }
+
+    function stepDisclaimer() {
+      return 'المصدر اللغوي: معاجم STEPBible (TBESH/TBESG) برخصة CC BY 4.0 — www.STEPBible.org — والكلمات الأصلية من Berean Interlinear عبر bible.helloao.org. أرقام Strong\'s والأصول المعروضة مسترجعة من المصدر وليست مختلقة. هذا تحليل لغوي وليس تفسيرًا لاهوتيًا.';
+    }
+
+    // تعريب مبسّط لمعاني STEP — الأولوية لكلام عربي مفهوم
+    var STEP_GLOSS_AR = {
+      "god":"الله","the lord":"الرب","lord":"الرب","yahweh":"يهوه","elohim":"إله",
+      "man":"إنسان","woman":"امرأة","people":"شعب","son":"ابن","daughter":"ابنة",
+      "father":"أب","mother":"أم","king":"ملك","priest":"كاهن","prophet":"نبي",
+      "house":"بيت","land":"أرض","earth":"أرض","heaven":"سماء","heavens":"سماوات",
+      "day":"يوم","night":"ليل","light":"نور","darkness":"ظلمة","water":"ماء","waters":"مياه",
+      "spirit":"روح","soul":"نفس","heart":"قلب","hand":"يد","eye":"عين","face":"وجه",
+      "word":"كلمة","name":"اسم","law":"شريعة","covenant":"عهد","peace":"سلام",
+      "love":"محبة","faith":"إيمان","hope":"رجاء","grace":"نعمة","mercy":"رحمة",
+      "sin":"خطية","evil":"شر","good":"خير","holy":"مقدَّس","righteous":"بار",
+      "save":"يخلّص","salvation":"خلاص","forgive":"يغفر","life":"حياة","death":"موت",
+      "blood":"دم","flesh":"جسد","body":"جسد",
+      "come":"يأتي","go":"يذهب","say":"يقول","said":"قال","speak":"يتكلم","hear":"يسمع",
+      "see":"يرى","know":"يعرف","give":"يعطي","take":"يأخذ","make":"يعمل","create":"يخلق",
+      "call":"يدعو","bless":"يبارك","fear":"يخاف","rejoice":"يفرح","joy":"فرح","weep":"يبكي",
+      "eat":"يأكل","drink":"يشرب","bread":"خبز","wine":"خمر",
+      "city":"مدينة","mountain":"جبل","sea":"بحر","river":"نهر","desert":"برية",
+      "servant":"خادم","master":"سيد","enemy":"عدو","friend":"صديق","foe":"عدو","the foe":"العدو",
+      "all":"الكل","all of them":"كلّهم","every":"كل","great":"عظيم","small":"صغير",
+      "hook":"صنّارة","with a hook":"بصنّارة","fish hook":"صنّارة صيد",
+      "net":"شبكة","dragnet":"شبكة صيد","fishing net":"شبكة صيد","in his dragnet":"في شبكته",
+      "in his fishing net":"في مصيدته","catch":"يصطاد","catches":"يصطاد","he catches them":"يصطادهم",
+      "gather":"يجمع","gathers":"يجمع","and gathers them":"ويجمعهم",
+      "pull":"يسحب","pulls":"يسحب","up":"فوق","so":"لذلك","therefore":"لذلك",
+      "glad":"مبتهج","is glad":"يبتهج","rejoices":"يفرح",
+      "ascend":"يصعد","rise":"يقوم / يرتفع","to go up":"يصعد","to come up":"يطلع",
+      "to drag":"يجرّ","to gather":"يجمع","to rejoice":"يفرح","to be glad":"يبتهج",
+      "devoted thing":"شيء مكرَّس (وأحيانًا شبكة في سياق الصيد)",
+      "upon":"على","right":"يمين / صحيح","ken":"لذلك",
+      "shepherd":"راعي","sheep":"خروف","kingdom":"ملكوت","glory":"مجد","truth":"الحق",
+      "pray":"يصلّي","prayer":"صلاة","believe":"يؤمن","gospel":"إنجيل","cross":"صليب",
+      "angel":"ملاك","world":"عالم","forever":"إلى الأبد","amen":"آمين",
+      "look":"انظر / انتبه",
+      "!look":"انظر / انتبه",
+      "behold":"هوذا / انظر",
+      "rebuke":"ينتهر / يوبّخ",
+      "to rebuke":"ينتهر / يوبّخ",
+      "seed":"زَرْع / نسل",
+      "scatter":"يذرّي / يفرّق",
+      "to scatter":"يذرّي / يفرّق",
+      "refuse":"يرفض / يأبى",
+      "upon":"على / بسبب",
+      "on":"على",
+      "face":"وجه",
+      "before":"أمام / قدام",
+      "face: before":"أمام الوجه / قدام",
+      "feast":"عيد / وليمة",
+      "lift":"يرفع",
+      "raise":"يرفع / يُنهض",
+      "to lift":"يرفع",
+      "to lift: raise":"يرفع",
+      "towards":"نحو / إلى",
+      "toward":"نحو / إلى",
+      "to":"إلى",
+      "from":"من",
+      "with":"مع",
+      "and":"و",
+      "or":"أو",
+      "not":"لا / ليس",
+      "no":"لا",
+      "all":"كل / الجميع",
+      "every":"كل",
+      "this":"هذا",
+      "that":"ذلك",
+      "these":"هؤلاء",
+      "those":"أولئك",
+      "i":"أنا",
+      "you":"أنت / أنتم",
+      "he":"هو",
+      "she":"هي",
+      "we":"نحن",
+      "they":"هم",
+      "my":"ـي / لي",
+      "your":"ـك / لكم",
+      "his":"ـه / له",
+      "her":"ـها / لها",
+      "our":"ـنا / لنا",
+      "their":"ـهم / لهم",
+      "will":"سوف / مشيئة",
+      "shall":"سوف",
+      "may":"قد / يمكن",
+      "let":"لِـ / دع",
+      "if":"إن / إذا",
+      "when":"عندما",
+      "then":"حينئذ / ثم",
+      "now":"الآن",
+      "also":"أيضًا",
+      "even":"حتى / أيضًا",
+      "very":"جدًا",
+      "great":"عظيم / كبير",
+      "small":"صغير",
+      "many":"كثير",
+      "few":"قليل",
+      "one":"واحد",
+      "two":"اثنان",
+      "three":"ثلاثة",
+      "seven":"سبعة",
+      "ten":"عشرة",
+      "hundred":"مئة",
+      "thousand":"ألف",
+      "blessed":"مبارك",
+      "curse":"لعنة / يلعن",
+      "pray":"يصلّي",
+      "prayer":"صلاة",
+      "worship":"يعبد / يسجد",
+      "praise":"يسبّح / تسبيح",
+      "sing":"يترنّم",
+      "song":"ترنيمة / نشيد",
+      "cry":"يصرخ",
+      "shout":"يهتف",
+      "walk":"يسلك / يمشي",
+      "run":"يركض",
+      "stand":"يقف",
+      "sit":"يجلس",
+      "rise":"يقوم / ينهض",
+      "fall":"يسقط",
+      "return":"يرجع",
+      "turn":"يلتفت / يرجع",
+      "seek":"يطلب",
+      "find":"يجد",
+      "ask":"يسأل",
+      "answer":"يجيب",
+      "send":"يرسل",
+      "bring":"يحضر",
+      "put":"يضع",
+      "set":"يضع / يعيّن",
+      "keep":"يحفظ",
+      "guard":"يحرس",
+      "protect":"يحمي",
+      "deliver":"ينقذ / يسلّم",
+      "help":"يعين",
+      "strengthen":"يقوّي",
+      "heal":"يشفي",
+      "teach":"يعلّم",
+      "learn":"يتعلّم",
+      "write":"يكتب",
+      "read":"يقرأ",
+      "remember":"يذكر",
+      "forget":"ينسى",
+      "understand":"يفهم",
+      "wise":"حكيم",
+      "wisdom":"حكمة",
+      "fool":"جاهل",
+      "truth":"حق",
+      "true":"حقيقي / صادق",
+      "lie":"كذب",
+      "false":"كاذب",
+      "judge":"يدين / قاضٍ",
+      "judgment":"دينونة / حكم",
+      "justice":"عدل",
+      "righteousness":"بر",
+      "wicked":"شرير",
+      "evil":"شر",
+      "good":"صالح / خير",
+      "better":"أفضل",
+      "holy":"قدوس / مقدَّس",
+      "pure":"نقي",
+      "clean":"طاهر",
+      "unclean":"نجس",
+      "sacrifice":"ذبيحة",
+      "altar":"مذبح",
+      "temple":"هيكل",
+      "priest":"كاهن",
+      "offering":"قربان",
+      "bread":"خبز",
+      "wine":"خمر",
+      "oil":"زيت",
+      "fire":"نار",
+      "stone":"حجر",
+      "mountain":"جبل",
+      "sea":"بحر",
+      "river":"نهر",
+      "city":"مدينة",
+      "nation":"أمة",
+      "gentile":"أممي",
+      "israel":"إسرائيل",
+      "jerusalem":"أورشليم",
+      "egypt":"مصر",
+      "enemy":"عدوّ",
+      "friend":"صديق",
+      "brother":"أخ",
+      "sister":"أخت",
+      "child":"طفل / ولد",
+      "children":"أولاد",
+      "servant":"عبد / خادم",
+      "master":"سيد",
+      "angel":"ملاك",
+      "devil":"إبليس",
+      "satan":"الشيطان",
+      "heaven":"سماء",
+      "earth":"أرض",
+      "world":"عالم",
+      "time":"وقت / زمان",
+      "year":"سنة",
+      "month":"شهر",
+      "week":"أسبوع",
+      "morning":"صباح",
+      "evening":"مساء",
+      "forever":"إلى الأبد",
+      "eternal":"أبدي",
+      "always":"دائمًا",
+      "never":"أبدًا / لا مطلقًا",
+      "yes":"نعم",
+      "amen":"آمين",
+      "behold":"هوذا",
+      "thus":"هكذا",
+      "therefore":"لذلك",
+      "because":"لأن",
+      "for":"لأن / لـ",
+      "so":"هكذا / لذلك",
+      "but":"لكن",
+      "however":"غير أن",
+      "yet":"بعد / مع ذلك",
+      "still":"ما زال",
+      "already":"بالفعل",
+      "again":"أيضًا / مرة أخرى",
+      "together":"معًا",
+      "alone":"وحده",
+      "only":"فقط",
+      "except":"إلا",
+      "without":"بدون",
+      "among":"بين",
+      "between":"بين",
+      "under":"تحت",
+      "over":"فوق",
+      "above":"فوق",
+      "below":"أسفل",
+      "inside":"داخل",
+      "outside":"خارج",
+      "near":"قريب",
+      "far":"بعيد",
+      "first":"أول",
+      "last":"آخر",
+      "new":"جديد",
+      "old":"قديم",
+      "young":"صغير السن",
+      "strong":"قوي",
+      "weak":"ضعيف",
+      "rich":"غني",
+      "poor":"فقير",
+      "sick":"مريض",
+      "whole":"كامل / صحيح",
+      "full":"ملآن",
+      "empty":"فارغ",
+      "open":"يفتح / مفتوح",
+      "close":"يغلق",
+      "begin":"يبدأ",
+      "end":"نهاية / ينهي",
+      "finish":"يُكمل",
+      "work":"عمل / يعمل",
+      "rest":"راحة / يستريح",
+      "sleep":"ينام",
+      "wake":"يستيقظ",
+      "live":"يحيا",
+      "die":"يموت",
+      "kill":"يقتل",
+      "save":"يخلّص / ينقذ",
+      "destroy":"يهلك",
+      "build":"يبني",
+      "plant":"يغرس",
+      "grow":"ينمو",
+      "fruit":"ثمر",
+      "tree":"شجرة",
+      "field":"حقل",
+      "harvest":"حصاد",
+      "shepherd":"راعٍ",
+      "sheep":"خراف",
+      "flock":"قطيع",
+      "lamb":"خروف",
+      "lion":"أسد",
+      "horse":"حصان",
+      "sword":"سيف",
+      "shield":"ترس",
+      "war":"حرب",
+      "peace":"سلام",
+      "promise":"وعد",
+      "command":"وصية / يأمر",
+      "commandment":"وصية",
+      "statute":"فريضة",
+      "testimony":"شهادة",
+      "witness":"شاهد",
+      "gospel":"إنجيل",
+      "church":"كنيسة",
+      "disciple":"تلميذ",
+      "apostle":"رسول",
+      "baptize":"يعمّد",
+      "baptism":"معمودية",
+      "cross":"صليب",
+      "crucify":"يصلب",
+      "resurrect":"يُقيم من الموت",
+      "resurrection":"قيامة",
+      "kingdom":"ملكوت",
+      "glory":"مجد",
+      "power":"قوة",
+      "authority":"سلطان",
+      "spirit":"روح",
+      "holy spirit":"الروح القدس",
+      "grace":"نعمة",
+      "faith":"إيمان",
+      "believe":"يؤمن",
+      "repent":"يتوب",
+      "repentance":"توبة",
+      "forgive":"يغفر",
+      "forgiveness":"غفران",
+      "mercy":"رحمة",
+      "compassion":"تحنن",
+      "love":"محبة",
+      "hope":"رجاء",
+      "joy":"فرح",
+      "patient":"صبور",
+      "patience":"صبر",
+      "humble":"متواضع",
+      "humility":"تواضع",
+      "proud":"متكبر",
+      "pride":"كبرياء",
+      "anger":"غضب",
+      "angry":"غاضب",
+      "afraid":"خائف",
+      "fear":"خوف / مخافة",
+      "trust":"يثق / اتكال",
+      "obey":"يطيع",
+      "obedience":"طاعة",
+      "serve":"يخدم",
+      "service":"خدمة",
+      "offer":"يقدّم",
+      "accept":"يقبل",
+      "reject":"يرفض",
+      "choose":"يختار",
+      "chosen":"مختار",
+      "call":"يدعو",
+      "called":"مدعو",
+      "send":"يرسل",
+      "sent":"مُرسل",
+      "come":"يأتي",
+      "came":"أتى",
+      "go":"يذهب",
+      "went":"ذهب",
+      "enter":"يدخل",
+      "leave":"يترك",
+      "remain":"يبقى",
+      "abide":"يثبت",
+      "dwell":"يسكن",
+      "tabernacle":"مسكن / خيمة",
+      "presence":"حضور",
+      "appear":"يظهر",
+      "reveal":"يعلن",
+      "revelation":"إعلان / رؤيا",
+      "vision":"رؤيا",
+      "dream":"حلم",
+      "sign":"آية / علامة",
+      "wonder":"عجيبة",
+      "miracle":"معجزة",
+      "heal":"يشفي",
+      "sick":"مريض",
+      "disease":"مرض",
+      "cleanse":"يطهّر",
+      "wash":"يغسل",
+      "anoint":"يمسح",
+      "anointed":"ممسوح",
+      "messiah":"المسيح",
+      "christ":"المسيح",
+      "jesus":"يسوع",
+      "lord":"الرب",
+      "god":"الله",
+      "father":"الآب / أب",
+      "son":"الابن / ابن",
+      "spirit":"روح",
+
+    };
+
+    // ترجمات حسب رقم Strong الشائع (عربي بسيط) — لا تُخترع أرقام؛ فقط إن وردت من المصدر
+    var STRONG_AR_SIMPLE = {
+      "H3605":"الكل / الجميع",
+      "H2443":"صنّارة (للصيد)",
+      "H5927":"يُطلِع / يصعد / يرفع",
+      "H1641":"يجرّ / يسحب (في الصيد: يصطاد)",
+      "H2764":"شبكة صيد (أو شيء مكرَّس حسب السياق)",
+      "H0622":"يجمع",
+      "H4365":"مصيدة / شبكة صيد",
+      "H5921":"على / بسبب",
+      "H3651":"لذلك / هكذا",
+      "H8055":"يفرح",
+      "H1523":"يبتهج / يفرح",
+      "H0430":"الله / إله",
+      "H3068":"الرب (يهوه)",
+      "H1121":"ابن",
+      "H776":"أرض",
+      "H8064":"سماء",
+      "H7307":"روح",
+      "H3820":"قلب",
+      "H1697":"كلمة / أمر",
+      "H8034":"اسم",
+      "H7965":"سلام",
+      "H157":"يحب",
+      "H2398":"يخطئ",
+      "G2316":"الله",
+      "G2962":"رب",
+      "G2424":"يسوع",
+      "G5547":"المسيح",
+      "G25":"يحب",
+      "G26":"محبة",
+      "G4102":"إيمان",
+      "G1515":"سلام",
+      "G4151":"روح",
+      "G3056":"كلمة",
+      "G1401":"عبد / خادم",
+      "G1680":"رجاء",
+      "G5485":"نعمة"
+    };
+
+    function padStrongKey(s) {
+      var t = String(s || '').trim().toUpperCase();
+      var m = t.match(/^([HG])0*(\d+)([A-Z]?)$/);
+      if (!m) return t;
+      return m[1] + m[2].padStart(4, '0') + (m[3] || '');
+    }
+
+    function simpleArabicMeaning(entry) {
+      if (!entry) return '';
+      var st = padStrongKey(entry.strongs || '');
+      if (st && STRONG_AR_SIMPLE[st]) return STRONG_AR_SIMPLE[st];
+      var st2 = String(st || '').replace(/^[HG]/, '');
+      if (st2) {
+        var keys = Object.keys(STRONG_AR_SIMPLE);
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          if (k === st || k === ('H' + st2) || k === ('G' + st2) || padStrongKey(k) === st) {
+            return STRONG_AR_SIMPLE[k];
+          }
+        }
+      }
+      // تنظيف الـ gloss الإنجليزي
+      var en = String(entry.lexical || entry.gloss || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      en = en.replace(/^[!\?\.\,\:\;]+/, '').replace(/[\[\]\(\)]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!en) {
+        // جرّب من التعريف
+        en = String(entry.definition || '').toLowerCase().split(/[.;]/)[0].replace(/\s+/g, ' ').trim();
+        en = en.replace(/^[!\?\.\,\:\;]+/, '').trim();
+      }
+      if (!en) return '';
+      if (STEP_GLOSS_AR[en]) return STEP_GLOSS_AR[en];
+      // جرب بدون to/the
+      var head = en.split(/[;\/|,]/)[0].trim();
+      head = head.replace(/^\d+[a-z]?\s*/i, '').replace(/\bto\s+/g, '').replace(/\bthe\s+/g, '').replace(/\ba\s+/g, '').trim();
+      if (STEP_GLOSS_AR[head]) return STEP_GLOSS_AR[head];
+      // "lift: raise" → جرب الجزئين
+      var parts = head.split(/[:\/]/).map(function (p) { return p.replace(/\bto\s+/g, '').replace(/\bthe\s+/g, '').trim(); });
+      for (var p = 0; p < parts.length; p++) {
+        if (parts[p] && STEP_GLOSS_AR[parts[p]]) return STEP_GLOSS_AR[parts[p]];
+      }
+      var words = head.split(/\s+/);
+      for (var j = 0; j < words.length; j++) {
+        var w = words[j].replace(/[^a-z\-]/g, '');
+        if (w.length > 2 && STEP_GLOSS_AR[w]) return STEP_GLOSS_AR[w];
+      }
+      // ترجمة مبسطة لبدايات شائعة
+      if (/^look/.test(head)) return 'انظر / انتبه';
+      if (/rebuk/.test(head)) return 'ينتهر / يوبّخ';
+      if (/scatter|dispers/.test(head)) return 'يذرّي / يفرّق';
+      if (/seed|sowing/.test(head)) return 'زَرْع / نسل';
+      if (/refus|reject/.test(head)) return 'يرفض';
+      if (/feast|festival/.test(head)) return 'عيد';
+      if (/lift|raise/.test(head)) return 'يرفع';
+      if (/toward/.test(head)) return 'نحو / إلى';
+      if (/upon|because/.test(head)) return 'على / بسبب';
+      if (/face/.test(head)) return 'وجه';
+      if (/before/.test(head)) return 'أمام';
+      if (/bless/.test(head)) return 'يبارك / بركة';
+      if (/curs/.test(head)) return 'لعنة / يلعن';
+      if (/forgiv/.test(head)) return 'يغفر';
+      if (/sav(e|ior|ation)/.test(head)) return 'يخلّص / خلاص';
+      if (/faith|believ/.test(head)) return 'إيمان / يؤمن';
+      if (/love|agap/.test(head)) return 'محبة / يحب';
+      if (/peace|shalom/.test(head)) return 'سلام';
+      if (/grace/.test(head)) return 'نعمة';
+      if (/mercy/.test(head)) return 'رحمة';
+      if (/spirit/.test(head)) return 'روح';
+      if (/word|logos/.test(head)) return 'كلمة';
+      if (/kingdom/.test(head)) return 'ملكوت';
+      if (/glory/.test(head)) return 'مجد';
+      if (/pray/.test(head)) return 'يصلّي / صلاة';
+      if (/repent/.test(head)) return 'يتوب / توبة';
+      return '';
+    }
+
+
+    function shortEnglish(entry) {
+      var en = String((entry && entry.lexical) || '').trim();
+      if (!en) return '';
+      // أول معنى مختصر فقط
+      en = en.split(/[;]/)[0].replace(/[\[\]\(\)]/g, '').replace(/\s+/g, ' ').trim();
+      if (en.length > 40) en = en.slice(0, 40) + '…';
+      return en;
+    }
+
+        function openWordMeaning() {
       try {
         var snap = window._verseMenuData || {};
         var el = document.querySelector('.verse-line.active-verse');
@@ -19756,7 +20480,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '381';
+      var APP_VER = '382';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="392" lang="ar" dir="rtl">
+<html data-app-ver="393" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9514,28 +9514,8 @@ function openKatameros(dateObj) {
       return { title: title, body: body };
     }
     function generateSynaxAiDesign(title, body, btn, previewId) {
-      if (typeof showToast === 'function') showToast('جاري توليد التصميم…');
-      if (btn) { btn.disabled = true; btn.textContent = 'جاري التوليد…'; }
-      var prev = previewId ? document.getElementById(previewId) : null;
-      if (prev) {
-        prev.style.display = 'block';
-        prev.innerHTML = '<div style="padding:16px;color:#8a7a60;">⏳ جاري إنشاء صورة بالذكاء الاصطناعي…</div>';
-      }
-      generateSynaxAiImage(title, body).then(function (url) {
-        window._lastSynaxAi = window._lastSynaxAi || {};
-        window._lastSynaxAi[title] = url;
-        if (prev) {
-          prev.innerHTML = '<img src="' + url + '" alt="" style="max-width:100%;border-radius:14px;border:1px solid #e8d9b5;"/>' +
-            '<div style="margin-top:8px;font-size:12px;color:#8a7a60;">اضغطي «مشاركة التصميم + النص» لإرسال الصورة مع السنكسار</div>';
-        }
-        if (btn) { btn.disabled = false; btn.textContent = '🎨 تصميم بالذكاء الاصطناعي'; }
-        if (typeof showToast === 'function') showToast('تم إنشاء التصميم');
-      }).catch(function (err) {
-        if (prev) prev.innerHTML = '<div style="padding:12px;color:#a05040;">تعذر التوليد. تحققي من الإنترنت وحاولي مرة أخرى.</div>';
-        if (btn) { btn.disabled = false; btn.textContent = '🎨 تصميم بالذكاء الاصطناعي'; }
-        if (typeof showToast === 'function') showToast('تعذر توليد التصميم');
-        console.log('synax ai', err);
-      });
+      /* أُلغي تصميم الذكاء الاصطناعي من تمثلوا بإيمانهم */
+      return;
     }
 
     function openFaithExamples(dateObj) {
@@ -9584,17 +9564,14 @@ function openKatameros(dateObj) {
         if (!synaxList.length) {
           html += '<p style="text-align:center;color:#8a7a60;">' + (isEn ? 'No Synaxarium for this day (or internet required).' : 'لا يوجد سنكسار محمول لهذا اليوم (أو يلزم إنترنت).') + '</p>';
         }
-        html += '<div style="margin:10px 0 14px;padding:12px;border-radius:14px;background:#f8f1e0;border:1px dashed #c9a227;text-align:center;font-size:13px;color:#6a5a30;line-height:1.7;">🎨 لكل قديس: اضغطي «تصميم بالذكاء الاصطناعي» ثم «مشاركة التصميم + النص» لمشاركة الصورة مع السنكسار.</div>';
+        
         synaxList.forEach(function (item, idx) {
           var sid = 'faith-syn-' + idx;
           html += '<div style="margin:10px 0;padding:10px;border-radius:16px;background:rgba(255,255,255,0.85);border:1px solid rgba(180,140,60,0.35);">';
           html += '<button type="button" class="faith-saint-btn" data-target="' + sid + '" style="display:block;width:100%;text-align:right;margin:0;padding:12px;border-radius:14px;border:1px solid rgba(180,140,60,0.35);background:linear-gradient(135deg,#fff8e7,#f0e0c0);color:#4a3a18;font-weight:700;cursor:pointer;">⛪ ' + esc(item.title) + '</button>';
           html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:center;">';
-          html += '<button type="button" class="faith-ai-design-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:none;background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff;font-weight:800;font-size:14px;">' + (isEn ? '🎨 AI design' : '🎨 تصميم بالذكاء الاصطناعي') + '</button>';
-          html += '<button type="button" class="faith-ai-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="flex:1;min-width:140px;padding:12px 10px;border-radius:12px;border:2px solid #8b6914;background:#fff8e7;color:#5a4a20;font-weight:700;font-size:14px;">' + (isEn ? 'Share design + text' : 'مشاركة التصميم + النص') + '</button>';
-          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="padding:10px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-weight:600;">' + (isEn ? 'Share text' : 'مشاركة النص فقط') + '</button>';
+          html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="syn" style="padding:10px 14px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-weight:600;">' + (isEn ? 'Share story' : 'مشاركة القصة') + '</button>';
           html += '</div>';
-          html += '<div class="faith-ai-preview" id="faith-ai-preview-' + idx + '" style="display:none;margin-top:10px;text-align:center;"></div>';
           html += '<div id="' + sid + '" style="display:none;margin:8px 0 0;padding:12px;border-radius:12px;background:#fff;border:1px solid rgba(180,150,80,0.2);line-height:1.85;">' + sanitizeKataHtml(item.html || '') + '</div>';
           html += '</div>';
         });
@@ -9610,7 +9587,6 @@ function openKatameros(dateObj) {
           html += '<div id="' + sid + '" style="display:none;margin-top:6px;line-height:1.8;white-space:pre-wrap;">' + esc(item.text) + '</div>';
           html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">';
           html += '<button type="button" class="faith-share-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="custom" style="padding:6px 12px;border-radius:12px;border:1px solid var(--gold);background:#fff;color:#6a5a30;font-size:0.85em;">' + t('share') + '</button>';
-          html += '<button type="button" class="faith-ai-design-btn" data-title="' + esc(item.title).replace(/"/g, '&quot;') + '" data-idx="' + idx + '" data-kind="custom" style="padding:6px 12px;border-radius:12px;border:none;background:linear-gradient(135deg,#c9a227,#a67c00);color:#fff;font-size:0.85em;font-weight:700;">🎨 AI</button>';
           html += '<button type="button" data-del="' + idx + '" class="faith-del-btn" style="padding:6px 12px;border-radius:12px;border:1px solid #c99;background:#fff5f5;color:#a33;font-size:0.85em;">' + t('delete') + '</button>';
           html += '</div></div>';
         });
@@ -9639,59 +9615,7 @@ function openKatameros(dateObj) {
             shareSaintStory(item.title, item.body);
           });
         });
-        content.querySelectorAll('.faith-ai-design-btn').forEach(function (btn) {
-          btn.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            var kind = btn.getAttribute('data-kind');
-            var idx = parseInt(btn.getAttribute('data-idx'), 10);
-            var item = resolveFaithItem(kind, idx, synaxList, btn.getAttribute('data-title') || '');
-            generateSynaxAiDesign(item.title, item.body, btn, 'faith-ai-preview-' + idx);
-          });
-        });
-        content.querySelectorAll('.faith-ai-share-btn').forEach(function (btn) {
-          btn.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            var kind = btn.getAttribute('data-kind');
-            var idx = parseInt(btn.getAttribute('data-idx'), 10);
-            var item = resolveFaithItem(kind, idx, synaxList, btn.getAttribute('data-title') || '');
-            var url = (window._lastSynaxAi && window._lastSynaxAi[item.title]) || '';
-            if (!url) {
-              if (typeof showToast === 'function') showToast('جاري التوليد ثم المشاركة…');
-              generateSynaxAiImage(item.title, item.body).then(function (u) {
-                window._lastSynaxAi = window._lastSynaxAi || {};
-                window._lastSynaxAi[item.title] = u;
-                var prev = document.getElementById('faith-ai-preview-' + idx);
-                if (prev) {
-                  prev.style.display = 'block';
-                  prev.innerHTML = '<img src="' + u + '" alt="" style="max-width:100%;border-radius:14px;"/>';
-                }
-                shareSynaxDesignAndText(item.title, item.body, u);
-              }).catch(function () {
-                shareSynaxDesignAndText(item.title, item.body, '');
-                if (typeof showToast === 'function') showToast('تمت مشاركة النص (الصورة غير متاحة الآن)');
-              });
-            } else {
-              shareSynaxDesignAndText(item.title, item.body, url);
-            }
-          });
-        });
-        content.querySelectorAll('.faith-ai-design-btn').forEach(function (btn) {
-          btn.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            var kind = btn.getAttribute('data-kind');
-            var idx = parseInt(btn.getAttribute('data-idx'), 10);
-            var title = btn.getAttribute('data-title') || '';
-            var body = '';
-            if (kind === 'custom') {
-              var list = loadSaintStories();
-              if (list[idx]) { title = list[idx].title || title; body = list[idx].text || ''; }
-            } else if (kind === 'syn' && synaxList[idx]) {
-              title = synaxList[idx].title || title;
-              body = stripHtmlToText(synaxList[idx].html || '');
-            }
-            generateSynaxAiDesign(title, body, btn);
-          });
-        });
+
         content.querySelectorAll('.faith-del-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var i = parseInt(btn.getAttribute('data-del'), 10);
@@ -20814,7 +20738,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '392';
+      var APP_VER = '393';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

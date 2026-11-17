@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="391" lang="ar" dir="rtl">
+<html data-app-ver="392" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9403,7 +9403,7 @@ function openKatameros(dateObj) {
       if (/شهيد|استشهاد|قُتل|ذُبح|أُعدم/.test(all)) cues.push('Coptic Orthodox martyr saint holding a small cross, peaceful holy expression');
       if (/عذراء|بتول|راهبة|قديسة/.test(all) && !/بابا|أسقف|أنبا|القمص/.test(t)) cues.push('holy Coptic Orthodox female saint or virgin nun in modest traditional robes');
       if (/أنبا|أسقف|بابا|بطريرك|مطران|القمص|أبونا|كاهن/.test(all)) cues.push('Coptic Orthodox bishop or monk-priest with traditional black or dark monastic garments and cross');
-      if (/راهب|نسك|برية|دير|قلاية|إسقيط|شيهيت|مبا|.test(all) || /أنبا/.test(t)) cues.push('desert monastic setting, Coptic Orthodox monk ascetic');
+      if (/راهب|نسك|برية|دير|قلاية|إسقيط|شيهيت/.test(all) || /أنبا/.test(t)) cues.push('desert monastic setting, Coptic Orthodox monk ascetic');
       if (/ملاك|ميخائيل|غبريال|ملائك/.test(all)) cues.push('holy angel with reverence, Coptic icon style wings');
       if (/مريم|العذراء/.test(all) && /والدة|ثيئوتوكوس|توت/.test(all)) cues.push('Theotokos Holy Virgin Mary in traditional Coptic Orthodox iconography');
       if (/صليب|صليب/.test(all)) cues.push('holding or near the Holy Cross');
@@ -20814,7 +20814,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '391';
+      var APP_VER = '392';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

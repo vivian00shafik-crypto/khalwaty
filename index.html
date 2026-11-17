@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="390" lang="ar" dir="rtl">
+<html data-app-ver="391" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9394,12 +9394,48 @@ function openKatameros(dateObj) {
     function stripHtmlToText(htmlStr) {
       return String(htmlStr || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     }
-    function buildSynaxAiPrompt(title, plainText) {
-      var t = String(title || 'Coptic Orthodox saint').slice(0, 140);
-      var ctx = String(plainText || '').slice(0, 220);
-      return 'Beautiful respectful Coptic Orthodox Christian sacred art of: ' + t +
-        '. Warm golden light, peaceful holy atmosphere, icon-inspired modern digital painting, no written text, no watermark. Context: ' + ctx;
+    function extractSynaxVisualCues(title, plainText) {
+      var t = String(title || '');
+      var p = String(plainText || '');
+      var all = (t + ' ' + p);
+      var cues = [];
+      // نوع الشخصية
+      if (/شهيد|استشهاد|قُتل|ذُبح|أُعدم/.test(all)) cues.push('Coptic Orthodox martyr saint holding a small cross, peaceful holy expression');
+      if (/عذراء|بتول|راهبة|قديسة/.test(all) && !/بابا|أسقف|أنبا|القمص/.test(t)) cues.push('holy Coptic Orthodox female saint or virgin nun in modest traditional robes');
+      if (/أنبا|أسقف|بابا|بطريرك|مطران|القمص|أبونا|كاهن/.test(all)) cues.push('Coptic Orthodox bishop or monk-priest with traditional black or dark monastic garments and cross');
+      if (/راهب|نسك|برية|دير|قلاية|إسقيط|شيهيت|مبا|.test(all) || /أنبا/.test(t)) cues.push('desert monastic setting, Coptic Orthodox monk ascetic');
+      if (/ملاك|ميخائيل|غبريال|ملائك/.test(all)) cues.push('holy angel with reverence, Coptic icon style wings');
+      if (/مريم|العذراء/.test(all) && /والدة|ثيئوتوكوس|توت/.test(all)) cues.push('Theotokos Holy Virgin Mary in traditional Coptic Orthodox iconography');
+      if (/صليب|صليب/.test(all)) cues.push('holding or near the Holy Cross');
+      if (/أسد|حيوانات|وحوش/.test(all)) cues.push('symbolic calm animals near the saint as in hagiography, not aggressive');
+      if (/نار|أتون/.test(all)) cues.push('symbolic gentle flames of trial, not horror');
+      if (/بحر|سفينة|مركب/.test(all)) cues.push('subtle sea or boat motif in background if relevant to the story');
+      if (/طفل|صبي|شماس/.test(all)) cues.push('youthful holy figure if the saint was young');
+      // مهن/أحداث شائعة من النص
+      if (/طبيب|شفاء|أبرأ/.test(all)) cues.push('healer saint gesture of blessing');
+      if (/كاتب|إنجيل|كتاب/.test(all)) cues.push('holding a Gospel book');
+      if (/جندي|قائد|عسكري/.test(all)) cues.push('former soldier turned saint, peaceful not warlike');
+      if (!cues.length) cues.push('Coptic Orthodox saint in traditional sacred icon composition');
+      // اقتطف جملة قصيرة من النص للمعنى
+      var snippet = p.replace(/\s+/g, ' ').trim();
+      if (snippet.length > 280) snippet = snippet.slice(0, 280);
+      return { cues: cues.slice(0, 5), snippet: snippet, title: t.slice(0, 120) };
     }
+
+    function buildSynaxAiPrompt(title, plainText) {
+      var info = extractSynaxVisualCues(title, plainText);
+      var parts = [];
+      parts.push('Authentic Coptic Orthodox Christian icon (Egyptian Coptic style), traditional tempera icon painting look');
+      parts.push('Subject: ' + (info.title || 'Coptic Orthodox saint'));
+      parts.push('Must visually match this synaxarium story: ' + (info.snippet || info.title));
+      if (info.cues.length) parts.push('Visual elements: ' + info.cues.join('; '));
+      parts.push('Style rules: flat hierarchical perspective, large serene eyes, thin nose, small closed mouth, golden halo (nimbus), rich but restrained colors (ochre, deep blue, burgundy, olive), gold leaf background or simple architectural niche');
+      parts.push('Strictly traditional ecclesiastical art, frontal or three-quarter holy pose, blessing hand or cross or Gospel as appropriate');
+      parts.push('NOT photorealistic, NOT 3D render, NOT Western Renaissance, NOT modern fashion, NOT cartoon, NOT horror, NO blood gore, NO text, NO letters, NO watermark, NO logo, NO frame inscription');
+      parts.push('Devotional, dignified, peaceful, suitable for prayer');
+      return parts.join('. ');
+    }
+
     function generateSynaxAiImage(title, plainText) {
       return new Promise(function (resolve, reject) {
         if (typeof TAFSIR_WORKER_URL === 'undefined' || !TAFSIR_WORKER_URL) {
@@ -20778,7 +20814,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '390';
+      var APP_VER = '391';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

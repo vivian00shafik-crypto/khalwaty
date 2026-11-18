@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="395" lang="ar" dir="rtl">
+<html data-app-ver="396" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1667,12 +1667,16 @@
           var banner = document.getElementById('muteBanner');
           if (banner) banner.classList.remove('show');
         }
+        // لا تقطع صوت البابا شنودة إلا عند الترنيمة أو كتم الصوت أو إعادة تشغيل يسوع
         if (except !== 'jesus') {
-          var s = document.getElementById('sawtRabina');
-          if (s) { try { s.pause(); } catch(e){} }
-          var s2 = document.getElementById('shenoudaVoiceAudio');
-          if (s2) { try { s2.pause(); } catch(e){} }
-          window._shenoudaPlaying = false;
+          var allowCutShenouda = (except === 'hymn' || except === 'mute' || except === 'force');
+          if (allowCutShenouda || !window._shenoudaPlaying) {
+            var s = document.getElementById('sawtRabina');
+            if (s) { try { s.pause(); } catch(e){} }
+            var s2 = document.getElementById('shenoudaVoiceAudio');
+            if (s2) { try { s2.pause(); } catch(e){} }
+            if (allowCutShenouda) window._shenoudaPlaying = false;
+          }
         }
         if (except !== 'prayer') {
           var p = document.getElementById('prayerAlarmAudio');
@@ -11748,6 +11752,10 @@ function updateSelectedSinsCount() {
         if (audio) {
           if (val) audio.pause();
         }
+        if (val) {
+          try { if (typeof stopAllAppAudio === 'function') stopAllAppAudio('mute'); } catch (eM) {}
+          window._shenoudaPlaying = false;
+        }
         const sawt = document.getElementById('sawtRabina');
         if (sawt && val) sawt.pause();
         const alarm = document.getElementById('prayerAlarmAudio');
@@ -11804,11 +11812,13 @@ function updateSelectedSinsCount() {
       window._hymnEndedOnce = false;
       window._hymnPlaying = true;
         try {
+          window._shenoudaPlaying = false;
           var sj = document.getElementById('sawtRabina'); if (sj) { sj.pause(); }
           var sh = document.getElementById('shenoudaVoiceAudio'); if (sh) { sh.pause(); }
           if (window.speechSynthesis) window.speechSynthesis.cancel();
         } catch (eHJ) {};
         try {
+          window._shenoudaPlaying = false;
           var sj = document.getElementById('sawtRabina'); if (sj) { sj.pause(); }
           var sh = document.getElementById('shenoudaVoiceAudio'); if (sh) { sh.pause(); }
           if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -12496,74 +12506,132 @@ function updateSelectedSinsCount() {
     function playShenoudaVoiceFallback(text) {
       try {
         if (typeof isMuted === 'function' && isMuted()) return;
+        // أوقف باقي الأصوات دون قطع يسوع لاحقًا
         if (typeof stopAllAppAudio === 'function') stopAllAppAudio('jesus');
         window._shenoudaPlaying = true;
-        // استخدم عنصر الصفحة إن وُجد، وإلا أنشئ واحدًا
-        var a = document.getElementById('sawtRabina') || document.getElementById('shenoudaVoiceAudio');
+        window._audioExclusive = 'jesus';
+
+        var a = document.getElementById('sawtRabina');
+        if (!a) {
+          a = document.getElementById('shenoudaVoiceAudio');
+        }
         if (!a) {
           a = document.createElement('audio');
-          a.id = 'shenoudaVoiceAudio';
+          a.id = 'sawtRabina';
           a.preload = 'auto';
           a.setAttribute('playsinline', '');
           a.setAttribute('webkit-playsinline', '');
           document.body.appendChild(a);
         }
-        var sources = [];
-        if (a.id === 'sawtRabina' && a.getAttribute('src')) {
-          sources.push(a.getAttribute('src'));
+
+        // ثبّت المصدر مرة واحدة — إعادة تعيين src تقطع التشغيل
+        var desired = a.getAttribute('src') || a.src || 'sawt-rabina.mp3';
+        if (!desired || desired === window.location.href) desired = 'sawt-rabina.mp3';
+        // لو المسار كامل استخرج الاسم
+        if (desired.indexOf('sawt-rabina') < 0 && desired.indexOf('shenouda') < 0) {
+          desired = 'sawt-rabina.mp3';
         }
-        sources = sources.concat(['sawt-rabina.mp3', './sawt-rabina.mp3', 'shenouda-voice.mp3', './shenouda-voice.mp3']);
-        // إزالة التكرار
-        var seen = {};
-        sources = sources.filter(function (s) {
-          if (!s || seen[s]) return false;
-          seen[s] = 1;
-          return true;
-        });
-        var si = 0;
-        function clearPlayingFlag() {
-          window._shenoudaPlaying = false;
+        var needLoad = false;
+        try {
+          var cur = a.currentSrc || a.src || '';
+          if (!cur || cur.indexOf('sawt-rabina') < 0 && cur.indexOf('shenouda') < 0) {
+            a.src = desired.indexOf('sawt-rabina') >= 0 || desired.indexOf('http') === 0 || desired.indexOf('./') === 0
+              ? desired : 'sawt-rabina.mp3';
+            needLoad = true;
+          }
+        } catch (eS) {
+          a.src = 'sawt-rabina.mp3';
+          needLoad = true;
+        }
+
+        function showBanner() {
+          try {
+            var banner = document.getElementById('muteBanner');
+            if (banner) {
+              banner.classList.add('show');
+              var st = document.getElementById('muteStatus');
+              if (st) st.textContent = 'صوت البابا شنودة الثالث…';
+            }
+          } catch (eB) {}
+        }
+        function hideBanner() {
           try {
             var banner = document.getElementById('muteBanner');
             if (banner) banner.classList.remove('show');
-          } catch (eB) {}
+          } catch (eH) {}
         }
-        function tryNext() {
-          if (si >= sources.length) {
-            clearPlayingFlag();
-            if (typeof showToast === 'function') showToast('تعذر تشغيل صوت البابا شنودة');
+        function clearPlaying() {
+          window._shenoudaPlaying = false;
+          if (window._audioExclusive === 'jesus') window._audioExclusive = null;
+          hideBanner();
+        }
+
+        a.onerror = function () {
+          // محاولة مسار بديل مرة واحدة
+          if (!a._triedAlt) {
+            a._triedAlt = true;
+            a.src = './sawt-rabina.mp3';
+            a.load();
+            var p2 = a.play();
+            if (p2 && p2.catch) p2.catch(function () { clearPlaying(); });
             return;
           }
-          var src = sources[si++];
-          a.onerror = function () { tryNext(); };
-          a.onended = function () { clearPlayingFlag(); };
-          try { a.pause(); } catch (e0) {}
+          clearPlaying();
+          if (typeof showToast === 'function') showToast('تعذر تشغيل ملف صوت البابا شنودة');
+        };
+        a.onended = function () { clearPlaying(); };
+        // منع الإيقاف غير المقصود أثناء التشغيل
+        a.onpause = function () {
+          if (window._shenoudaPlaying && !document.hidden && !(typeof isMuted === 'function' && isMuted())) {
+            // لو اتعمل pause بسبب استدعاء خاطئ — حاول نكمل
+            try {
+              if (a.currentTime > 0 && a.currentTime < (a.duration - 0.5)) {
+                var r = a.play();
+                if (r && r.catch) r.catch(function () {});
+              }
+            } catch (eR) {}
+          }
+        };
+
+        function doPlay() {
+          try { a.volume = 1; a.muted = false; } catch (eV) {}
           try {
-            if (a.getAttribute('src') !== src) a.src = src;
-          } catch (e1) { a.src = src; }
-          try { a.currentTime = 0; } catch (e2) {}
-          a.volume = 1;
+            if (a.currentTime > 0.3 && a.currentTime < (a.duration || 9999) - 1) {
+              // لا نرجّع للبداية لو كان شغال
+            } else {
+              a.currentTime = 0;
+            }
+          } catch (eC) {}
           var p = a.play();
           if (p && p.then) {
-            p.then(function () {
-              var banner = document.getElementById('muteBanner');
-              if (banner) {
-                banner.classList.add('show');
-                var st = document.getElementById('muteStatus');
-                if (st) st.textContent = 'صوت البابا شنودة الثالث…';
-              }
-            }).catch(function () { tryNext(); });
+            p.then(function () { showBanner(); }).catch(function (err) {
+              // إعادة محاولة بعد تفاعل
+              clearPlaying();
+              if (typeof showToast === 'function') showToast('اضغطي الشاشة مرة للسماح بالصوت');
+            });
+          } else {
+            showBanner();
           }
         }
-        tryNext();
+
+        if (needLoad) {
+          try { a.load(); } catch (eL) {}
+          a.addEventListener('canplay', function onCP() {
+            try { a.removeEventListener('canplay', onCP); } catch (e) {}
+            doPlay();
+          });
+          // احتياطي
+          setTimeout(doPlay, 400);
+        } else {
+          doPlay();
+        }
       } catch (e) {
         window._shenoudaPlaying = false;
         console.log('shenouda fallback', e);
       }
     }
 
-
-    function deliverJesusVoiceWithShenoudaFallback() {
+function deliverJesusVoiceWithShenoudaFallback() {
       try {
         if (typeof isHymnPlaying === 'function' && isHymnPlaying()) {
           deferJesusUntilAfterHymn(function() { deliverJesusVoiceWithShenoudaFallback(); });
@@ -20568,21 +20636,32 @@ function playProgressFinalVideo() {
           body = body.replace(new RegExp('[（(]\\s*' + ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[）)]\\s*$'), '').trim();
         } catch (eR) {}
       }
+      // تنظيف فراغات
+      body = body.replace(/\s+/g, ' ').trim();
+      ref = ref.replace(/\s+/g, ' ').trim();
+      // مثال الشكل: نص الآية. المزامير 73:24
+      var display = body;
+      if (ref) {
+        if (!/[.。]$/.test(body)) display = body + '.';
+        else display = body;
+        display = display + ' ' + ref;
+      }
+
       var card = document.createElement('div');
       card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:50vh;overflow:auto;';
+      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:50vh;overflow:auto;';
       var safeTheme = String((verse && verse.theme) || 'آية اليوم').replace(/</g,'&lt;');
-      var safeBody = String(body || '').replace(/</g,'&lt;');
+      var safeDisplay = String(display || body || '').replace(/</g,'&lt;');
       var safeRef = String(ref || '').replace(/</g,'&lt;');
-      var dayNote = (verse && verse.dayOfYear) ? (' · يوم ' + verse.dayOfYear + ' من السنة') : '';
+      var safeBody = String(body || '').replace(/</g,'&lt;');
       card.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
           '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
-          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ آية اليوم — ' + safeTheme + '</div>' +
+          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ آية اليوم' + (safeTheme ? (' — ' + safeTheme) : '') + '</div>' +
         '</div>' +
-        '<div style="font-size:16px;line-height:1.9;color:#3e2f1c;font-weight:700;">' + (safeBody || '…') + '</div>' +
-        (safeRef ? ('<div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#f3ebe0;font-size:14px;color:#5a4a2a;font-weight:700;">📖 الشاهد: ' + safeRef + '</div>') : '') +
-        '<div style="margin-top:8px;font-size:12px;color:#8a7a60;">بصوت قداسة البابا شنودة الثالث · آية مختلفة كل يوم' + dayNote + '</div>';
+        '<div style="font-size:17px;line-height:2;color:#3e2f1c;font-weight:700;">' + safeBody + (safeBody && !/[.。]$/.test(body) ? '.' : '') + '</div>' +
+        (safeRef ? ('<div style="margin-top:10px;font-size:15px;color:#6b5b3e;font-weight:800;">' + safeRef + '</div>') : '') +
+        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;">بصوت قداسة البابا شنودة الثالث · آية مختلفة كل يوم</div>';
       document.body.appendChild(card);
       setTimeout(function() {
         try {
@@ -20863,7 +20942,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '395';
+      var APP_VER = '396';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

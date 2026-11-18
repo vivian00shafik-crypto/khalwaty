@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="403" lang="ar" dir="rtl">
+<html data-app-ver="404" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2299,7 +2299,7 @@
         }
         window._deuteroLoading = true;
         var s = document.createElement('script');
-        s.src = 'bible-deutero.js?v=144';
+        s.src = 'bible-deutero.js?v=404';
         s.async = true;
         var done = false;
         function finish(ok) {
@@ -4284,71 +4284,83 @@ function getMergedBibleBooks() {
       const bible = window.BIBLE_SVD;
       if (!bible || !bible.books) return [];
       const books = bible.books.slice();
-      const deutero = (window.BIBLE_DEUTERO && window.BIBLE_DEUTERO.books) ? window.BIBLE_DEUTERO.books : [];
-      if (!deutero.length) 
-      // تتمة دانيال: إصحاحا سوسنة (13) وبال والتنين (14)
-      try {
-        if (typeof DANIEL_ADDITIONS === 'object' && DANIEL_ADDITIONS) {
-          var di = findIdx(function(b){
-            return b.code === 'Dan' || (b.name && (b.name.indexOf('دانيال') >= 0));
-          });
-          if (di >= 0) {
-            var db = books[di];
-            if (db && db.chapters && db.chapters.length >= 12 && db.chapters.length < 14) {
-              if (DANIEL_ADDITIONS.ch13 && DANIEL_ADDITIONS.ch13.length) {
-                db.chapters.push(DANIEL_ADDITIONS.ch13.slice());
-              }
-              if (DANIEL_ADDITIONS.ch14 && DANIEL_ADDITIONS.ch14.length) {
-                db.chapters.push(DANIEL_ADDITIONS.ch14.slice());
-              }
-            }
+      // نسخ عميقة خفيفة للفصول حتى لا نعدّل المرجع الأصلي عند إضافة تتمة دانيال
+      for (var bi = 0; bi < books.length; bi++) {
+        try {
+          if (books[bi] && books[bi].chapters) {
+            books[bi] = Object.assign({}, books[bi], { chapters: books[bi].chapters.slice() });
           }
-        }
-      } catch (eDan) {}
-
-      return books;
+        } catch (eC) {}
+      }
+      const deutero = (window.BIBLE_DEUTERO && window.BIBLE_DEUTERO.books) ? window.BIBLE_DEUTERO.books : [];
 
       function findIdx(pred) {
-        for (let i = 0; i < books.length; i++) {
+        for (var i = 0; i < books.length; i++) {
           if (pred(books[i])) return i;
         }
         return -1;
       }
       function byCode(code) {
-        return deutero.find(function(b){ return b.code === code; });
+        if (!deutero || !deutero.length) return null;
+        return deutero.find(function (b) { return b.code === code; }) || null;
       }
       function insertAfter(namePred, bookObj) {
         if (!bookObj || !bookObj.chapters || !bookObj.chapters.length) return;
-        // avoid duplicates
-        if (books.some(function(b){ return b.code === bookObj.code || b.id === bookObj.id; })) return;
-        const idx = findIdx(namePred);
+        if (books.some(function (b) { return b.code === bookObj.code || b.id === bookObj.id; })) return;
+        var idx = findIdx(namePred);
         if (idx >= 0) books.splice(idx + 1, 0, bookObj);
         else books.push(bookObj);
       }
 
-      // ترتيب قبطي/سبعينية تقريبي وسط العهد القديم
-      // ترتيب قبطي تقريبي للأسفار القانونية الثانية وسط العهد القديم
-      insertAfter(function(b){ return b.code === 'Neh' || (b.name && (b.name.indexOf('نحميا') >= 0)); }, byCode('Tob'));
-      insertAfter(function(b){ return b.code === 'Tob' || (b.name && b.name.indexOf('طوبيا') >= 0); }, byCode('Jdt'));
-      insertAfter(function(b){ return b.code === 'Est' || (b.name && b.name.indexOf('أستير') >= 0); }, byCode('EstG'));
-      insertAfter(function(b){ return b.code === 'Ps' || (b.name && b.name.indexOf('المزامير') >= 0); }, byCode('Ps151'));
-      insertAfter(function(b){ return b.code === 'Song' || (b.name && b.name.indexOf('نشيد') >= 0); }, byCode('Wis'));
-      insertAfter(function(b){ return b.code === 'Wis' || (b.name && b.name.indexOf('حكمة') >= 0); }, byCode('Sir'));
-      insertAfter(function(b){ return b.code === 'Lam' || (b.name && b.name.indexOf('مراثي') >= 0); }, byCode('Bar'));
-      // المكابيين في آخر العهد القديم قبل أول سفر NT
-      const firstNT = findIdx(function(b){ return b.t === 'NT'; });
-      const mac1 = byCode('1Mac');
-      const mac2 = byCode('2Mac');
-      if (mac1 && !books.some(function(b){ return b.code === '1Mac'; })) {
-        if (firstNT >= 0) books.splice(firstNT, 0, mac1);
-        else books.push(mac1);
+      if (deutero && deutero.length) {
+        // ترتيب قبطي تقريبي للأسفار القانونية الثانية وسط العهد القديم
+        insertAfter(function (b) { return b.code === 'Neh' || (b.name && b.name.indexOf('نحميا') >= 0); }, byCode('Tob'));
+        insertAfter(function (b) { return b.code === 'Tob' || (b.name && b.name.indexOf('طوبيا') >= 0); }, byCode('Jdt'));
+        insertAfter(function (b) { return b.code === 'Est' || (b.name && (b.name.indexOf('أستير') >= 0 || b.name.indexOf('استير') >= 0)); }, byCode('EstG'));
+        insertAfter(function (b) { return b.code === 'Ps' || (b.name && b.name.indexOf('المزامير') >= 0); }, byCode('Ps151'));
+        insertAfter(function (b) { return b.code === 'Song' || (b.name && b.name.indexOf('نشيد') >= 0); }, byCode('Wis'));
+        insertAfter(function (b) { return b.code === 'Wis' || (b.name && b.name.indexOf('حكمة') >= 0); }, byCode('Sir'));
+        insertAfter(function (b) { return b.code === 'Lam' || (b.name && b.name.indexOf('مراثي') >= 0); }, byCode('Bar'));
+        // المكابيين قبل العهد الجديد
+        var firstNT = findIdx(function (b) { return b.t === 'NT'; });
+        var mac1 = byCode('1Mac');
+        var mac2 = byCode('2Mac');
+        if (mac1 && !books.some(function (b) { return b.code === '1Mac'; })) {
+          if (firstNT >= 0) books.splice(firstNT, 0, mac1);
+          else books.push(mac1);
+        }
+        if (mac2 && !books.some(function (b) { return b.code === '2Mac'; })) {
+          var i1 = findIdx(function (b) { return b.code === '1Mac'; });
+          if (i1 >= 0) books.splice(i1 + 1, 0, mac2);
+          else if (firstNT >= 0) books.splice(firstNT, 0, mac2);
+          else books.push(mac2);
+        }
       }
-      if (mac2 && !books.some(function(b){ return b.code === '2Mac'; })) {
-        const i1 = findIdx(function(b){ return b.code === '1Mac'; });
-        if (i1 >= 0) books.splice(i1 + 1, 0, mac2);
-        else if (firstNT >= 0) books.splice(firstNT, 0, mac2);
-        else books.push(mac2);
-      }
+
+      // تتمة دانيال النبي: سوسنة (13) + بال والتنين (14)
+      try {
+        if (typeof DANIEL_ADDITIONS === 'object' && DANIEL_ADDITIONS) {
+          var di = findIdx(function (b) {
+            return b.code === 'Dan' || (b.name && String(b.name).indexOf('دانيال') >= 0);
+          });
+          if (di >= 0) {
+            var db = books[di];
+            if (db && db.chapters) {
+              // لا نكرر الإضافة
+              var already = db.chapters.length >= 14;
+              if (!already && db.chapters.length >= 12) {
+                if (DANIEL_ADDITIONS.ch13 && DANIEL_ADDITIONS.ch13.length) {
+                  db.chapters.push(DANIEL_ADDITIONS.ch13.slice());
+                }
+                if (DANIEL_ADDITIONS.ch14 && DANIEL_ADDITIONS.ch14.length) {
+                  db.chapters.push(DANIEL_ADDITIONS.ch14.slice());
+                }
+              }
+            }
+          }
+        }
+      } catch (eDan) { console.log('daniel additions', eDan); }
+
       return books;
     }
 
@@ -21554,7 +21566,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '403';
+      var APP_VER = '404';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

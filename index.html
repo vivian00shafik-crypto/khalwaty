@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="401" lang="ar" dir="rtl">
+<html data-app-ver="402" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1886,6 +1886,19 @@
           <div class="text-preview" id="reflectionPreview">اضغط للكتابة...</div>
         </div>
       </div>
+    </div>
+
+
+    <!-- صوت يسوع -->
+    <div class="card" id="jesusVoiceHomeCard" style="border:2px solid #c9a227;">
+      <div class="card-title" style="justify-content:center;">
+        <span>✝️ صوت يسوع</span>
+      </div>
+      <p style="font-size:13px;color:#6b5b3e;text-align:center;margin:0 0 10px;line-height:1.6;">آية يومية بصوت البابا شنودة الثالث</p>
+      <button type="button" class="save-btn" style="width:100%;background:linear-gradient(135deg,#5a7d4a,#3d5c32);margin:0;"
+        onclick="if(typeof testJesusVoiceNow==='function')testJesusVoiceNow();else{window._forceJesusTest=true;if(typeof tryDeliverJesusNow==='function')tryDeliverJesusNow('test');}">
+        🔊 تشغيل صوت يسوع
+      </button>
     </div>
 
     <!-- مزاميري اليوم -->
@@ -13026,10 +13039,9 @@ DAILY_VERSES = [
         var now = new Date();
         var minsNow = now.getHours() * 60 + now.getMinutes();
         var minsMsg = hh * 60 + mm;
-        var force = (reason === 'schedule-timer' || reason === 'schedule-due' || reason === 'fire-scheduled' || reason === 'test' || reason === 'poller' || window._forceJesusTest);
-        // poller/schedule: فقط بعد الميعاد
-        if ((reason === 'poller' || reason === 'schedule-due') && minsNow < minsMsg && !window._forceJesusTest) return false;
-        if (!force && minsNow < minsMsg) return false;
+        var force = (reason === 'schedule-timer' || reason === 'schedule-due' || reason === 'fire-scheduled' || reason === 'test' || reason === 'poller' || reason === 'deliver' || window._forceJesusTest);
+        // قبل الميعاد: لا تُرسل إلا للاختبار
+        if (minsNow < minsMsg && reason !== 'test' && !window._forceJesusTest) return false;
         // لو اتشغّل النهاردة خلاص (إلا اختبار)
         if (localStorage.getItem('khalwati_jesus_played_' + dayKey) === '1' && !window._forceJesusTest) {
           return false;
@@ -13083,39 +13095,27 @@ DAILY_VERSES = [
     }
 
     function deliverJesusVoiceVerse() {
-      // لو المستخدم جوّه الكتاب/الأجبية/المزامير — أجّل
-      if (window._contentAudioPage || window._bibleMusicPlaying) {
-        window._jesusVoiceDeferred = true;
-        window._jesusDeferRemainMs = 30000;
-        return;
-      }
-      // لو الترنيمة شغّالة: أوقفها فورًا وشغّل صوت يسوع
       try {
-        var hymn = document.getElementById('hymnAudio') || document.getElementById('startHymn') || document.getElementById('hymn') || document.querySelector('audio.hymn');
-        if (hymn && !hymn.paused && !hymn.ended) {
-          if (typeof stopHymnForJesusVoice === 'function') stopHymnForJesusVoice();
-        }
-      } catch (eH) {}
-      var todayKey = getDateKey(new Date());
-      if (localStorage.getItem('khalwati_jesus_day_' + todayKey) === '1' && !window._forceJesusTest) {
-        return;
-      }
-      window._forceJesusTest = false;
-      // بدون قراءة الآية صوتياً — صوت البابا شنودة فقط مع عرض الآية
-      if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
-        deliverJesusVoiceWithShenoudaFallback();
-      } else {
-        var verse = getDailyVerse();
-        if (typeof showVerseInApp === 'function') showVerseInApp(verse);
+        var forced = !!window._forceJesusTest;
+        // أوقف الترنيمة والموسيقى فورًا
         try {
-          localStorage.setItem('khalwati_jesus_day_' + todayKey, '1');
-          localStorage.setItem('khalwati_msg_notified_' + todayKey, '1');
-        } catch (e2) {}
+          if (typeof stopHymnForJesusVoice === 'function') stopHymnForJesusVoice();
+          window._bibleMusicPlaying = false;
+          var b = document.getElementById('bibleBgMusic');
+          if (b) { try { b.pause(); } catch (e0) {} }
+          window._contentAudioPage = false;
+        } catch (eH) {}
+        if (typeof tryDeliverJesusNow === 'function') {
+          return tryDeliverJesusNow(forced ? 'test' : 'deliver');
+        }
+        if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+          return deliverJesusVoiceWithShenoudaFallback();
+        }
+      } catch (e) {
+        console.log('deliverJesusVoiceVerse', e);
       }
     }
 
-
-    
     function nextTimeTodayOrTomorrow(hhmm) {
       const parts = (hhmm || '21:00').split(':');
       const h = parseInt(parts[0], 10) || 0;
@@ -21212,14 +21212,27 @@ function playProgressFinalVideo() {
     })();
 
     function testJesusVoiceNow() {
-      const todayKey = getDateKey(new Date());
-      localStorage.removeItem('khalwati_msg_notified_' + todayKey);
-      localStorage.removeItem('khalwati_jesus_day_' + todayKey);
-      window._jesusVoiceArmed = false;
-      window._forceJesusTest = true;
-      if (window._jesusVoiceTimer) { clearTimeout(window._jesusVoiceTimer); window._jesusVoiceTimer = null; }
-      deliverJesusVoiceVerse();
-      showToast('تجربة: الآية مع الصوت الآن');
+      try {
+        var todayKey = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
+        if (todayKey) {
+          localStorage.removeItem('khalwati_msg_notified_' + todayKey);
+          localStorage.removeItem('khalwati_jesus_day_' + todayKey);
+          localStorage.removeItem('khalwati_jesus_played_' + todayKey);
+        }
+        window._jesusVoiceArmed = false;
+        window._forceJesusTest = true;
+        if (window._jesusVoiceTimer) { clearTimeout(window._jesusVoiceTimer); window._jesusVoiceTimer = null; }
+        if (typeof unlockAppAudio === 'function') unlockAppAudio();
+        if (typeof tryDeliverJesusNow === 'function') {
+          tryDeliverJesusNow('test');
+        } else if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
+          deliverJesusVoiceWithShenoudaFallback();
+        }
+        if (typeof showToast === 'function') showToast('تجربة صوت يسوع… اضغطي تشغيل إن لزم');
+      } catch (e) {
+        console.log('testJesus', e);
+        if (typeof showToast === 'function') showToast('تعذر تشغيل التجربة');
+      }
     }
 
     // فحص كل دقيقة طالما التطبيق مفتوح
@@ -21371,7 +21384,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '401';
+      var APP_VER = '402';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

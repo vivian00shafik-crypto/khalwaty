@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="399" lang="ar" dir="rtl">
+<html data-app-ver="400" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -12868,45 +12868,77 @@ DAILY_VERSES = [
       } catch (eT) {}
     }
 
-    function playShenoudaVoiceFallback(text) {
+    
+    window._audioUnlocked = false;
+    function unlockAppAudio() {
+      if (window._audioUnlocked) return;
+      window._audioUnlocked = true;
       try {
-        if (typeof isMuted === 'function' && isMuted()) return;
-        // أوقف باقي الأصوات دون قطع يسوع لاحقًا
+        var a = document.getElementById('sawtRabina');
+        if (a) {
+          var prevVol = a.volume;
+          a.volume = 0.01;
+          var p = a.play();
+          if (p && p.then) {
+            p.then(function () {
+              try { a.pause(); a.currentTime = 0; a.volume = prevVol || 1; } catch (e) {}
+            }).catch(function () {
+              try { a.volume = prevVol || 1; } catch (e2) {}
+            });
+          }
+        }
+        if (window.AudioContext || window.webkitAudioContext) {
+          try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') ctx.resume();
+            window._khAudioCtx = ctx;
+          } catch (e3) {}
+        }
+      } catch (e) {}
+    }
+    document.addEventListener('touchstart', unlockAppAudio, { passive: true, once: false });
+    document.addEventListener('click', unlockAppAudio, { passive: true, once: false });
+
+    function playShenoudaVoiceFallback(text, fromUserGesture) {
+      try {
+        if (typeof isMuted === 'function' && isMuted()) {
+          if (typeof showToast === 'function') showToast('الصوت مكتوم — افتحي الصوت من الشريط');
+          return Promise.resolve(false);
+        }
+        try { unlockAppAudio(); } catch (eU) {}
         if (typeof stopAllAppAudio === 'function') stopAllAppAudio('jesus');
         window._shenoudaPlaying = true;
         window._audioExclusive = 'jesus';
 
         var a = document.getElementById('sawtRabina');
         if (!a) {
-          a = document.getElementById('shenoudaVoiceAudio');
-        }
-        if (!a) {
           a = document.createElement('audio');
           a.id = 'sawtRabina';
-          a.preload = 'auto';
           a.setAttribute('playsinline', '');
           a.setAttribute('webkit-playsinline', '');
+          a.preload = 'auto';
           document.body.appendChild(a);
         }
+        a.setAttribute('playsinline', '');
+        a.setAttribute('webkit-playsinline', '');
+        a.preload = 'auto';
 
-        // ثبّت المصدر مرة واحدة — إعادة تعيين src تقطع التشغيل
-        var desired = a.getAttribute('src') || a.src || 'sawt-rabina.mp3';
-        if (!desired || desired === window.location.href) desired = 'sawt-rabina.mp3';
-        // لو المسار كامل استخرج الاسم
-        if (desired.indexOf('sawt-rabina') < 0 && desired.indexOf('shenouda') < 0) {
-          desired = 'sawt-rabina.mp3';
-        }
-        var needLoad = false;
+        var src = 'sawt-rabina.mp3';
         try {
-          var cur = a.currentSrc || a.src || '';
-          if (!cur || cur.indexOf('sawt-rabina') < 0 && cur.indexOf('shenouda') < 0) {
-            a.src = desired.indexOf('sawt-rabina') >= 0 || desired.indexOf('http') === 0 || desired.indexOf('./') === 0
-              ? desired : 'sawt-rabina.mp3';
-            needLoad = true;
+          var base = '';
+          if (window.location && window.location.href) {
+            base = window.location.href.split('?')[0].replace(/index\.html$/i, '');
+            if (base.charAt(base.length - 1) !== '/') base += '/';
           }
-        } catch (eS) {
-          a.src = 'sawt-rabina.mp3';
-          needLoad = true;
+          src = base + 'sawt-rabina.mp3';
+        } catch (eB) {}
+
+        // لا نعيد تحميل إن نفس الملف شغال
+        var cur = '';
+        try { cur = a.currentSrc || a.getAttribute('src') || ''; } catch (eC) {}
+        if (cur.indexOf('sawt-rabina') < 0) {
+          a.src = src;
+          try { a.load(); } catch (eL) {}
         }
 
         function showBanner() {
@@ -12917,13 +12949,13 @@ DAILY_VERSES = [
               var st = document.getElementById('muteStatus');
               if (st) st.textContent = 'صوت البابا شنودة الثالث…';
             }
-          } catch (eB) {}
+          } catch (e) {}
         }
         function hideBanner() {
           try {
             var banner = document.getElementById('muteBanner');
             if (banner) banner.classList.remove('show');
-          } catch (eH) {}
+          } catch (e) {}
         }
         function clearPlaying() {
           window._shenoudaPlaying = false;
@@ -12931,96 +12963,55 @@ DAILY_VERSES = [
           hideBanner();
         }
 
-        a.onerror = function () {
-          // محاولة مسار بديل مرة واحدة
-          if (!a._triedAlt) {
-            a._triedAlt = true;
-            a.src = './sawt-rabina.mp3';
-            a.load();
-            var p2 = a.play();
-            if (p2 && p2.catch) p2.catch(function () { clearPlaying(); });
-            return;
-          }
-          clearPlaying();
-          if (typeof showToast === 'function') showToast('تعذر تشغيل ملف صوت البابا شنودة');
-        };
         a.onended = function () { clearPlaying(); };
-        // منع الإيقاف غير المقصود أثناء التشغيل
-        a.onpause = function () {
-          if (window._shenoudaPlaying && !document.hidden && !(typeof isMuted === 'function' && isMuted())) {
-            // لو اتعمل pause بسبب استدعاء خاطئ — حاول نكمل
-            try {
-              if (a.currentTime > 0 && a.currentTime < (a.duration - 0.5)) {
-                var r = a.play();
-                if (r && r.catch) r.catch(function () {});
-              }
-            } catch (eR) {}
-          }
+        a.onerror = function () {
+          clearPlaying();
+          if (typeof showToast === 'function') showToast('تعذر تحميل ملف الصوت');
+          var btn = document.getElementById('jesusPlayBtn');
+          if (btn) btn.style.display = '';
         };
 
-        function doPlay() {
-          try { a.volume = 1; a.muted = false; } catch (eV) {}
-          try {
-            if (a.currentTime > 0.3 && a.currentTime < (a.duration || 9999) - 1) {
-              // لا نرجّع للبداية لو كان شغال
-            } else {
-              a.currentTime = 0;
-            }
-          } catch (eC) {}
-          var p = a.play();
-          if (p && p.then) {
-            p.then(function () { showBanner(); }).catch(function (err) {
-              // إعادة محاولة بعد تفاعل
-              clearPlaying();
-              if (typeof showToast === 'function') showToast('اضغطي الشاشة مرة للسماح بالصوت');
-            });
-          } else {
-            showBanner();
-          }
-        }
+        try { a.muted = false; a.volume = 1; } catch (eV) {}
+        try {
+          if (!(a.currentTime > 0.5 && !a.paused)) a.currentTime = 0;
+        } catch (eT) {}
 
-        if (needLoad) {
-          try { a.load(); } catch (eL) {}
-          a.addEventListener('canplay', function onCP() {
-            try { a.removeEventListener('canplay', onCP); } catch (e) {}
-            doPlay();
+        var p = a.play();
+        if (p && p.then) {
+          return p.then(function () {
+            showBanner();
+            window._shenoudaPlaying = true;
+            try {
+              var dayKey = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
+              if (dayKey) localStorage.setItem('khalwati_jesus_played_' + dayKey, '1');
+            } catch (eF) {}
+            var btn = document.getElementById('jesusPlayBtn');
+            if (btn) btn.style.display = 'none';
+            return true;
+          }).catch(function (err) {
+            clearPlaying();
+            console.log('shenouda play blocked', err);
+            if (typeof showToast === 'function') {
+              showToast('اضغطي «تشغيل صوت يسوع» للسماح بالصوت');
+            }
+            var btn = document.getElementById('jesusPlayBtn');
+            if (btn) btn.style.display = '';
+            return false;
           });
-          // احتياطي
-          setTimeout(doPlay, 400);
-        } else {
-          doPlay();
         }
+        showBanner();
+        return Promise.resolve(true);
       } catch (e) {
         window._shenoudaPlaying = false;
         console.log('shenouda fallback', e);
+        return Promise.resolve(false);
       }
     }
 
-
-    function stopHymnForJesusVoice() {
-      try {
-        window._hymnPlaying = false;
-        window._shenoudaPlaying = false; // will set true on play
-        var h = document.getElementById('hymnAudio') || document.getElementById('startHymn') || document.getElementById('hymn');
-        if (h) {
-          try { h.pause(); } catch (e0) {}
-          try { h.currentTime = 0; } catch (e1) {}
-        }
-        var banner = document.getElementById('muteBanner');
-        if (banner) banner.classList.remove('show');
-      } catch (e) {}
-    }
-
-    
     function tryDeliverJesusNow(reason) {
       try {
         var dayKey = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
         if (!dayKey) return false;
-        // لا نمنع إلا إذا اشتغل الصوت فعليًا النهاردة
-        if (localStorage.getItem('khalwati_jesus_played_' + dayKey) === '1' && !window._forceJesusTest) {
-          return false;
-        }
-        // وقت الميعاد؟
         var msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
         var parts = String(msgTime).split(':');
         var hh = parseInt(parts[0], 10), mm = parseInt(parts[1], 10);
@@ -13029,11 +13020,15 @@ DAILY_VERSES = [
         var now = new Date();
         var minsNow = now.getHours() * 60 + now.getMinutes();
         var minsMsg = hh * 60 + mm;
-        // لو السبب جدولة/اختبار — لا نشترط الوقت
-        var force = (reason === 'schedule-timer' || reason === 'schedule-due' || reason === 'test' || window._forceJesusTest);
+        var force = (reason === 'schedule-timer' || reason === 'schedule-due' || reason === 'fire-scheduled' || reason === 'test' || reason === 'poller' || window._forceJesusTest);
+        // poller/schedule: فقط بعد الميعاد
+        if ((reason === 'poller' || reason === 'schedule-due') && minsNow < minsMsg && !window._forceJesusTest) return false;
         if (!force && minsNow < minsMsg) return false;
+        // لو اتشغّل النهاردة خلاص (إلا اختبار)
+        if (localStorage.getItem('khalwati_jesus_played_' + dayKey) === '1' && !window._forceJesusTest) {
+          return false;
+        }
 
-        // أوقف الترنيمة وأي صوت متعارض
         try {
           if (typeof stopHymnForJesusVoice === 'function') stopHymnForJesusVoice();
           window._bibleMusicPlaying = false;
@@ -13042,31 +13037,28 @@ DAILY_VERSES = [
           window._contentAudioPage = false;
         } catch (eS) {}
 
-        window._forceJesusTest = false;
         var verse = (typeof getDailyVerse === 'function') ? getDailyVerse() : { text: '', body: '', ref: '' };
         try { if (typeof showVerseInApp === 'function') showVerseInApp(verse); } catch (eV) {}
+        // showVerseInApp tries autoplay + shows play button
+
         try {
           if (typeof showAppNotification === 'function') {
             showAppNotification(
               'خلوتي — صوت يسوع',
-              (verse.text || '') + '\nبصوت البابا شنودة الثالث',
+              (verse.text || '') + '\nاضغطي للتطبيق ثم «تشغيل صوت يسوع»',
               { tag: 'khalwati-jesus-now', renotify: true, requireInteraction: true,
                 data: { type: 'jesus', play: true, text: verse.text } }
             );
           }
         } catch (eN) {}
 
-        // تشغيل صوت البابا شنودة
         try {
-          if (typeof playShenoudaVoiceFallback === 'function') playShenoudaVoiceFallback('');
-        } catch (eP) {}
-
-        try {
-          localStorage.setItem('khalwati_jesus_played_' + dayKey, '1');
           localStorage.setItem('khalwati_jesus_day_' + dayKey, '1');
           localStorage.setItem('khalwati_msg_notified_' + dayKey, '1');
           localStorage.setItem('khalwati_jesus_last_reason', String(reason || ''));
+          // played يُوضع عند نجاح play() فقط
         } catch (eL) {}
+        window._forceJesusTest = false;
         return true;
       } catch (err) {
         console.log('tryDeliverJesusNow', err);
@@ -21032,7 +21024,7 @@ function playProgressFinalVideo() {
 
       var card = document.createElement('div');
       card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:55vh;overflow:auto;';
+      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:60vh;overflow:auto;';
       var safeLine = String(line || '').replace(/</g, '&lt;');
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
@@ -21040,12 +21032,19 @@ function playProgressFinalVideo() {
           '<div style="font-weight:800;color:#8b6914;font-size:15px;">✝️ صوت يسوع</div>' +
         '</div>' +
         '<div style="font-size:17px;line-height:2;color:#3e2f1c;font-weight:700;">' + safeLine + '</div>' +
+        '<button type="button" id="jesusPlayBtn" onclick="window._forceJesusTest=true;if(typeof unlockAppAudio===\'function\')unlockAppAudio();if(typeof playShenoudaVoiceFallback===\'function\')playShenoudaVoiceFallback(\'\',true);" style="display:block;width:100%;margin-top:12px;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#5a7d4a,#3d5c32);color:#fff;font-weight:800;font-size:16px;font-family:inherit;cursor:pointer;">🔊 تشغيل صوت يسوع (البابا شنودة)</button>' +
         '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' +
           '<button type="button" onclick="designJesusVerse()" style="flex:1;min-width:120px;padding:10px 12px;border:none;border-radius:12px;background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff;font-weight:800;font-family:inherit;cursor:pointer;">🎨 تصميم</button>' +
           '<button type="button" onclick="saveJesusVerseToList()" style="flex:1;min-width:120px;padding:10px 12px;border:1px solid #c9a227;border-radius:12px;background:#fff;color:#6b5b3e;font-weight:700;font-family:inherit;cursor:pointer;">💾 حفظ</button>' +
         '</div>' +
-        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;text-align:center;">بصوت قداسة البابا شنودة الثالث</div>';
+        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;text-align:center;">لو الصوت لم يبدأ تلقائيًا اضغطي زر التشغيل</div>';
       document.body.appendChild(card);
+      // محاولة تشغيل تلقائي
+      setTimeout(function () {
+        try {
+          if (typeof playShenoudaVoiceFallback === 'function') playShenoudaVoiceFallback('', false);
+        } catch (eA) {}
+      }, 300);
       setTimeout(function () {
         try {
           var c = document.getElementById('verseAlertCard');
@@ -21340,7 +21339,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '399';
+      var APP_VER = '400';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

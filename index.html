@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="398" lang="ar" dir="rtl">
+<html data-app-ver="399" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -11904,7 +11904,7 @@ function updateSelectedSinsCount() {
           queue.push({
             kind: 'jesus_missed',
             verse: verse,
-            title: 'خلوتي — آية اليوم (' + (verse.theme || '') + ')',
+            title: 'خلوتي — صوت يسوع',
             body: (verse.text || '') + '\n\nبصوت البابا شنودة الثالث',
             data: { type: 'jesus', text: verse.text, play: false, shenouda: true },
             tag: 'khalwati-jesus-shenouda'
@@ -13048,7 +13048,7 @@ DAILY_VERSES = [
         try {
           if (typeof showAppNotification === 'function') {
             showAppNotification(
-              'خلوتي — آية اليوم',
+              'خلوتي — صوت يسوع',
               (verse.text || '') + '\nبصوت البابا شنودة الثالث',
               { tag: 'khalwati-jesus-now', renotify: true, requireInteraction: true,
                 data: { type: 'jesus', play: true, text: verse.text } }
@@ -21022,41 +21022,59 @@ function playProgressFinalVideo() {
       var ref = String((verse && verse.ref) || '').replace(/\s+/g, ' ').trim();
       if (!body && verse && verse.text) {
         var full = String(verse.text).replace(/\s+/g, ' ').trim();
-        var m = full.match(/^(.*?)[\s]*((?:المزامير|مزمور|متى|مرقس|لوقا|يوحنا|رومية|كورنثوس|غلاطية|أفسس|فيلبي|كولوسي|تسالونيكي|تيموثاوس|تيطس|عبرانيين|يعقوب|بطرس|يهوذا|رؤيا|تكوين|خروج|عدد|تثنية|يشوع|قضاة|صموئيل|ملوك|أخبار|عزرا|نحميا|أيوب|أمثال|جامعة|إشعياء|إرميا|حزقيال|دانيال|هوشع|يوئيل|عاموس|ميخا|حبقوق|صفنيا|حجي|زكريا|ملاخي|أمثال|جامعة|نشيد|مراثي|[\u0600-\u06FF\w]+)[^]*?\d+:\s*\d+)\s*$/);
+        var m = full.match(/^(.*?)[\s]*((?:المزامير|مزمور|متى|مرقس|لوقا|يوحنا|رومية|كورنثوس|غلاطية|أفسس|فيلبي|كولوسي|تسالونيكي|تيموثاوس|تيطس|عبرانيين|يعقوب|بطرس|يهوذا|رؤيا|تكوين|خروج|عدد|تثنية|يشوع|قضاة|صموئيل|ملوك|أخبار|عزرا|نحميا|أيوب|أمثال|جامعة|إشعياء|إرميا|حزقيال|دانيال|هوشع|يوئيل|عاموس|ميخا|حبقوق|صفنيا|حجي|زكريا|ملاخي|نشيد|مراثي)[^\d]*\d+\s*:\s*\d+)\s*$/);
         if (m) { body = m[1].trim(); ref = m[2].trim(); }
         else body = full;
       }
       if (ref && /تذكير|reminder/i.test(ref)) ref = '';
       if (body && !/[.。]$/.test(body)) body = body + '.';
-      // الشكل المطلوب: الآية. الشاهد  (سطر واحد أو متصل)
       var line = body + (ref ? (' ' + ref) : '');
 
       var card = document.createElement('div');
       card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:50vh;overflow:auto;';
+      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:55vh;overflow:auto;';
       var safeLine = String(line || '').replace(/</g, '&lt;');
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
           '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
-          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ آية اليوم</div>' +
+          '<div style="font-weight:800;color:#8b6914;font-size:15px;">✝️ صوت يسوع</div>' +
         '</div>' +
         '<div style="font-size:17px;line-height:2;color:#3e2f1c;font-weight:700;">' + safeLine + '</div>' +
-        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;">بصوت قداسة البابا شنودة الثالث</div>';
+        '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' +
+          '<button type="button" onclick="designJesusVerse()" style="flex:1;min-width:120px;padding:10px 12px;border:none;border-radius:12px;background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff;font-weight:800;font-family:inherit;cursor:pointer;">🎨 تصميم</button>' +
+          '<button type="button" onclick="saveJesusVerseToList()" style="flex:1;min-width:120px;padding:10px 12px;border:1px solid #c9a227;border-radius:12px;background:#fff;color:#6b5b3e;font-weight:700;font-family:inherit;cursor:pointer;">💾 حفظ</button>' +
+        '</div>' +
+        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;text-align:center;">بصوت قداسة البابا شنودة الثالث</div>';
       document.body.appendChild(card);
       setTimeout(function () {
         try {
           var c = document.getElementById('verseAlertCard');
           if (c) c.remove();
         } catch (e) {}
-      }, 180000);
+      }, 300000);
     }
 
     function designJesusVerse() {
-      const v = window._lastJesusVerse || getDailyVerse();
-      const ref = 'صوت يسوع — ' + (v.theme || '');
-      const card = document.getElementById('verseAlertCard');
+      var v = window._lastJesusVerse || (typeof getDailyVerse === 'function' ? getDailyVerse() : {});
+      var body = String((v && (v.body || v.text)) || '').trim();
+      var ref = String((v && v.ref) || '').trim();
+      if (!ref && v && v.text) {
+        var mm = String(v.text).match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
+        if (mm) ref = mm[1].trim();
+      }
+      if (ref && body.indexOf(ref) >= 0) {
+        /* already in text */
+      } else if (ref && body) {
+        if (!/[.。]$/.test(body)) body += '.';
+        body = body + ' ' + ref;
+      }
+      var card = document.getElementById('verseAlertCard');
       if (card) card.remove();
-      openVerseDesign(v.text || '', ref);
+      if (typeof openVerseDesign === 'function') {
+        openVerseDesign(body || (v.text || ''), 'صوت يسوع' + (ref ? (' — ' + ref) : ''));
+      } else if (typeof showToast === 'function') {
+        showToast('تصميم الآيات غير متاح حاليًا');
+      }
     }
 
     function saveJesusVerseToList() {
@@ -21322,7 +21340,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '398';
+      var APP_VER = '399';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

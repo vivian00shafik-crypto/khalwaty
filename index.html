@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="394" lang="ar" dir="rtl">
+<html data-app-ver="395" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1441,6 +1441,7 @@
       transition: all 0.15s;
     }
 
+    .psalm-num.last-read-psalm { box-shadow: 0 0 0 2px #8b6914; font-weight: 800; }
     .psalm-num.selected {
       background: var(--gold);
       color: white;
@@ -2356,6 +2357,56 @@
     })();
     let currentTextType = null;
     let selectedPsalms = [];
+
+    function getLastReadPsalmNum() {
+      try {
+        var n = parseInt(localStorage.getItem('khalwati_last_psalm_num') || '0', 10);
+        if (n >= 1 && n <= 150) return n;
+      } catch (e) {}
+      // احتياطي: ابحث في أيام سابقة عن أعلى مزمور مختار
+      try {
+        var best = 0, bestDay = '';
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || k.indexOf('khalwati_') !== 0) continue;
+          if (!/^khalwati_\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+          var d = JSON.parse(localStorage.getItem(k) || '{}');
+          var arr = d && d.selectedPsalms;
+          if (!arr || !arr.length) continue;
+          for (var j = 0; j < arr.length; j++) {
+            var p = parseInt(arr[j], 10);
+            if (p > best) { best = p; bestDay = k; }
+          }
+        }
+        if (best >= 1 && best <= 150) {
+          try { localStorage.setItem('khalwati_last_psalm_num', String(best)); } catch (e2) {}
+          return best;
+        }
+      } catch (e3) {}
+      return 0;
+    }
+
+    function setLastReadPsalmNum(num) {
+      num = parseInt(num, 10);
+      if (!(num >= 1 && num <= 150)) return;
+      try {
+        var prev = parseInt(localStorage.getItem('khalwati_last_psalm_num') || '0', 10);
+        // نحدّث دائمًا بآخر مزمور تم التعامل معه (القراءة/الاختيار)
+        localStorage.setItem('khalwati_last_psalm_num', String(num));
+        localStorage.setItem('khalwati_last_psalm_at', new Date().toISOString());
+      } catch (e) {}
+    }
+
+    function rememberPsalmsAsRead(arr) {
+      if (!arr || !arr.length) return;
+      var max = 0;
+      for (var i = 0; i < arr.length; i++) {
+        var n = parseInt(arr[i], 10);
+        if (n > max) max = n;
+      }
+      if (max) setLastReadPsalmNum(max);
+    }
+
 
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -3962,6 +4013,7 @@
 
     function readPsalmAgpeyaNumbering(num) {
       num = parseInt(num, 10);
+      try { if (typeof setLastReadPsalmNum === 'function') setLastReadPsalmNum(num); } catch (eL) {}
       setPrayerJesusBg(false);
       const vdNum = agpeyaNumToVanDyck(num);
       const book = typeof getVanDyckPsalmsBook === 'function' ? getVanDyckPsalmsBook() : null;
@@ -5577,7 +5629,10 @@ function renderBible() {
         var home = document.getElementById('selectedPsalmsHome');
         if (home) {
           if (!selectedPsalms.length) {
-            home.innerHTML = '<span style="color:#9a8a70;font-size:12px;">لم يتم اختيار مزامير بعد — اضغطي «اختيار»</span>';
+            var lastH = (typeof getLastReadPsalmNum === 'function') ? getLastReadPsalmNum() : 0;
+            home.innerHTML = lastH
+              ? ('<span style="color:#6b5b3e;font-size:13px;font-weight:700;">📌 آخر مزمور تم قراءته: ' + lastH + '</span><span style="color:#9a8a70;font-size:12px;"> — اضغطي «اختيار» للمتابعة</span>')
+              : '<span style="color:#9a8a70;font-size:12px;">لم يتم اختيار مزامير بعد — اضغطي «اختيار»</span>';
           } else {
             home.innerHTML = selectedPsalms.map(function (n) {
               return '<button type="button" onclick="readPsalm(' + n + ')" style="margin:0;padding:6px 12px;border-radius:14px;border:1px solid #c9a227;background:#fff9e8;color:#3e2f1c;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">مزمور ' + n + ' 📖</button>';
@@ -10566,12 +10621,35 @@ function openKatameros(dateObj) {
       // بناء سريع دفعة واحدة بدل 150 مرة innerHTML
       var selectedSet = {};
       for (var s = 0; s < selectedPsalms.length; s++) selectedSet[selectedPsalms[s]] = true;
+      var lastN = getLastReadPsalmNum();
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
       var parts = new Array(150);
       for (var i = 1; i <= 150; i++) {
         parts[i - 1] = '<div class="psalm-num' + (selectedSet[i] ? ' selected' : '') +
+          (lastN === i ? ' last-read-psalm' : '') +
           '" data-num="' + i + '">' + i + '</div>';
       }
       grid.innerHTML = parts.join('');
+      // تنويه بآخر مزمور (مفيد في اليوم الجديد)
+      try {
+        var tip = document.getElementById('lastPsalmTip');
+        if (!tip) {
+          tip = document.createElement('div');
+          tip.id = 'lastPsalmTip';
+          tip.style.cssText = 'margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#f3ebe0;border:1px solid #e0d0b0;font-size:13px;color:#5a4a2a;text-align:center;font-weight:700;';
+          grid.parentNode.insertBefore(tip, grid);
+        }
+        if (lastN >= 1) {
+          tip.style.display = 'block';
+          tip.innerHTML = isEn
+            ? ('📌 Last psalm read: <span style="color:#8b6914;font-size:16px;">' + lastN + '</span>')
+            : ('📌 آخر مزمور تم قراءته: <span style="color:#8b6914;font-size:16px;">' + lastN + '</span>' +
+               (selectedPsalms.length ? '' : ' — يمكنك المتابعة من بعده في اليوم الجديد'));
+        } else {
+          tip.style.display = 'none';
+          tip.textContent = '';
+        }
+      } catch (eTip) {}
       // تفويض أحداث مرة واحدة فقط
       if (!grid._psalmBound) {
         grid._psalmBound = true;
@@ -10636,6 +10714,7 @@ function openKatameros(dateObj) {
           var data = loadData() || {};
           data.selectedPsalms = selectedPsalms.slice();
           saveData(data);
+          rememberPsalmsAsRead(selectedPsalms);
           try { renderPsalms(); } catch (eR) {}
         } catch (e) {}
       }, 200);
@@ -10669,6 +10748,7 @@ function openKatameros(dateObj) {
     function readPsalm(num) {
       num = parseInt(num, 10);
       if (!(num >= 1 && num <= 150)) return;
+      try { if (typeof setLastReadPsalmNum === 'function') setLastReadPsalmNum(num); } catch (eL) {}
       setPrayerJesusBg(false);
       const show = function() {
         const book = getVanDyckPsalmsBook();
@@ -20783,7 +20863,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '394';
+      var APP_VER = '395';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

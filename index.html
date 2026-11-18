@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="402" lang="ar" dir="rtl">
+<html data-app-ver="403" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -4274,12 +4274,39 @@
 
     setPrayerJesusBg(false);
     
-    function getMergedBibleBooks() {
+        // تتمة دانيال النبي (سوسنة + بال والتنين) — نص عربي كنسي
+    var DANIEL_ADDITIONS = {
+      ch13: ["وَكَانَ فِي بَابِلَ رَجُلٌ اسْمُهُ يُويَاقِيمُ،", "وَكَانَ مُتَزَوِّجًا امْرَأَةً اسْمُهَا سُوسَنَّةُ ابْنَةُ حِلْقِيَّا، جَمِيلَةً جِدًّا وَمُتَّقِيَةً لِلرَّبِّ.", "وَكَانَ أَبَوَاهَا صِدِّيقَيْنِ فَأَدَّبَا ابْنَتَهُمَا عَلَى حَسَبِ شَرِيعَةِ مُوسَى.", "وَكَانَ يُويَاقِيمُ غَنِيًّا جِدًّا، وَكَانَتْ لَهُ حَدِيقَةٌ تَلِي دَارَهُ، وَكَانَ الْيَهُودُ يَجْتَمِعُونَ إِلَيْهِ لأَنَّهُ كَانَ أَوْجَهَهُمْ جَمِيعًا.", "وَكَانَا يَتَرَدَّدَانِ إِلَى دَارِ يُويَاقِيمَ فَيَأْتِيهِمَا كُلُّ ذِي دَعْوَى.", "وَكَانَتْ سُوسَنَّةُ مَتَى انْصَرَفَ الشَّعْبُ عِنْدَ الظُّهْرِ تَدْخُلُ وَتَتَمَشَّى فِي حَدِيقَةِ رَجُلِهَا.", "فَكَانَ الشَّيْخَانِ يَرَيَانِهَا كُلَّ يَوْمٍ تَدْخُلُ وَتَتَمَشَّى، فَكَلِفَا بِهَوَاهَا.", "وَأَسْلَمَا عُقُولَهُمَا إِلَى الْفَسَادِ، وَصَرَفَا أَعْيُنَهُمَا لِئَلاَّ يَنْظُرَا إِلَى السَّمَاءِ فَيَذْكُرَا الأَحْكَامَ الْعَادِلَةَ.", "وَكَانَا كِلَاهُمَا مَشْغُوفَيْنِ بِهَا، وَلَمْ يُكَاشِفْ أَحَدُهُمَا الآخَرَ بِوَجْدِهِ", "حَيَاءً مِنْ كَشْفِ هَوَاهُمَا وَرَغْبَةً فِي مُضَاجَعَتِهَا.", "وَكَانَا كُلَّ يَوْمٍ يَجِدَّانِ فِي التَّرَقُّبِ لِكَيْ يَنْظُرَاهَا.", "وَإِنَّ أَحَدَهُمَا قَالَ لِلآخَرِ لِنَنْصَرِفْ إِلَى بُيُوتِنَا فَإِنَّهَا سَاعَةُ الْغَدَاءِ. فَخَرَجَا وَتَفَارَقَا.", "ثُمَّ انْقَلَبَا وَرَجَعَا إِلَى الْمَوْضِعِ. فَسَأَلَ بَعْضُهُمَا بَعْضًا عَنْ سَبَبِ رُجُوعِهِ، فَاعْتَرَفَا بِهَوَاهُمَا، وَحِينَئِذٍ اتَّفَقَا مَعًا عَلَى وَقْتٍ يُمْكِنُهُمَا فِيهِ أَنْ يَخْلُوَا بِهَا.", "وَكَانَ فِي بَعْضِ الأَيَّامِ بَيْنَمَا هُمَا مُتَرَقِّبَانِ الْيَوْمَ الْمُوَافِقَ، أَنَّهَا دَخَلَتْ مِثْلَ أَمْسٍ فَمَا قَبْلُ وَمَعَهَا جَارِيَتَانِ فَقَطْ، وَأَرَادَتْ أَنْ تَغْتَسِلَ فِي الْحَدِيقَةِ لأَنَّهُ كَانَ حَرٌّ.", "وَلَمْ يَكُنْ هُنَاكَ أَحَدٌ إِلاَّ الشَّيْخَانِ وَهُمَا مُخْتَبِئَانِ يَتَرَقَّبَانِهَا.", "فَقَالَتْ لِلْجَارِيَتَيْنِ ائْتِيَانِي بِدُهْنٍ وَغَسُولٍ وَأَغْلِقَا أَبْوَابَ الْحَدِيقَةِ لأَغْتَسِلَ.", "فَفَعَلَتَا كَمَا أَمَرَتْهُمَا: أَغْلَقَتَا أَبْوَابَ الْحَدِيقَةِ وَخَرَجَتَا مِنْ أَبْوَابِ السِّرِّ لِتَأْتِيَا بِمَا أُمِرَتَا بِهِ، وَلَمْ تَعْلَمَا أَنَّ الشَّيْخَيْنِ مُخْتَبِئَانِ هُنَاكَ.", "فَلَمَّا خَرَجَتِ الْجَارِيَتَانِ قَامَ الشَّيْخَانِ وَهَجَمَا عَلَيْهَا وَقَالاَ:", "هَا إِنَّ أَبْوَابَ الْحَدِيقَةِ مُغْلَقَةٌ وَلَا يَرَانَا أَحَدٌ، وَنَحْنُ كَلِفَانِ بِهَوَاكِ فَوَافِقِينَا وَكُونِي مَعَنَا.", "وَإِلاَّ فَنَشْهَدُ عَلَيْكِ أَنَّهُ كَانَ مَعَكِ شَابٌّ وَلِذَلِكَ صَرَفْتِ الْجَارِيَتَيْنِ عَنْكِ.", "فَتَنَهَّدَتْ سُوسَنَّةُ وَقَالَتْ لَقَدْ ضَاقَ بِي الأَمْرُ مِنْ كُلِّ جِهَةٍ، فَإِنِّي إِنْ فَعَلْتُ هَذَا فَهُوَ لِي مَوْتٌ. وَإِنْ لَمْ أَفْعَلْ فَلَا أَنْجُو مِنْ أَيْدِيكُمَا.", "وَلكِنْ خَيْرٌ لِي أَنْ لَا أَفْعَلَ ثُمَّ أَقَعَ فِي أَيْدِيكُمَا مِنْ أَنْ أَخْطَأَ أَمَامَ الرَّبِّ.", "وَصَرَخَتْ سُوسَنَّةُ بِصَوْتٍ عَظِيمٍ فَصَرَخَ الشَّيْخَانِ عَلَيْهَا.", "وَأَسْرَعَ أَحَدُهُمَا وَفَتَحَ أَبْوَابَ الْحَدِيقَةِ.", "فَلَمَّا سَمِعَ أَهْلُ الْبَيْتِ الصُّرَاخَ فِي الْحَدِيقَةِ، وَثَبُوا إِلَيْهَا مِنْ بَابِ السِّرِّ لِيَرَوْا مَا وَقَعَ لَهَا.", "وَلَمَّا تَكَلَّمَ الشَّيْخَانِ بِكَلاَمِهِمَا خَجِلَ الْعَبِيدُ جِدًّا لأَنَّهُ لَمْ يُقَلْ قَطُّ هَذَا الْقَوْلِ عَلَى سُوسَنَّةَ.", "وَفِي الْغَدِ لَمَّا اجْتَمَعَ الشَّعْبُ إِلَى رَجُلِهَا يُويَاقِيمَ، أَتَى الشَّيْخَانِ مُضْمِرَيْنِ نِيَّةً أَثِيمَةً عَلَى سُوسَنَّةَ لِيُهْلِكَاهَا.", "وَقَالاَ أَمَامَ الشَّعْبِ أَرْسِلُوا إِلَى سُوسَنَّةَ ابْنَةِ حِلْقِيَّا الَّتِي هِيَ امْرَأَةُ يُويَاقِيمَ. فَأَرْسَلُوا.", "فَأَتَتْ هِيَ وَوَالِدَاهَا وَبَنُوهَا وَجَمِيعُ ذَوِي قَرَابَتِهَا.", "فَأَمَرَ هَذَانِ الْفَاجِرَانِ أَنْ يُكْشَفَ وَجْهُهَا. وَكَانَتْ مُبَرْقَعَةً لِيَشْبَعَا مِنْ جَمَالِهَا.", "وَكَانَ أَهْلُهَا وَجَمِيعُ الَّذِينَ يَعْرِفُونَهَا يَبْكُونَ.", "فَقَامَ الشَّيْخَانِ فِي وَسْطِ الشَّعْبِ وَوَضَعَا أَيْدِيَهُمَا عَلَى رَأْسِهَا.", "فَرَفَعَتْ طَرْفَهَا إِلَى السَّمَاءِ وَهِيَ بَاكِيَةٌ لأَنَّ قَلْبَهَا كَانَ مُتَوَكِّلًا عَلَى الرَّبِّ.", "فَقَالَ الشَّيْخَانِ إِنَّنَا كُنَّا نَتَمَشَّى فِي الْحَدِيقَةِ وَحْدَنَا، فَإِذَا بِهَذِهِ قَدْ دَخَلَتْ وَمَعَهَا جَارِيَتَانِ، وَأَغْلَقَتْ أَبْوَابَ الْحَدِيقَةِ ثُمَّ صَرَفَتِ الْجَارِيَتَيْنِ.", "وَكُنَّا نَحْنُ فِي زَاوِيَةٍ مِنَ الْحَدِيقَةِ، فَلَمَّا رَأَيْنَا الإِثْمَ أَسْرَعْنَا إِلَيْهِمَا وَرَأَيْنَاهُمَا مُتَعَانِقَيْنِ.", "وَأَمَّا هَذِهِ فَقَبَضْنَا عَلَيْهَا. وَسَأَلْنَاهَا: مَنِ الشَّابُّ؟ فَأَبَتْ أَنْ تُخْبِرَنَا. هَذَا مَا نَشْهَدُ بِهِ.", "فَصَدَّقَهُمَا الْمَجْمَعُ لأَنَّهُمَا شَيْخَانِ وَقَاضِيَانِ فِي الشَّعْبِ، وَحَكَمُوا عَلَيْهَا بِالْمَوْتِ.", "فَصَرَخَتْ سُوسَنَّةُ بِصَوْتٍ عَظِيمٍ وَقَالَتْ: «أَيُّهَا الإِلَهُ الأَزَلِيُّ الْبَصِيرُ بِالْخَفَايَا، الْعَالِمُ بِكُلِّ شَيْءٍ قَبْلَ أَنْ يَكُونَ.", "فَاسْتَجَابَ الرَّبُّ لِصَوْتِهَا.", "فَوَقَفَ فِي وَسْطِهِمْ وَقَالَ: «أَهَكَذَا أَنْتُمْ أَغْبِيَاءُ يَا بَنِي إِسْرَائِيلَ حَتَّى تَقْضُوا عَلَى بِنْتِ إِسْرَائِيلَ بِغَيْرِ أَنْ تَفْحَصُوا وَتَتَحَقَّقُوا الأَمْرَ؟", "فَأَسْرَعَ الشَّعْبُ كُلُّهُ وَرَجَعَ. فَقَالَ لَهُ الشَّيْخَانِ: «هَلُمَّ اجْلِسْ بَيْنَنَا وَأَفِدْنَا فَقَدْ أَتَاكَ اللهُ مَزِيَّةَ الشُّيُوخِ».", "فَقَالَ لَهُمْ دَانِيآلُ: «فَرِّقُوهُمَا بَعْضَهُمَا عَنْ بَعْضٍ فَأَحْكُمَ فِيهِمَا».", "فَلَمَّا فُرِّقَا الْوَاحِدُ عَنِ الآخَرِ دَعَا أَحَدَهُمَا وَقَالَ لَهُ: «يَا أَيُّهَا الْمُتَعَتِّقُ الأَيَّامِ الشِّرِّيرَةِ، لَقَدْ أَتَتْ عَلَيْكَ خَطَايَاكَ الَّتِي ارْتَكَبْتَ مِنْ قَبْلُ", "بِقَضَائِكَ أَقْضِيَةَ ظُلْمٍ وَحُكْمِكَ عَلَى الأَبْرِيَاءِ وَإِطْلاَقِكَ لِلْمُجْرِمِينَ، وَقَدْ قَالَ اللهُ الْبَرِيءَ وَالزَّكِيَّ لَا تَقْتُلْهُمَا.", "فَالآنَ إِنْ كُنْتَ قَدْ رَأَيْتَهَا فَقُلْ: تَحْتَ أَيَّةِ شَجَرَةٍ رَأَيْتَهُمَا يَتَحَدَّثَانِ؟» فَقَالَ: «تَحْتَ الضِّرْوَةِ».", "هَكَذَا كُنْتُمَا تَصْنَعَانِ مَعَ بَنَاتِ إِسْرَائِيلَ وَكُنَّ يُحَدِّثْنَكُمَا مَخَافَةً مِنْكُمَا، أَمَّا بِنْتُ يَهُوذَا فَلَمْ تَحْتَمِلْ فُجُورَكُمَا.", "فَالآنَ قُلْ لِي: تَحْتَ أَيَّةِ شَجَرَةٍ صَادَفْتَهُمَا يَتَحَدَّثَانِ؟» فَقَالَ: «تَحْتَ السِّنْدِيَانَةِ».", "فَقَالَ لَهُ دَانِيآلُ: «وَأَنْتَ أَيْضًا قَدْ صَوَّبْتَ كَذِبَكَ عَلَى رَأْسِكَ، فَمَلاَكُ اللهِ وَاقِفٌ وَبِيَدِهِ سَيْفٌ لِيَقْطَعَكَ شَطْرَيْنِ حَتَّى يُهْلِكَكُمَا».", "وَقَامُوا عَلَى الشَّيْخَيْنِ، وَقَدْ أَثْبَتَ دَانِيآلُ مِنْ نُطْقِهِمَا أَنَّهُمَا شَهِدَا بِالزُّورِ، وَصَنَعُوا بِهِمَا كَمَا نَوَيَا أَنْ يَصْنَعَا بِالْقَرِيبِ", "عَمَلًا بِمَا فِي شَرِيعَةِ مُوسَى، فَقَتَلُوهُمَا وَخُلِّصَ الدَّمُ الزَّكِيُّ فِي ذَلِكَ الْيَوْمِ.", "فَسَبَّحَ حِلْقِيَّا وَامْرَأَتُهُ لأَجْلِ ابْنَتِهِمَا مَعَ يُويَاقِيمَ رَجُلِهَا وَذَوِي قَرَابَتِهِمْ لأَنَّهُ لَمْ يُوجَدْ فِيهَا شَيْءٌ قَبِيحٌ."],
+      ch14: ["وَكَانَ دَانِيآلُ نَدِيمًا لِلْمَلِكِ وَمُكَرَّمًا فَوْقَ جَمِيعِ أَصْدِقَائِهِ.", "وَكَانَ لأَهْلِ بَابِلَ صَنَمٌ اسْمُهُ بَالٌ، وَكَانُوا يُنْفِقُونَ لَهُ كُلَّ يَوْمٍ اِثْنَيْ عَشَرَ إِرْدَبًّا مِنَ السَّمِيذِ وَأَرْبَعِينَ شَاةً وَسِتَّةَ أَمْتَارٍ مِنَ الْخَمْرِ.", "وَكَانَ الْمَلِكُ يَعْبُدُهُ وَيَنْطَلِقُ كُلَّ يَوْمٍ فَيَسْجُدُ لَهُ. أَمَّا دَانِيآلُ فَكَانَ يَسْجُدُ لإِلَهِهِ. فَقَالَ الْمَلِكُ: «لِمَاذَا لَا تَسْجُدُ لِبَالٍ؟»", "فَقَالَ: «لأَنِّي لَا أَعْبُدُ أَصْنَامًا صَنْعَةَ الأَيْدِي، بَلِ الإِلَهَ الْحَيَّ خَالِقَ السَّمَوَاتِ وَالأَرْضِ الَّذِي لَهُ السُّلْطَانُ عَلَى كُلِّ ذِي جَسَدٍ».", "وَكَانَ كَهَنَةُ بَالٍ سَبْعِينَ كَاهِنًا مَا خَلاَ النِّسَاءَ وَالأَوْلاَدَ، فَأَتَى الْمَلِكُ وَدَانِيآلُ إِلَى بَيْتِ بَالٍ.", "فَقَالَ كَهَنَةُ بَالٍ: «هَا إِنَّا نَنْصَرِفُ إِلَى الْخَارِجِ، وَأَنْتَ أَيُّهَا الْمَلِكُ ضَعِ الأَطْعِمَةَ وَامْزُجِ الْخَمْرَ وَضَعْهَا ثُمَّ أَغْلِقِ الْبَابَ، وَاخْتِمْ عَلَيْهِ بِخَاتِمِكَ.", "وَكَانُوا يَسْتَخِفُّونَ بِالأَمْرِ، لأَنَّهُمْ كَانُوا قَدْ صَنَعُوا تَحْتَ الْمَائِدَةِ مَدْخَلًا خَفِيًّا يَدْخُلُونَ مِنْهُ كُلَّ يَوْمٍ وَيَلْتَهِمُونَ الْجَمِيعَ.", "فَلَمَّا خَرَجُوا وَضَعَ الْمَلِكُ الأَطْعِمَةَ لِبَالٍ، فَأَمَرَ دَانِيآلُ غِلْمَانَهُ فَأَتَوْا بِرَمَادٍ وَذَرُّوهُ فِي الْهَيْكَلِ كُلِّهِ بِحَضْرَةِ الْمَلِكِ وَحْدَهُ، ثُمَّ خَرَجُوا وَأَغْلَقُوا الْبَابَ وَخَتَمُوا عَلَيْهِ بِخَاتَمِ الْمَلِكِ وَانْصَرَفُوا.", "فَلَمَّا كَانَ اللَّيْلُ دَخَلَ الْكَهَنَةُ كَعَادَتِهِمْ هُمْ وَنِسَاؤُهُمْ وَأَوْلاَدُهُمْ وَأَكَلُوا الْجَمِيعَ وَشَرِبُوا.", "فَقَالَ: «أَسَالِمَةٌ الْخَوَاتِيمُ يَا دَانِيآلُ؟» قَالَ: «سَالِمَةٌ أَيُّهَا الْمَلِكُ».", "وَلَمَّا فُتِحَتِ الأَبْوَابُ نَظَرَ الْمَلِكُ إِلَى الْمَائِدَةِ فَهَتَفَ بِصَوْتٍ عَالٍ: «عَظِيمٌ أَنْتَ يَا بَالُ وَلَا مَكْرَ عِنْدَكَ».", "حِينَئِذٍ قَبَضَ عَلَى الْكَهَنَةِ وَنِسَائِهِمْ وَأَوْلاَدِهِمْ، فَأَرَوْهُ الأَبْوَابَ الْخَفِيَّةَ الَّتِي يَدْخُلُونَ مِنْهَا وَيَأْكُلُونَ مَا عَلَى الْمَائِدَةِ.", "فَقَتَلَهُمُ الْمَلِكُ وَأَسْلَمَ بَالًا إِلَى يَدِ دَانِيآلَ فَحَطَّمَهُ هُوَ وَهَيْكَلَهُ.", "وَكَانَ فِي بَابِلَ تِنِّينٌ عَظِيمٌ، وَكَانَ أَهْلُهَا يَعْبُدُونَهُ.", "فَأَخَذَ دَانِيآلُ زِفْتًا وَشَحْمًا وَشَعَرًا وَطَبَخَهَا مَعًا وَصَنَعَ أَقْرَاصًا وَجَعَلَهَا فِي فَمِ التِّنِّينِ، فَأَكَلَهَا التِّنِّينُ فَانْشَقَّ. فَقَالَ: «انْظُرُوا مَعْبُودَاتِكُمْ».", "فَلَمَّا سَمِعَ بِذَلِكَ أَهْلُ بَابِلَ غَضِبُوا جِدًّا وَاجْتَمَعُوا عَلَى الْمَلِكِ وَقَالُوا: «إِنَّ الْمَلِكَ قَدْ صَارَ يَهُودِيًّا فَحَطَّمَ بَالًا وَقَتَلَ التِّنِّينَ وَذَبَحَ الْكَهَنَةَ».", "فَأَلْقَوْهُ فِي جُبِّ الأُسُودِ فَكَانَ هُنَاكَ سِتَّةَ أَيَّامٍ.", "وَكَانَ فِي الْجُبِّ سَبْعَةُ أُسُودٍ يُلْقَى لَهَا كُلَّ يَوْمٍ جُثَّتَانِ وَنَعْجَتَانِ، فَلَمْ يُلْقَ لَهَا حِينَئِذٍ شَيْءٌ لِكَيْ تَفْتَرِسَ دَانِيآلَ.", "وَكَانَ حَبَقُّوقُ النَّبِيُّ فِي أَرْضِ يَهُوذَا وَكَانَ قَدْ طَبَخَ طَبِيخًا وَثَرَدَ خُبْزًا فِي جَفْنَةٍ وَانْطَلَقَ إِلَى الصَّحْرَاءِ لِيَحْمِلَهُ لِلْحَصَّادِينَ.", "فَقَالَ مَلاَكُ الرَّبِّ لِحَبَقُّوقَ: «احْمِلِ الْغَدَاءَ الَّذِي مَعَكَ إِلَى بَابِلَ إِلَى دَانِيآلَ فِي جُبِّ الأُسُودِ».", "فَأَخَذَ مَلاَكُ الرَّبِّ بِجُمَّتِهِ وَحَمَلَهُ بِشَعَرِ رَأْسِهِ وَوَضَعَهُ فِي بَابِلَ عِنْدَ الْجُبِّ بِانْدِفَاعِ رُوحِهِ.", "فَقَالَ دَانِيآلُ: «اللَّهُمَّ لَقَدْ ذَكَرْتَنِي وَلَمْ تَخْذُلِ الَّذِينَ يُحِبُّونَكَ».", "أَمَّا الَّذِينَ سَعَوْا بِهِ لِلْهَلاَكِ فَأَلْقَاهُمْ فِي الْجُبِّ فَافْتُرِسُوا مِنْ سَاعَتِهِمْ أَمَامَهُ.", "فَقَالَ الْمَلِكُ: «لِيَتَّقِ جَمِيعُ سُكَّانِ الأَرْضِ إِلَهَ دَانِيآلَ، فَإِنَّهُ الْمُخَلِّصُ الصَّانِعُ الآيَاتِ وَالْعَجَائِبَ فِي الأَرْضِ، وَهُوَ الَّذِي أَنْقَذَ دَانِيآلَ مِنْ جُبِّ الأُسُودِ»."]
+    };
+
+function getMergedBibleBooks() {
       const bible = window.BIBLE_SVD;
       if (!bible || !bible.books) return [];
       const books = bible.books.slice();
       const deutero = (window.BIBLE_DEUTERO && window.BIBLE_DEUTERO.books) ? window.BIBLE_DEUTERO.books : [];
-      if (!deutero.length) return books;
+      if (!deutero.length) 
+      // تتمة دانيال: إصحاحا سوسنة (13) وبال والتنين (14)
+      try {
+        if (typeof DANIEL_ADDITIONS === 'object' && DANIEL_ADDITIONS) {
+          var di = findIdx(function(b){
+            return b.code === 'Dan' || (b.name && (b.name.indexOf('دانيال') >= 0));
+          });
+          if (di >= 0) {
+            var db = books[di];
+            if (db && db.chapters && db.chapters.length >= 12 && db.chapters.length < 14) {
+              if (DANIEL_ADDITIONS.ch13 && DANIEL_ADDITIONS.ch13.length) {
+                db.chapters.push(DANIEL_ADDITIONS.ch13.slice());
+              }
+              if (DANIEL_ADDITIONS.ch14 && DANIEL_ADDITIONS.ch14.length) {
+                db.chapters.push(DANIEL_ADDITIONS.ch14.slice());
+              }
+            }
+          }
+        }
+      } catch (eDan) {}
+
+      return books;
 
       function findIdx(pred) {
         for (let i = 0; i < books.length; i++) {
@@ -5133,7 +5160,117 @@ function applyWheelLanguage() {
         .catch(function () { cb(null); });
     }
 
-function renderBible() {
+
+    function openBibleDictionary(preset) {
+      try { if (typeof enterContentAudioPage === 'function') enterContentAudioPage(); } catch (e) {}
+      setPrayerJesusBg(false);
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var titleEl = document.getElementById('prayerTitle');
+      var content = document.getElementById('prayerContent');
+      if (titleEl) titleEl.textContent = isEn ? 'Bible dictionary' : 'قاموس كلمات الكتاب المقدس';
+      if (!content) return;
+      var q0 = (preset || '').trim();
+      content.innerHTML =
+        '<div style="text-align:right;">' +
+          '<p style="font-size:13px;color:#6b5b3e;line-height:1.7;margin:0 0 12px;">معاني الكلمات العربية الصعبة في نص الكتاب (مراجع كنسية عامة + معجم التطبيق). اكتبي الكلمة للبحث.</p>' +
+          '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+            '<input id="bibleDictInput" type="search" value="' + String(q0).replace(/"/g,'&quot;') + '" placeholder="' + (isEn ? 'Search a word…' : 'ابحثي عن كلمة…') + '" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:15px;" />' +
+            '<button type="button" class="save-btn" style="margin:0;padding:12px 16px;" onclick="runBibleDictSearch()">' + (isEn ? 'Search' : 'بحث') + '</button>' +
+          '</div>' +
+          '<div id="bibleDictResults" style="min-height:120px;"></div>' +
+          '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button type="button" class="save-btn" style="flex:1;background:#8a7a60;margin:0;" onclick="openBible(bibleState && bibleState.testament ? bibleState.testament : \'OT\')">← رجوع للكتاب المقدس</button>' +
+            '<button type="button" class="save-btn" style="flex:1;background:#a65d4a;margin:0;" onclick="closeModal()">إغلاق</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById('prayerModal').classList.add('active');
+      var inp = document.getElementById('bibleDictInput');
+      if (inp) {
+        inp.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') runBibleDictSearch();
+        });
+      }
+      if (q0) runBibleDictSearch();
+      else runBibleDictSearch(''); // show sample list
+    }
+
+    function runBibleDictSearch() {
+      var inp = document.getElementById('bibleDictInput');
+      var out = document.getElementById('bibleDictResults');
+      if (!out) return;
+      var q = inp ? String(inp.value || '').trim() : '';
+      var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+      var results = [];
+      var sources = [];
+      try {
+        if (typeof BIBLE_LEXICON === 'object' && BIBLE_LEXICON) sources.push(BIBLE_LEXICON);
+      } catch (e1) {}
+      try {
+        if (typeof ARABIC_BIBLE_GLOSS === 'object' && ARABIC_BIBLE_GLOSS) sources.push(ARABIC_BIBLE_GLOSS);
+      } catch (e2) {}
+
+      function norm(s) {
+        s = String(s || '');
+        try { if (typeof khStripTashkeel === 'function') s = khStripTashkeel(s); } catch (e) {}
+        return s.replace(/^ال/, '').replace(/[^\u0600-\u06FFa-zA-Z]/g, '').toLowerCase();
+      }
+      var nq = norm(q);
+
+      if (!nq) {
+        // عرض عيّنة من الكلمات
+        var sample = [];
+        sources.forEach(function (src) {
+          Object.keys(src).slice(0, 40).forEach(function (k) {
+            sample.push({ word: k, meaning: src[k] });
+          });
+        });
+        // unique by word
+        var seen = {};
+        results = sample.filter(function (r) {
+          if (seen[r.word]) return false;
+          seen[r.word] = 1;
+          return true;
+        }).slice(0, 30);
+      } else {
+        sources.forEach(function (src) {
+          Object.keys(src).forEach(function (k) {
+            var nk = norm(k);
+            if (nk === nq || nk.indexOf(nq) >= 0 || nq.indexOf(nk) >= 0) {
+              results.push({ word: k, meaning: src[k] });
+            }
+          });
+        });
+        // also lexiconLookup exact
+        try {
+          if (typeof lexiconLookup === 'function') {
+            var m = lexiconLookup(q);
+            if (m) results.unshift({ word: q, meaning: m });
+          }
+        } catch (e3) {}
+      }
+
+      // dedupe
+      var seen2 = {};
+      results = results.filter(function (r) {
+        var k = norm(r.word) + '|' + String(r.meaning).slice(0, 40);
+        if (seen2[k]) return false;
+        seen2[k] = 1;
+        return true;
+      });
+
+      if (!results.length) {
+        out.innerHTML = '<p style="text-align:center;color:#8a7a60;padding:20px;">' + (isEn ? 'No meaning found.' : 'لا توجد نتيجة. جرّبي جذر الكلمة بدون «ال».') + '</p>';
+        return;
+      }
+      out.innerHTML = results.map(function (r) {
+        return '<div style="margin:0 0 10px;padding:12px;border-radius:12px;background:#fff;border:1px solid #e8d9b5;">' +
+          '<div style="font-weight:800;color:#8b6914;font-size:16px;margin-bottom:6px;">' + String(r.word).replace(/</g,'&lt;') + '</div>' +
+          '<div style="font-size:14px;line-height:1.8;color:#3e2f1c;">' + String(r.meaning).replace(/</g,'&lt;') + '</div></div>';
+      }).join('');
+    }
+
+
+    function renderBible() {
       const bible = window.BIBLE_SVD;
       if (!bible) return;
       const allBooks = (typeof getMergedBibleBooks === 'function') ? getMergedBibleBooks() : bible.books;
@@ -5193,7 +5330,8 @@ function renderBible() {
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;">
           ${(window._fromSearch && window._bsResults) ? '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 10px;width:100%;" onclick="openBibleSearchPage(true)">← العودة لنتائج البحث عن «' + bsEsc(window._bibleSearchQ || '') + '»</button>' : ''}
-          <button type="button" class="save-btn" style="width:100%;margin:0 0 12px;background:#6a5a3a;font-size:15px;" onclick="openBibleSearchPage()">🔍 بحث في الكتاب المقدس (القديم والجديد)</button>
+          <button type="button" class="save-btn" style="width:100%;margin:0 0 8px;background:#6a5a3a;font-size:15px;" onclick="openBibleSearchPage()">🔍 بحث في الكتاب المقدس (القديم والجديد)</button>
+          <button type="button" class="save-btn" style="width:100%;margin:0 0 12px;background:#8b6914;font-size:15px;" onclick="openBibleDictionary()">📖 قاموس الكلمات الصعبة</button>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <div style="width:100%;margin:8px 0;text-align:right;">
               <label style="font-size:12px;color:#8a7a60;">خط نص الكتاب (مستقل عن الصفحة الرئيسية)</label>
@@ -5218,7 +5356,7 @@ function renderBible() {
               ${chOptions}
             </select>
           </div>
-          <h3 style="text-align:center;color:var(--brown);margin:8px 0 12px;">${book.name} — إصحاح ${bibleState.chapter+1}</h3>
+          <h3 style="text-align:center;color:var(--brown);margin:8px 0 12px;">${book.name} — إصحاح ${bibleState.chapter+1}${(book.name && book.name.indexOf('دانيال')>=0 && bibleState.chapter>=12) ? (bibleState.chapter===12 ? ' (سوسنة العفيفة — تتمة)' : (bibleState.chapter===13 ? ' (بال والتنين — تتمة)' : '')) : ''}</h3>
           <div id="bibleAudioBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;padding:10px;background:rgba(245,230,200,0.5);border:1px solid #e8d9b5;border-radius:14px;">
             <button type="button" class="save-btn" style="flex:1;min-width:110px;background:#5a7d4a;margin:0;" onclick="bibleSpeakChapter()" aria-label="قراءة الإصحاح صوتياً">🔊 قراءة</button>
             <button type="button" class="save-btn" style="flex:1;min-width:90px;background:#8a7a60;margin:0;" onclick="biblePauseSpeak()" aria-label="إيقاف مؤقت">⏸ إيقاف</button>
@@ -5231,10 +5369,16 @@ function renderBible() {
             <p style="width:100%;margin:0;font-size:11px;color:#8a7a60;text-align:center;">الصوت من قارئ الموبايل العربي (مجاني · يعمل بدون نت بعد تحميل النص)</p>
           </div>
           <div style="font-size:15px;">${multiBar}${versesHtml}</div>
-          <div style="display:flex;gap:8px;margin-top:14px;">
-            <button class="save-btn" style="flex:1;background:#8a7a60;" onclick="biblePrevChapter()">→ السابق</button>
-            <button class="save-btn" style="flex:1;" onclick="bibleNextChapter()">التالي ←</button>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+            <button class="save-btn" style="flex:1;min-width:120px;background:#8a7a60;" onclick="biblePrevChapter()">→ السابق</button>
+            <button class="save-btn" style="flex:1;min-width:120px;" onclick="bibleNextChapter()">التالي ←</button>
           </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button type="button" class="save-btn" style="flex:1;min-width:120px;background:#6a5a3a;margin:0;" onclick="openBibleDictionary()">📖 قاموس الكلمات</button>
+            <button type="button" class="save-btn" style="flex:1;min-width:120px;background:#8a7a60;margin:0;" onclick="openBible((window._mergedBooks&&window._mergedBooks[bibleState.bookIndex]&&window._mergedBooks[bibleState.bookIndex].t)||'OT')">← قائمة الأسفار</button>
+            <button type="button" class="save-btn" style="flex:1;min-width:100px;background:#a65d4a;margin:0;" onclick="closeModal()">إغلاق</button>
+          </div>
+          <p style="text-align:center;font-size:12px;color:#9a8a70;margin:10px 0 0;">للخروج أو التنقل بسهولة من أسفل الصفحة</p>
         </div>`;
       document.getElementById('prayerModal').classList.add('active');
       const pc = document.getElementById('prayerContent');
@@ -5247,24 +5391,28 @@ function renderBible() {
     }
 
     function biblePrevChapter() {
+      var books = window._mergedBooks || (typeof getMergedBibleBooks === 'function' ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books)) || [];
       if (bibleState.chapter > 0) {
         bibleState.chapter--;
       } else if (bibleState.bookIndex > 0) {
-        const prev = window.BIBLE_SVD.books[bibleState.bookIndex - 1];
-        if (prev && prev.t === window.BIBLE_SVD.books[bibleState.bookIndex].t) {
+        var prev = books[bibleState.bookIndex - 1];
+        var cur = books[bibleState.bookIndex];
+        if (prev && cur && prev.t === cur.t) {
           bibleState.bookIndex--;
-          bibleState.chapter = prev.chapters.length - 1;
+          bibleState.chapter = Math.max(0, (prev.chapters || []).length - 1);
         }
       }
       renderBible();
     }
 
     function bibleNextChapter() {
-      const book = window.BIBLE_SVD.books[bibleState.bookIndex];
-      if (bibleState.chapter < book.chapters.length - 1) {
+      var books = window._mergedBooks || (typeof getMergedBibleBooks === 'function' ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books)) || [];
+      var book = books[bibleState.bookIndex];
+      if (!book) return;
+      if (bibleState.chapter < (book.chapters || []).length - 1) {
         bibleState.chapter++;
-      } else if (bibleState.bookIndex < window.BIBLE_SVD.books.length - 1) {
-        const next = window.BIBLE_SVD.books[bibleState.bookIndex + 1];
+      } else if (bibleState.bookIndex < books.length - 1) {
+        var next = books[bibleState.bookIndex + 1];
         if (next && next.t === book.t) {
           bibleState.bookIndex++;
           bibleState.chapter = 0;
@@ -15389,6 +15537,28 @@ function showDesignSavePreview(url, name, silent, blob) {
     // والمعاجم العربية العامة. ليست ترجمة حرفية من الأصل العبري/اليوناني ولا تفسيرًا آبائيًا.
     // الترخيص: محتوى أصلي مبسّط داخل التطبيق للاستخدام الروحي غير التجاري.
     var BIBLE_LEXICON = {
+      'فسحة': 'اتساع ومكان رحب؛ راحة.',
+      'مذود': 'علف الدواب؛ المكان الذي وُضع فيه الطفل يسوع.',
+      'قرابين': 'تقدّمات تُرفع لله.',
+      'محرقات': 'ذبائح تُحرق كاملة لله.',
+      'تسبحة': 'تسبيح وترتيل حمد لله.',
+      'مزمور': 'نشيد تسبيح أو صلاة من سفر المزامير.',
+      'إصحاح': 'فصل من فصول أسفار الكتاب المقدس.',
+      'عهد': 'ميثاق إلهي مع شعبه.',
+      'نعمة': 'عطية الله المجانية ومحبته.',
+      'توبة': 'رجوع عن الخطية إلى الله.',
+      'برّ': 'استقامة أمام الله؛ برّ المسيح يُحسب للمؤمن.',
+      'فداء': 'تحرير بثمن؛ خلاص المسيح بدمه.',
+      'كفارة': 'غطاء للخطية ورفع حكمها.',
+      'مقدّس': 'مفروز لله؛ طاهر.',
+      'هيكل': 'بيت الرب في أورشليم.',
+      'مذبح': 'مكان تقديم الذبائح والصلوات.',
+      'خيمة': 'مسكن مؤقت؛ خيمة الاجتماع في البرية.',
+      'منّ': 'طعام من السماء في برية سيناء.',
+      'بَرّية': 'صحراء؛ مكان التجربة والاختبار.',
+      'جب': 'بئر أو حفرة عميقة.',
+      'سوسنة': 'اسم امرأة عفيفة في تتمة دانيال.',
+      'بال': 'اسم صنم بابلي (بعل).',
       'الله': 'الاسم المقدس للذات الإلهية الواحدة.',
       'اله': 'الاسم المقدس للذات الإلهية الواحدة.',
       'الرب': 'السيّد المعتني؛ يدل على العهد والرعاية.',
@@ -21384,7 +21554,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '402';
+      var APP_VER = '403';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

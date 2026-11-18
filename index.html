@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="400" lang="ar" dir="rtl">
+<html data-app-ver="401" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1754,13 +1754,15 @@
             if (typeof showToast === 'function') showToast('🔔 حان وقت صلاة ' + (d.hour || ''));
           }
           if (d.type === 'jesus' || d.play) {
-            if (typeof playSawtRabina === 'function') playSawtRabina();
-            if (d.text && typeof showVerseInApp === 'function') {
-              showVerseInApp({ theme: d.theme || 'آية', text: d.text });
-            } else if (typeof deliverJesusVoiceVerse === 'function') {
-              window._forceJesusTest = true;
-              deliverJesusVoiceVerse();
-            }
+            window._forceJesusTest = true;
+            try {
+              var day = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
+              if (day) {
+                localStorage.removeItem('khalwati_jesus_played_' + day);
+              }
+            } catch (eR) {}
+            if (typeof tryDeliverJesusNow === 'function') tryDeliverJesusNow('test');
+            else if (typeof playShenoudaVoiceFallback === 'function') playShenoudaVoiceFallback('', true);
           }
         } catch(e) {}
       });
@@ -12987,6 +12989,10 @@ DAILY_VERSES = [
             } catch (eF) {}
             var btn = document.getElementById('jesusPlayBtn');
             if (btn) btn.style.display = 'none';
+            try {
+              var db = document.getElementById('jesusDueBanner');
+              if (db) db.remove();
+            } catch (eD) {}
             return true;
           }).catch(function (err) {
             clearPlaying();
@@ -13039,6 +13045,7 @@ DAILY_VERSES = [
 
         var verse = (typeof getDailyVerse === 'function') ? getDailyVerse() : { text: '', body: '', ref: '' };
         try { if (typeof showVerseInApp === 'function') showVerseInApp(verse); } catch (eV) {}
+        try { showJesusDueBanner(); } catch (eBanner) {}
         // showVerseInApp tries autoplay + shows play button
 
         try {
@@ -13123,76 +13130,119 @@ DAILY_VERSES = [
     }
 
     /** جدولة إشعار صوت يسوع في الوقت اللي المستخدم محدداه — حتى والتطبيق مقفول */
+    
+    function isJesusDueToday() {
+      try {
+        var msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
+        var parts = String(msgTime).split(':');
+        var hh = parseInt(parts[0], 10), mm = parseInt(parts[1], 10);
+        if (isNaN(hh)) hh = 21;
+        if (isNaN(mm)) mm = 0;
+        var now = new Date();
+        return (now.getHours() * 60 + now.getMinutes()) >= (hh * 60 + mm);
+      } catch (e) { return false; }
+    }
+
+    function jesusPlayedToday() {
+      try {
+        var day = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
+        return !!(day && localStorage.getItem('khalwati_jesus_played_' + day) === '1');
+      } catch (e) { return false; }
+    }
+
+    function showJesusDueBanner() {
+      try {
+        if (jesusPlayedToday()) {
+          var old = document.getElementById('jesusDueBanner');
+          if (old) old.remove();
+          return;
+        }
+        if (!isJesusDueToday()) return;
+        var b = document.getElementById('jesusDueBanner');
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'jesusDueBanner';
+          b.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;z-index:3000;background:linear-gradient(135deg,#5a7d4a,#3d5c32);color:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center;';
+          document.body.appendChild(b);
+        }
+        b.innerHTML = '<div style="font-weight:800;font-size:16px;margin-bottom:8px;">✝️ حان وقت صوت يسوع</div>' +
+          '<button type="button" style="width:100%;padding:12px;border:none;border-radius:12px;background:#fff;color:#3d5c32;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer;" ' +
+          'onclick="window._forceJesusTest=true;if(typeof tryDeliverJesusNow===\'function\')tryDeliverJesusNow(\'test\');var x=document.getElementById(\'jesusDueBanner\');if(x)x.remove();">🔊 تشغيل صوت يسوع الآن</button>';
+      } catch (e) {}
+    }
+
     async function scheduleJesusNotificationForUserTime() {
       try {
         var msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
-        var when = (typeof nextTimeTodayOrTomorrow === 'function')
-          ? nextTimeTodayOrTomorrow(msgTime)
-          : null;
-        if (!when) {
-          var p = String(msgTime).split(':');
-          var d = new Date();
-          d.setSeconds(0, 0);
-          d.setHours(parseInt(p[0], 10) || 21, parseInt(p[1], 10) || 0, 0, 0);
-          if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-          when = d;
-        }
-        var delay = when.getTime() - Date.now();
-        try { localStorage.setItem('khalwati_jesus_scheduled_at', String(when.getTime())); } catch (e0) {}
+        var parts = String(msgTime).split(':');
+        var hh = parseInt(parts[0], 10) || 21;
+        var mm = parseInt(parts[1], 10) || 0;
 
-        // مهم: الجدولة بالصوت لا تعتمد على إذن الإشعارات
+        // هدف اليوم (حتى لو فات — delay=0 للتسليم)
+        var whenToday = new Date();
+        whenToday.setSeconds(0, 0);
+        whenToday.setHours(hh, mm, 0, 0);
+        var now = Date.now();
+        var delayToday = whenToday.getTime() - now;
+
+        // هدف الغد للجدولة التالية
+        var whenTomorrow = new Date(whenToday.getTime());
+        whenTomorrow.setDate(whenTomorrow.getDate() + 1);
+
+        try { localStorage.setItem('khalwati_jesus_scheduled_at', String(whenToday.getTime())); } catch (e0) {}
+
         if (window._scheduledJesusTimeout) {
           try { clearTimeout(window._scheduledJesusTimeout); } catch (e1) {}
         }
-        if (delay < 0) delay = 0;
-        // لو الميعاد فات النهاردة ولم يُسلَّم — سلّم خلال ثوانٍ
-        var dayKey = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
-        var already = false;
-        try {
-          already = localStorage.getItem('khalwati_jesus_played_' + dayKey) === '1';
-        } catch (e2) {}
-        if (!already && delay === 0) {
+
+        if (!jesusPlayedToday()) {
+          if (delayToday <= 0) {
+            // الميعاد فات أو الآن — سلّم خلال ثانيتين
+            window._scheduledJesusTimeout = setTimeout(function () {
+              try { tryDeliverJesusNow('schedule-due'); showJesusDueBanner(); } catch (e2) {}
+            }, 1500);
+          } else {
+            window._scheduledJesusTimeout = setTimeout(function () {
+              try { tryDeliverJesusNow('schedule-timer'); showJesusDueBanner(); } catch (e3) {}
+              // بعد التسليم: جدول الغد
+              try { scheduleJesusNotificationForUserTime(); } catch (e4) {}
+            }, delayToday);
+            console.log('Jesus scheduled in', Math.round(delayToday / 1000), 'sec');
+          }
+        } else {
+          // اتشغّل النهاردة — جدول الغد
+          var delayTmr = whenTomorrow.getTime() - now;
           window._scheduledJesusTimeout = setTimeout(function () {
-            try { if (typeof tryDeliverJesusNow === 'function') tryDeliverJesusNow('schedule-due'); } catch (e3) {}
-          }, 2000);
-        } else if (!already) {
-          window._scheduledJesusTimeout = setTimeout(function () {
-            try { if (typeof tryDeliverJesusNow === 'function') tryDeliverJesusNow('schedule-timer'); } catch (e4) {}
-          }, Math.max(3000, delay));
-          console.log('Jesus voice timer in', Math.round(Math.max(3000, delay) / 1000), 's');
+            try { scheduleJesusNotificationForUserTime(); } catch (e5) {}
+          }, Math.max(60000, delayTmr));
         }
 
-        // إشعار اختياري إن وُجد الإذن
-        if (window.KH_NATIVE) {
-          try { if (window.khNativeReschedule) window.khNativeReschedule(); } catch (eN) {}
-        }
+        // إشعار عند الاستحقاق (اختياري)
         try {
-          if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker) {
+          if ('Notification' in window && Notification.permission === 'granted') {
             var verse = (typeof getDailyVerse === 'function') ? getDailyVerse() : { text: '' };
-            if (typeof TimestampTrigger !== 'undefined' && delay >= 3000) {
+            if (delayToday > 3000 && typeof TimestampTrigger !== 'undefined' && navigator.serviceWorker) {
               var reg = await navigator.serviceWorker.ready;
               try {
                 var old = await reg.getNotifications({ tag: 'khalwati-jesus-scheduled', includeTriggered: true });
                 old.forEach(function (n) { n.close(); });
               } catch (eO) {}
               await reg.showNotification('خلوتي — صوت يسوع', {
-                body: (verse.text || 'آية اليوم') + '\nاضغطي للتشغيل',
+                body: (verse.text || 'حان موعد صوت يسوع') + '\nاضغطي للتشغيل',
                 tag: 'khalwati-jesus-scheduled',
                 renotify: true,
                 requireInteraction: true,
-                data: { type: 'jesus', play: true },
-                showTrigger: new TimestampTrigger(when.getTime())
+                data: { type: 'jesus', play: true, text: verse.text || '' },
+                showTrigger: new TimestampTrigger(whenToday.getTime())
               });
             }
           }
-        } catch (eSW) { console.log('jesus notif optional', eSW); }
-      } catch (e) { console.log('scheduleJesus', e); }
-    }
+        } catch (eSW) {}
 
-    async function fireJesusScheduledNow(verse) {
-      try {
-        tryDeliverJesusNow('fire-scheduled');
-      } catch (e) { console.log('fireJesus', e); }
+        if (window.KH_NATIVE) {
+          try { if (window.khNativeReschedule) window.khNativeReschedule(); } catch (eN) {}
+        }
+      } catch (e) { console.log('scheduleJesus', e); }
     }
 
     function catchUpMissedJesusVoice() {
@@ -13395,36 +13445,18 @@ DAILY_VERSES = [
     }
 
     function playSawtRabina() {
-      if (typeof isHymnPlaying === 'function' && isHymnPlaying()) {
-        deferJesusUntilAfterHymn(function() { playSawtRabina(); });
-        if (typeof showToast === 'function') showToast('صوت يسوع بعد انتهاء الترنيمة بدقيقة');
-        return;
-      }
-      const a = document.getElementById('sawtRabina');
-      if (!a) return;
-      if (isMuted()) {
-        showToast('الصوت مكتوم — افتحيه من الشريط');
-        return;
-      }
       try {
-        if (typeof stopAllAppAudio === 'function') stopAllAppAudio('jesus');
-        a.pause();
-        a.currentTime = 0;
-        const p = a.play();
-        if (p && p.catch) {
-          p.catch(function(err) {
-            console.log('sawt play', err);
-            showToast('اضغطي الشاشة لتشغيل صوت يسوع');
-          });
+        if (typeof stopHymnForJesusVoice === 'function') stopHymnForJesusVoice();
+        window._forceJesusTest = true;
+        if (typeof tryDeliverJesusNow === 'function') {
+          tryDeliverJesusNow('test');
+          return;
         }
-        const banner = document.getElementById('muteBanner');
-        if (banner) {
-          banner.classList.add('show');
-          const st = document.getElementById('audioStatus');
-          if (st) st.textContent = '🔔 صوت يسوع';
+        if (typeof playShenoudaVoiceFallback === 'function') {
+          playShenoudaVoiceFallback('', true);
         }
-      } catch(e) {
-        showToast('تعذر تشغيل صوت يسوع');
+      } catch (e) {
+        console.log('playSawtRabina', e);
       }
     }
 
@@ -21339,7 +21371,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '400';
+      var APP_VER = '401';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 
@@ -21636,29 +21668,34 @@ function playProgressFinalVideo() {
       window._jesusPollerBound = true;
       function tick() {
         try {
-          var day = (typeof getDateKey === 'function') ? getDateKey(new Date()) : '';
-          if (!day) return;
-          if (localStorage.getItem('khalwati_jesus_played_' + day) === '1') return;
-          var msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
-          var parts = String(msgTime).split(':');
-          var hh = parseInt(parts[0], 10), mm = parseInt(parts[1], 10);
-          if (isNaN(hh)) hh = 21;
-          if (isNaN(mm)) mm = 0;
-          var now = new Date();
-          var minsNow = now.getHours() * 60 + now.getMinutes();
-          var minsMsg = hh * 60 + mm;
-          if (minsNow >= minsMsg) {
-            tryDeliverJesusNow('poller');
+          if (jesusPlayedToday()) {
+            var b = document.getElementById('jesusDueBanner');
+            if (b) b.remove();
+            return;
           }
+          if (!isJesusDueToday()) return;
+          showJesusDueBanner();
+          tryDeliverJesusNow('poller');
         } catch (eP) {}
       }
-      setInterval(tick, 15000);
-      // عند الفتح: لو الميعاد فات
-      setTimeout(tick, 4000);
-      setTimeout(tick, 12000);
+      setInterval(tick, 10000);
+      setTimeout(tick, 2500);
+      setTimeout(tick, 8000);
+      setTimeout(tick, 20000);
       document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) setTimeout(tick, 1500);
+        if (!document.hidden) {
+          setTimeout(tick, 800);
+          try { scheduleJesusNotificationForUserTime(); } catch (e) {}
+        }
       });
+      window.addEventListener('pageshow', function () {
+        setTimeout(tick, 1000);
+        try { scheduleJesusNotificationForUserTime(); } catch (e) {}
+      });
+      // أعد الجدولة عند الإقلاع
+      setTimeout(function () {
+        try { scheduleJesusNotificationForUserTime(); } catch (e) {}
+      }, 3000);
     })();
 
 </script>

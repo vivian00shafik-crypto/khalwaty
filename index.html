@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="393" lang="ar" dir="rtl">
+<html data-app-ver="394" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1669,6 +1669,9 @@
         if (except !== 'jesus') {
           var s = document.getElementById('sawtRabina');
           if (s) { try { s.pause(); } catch(e){} }
+          var s2 = document.getElementById('shenoudaVoiceAudio');
+          if (s2) { try { s2.pause(); } catch(e){} }
+          window._shenoudaPlaying = false;
         }
         if (except !== 'prayer') {
           var p = document.getElementById('prayerAlarmAudio');
@@ -12334,26 +12337,36 @@ function updateSelectedSinsCount() {
       var now = new Date();
       var startY = new Date(now.getFullYear(), 0, 0);
       var dayOfYear = Math.floor((now - startY) / 86400000);
-      const i = ((dayOfYear - 1) % DAILY_VERSES.length + DAILY_VERSES.length) % DAILY_VERSES.length;
-      const v = DAILY_VERSES[i];
-      const lang = localStorage.getItem('khalwati_lang') || 'ar';
-      const appFont = localStorage.getItem('khalwati_font') || 'Cairo';
-      const align = localStorage.getItem('khalwati_align') || 'right';
-      const fontList = [
-        'Aref Ruqaa',
-        'Cairo','Tajawal','Amiri','Almarai','Noto Naskh Arabic','Noto Kufi Arabic',
-        'IBM Plex Sans Arabic','El Messiri','Reem Kufi','Scheherazade New',
-        'Roboto','Open Sans','Montserrat','Merriweather','Playfair Display'
-      ];
-      const fontOptionsHtml = fontList.map(f => {
-        const label = (f === 'Aref Ruqaa') ? '✍ خط اليد (Aref Ruqaa)' : f;
-        return `<div class="font-opt ${appFont===f?'active':''}" style="font-family:'${f}',sans-serif;" onclick="setAppFont('${f}'); openSettings();">${label} — نموذج خلوتي</div>`;
-      }).join('');
-      var text = lang === 'en' ? (v.en || v.ar) : (v.ar || v.en);
+      if (dayOfYear < 1) dayOfYear = 1;
+      var len = (typeof DAILY_VERSES !== 'undefined' && DAILY_VERSES.length) ? DAILY_VERSES.length : 1;
+      // فهرس يومي ثابت: يوم 1 = الآية 0، يوم 2 = الآية 1 … ويتكرر كل سنة
+      var i = ((dayOfYear - 1) % len + len) % len;
+      var v = DAILY_VERSES[i] || { theme: 'آية', ar: '', en: '' };
+      var lang = 'ar';
+      try { lang = (typeof getAppLang === 'function' ? getAppLang() : null) || localStorage.getItem('khalwati_lang') || 'ar'; } catch (eL) {}
+      var text = lang === 'en' ? (v.en || v.ar || '') : (v.ar || v.en || '');
       var ref = '';
-      var mm = String(text || '').match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
-      if (mm) ref = mm[1].trim();
-      return { theme: v.theme, text: text, ref: ref };
+      var body = String(text || '').trim();
+      // استخرج الشاهد من نهاية النص (إرميا 29: 11) أو (Jer 29:11)
+      var mm = body.match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
+      if (mm) {
+        ref = mm[1].trim();
+        // لا نعرض تذكير روحي كشاهد كتابي
+        if (/تذكير|reminder|Daily reminder/i.test(ref)) {
+          ref = '';
+        } else {
+          body = body.replace(mm[0], '').trim();
+        }
+      }
+      if (v.ref) ref = String(v.ref).trim();
+      return {
+        theme: v.theme || 'آية اليوم',
+        text: body + (ref ? (' (' + ref + ')') : ''),
+        body: body,
+        ref: ref,
+        index: i,
+        dayOfYear: dayOfYear
+      };
     }
 
 
@@ -12404,39 +12417,67 @@ function updateSelectedSinsCount() {
       try {
         if (typeof isMuted === 'function' && isMuted()) return;
         if (typeof stopAllAppAudio === 'function') stopAllAppAudio('jesus');
-        var a = document.getElementById('shenoudaVoiceAudio');
+        window._shenoudaPlaying = true;
+        // استخدم عنصر الصفحة إن وُجد، وإلا أنشئ واحدًا
+        var a = document.getElementById('sawtRabina') || document.getElementById('shenoudaVoiceAudio');
         if (!a) {
           a = document.createElement('audio');
           a.id = 'shenoudaVoiceAudio';
           a.preload = 'auto';
           a.setAttribute('playsinline', '');
+          a.setAttribute('webkit-playsinline', '');
           document.body.appendChild(a);
         }
-        // البابا شنودة المسجّل مع صوت يسوع
-        var sources = ['./shenouda-voice.mp3', './sawt-rabina.mp3', 'sawt-rabina.mp3'];
+        var sources = [];
+        if (a.id === 'sawtRabina' && a.getAttribute('src')) {
+          sources.push(a.getAttribute('src'));
+        }
+        sources = sources.concat(['sawt-rabina.mp3', './sawt-rabina.mp3', 'shenouda-voice.mp3', './shenouda-voice.mp3']);
+        // إزالة التكرار
+        var seen = {};
+        sources = sources.filter(function (s) {
+          if (!s || seen[s]) return false;
+          seen[s] = 1;
+          return true;
+        });
         var si = 0;
-        function trySpeak() {
-          // لا نقرأ الآية صوتياً
-          return;
+        function clearPlayingFlag() {
+          window._shenoudaPlaying = false;
+          try {
+            var banner = document.getElementById('muteBanner');
+            if (banner) banner.classList.remove('show');
+          } catch (eB) {}
         }
         function tryNext() {
-          if (si >= sources.length) { trySpeak(); return; }
+          if (si >= sources.length) {
+            clearPlayingFlag();
+            if (typeof showToast === 'function') showToast('تعذر تشغيل صوت البابا شنودة');
+            return;
+          }
           var src = sources[si++];
-          a.onerror = function() { tryNext(); };
+          a.onerror = function () { tryNext(); };
+          a.onended = function () { clearPlayingFlag(); };
           try { a.pause(); } catch (e0) {}
-          a.src = src;
-          a.currentTime = 0;
+          try {
+            if (a.getAttribute('src') !== src) a.src = src;
+          } catch (e1) { a.src = src; }
+          try { a.currentTime = 0; } catch (e2) {}
+          a.volume = 1;
           var p = a.play();
-          if (p && p.catch) p.catch(function() { tryNext(); });
+          if (p && p.then) {
+            p.then(function () {
+              var banner = document.getElementById('muteBanner');
+              if (banner) {
+                banner.classList.add('show');
+                var st = document.getElementById('muteStatus');
+                if (st) st.textContent = 'صوت البابا شنودة الثالث…';
+              }
+            }).catch(function () { tryNext(); });
+          }
         }
         tryNext();
-        var banner = document.getElementById('muteBanner');
-        if (banner) {
-          banner.classList.add('show');
-          var st = document.getElementById('muteStatus');
-          if (st) st.textContent = 'صوت البابا شنودة…';
-        }
       } catch (e) {
+        window._shenoudaPlaying = false;
         console.log('shenouda fallback', e);
       }
     }
@@ -20431,42 +20472,46 @@ function playProgressFinalVideo() {
 
 
     function showVerseInApp(verse) {
-      const existing = document.getElementById('verseAlertCard');
+      var existing = document.getElementById('verseAlertCard');
       if (existing) existing.remove();
       window._lastJesusVerse = verse;
-      var fullText = String((verse && verse.text) || '').trim();
-      var ref = '';
-      var body = fullText;
-      var m = fullText.match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
-      if (m) {
-        ref = m[1].trim();
-        body = fullText.replace(m[0], '').trim();
+      var body = String((verse && (verse.body || verse.text)) || '').trim();
+      var ref = String((verse && verse.ref) || '').trim();
+      if (!ref) {
+        var m = body.match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
+        if (m && !/تذكير|reminder/i.test(m[1])) {
+          ref = m[1].trim();
+          body = body.replace(m[0], '').trim();
+        }
+      } else {
+        try {
+          body = body.replace(new RegExp('[（(]\\s*' + ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[）)]\\s*$'), '').trim();
+        } catch (eR) {}
       }
-      if (verse && verse.ref) ref = String(verse.ref).trim();
-      const card = document.createElement('div');
+      var card = document.createElement('div');
       card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:45vh;overflow:auto;';
-      const safeTheme = String((verse && verse.theme) || 'آية اليوم').replace(/</g,'&lt;');
-      const safeBody = String(body || fullText).replace(/</g,'&lt;');
-      const safeRef = String(ref || '').replace(/</g,'&lt;');
+      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:50vh;overflow:auto;';
+      var safeTheme = String((verse && verse.theme) || 'آية اليوم').replace(/</g,'&lt;');
+      var safeBody = String(body || '').replace(/</g,'&lt;');
+      var safeRef = String(ref || '').replace(/</g,'&lt;');
+      var dayNote = (verse && verse.dayOfYear) ? (' · يوم ' + verse.dayOfYear + ' من السنة') : '';
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
           '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
-          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ ' + safeTheme + '</div>' +
+          '<div style="font-weight:700;color:#8b6914;font-size:14px;">✝️ آية اليوم — ' + safeTheme + '</div>' +
         '</div>' +
-        '<div style="font-size:15px;line-height:1.85;color:#3e2f1c;font-weight:600;">' + safeBody + '</div>' +
-        (safeRef ? ('<div style="margin-top:10px;font-size:13px;color:#6b5b3e;border-top:1px solid #e8dcc0;padding-top:8px;">📖 الشاهد: ' + safeRef + '</div>') : '') +
-        '<div style="margin-top:6px;font-size:11px;color:#9a8a70;">آية مختلفة كل يوم على مدار السنة</div>';
+        '<div style="font-size:16px;line-height:1.9;color:#3e2f1c;font-weight:700;">' + (safeBody || '…') + '</div>' +
+        (safeRef ? ('<div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#f3ebe0;font-size:14px;color:#5a4a2a;font-weight:700;">📖 الشاهد: ' + safeRef + '</div>') : '') +
+        '<div style="margin-top:8px;font-size:12px;color:#8a7a60;">بصوت قداسة البابا شنودة الثالث · آية مختلفة كل يوم' + dayNote + '</div>';
       document.body.appendChild(card);
       setTimeout(function() {
         try {
           var c = document.getElementById('verseAlertCard');
           if (c) c.remove();
         } catch (e) {}
-      }, 120000);
+      }, 180000);
     }
 
-    
     function designJesusVerse() {
       const v = window._lastJesusVerse || getDailyVerse();
       const ref = 'صوت يسوع — ' + (v.theme || '');
@@ -20738,7 +20783,7 @@ function playProgressFinalVideo() {
     
     // ترقية هادئة للكاش دون ريستارت متكرر
     (function forceUpgradeCache() {
-      var APP_VER = '393';
+      var APP_VER = '394';
       var KEY = 'khalwati_force_v' + APP_VER;
       var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

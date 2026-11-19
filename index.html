@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="407" lang="ar" dir="rtl">
+<html data-app-ver="408" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -5188,7 +5188,7 @@ function applyWheelLanguage() {
       var q0 = (preset || '').trim();
       content.innerHTML =
         '<div style="text-align:right;">' +
-          '<p style="font-size:13px;color:#6b5b3e;line-height:1.7;margin:0 0 12px;">معاني الكلمات العربية الصعبة في نص الكتاب (مراجع كنسية عامة + معجم التطبيق). اكتبي الكلمة للبحث.</p>' +
+          '<p style="font-size:13px;color:#6b5b3e;line-height:1.7;margin:0 0 12px;">معاني الكلمات الصعبة: المعنى · شرح مبسّط · المعنى اللغوي (عبري/يوناني). اكتبي الكلمة للبحث.</p>' +
           '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
             '<input id="bibleDictInput" type="search" value="' + String(q0).replace(/"/g,'&quot;') + '" placeholder="' + (isEn ? 'Search a word…' : 'ابحثي عن كلمة…') + '" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:15px;" />' +
             '<button type="button" class="save-btn" style="margin:0;padding:12px 16px;" onclick="runBibleDictSearch()">' + (isEn ? 'Search' : 'بحث') + '</button>' +
@@ -5278,10 +5278,53 @@ function applyWheelLanguage() {
         out.innerHTML = '<p style="text-align:center;color:#8a7a60;padding:20px;">' + (isEn ? 'No meaning found.' : 'لا توجد نتيجة. جرّبي جذر الكلمة بدون «ال».') + '</p>';
         return;
       }
+      // إثراء النتائج بالمعنى اللغوي والشرح المبسط
+      results = results.map(function (r) {
+        var hebrew = '';
+        var simple = '';
+        try {
+          if (typeof originLookup === 'function') {
+            var og = originLookup(r.word);
+            if (og) {
+              if (typeof og === 'string') hebrew = og;
+              else hebrew = (og.lang ? ('[' + og.lang + '] ') : '') + (og.note || '');
+            }
+          }
+        } catch (eH) {}
+        try {
+          if (typeof SIMPLE_BIBLE_HINTS === 'object' && SIMPLE_BIBLE_HINTS) {
+            var keys = (typeof buildLookupKeys === 'function') ? buildLookupKeys(r.word) : [r.word];
+            for (var si = 0; si < keys.length; si++) {
+              if (SIMPLE_BIBLE_HINTS[keys[si]]) { simple = SIMPLE_BIBLE_HINTS[keys[si]]; break; }
+            }
+          }
+        } catch (eS) {}
+        // لو مفيش شرح مبسط: اختصر المعنى الحالي كشرح مبسط
+        if (!simple && r.meaning) {
+          var m0 = String(r.meaning).split(/[؛;.。]/)[0].trim();
+          if (m0.length > 8 && m0.length < 120) simple = m0;
+        }
+        return { word: r.word, meaning: r.meaning, hebrew: hebrew, simple: simple };
+      });
+
       out.innerHTML = results.map(function (r) {
-        return '<div style="margin:0 0 10px;padding:12px;border-radius:12px;background:#fff;border:1px solid #e8d9b5;">' +
-          '<div style="font-weight:800;color:#8b6914;font-size:16px;margin-bottom:6px;">' + String(r.word).replace(/</g,'&lt;') + '</div>' +
-          '<div style="font-size:14px;line-height:1.8;color:#3e2f1c;">' + String(r.meaning).replace(/</g,'&lt;') + '</div></div>';
+        var html = '<div style="margin:0 0 12px;padding:14px;border-radius:14px;background:#fff;border:1px solid #e8d9b5;box-shadow:0 2px 8px rgba(92,64,51,0.06);">';
+        html += '<div style="font-weight:800;color:#8b6914;font-size:17px;margin-bottom:10px;">' + String(r.word).replace(/</g,'&lt;') + '</div>';
+        // المعنى (فاندايك / القاموس)
+        html += '<div style="margin-bottom:8px;"><span style="display:inline-block;background:#f5e6c8;color:#5c4033;font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;margin-bottom:4px;">المعنى</span>';
+        html += '<div style="font-size:14px;line-height:1.85;color:#3e2f1c;">' + String(r.meaning || '—').replace(/</g,'&lt;') + '</div></div>';
+        // شرح مبسّط
+        if (r.simple) {
+          html += '<div style="margin-bottom:8px;"><span style="display:inline-block;background:#e8f0e0;color:#3d5c34;font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;margin-bottom:4px;">شرح مبسّط</span>';
+          html += '<div style="font-size:14px;line-height:1.85;color:#3e2f1c;">' + String(r.simple).replace(/</g,'&lt;') + '</div></div>';
+        }
+        // المعنى اللغوي العبري/يوناني
+        if (r.hebrew) {
+          html += '<div style="margin-bottom:4px;"><span style="display:inline-block;background:#e6eef8;color:#2a4a6b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;margin-bottom:4px;">المعنى اللغوي (عبري / يوناني)</span>';
+          html += '<div style="font-size:13px;line-height:1.8;color:#3e2f1c;direction:rtl;">' + String(r.hebrew).replace(/</g,'&lt;') + '</div></div>';
+        }
+        html += '</div>';
+        return html;
       }).join('');
     }
 
@@ -16189,6 +16232,83 @@ function showDesignSavePreview(url, name, silent, blob) {
      * المصدر: Strong's Exhaustive Concordance of the Bible, James Strong, 1890 (ملكية عامة).
      * لا تُضاف أرقام Strong أو جذور إلا لما ورد هنا من المصدر المذكور.
      */
+
+    /** شرح مبسّط لكلمات كتابية شائعة (أسلوب قريب من الترجمة المبسطة — صياغة أصلية) */
+    var SIMPLE_BIBLE_HINTS = {
+      'يهوه': 'اسم الله الخاص في العهد القديم، يعني إنه الكائن الدائم.',
+      'أدوناي': 'يعني «سيدي»، لقب احترام لله.',
+      'القدير': 'الله القوي اللي يقدر على كل حاجة.',
+      'العلي': 'الله العالي فوق كل شيء.',
+      'المسيا': 'المسيح، الممسوح من الله عشان يخلّص شعبه.',
+      'المُعَزِّي': 'الروح القدس اللي بيعزّي المؤمنين.',
+      'الباراكليت': 'الروح القدس، المعين والمعزي.',
+      'ابن الإنسان': 'لقب ليسوع معناه إنه الإنسان الكامل والملك الآتي.',
+      'الفرّيسي': 'واحد من جماعة يهودية كانت متمسكة بالشريعة بشدة.',
+      'الصدّوقي': 'جماعة يهودية ما كانتش تؤمن بالقيامة.',
+      'العشّار': 'جابي ضرائب للرومان، والناس كانت بتكرهه.',
+      'الأمم': 'الشعوب اللي مش يهودية.',
+      'قدس الأقداس': 'أقدس مكان في الهيكل، مكان حضور الله.',
+      'التابوت': 'صندوق العهد اللي فيه لوحي الشريعة.',
+      'الناموس': 'شريعة موسى أو وصايا الله.',
+      'إنجيل': 'البشارة الحلوة عن يسوع المسيح.',
+      'نعمة': 'عطية الله المجانية، من غير ما نستحقها.',
+      'إيمان': 'ثقة كاملة في الله ووعوده.',
+      'توبة': 'رجوع عن الخطية ورجوع لله من القلب.',
+      'بر': 'الاستقامة قدام الله، واللي بيديها الله للمؤمن.',
+      'خلاص': 'نجاة من الخطية والموت بيسوع.',
+      'فداء': 'تحرير بثمن، زي ما المسيح دفع حياته عشاننا.',
+      'عربون': 'مقدم يضمن باقي العطية (الروح القدس عربون ميراثنا).',
+      'ملكوت': 'حكم الله ومملكته.',
+      'قيامة': 'القيام من الموت.',
+      'صليب': 'خشبة الصلب، ورمز فداء المسيح.',
+      'كنيسة': 'جماعة المؤمنين، جسد المسيح.',
+      'محبة': 'محبة باذلة، مش بس مشاعر.',
+      'رحمة': 'تحنن الله على ضعفنا.',
+      'مجد': 'بهاء الله وحضوره وكرامته.',
+      'سلام': 'صلح مع الله وسلامة قلب.',
+      'رجاء': 'انتظار واثق لوعد الله.',
+      'صبر': 'ثبات من غير يأس وقت الضيق.',
+      'خطية': 'مخالفة وصية الله والابتعاد عنه.',
+      'مغفرة': 'صفح الله عن الخطية.',
+      'غفران': 'صفح وستر للخطية من عند الله.',
+      'عهد': 'ميثاق أو اتفاق إلهي بين الله وشعبه.',
+      'روح': 'روح الإنسان أو الروح القدس حسب الكلام.',
+      'كلمة': 'قول الله، وأحياناً تشير للمسيح نفسه.',
+      'دم': 'الحياة، وفي العهد علامة الكفارة.',
+      'خبز': 'العيش، وفي العشاء السري جسد المسيح.',
+      'ماء': 'ماء عادي ورمز للروح والحياة الجديدة.',
+      'نور': 'إعلان الله وقداسته.',
+      'حياة': 'الحياة من الله، والحياة الأبدية في المسيح.',
+      'موت': 'انفصال عن الله أو انتهاء الحياة الجسدية.',
+      'قلب': 'مركز الأفكار والإرادة والمشاعر.',
+      'نفس': 'الذات والحياة الداخلية.',
+      'توكل': 'الاعتماد الكامل على الرب.',
+      'اتضاع': 'تواضع القلب قدام الله والناس.',
+      'كبرياء': 'التكبر، وده ضد الله.',
+      'رياء': 'التظاهر بالصلاح من غير حقيقة.',
+      'آمين': 'يعني: حقاً، ليكن هكذا.',
+      'هللويا': 'سبّحوا الرب.',
+      'ماران أثا': 'عبارة معناها: ربنا يأتي.',
+      'باكورة': 'أول الثمر، والمسيح أول القائمين.',
+      'ختم': 'علامة ملكية وحفظ من الله.',
+      'ميراث': 'نصيب المؤمنين اللي هيورثوه في المسيح.',
+      'بشارة': 'خبر مفرح، والإنجيل هو البشارة.',
+      'عثرة': 'حاجة بتسبب السقوط في الخطية.',
+      'ضيقة': 'شدة وألم.',
+      'تجربة': 'امتحان أو إغراء بالشر.',
+      'تعزية': 'تسكين الحزن بقوة الله.',
+      'تقديس': 'إن الله يخلّي الإنسان مقدس وينمو في القداسة.',
+      'وسيط': 'اللي بيقف بين طرفين؛ والمسيح وسيطنا.',
+      'شفاعة': 'الصلاة لأجل الآخرين.',
+      'كاهن': 'خادم الهيكل قديماً، والمسيح رئيس كهنتنا.',
+      'نبي': 'اللي بيتكلم بكلام الله.',
+      'رسول': 'مبعوث من المسيح للتبشير.',
+      'أسقف': 'راعٍ مسؤول في الكنيسة.',
+      'شماس': 'خادم في الكنيسة.',
+      'قسيس': 'شيخ أو كاهن في الكنيسة.'
+    };
+
+
     var ORIGIN_HINTS = {
       'الله': { lang: 'عبري', note: 'إيلوهيم (H430) — صيغة جمع تعظيم أو جلالة لله الواحد.' },
       'اله': { lang: 'عبري', note: 'إيل / إيلوهيم — الله.' },

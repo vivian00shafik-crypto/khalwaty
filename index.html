@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="408" lang="ar" dir="rtl">
+<html data-app-ver="409" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2102,7 +2102,7 @@
         if (now - lastTrigAt < 500) return;
         lastTrigAt = now;
         try {
-          if (action === 'altar') openTextModal('altar');
+          if (action === 'altar') openAltarPanel();
           else if (action === 'prayers') openSpokenPrayers();
           else if (action === 'verses') openSavedVerses();
           else if (action === 'contact') openContactUs();
@@ -5464,6 +5464,18 @@ function applyWheelLanguage() {
             <p style="width:100%;margin:0;font-size:11px;color:#8a7a60;text-align:center;">الصوت من قارئ الموبايل العربي (مجاني · يعمل بدون نت بعد تحميل النص)</p>
           </div>
           <div style="font-size:15px;">${multiBar}${versesHtml}</div>
+
+          <!-- صلاة مستوحاة من الإصحاح + تلخيص التفسير -->
+          <div style="margin:18px 0 8px;padding:14px;border-radius:14px;background:rgba(255,253,248,0.9);border:1px solid #e8d9b5;">
+            <div style="font-weight:800;color:#8b6914;font-size:15px;margin-bottom:8px;">🙏 وحي من الإصحاح — صلاة</div>
+            <div id="chapterInspiredPrayer" style="font-size:14px;line-height:1.9;color:#3e2f1c;margin-bottom:10px;">${(typeof buildChapterInspiredPrayer==='function') ? buildChapterInspiredPrayer(book, bibleState.chapter, verses) : ''}</div>
+            <div style="font-weight:800;color:#5a7d4a;font-size:15px;margin:14px 0 8px;">📝 لخّص تفسير الإصحاح هنا</div>
+            <textarea id="chapterSummaryBox" rows="5" placeholder="اكتبي هنا ملخص تفسيرك أو تأملاتك في هذا الإصحاح..."
+              style="width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:14px;line-height:1.8;resize:vertical;background:#fffdf8;color:#3e2f1c;"
+              oninput="saveChapterSummary(this.value)">${(typeof loadChapterSummary==='function') ? loadChapterSummary(book, bibleState.chapter).replace(/`/g,'').replace(/\\/g,'\\\\').replace(/\$\{/g,'\\${') : ''}</textarea>
+            <p style="font-size:11px;color:#9a8a70;margin:6px 0 0;text-align:center;">يُحفظ تلقائياً لهذا الإصحاح</p>
+          </div>
+
           <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
             <button class="save-btn" style="flex:1;min-width:120px;background:#8a7a60;" onclick="biblePrevChapter()">→ السابق</button>
             <button class="save-btn" style="flex:1;min-width:120px;" onclick="bibleNextChapter()">التالي ←</button>
@@ -5482,8 +5494,54 @@ function applyWheelLanguage() {
         applyStoredHighlights(document.getElementById('prayerContent'));
         applyBibleFontToContent(document.getElementById('prayerContent'));
       } catch (eHL) {}
+      try {
+        var box = document.getElementById('chapterSummaryBox');
+        if (box && typeof loadChapterSummary === 'function') {
+          var books2 = window._mergedBooks || (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
+          var bk2 = books2[bibleState.bookIndex];
+          box.value = loadChapterSummary(bk2, bibleState.chapter) || '';
+        }
+      } catch (eSum) {}
       try { saveBiblePos(); } catch (ePos) {}
     }
+
+
+    function chapterStorageKey(book, chapterIdx) {
+      var code = (book && (book.code || book.name)) || 'x';
+      return 'khalwati_ch_summary_' + String(code) + '_' + String((chapterIdx|0) + 1);
+    }
+    function loadChapterSummary(book, chapterIdx) {
+      try {
+        return localStorage.getItem(chapterStorageKey(book, chapterIdx)) || '';
+      } catch (e) { return ''; }
+    }
+    function saveChapterSummary(val) {
+      try {
+        var books = window._mergedBooks || (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
+        var book = books[bibleState.bookIndex];
+        if (!book) return;
+        localStorage.setItem(chapterStorageKey(book, bibleState.chapter), String(val || ''));
+      } catch (e) {}
+    }
+    function buildChapterInspiredPrayer(book, chapterIdx, verses) {
+      var name = (book && book.name) || 'هذا السفر';
+      var ch = (chapterIdx|0) + 1;
+      var tip = '';
+      try {
+        if (verses && verses.length) {
+          var v0 = String(verses[0] || '').replace(/^\s*\d+[\-–—:\.]\s*/, '').trim();
+          if (v0.length > 90) v0 = v0.slice(0, 90) + '…';
+          if (v0) tip = v0;
+        }
+      } catch (e) {}
+      var lines = [];
+      lines.push('يا رب، من خلال «' + name + '» إصحاح ' + ch + '، افتح قلبي لكلمتك.');
+      if (tip) lines.push('علّمني أن أتأمل قولَك: «' + tip + '» وأعيشه في يومي.');
+      lines.push('هب لي حكمةً وفهماً، وطهّرني بنعمتك، وثبّتني في محبتك.');
+      lines.push('أذكر يا رب أولادك بالخير والفرح وتدبير كل أمر صعب. آمين.');
+      return lines.join('<br>');
+    }
+
 
     function biblePrevChapter() {
       var books = window._mergedBooks || (typeof getMergedBibleBooks === 'function' ? getMergedBibleBooks() : (window.BIBLE_SVD && window.BIBLE_SVD.books)) || [];
@@ -11586,6 +11644,95 @@ function openKatameros(dateObj) {
         text: "تسبحة مريم أخت موسى\n(خروج 15: 1ـ21)\n\n1 حِينَئِذٍ رَنَّمَ مُوسَى وَبَنُو إِسْرَائِيلَ هَذِهِ التَّسْبِيحَةَ لِلرَّبِّ وَقَالُوا: «أُرَنِّمُ لِلرَّبِّ فَإِنَّهُ قَدْ تَعَظَّمَ. الْفَرَسَ وَرَاكِبَهُ طَرَحَهُمَا فِي الْبَحْرِ.\n2 الرَّبُّ قُوَّتِي وَنَشِيدِي وَقَدْ صَارَ خَلاَصِي. هَذَا إِلَهِي فَأُمَجِّدُهُ، إِلَهُ أَبِي فَأُرَفِّعُهُ.\n3 الرَّبُّ رَجُلُ الْحَرْبِ. الرَّبُّ اسْمُهُ.\n4 مَرْكَبَاتِ فِرْعَوْنَ وَجَيْشَهُ أَلْقَاهُمَا فِي الْبَحْرِ، فَغَرِقَ أَفْضَلُ جُنُودِهِ الْمَرْكَبِيَّةِ فِي بَحْرِ سُوفَ.\n5 تُغَطِّيهِمُ اللُّجَجُ. قَدْ هَبَطُوا فِي الأَعْمَاقِ كَحَجَرٍ.\n6 يَمِينُكَ يَا رَبُّ مُعْتَزَّةٌ بِالْقُدْرَةِ. يَمِينُكَ يَا رَبُّ تُحَطِّمُ الْعَدُوَّ.\n7 وَبِكَثْرَةِ عَظَمَتِكَ تَهْدِمُ مُقَاوِمِيكَ. تُرْسِلُ سَخَطَكَ فَيَأْكُلُهُمْ كَالْقَشِّ.\n8 وَبِرِيحِ أَنْفِكَ تَرَاكَمَتِ الْمِيَاهُ. انْتَصَبَتِ الْمِيَاهُ الْجَارِيَةُ كَرَابِيَةٍ. تَجَمَّدَتِ اللُّجَجُ فِي قَلْبِ الْبَحْرِ.\n9 قَالَ الْعَدُوُّ: أَتْبَعُ أُدْرِكُ أُقَسِّمُ غَنِيمَةً! تَمْتَلِئُ مِنْهُمْ نَفْسِي. أُجَرِّدُ سَيْفِي. تُفْنِيهِمْ يَدِي!\n10 نَفَخْتَ بِرِيحِكَ فَغَطَّاهُمُ الْبَحْرُ. غَاصُوا كَالرَّصَاصِ فِي مِيَاهٍ غَامِرَةٍ.\n11 مَنْ مِثْلُكَ بَيْنَ الآلِهَةِ يَا رَبُّ؟ مَنْ مِثْلُكَ مُعْتَزًّا فِي الْقَدَاسَةِ، مَخُوفًا بِالتَّسَابِيحِ، صَانِعًا عَجَائِبَ؟\n12 تَمُدُّ يَمِينَكَ فَتَبْتَلِعُهُمُ الأَرْضُ.\n13 تُرْشِدُ بِرَأْفَتِكَ الشَّعْبَ الَّذِي فَدَيْتَهُ. تَهْدِيهِ بِقُوَّتِكَ إِلَى مَسْكَنِ قُدْسِكَ.\n14 يَسْمَعُ الشُّعُوبُ فَيَرْتَعِدُونَ. تَأْخُذُ الرَّعْدَةُ سُكَّانَ فَلَسْطِينَ.\n15 حِينَئِذٍ يَنْدَهِشُ أُمَرَاءُ أَدُومَ. أَقْوِيَاءُ مُوآبَ تَأْخُذُهُمُ الرَّجْفَةُ. يَذُوبُ جَمِيعُ سُكَّانِ كَنْعَانَ.\n16 تَقَعُ عَلَيْهِمِ الْهَيْبَةُ وَالرُّعْبُ. بِعَظَمَةِ ذِرَاعِكَ يَصْمُتُونَ كَالْحَجَرِ حَتَّى يَعْبُرَ شَعْبُكَ يَا رَبُّ. حَتَّى يَعْبُرَ الشَّعْبُ الَّذِي اقْتَنَيْتَهُ.\n17 تَجِيءُ بِهِمْ وَتَغْرِسُهُمْ فِي جَبَلِ مِيرَاثِكَ، الْمَكَانِ الَّذِي صَنَعْتَهُ يَا رَبُّ لِسَكَنِكَ، الْمَقْدِسِ الَّذِي هَيَّأَتْهُ يَدَاكَ يَا رَبُّ.\n18 الرَّبُّ يَمْلِكُ إِلَى الدَّهْرِ وَالأَبَدِ.\n19 فَإِنَّ خَيْلَ فِرْعَوْنَ دَخَلَتْ بِمَرْكَبَاتِهِ وَفُرْسَانِهِ إِلَى الْبَحْرِ، وَرَدَّ الرَّبُّ عَلَيْهِمْ مَاءَ الْبَحْرِ. وَأَمَّا بَنُو إِسْرَائِيلَ فَمَشُوا عَلَى الْيَابِسَةِ فِي وَسَطِ الْبَحْرِ».\n20 فَأَخَذَتْ مَرْيَمُ النَّبِيَّةُ أُخْتُ هَارُونَ الدُّفَّ بِيَدِهَا، وَخَرَجَتْ جَمِيعُ النِّسَاءِ وَرَاءَهَا بِدُفُوفٍ وَرَقْصٍ.\n21 وَأَجَابَتْهُمْ مَرْيَمُ: «رَنِّمُوا لِلرَّبِّ فَإِنَّهُ قَدْ تَعَظَّمَ! الْفَرَسَ وَرَاكِبَهُ طَرَحَهُمَا فِي الْبَحْرِ!»."
       }
     ];
+
+
+    var ALTAR_PRAYERS_PREFIX = 'أذكر يارب أولادك بالخير و الفرح و تدبير كل أمر صعب';
+    var ALTAR_TARAHIM_PREFIX = 'أذكر يارب أولادك اللذين سبقونا للسماء بمراحمك و غفرانك';
+
+    function openAltarPanel() {
+      try { if (typeof enterContentAudioPage === 'function') enterContentAudioPage(); } catch (e) {}
+      setPrayerJesusBg(false);
+      var titleEl = document.getElementById('prayerTitle');
+      if (titleEl) titleEl.textContent = 'على المذبح';
+      var content = document.getElementById('prayerContent');
+      if (!content) return;
+
+      var prayersSaved = '';
+      var tarahimSaved = '';
+      try { prayersSaved = localStorage.getItem('khalwati_altar_prayers') || ''; } catch (e1) {}
+      try { tarahimSaved = localStorage.getItem('khalwati_altar_tarahim') || ''; } catch (e2) {}
+
+      content.innerHTML =
+        '<div style="text-align:right;">' +
+          '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+            '<button type="button" id="altarTabPrayers" class="save-btn" style="flex:1;margin:0;background:#c9a227;" onclick="showAltarTab(\'prayers\')">🙏 صلوات</button>' +
+            '<button type="button" id="altarTabTarahim" class="save-btn" style="flex:1;margin:0;background:#8a7a60;" onclick="showAltarTab(\'tarahim\')">🕊 تراحيم</button>' +
+          '</div>' +
+          '<div id="altarPanelPrayers">' +
+            '<p style="font-size:13px;color:#6b5b3e;margin:0 0 8px;line-height:1.7;">ابدئي بالصلاة الثابتة، ثم أضيفي أسماء وطلبات:</p>' +
+            '<div style="padding:12px;border-radius:12px;background:#f5e6c8;border:1px solid #e8d9b5;font-weight:700;color:#5c4033;margin-bottom:10px;line-height:1.8;">' +
+              ALTAR_PRAYERS_PREFIX +
+            '</div>' +
+            '<textarea id="altarPrayersBox" rows="8" placeholder="اكتبي هنا أسماء أولادك وطلباتك…"' +
+              ' style="width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:15px;line-height:1.85;resize:vertical;background:#fffdf8;"' +
+              ' oninput="try{localStorage.setItem(\'khalwati_altar_prayers\', this.value);}catch(e){}">' +
+              String(prayersSaved).replace(/&/g,'&amp;').replace(/</g,'&lt;') +
+            '</textarea>' +
+            '<button type="button" class="save-btn" style="width:100%;margin:12px 0 0;background:#5a7d4a;" onclick="saveAltarField(\'prayers\')">💾 حفظ الصلوات</button>' +
+          '</div>' +
+          '<div id="altarPanelTarahim" style="display:none;">' +
+            '<p style="font-size:13px;color:#6b5b3e;margin:0 0 8px;line-height:1.7;">ابدئي بالتراحم الثابت، ثم أضيفي أسماء الراقدين:</p>' +
+            '<div style="padding:12px;border-radius:12px;background:#e8eef5;border:1px solid #c5d4e8;font-weight:700;color:#2a4a6b;margin-bottom:10px;line-height:1.8;">' +
+              ALTAR_TARAHIM_PREFIX +
+            '</div>' +
+            '<textarea id="altarTarahimBox" rows="8" placeholder="اكتبي هنا أسماء اللذين سبقونا…"' +
+              ' style="width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:15px;line-height:1.85;resize:vertical;background:#fffdf8;"' +
+              ' oninput="try{localStorage.setItem(\'khalwati_altar_tarahim\', this.value);}catch(e){}">' +
+              String(tarahimSaved).replace(/&/g,'&amp;').replace(/</g,'&lt;') +
+            '</textarea>' +
+            '<button type="button" class="save-btn" style="width:100%;margin:12px 0 0;background:#5a7d4a;" onclick="saveAltarField(\'tarahim\')">💾 حفظ التراحيم</button>' +
+          '</div>' +
+          '<div style="margin-top:16px;display:flex;gap:8px;">' +
+            '<button type="button" class="save-btn" style="flex:1;background:#a65d4a;margin:0;" onclick="closeModal()">إغلاق</button>' +
+          '</div>' +
+        '</div>';
+      document.getElementById('prayerModal').classList.add('active');
+    }
+
+    function showAltarTab(which) {
+      var p = document.getElementById('altarPanelPrayers');
+      var t = document.getElementById('altarPanelTarahim');
+      var bp = document.getElementById('altarTabPrayers');
+      var bt = document.getElementById('altarTabTarahim');
+      if (!p || !t) return;
+      if (which === 'tarahim') {
+        p.style.display = 'none';
+        t.style.display = 'block';
+        if (bp) bp.style.background = '#8a7a60';
+        if (bt) bt.style.background = '#c9a227';
+      } else {
+        p.style.display = 'block';
+        t.style.display = 'none';
+        if (bp) bp.style.background = '#c9a227';
+        if (bt) bt.style.background = '#8a7a60';
+      }
+    }
+
+    function saveAltarField(which) {
+      try {
+        if (which === 'tarahim') {
+          var t = document.getElementById('altarTarahimBox');
+          if (t) localStorage.setItem('khalwati_altar_tarahim', t.value || '');
+        } else {
+          var p = document.getElementById('altarPrayersBox');
+          if (p) localStorage.setItem('khalwati_altar_prayers', p.value || '');
+        }
+        if (typeof showToast === 'function') showToast('تم الحفظ');
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('تعذر الحفظ');
+      }
+    }
+
 
     function openSpokenPrayers() {
       document.getElementById('prayerTitle').textContent = 'صلوات';

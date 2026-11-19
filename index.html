@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="405" lang="ar" dir="rtl">
+<html data-app-ver="406" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -4195,7 +4195,11 @@
       showToast(t('saved'));
     }
 
-    let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0 };
+    let bibleState = { testament: 'OT', bookIndex: 0, chapter: 0, version: 'AVD' };
+    try {
+      var _bv = localStorage.getItem('khalwati_bible_version');
+      if (_bv === 'AVD' || _bv === 'WEB') bibleState.version = _bv;
+    } catch (eBv0) {}
     try {
       var _bp = JSON.parse(localStorage.getItem('khalwati_bible_pos') || 'null');
       if (_bp && typeof _bp === 'object') {
@@ -5282,6 +5286,18 @@ function applyWheelLanguage() {
     }
 
 
+
+    function setBibleVersion(ver) {
+      if (ver !== 'AVD' && ver !== 'WEB') return;
+      bibleState.version = ver;
+      try { localStorage.setItem('khalwati_bible_version', ver); } catch (e) {}
+      // عند اختيار WEB نحاول نعرض بالإنجليزي
+      if (ver === 'WEB' && typeof setAppLang === 'function') {
+        try { /* لا نغير لغة التطبيق كلها، بس نعرض WEB */ } catch(e){}
+      }
+      renderBible();
+    }
+
     function renderBible() {
       const bible = window.BIBLE_SVD;
       if (!bible) return;
@@ -5293,7 +5309,8 @@ function applyWheelLanguage() {
       if (bibleState.chapter >= chCount) bibleState.chapter = 0;
       var appLang = (typeof getAppLang === 'function') ? getAppLang() : 'ar';
       var verses = book.chapters[bibleState.chapter] || [];
-      if (appLang === 'en' && typeof fetchWebChapter === 'function') {
+      var forceWeb = (bibleState.version === 'WEB');
+      if ((appLang === 'en' || forceWeb) && typeof fetchWebChapter === 'function') {
         var wkey = (webBookQuery(book) || '') + '|' + (bibleState.chapter + 1);
         if (window._webChapterCache && window._webChapterCache[wkey] && window._webChapterCache[wkey].length) {
           verses = window._webChapterCache[wkey];
@@ -5338,12 +5355,36 @@ function applyWheelLanguage() {
         <button type="button" onclick="printCleanContent()">📄 PDF للنص فقط</button>
       </div>`;
 
-      document.getElementById('prayerTitle').textContent = 'الكتاب المقدس — فاندايك';
+      var _verLabel = (bibleState.version === 'WEB') ? 'WEB' : 'فاندايك (AVD)';
+      document.getElementById('prayerTitle').textContent = 'الكتاب المقدس — ' + _verLabel;
       document.getElementById('prayerContent').innerHTML = `
         <div style="text-align:right;">
           ${(window._fromSearch && window._bsResults) ? '<button type="button" class="save-btn" style="background:#8a7a60;margin:0 0 10px;width:100%;" onclick="openBibleSearchPage(true)">← العودة لنتائج البحث عن «' + bsEsc(window._bibleSearchQ || '') + '»</button>' : ''}
           <button type="button" class="save-btn" style="width:100%;margin:0 0 8px;background:#6a5a3a;font-size:15px;" onclick="openBibleSearchPage()">🔍 بحث في الكتاب المقدس (القديم والجديد)</button>
           <button type="button" class="save-btn" style="width:100%;margin:0 0 12px;background:#8b6914;font-size:15px;" onclick="openBibleDictionary()">📖 قاموس الكلمات الصعبة</button>
+
+          <!-- قائمة اختيار النسخ - مشابهة لتطبيق دار الكتاب المقدس -->
+          <div style="width:100%;margin:0 0 14px;text-align:right;">
+            <label style="font-size:12px;color:#8a7a60;display:block;margin-bottom:6px;">نسخة الكتاب المقدس</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" onclick="setBibleVersion('AVD')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid #c9a227;font-family:inherit;font-size:14px;cursor:pointer;
+                       background:${bibleState.version==='AVD'?'#c9a227':'#fffdf8'};
+                       color:${bibleState.version==='AVD'?'#fff':'#5c4033'};
+                       font-weight:${bibleState.version==='AVD'?'700':'500'};">
+                AVD (الفصحى · فاندايك)
+              </button>
+              <button type="button" onclick="setBibleVersion('WEB')"
+                style="padding:8px 16px;border-radius:20px;border:1.5px solid #c9a227;font-family:inherit;font-size:14px;cursor:pointer;
+                       background:${bibleState.version==='WEB'?'#c9a227':'#fffdf8'};
+                       color:${bibleState.version==='WEB'?'#fff':'#5c4033'};
+                       font-weight:${bibleState.version==='WEB'?'700':'500'};">
+                WEB (English)
+              </button>
+            </div>
+            <p style="font-size:11px;color:#9a8a70;margin:6px 0 0;">ملاحظة: نسختا ESV و ARZ محميتان بحقوق نشر، لذلك غير متوفرتين حالياً</p>
+          </div>
+
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <div style="width:100%;margin:8px 0;text-align:right;">
               <label style="font-size:12px;color:#8a7a60;">خط نص الكتاب (مستقل عن الصفحة الرئيسية)</label>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="409" lang="ar" dir="rtl">
+<html data-app-ver="410" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -11646,8 +11646,82 @@ function openKatameros(dateObj) {
     ];
 
 
-    var ALTAR_PRAYERS_PREFIX = 'أذكر يارب أولادك بالخير و الفرح و تدبير كل أمر صعب';
-    var ALTAR_TARAHIM_PREFIX = 'أذكر يارب أولادك اللذين سبقونا للسماء بمراحمك و غفرانك';
+    var ALTAR_PRAYERS_PREFIX = 'أذكر يارب أولادك بالخير و الفرح و تدبير امور حياتهم';
+    var ALTAR_TARAHIM_PREFIX = 'أذكر يارب أولادك بمراحمك و اغفر خطاياهم';
+
+
+    function printAltarPdf() {
+      var prayersUser = '';
+      var tarahimUser = '';
+      try {
+        var pb = document.getElementById('altarPrayersBox');
+        prayersUser = pb ? (pb.value || '') : (localStorage.getItem('khalwati_altar_prayers') || '');
+      } catch (e1) {
+        try { prayersUser = localStorage.getItem('khalwati_altar_prayers') || ''; } catch (e2) {}
+      }
+      try {
+        var tb = document.getElementById('altarTarahimBox');
+        tarahimUser = tb ? (tb.value || '') : (localStorage.getItem('khalwati_altar_tarahim') || '');
+      } catch (e3) {
+        try { tarahimUser = localStorage.getItem('khalwati_altar_tarahim') || ''; } catch (e4) {}
+      }
+      prayersUser = String(prayersUser || '').trim();
+      tarahimUser = String(tarahimUser || '').trim();
+
+      function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
+      }
+
+      var prayersPrefix = (typeof ALTAR_PRAYERS_PREFIX !== 'undefined')
+        ? ALTAR_PRAYERS_PREFIX
+        : 'أذكر يارب أولادك بالخير و الفرح و تدبير امور حياتهم';
+      var tarahimPrefix = (typeof ALTAR_TARAHIM_PREFIX !== 'undefined')
+        ? ALTAR_TARAHIM_PREFIX
+        : 'أذكر يارب أولادك بمراحمك و اغفر خطاياهم';
+
+      var hasTarahim = !!tarahimUser;
+
+      var halfCss =
+        'box-sizing:border-box;padding:18px 16px;min-height:42vh;' +
+        'display:flex;flex-direction:column;justify-content:flex-start;';
+
+      var body = '';
+      body += '<div style="display:flex;flex-direction:column;gap:0;">';
+
+      // النصف الأول — الصلوات
+      body += '<div style="' + halfCss + 'border-bottom:2px dashed #c9a227;">';
+      body += '<h2 style="text-align:center;margin:0 0 16px;font-size:20px;color:#5c4033;font-weight:800;">الصلوات</h2>';
+      body += '<p style="margin:0 0 12px;font-size:15px;line-height:1.9;font-weight:700;color:#3e2f1c;">' + esc(prayersPrefix) + '</p>';
+      body += '<div style="height:14px;"></div>';
+      if (prayersUser) {
+        body += '<div style="font-size:15px;line-height:1.95;color:#3e2f1c;white-space:pre-wrap;">' + esc(prayersUser) + '</div>';
+      } else {
+        body += '<div style="font-size:14px;color:#9a8a70;font-style:italic;">—</div>';
+      }
+      body += '</div>';
+
+      // النصف الثاني — التراحيم (إن وجدت)
+      body += '<div style="' + halfCss + '">';
+      if (hasTarahim) {
+        body += '<h2 style="text-align:center;margin:0 0 16px;font-size:20px;color:#5c4033;font-weight:800;">التراحيم</h2>';
+        body += '<p style="margin:0 0 12px;font-size:15px;line-height:1.9;font-weight:700;color:#3e2f1c;">' + esc(tarahimPrefix) + '</p>';
+        body += '<div style="height:14px;"></div>';
+        body += '<div style="font-size:15px;line-height:1.95;color:#3e2f1c;white-space:pre-wrap;">' + esc(tarahimUser) + '</div>';
+      } else {
+        body += '<h2 style="text-align:center;margin:0 0 16px;font-size:20px;color:#9a8a70;font-weight:800;">التراحيم ( إن وجدت )</h2>';
+        body += '<p style="text-align:center;color:#9a8a70;font-size:13px;margin-top:8px;">لا توجد تراحيم مكتوبة حالياً</p>';
+      }
+      body += '</div>';
+
+      body += '</div>';
+
+      if (typeof printHTML === 'function') {
+        printHTML('على المذبح — صلوات وتراحيم', body, { compact: true });
+      } else {
+        if (typeof showToast === 'function') showToast('تعذر فتح الطباعة');
+      }
+    }
+
 
     function openAltarPanel() {
       try { if (typeof enterContentAudioPage === 'function') enterContentAudioPage(); } catch (e) {}
@@ -11692,7 +11766,8 @@ function openKatameros(dateObj) {
             '</textarea>' +
             '<button type="button" class="save-btn" style="width:100%;margin:12px 0 0;background:#5a7d4a;" onclick="saveAltarField(\'tarahim\')">💾 حفظ التراحيم</button>' +
           '</div>' +
-          '<div style="margin-top:16px;display:flex;gap:8px;">' +
+          '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button type="button" class="save-btn" style="flex:1;background:#5a7d4a;margin:0;" onclick="printAltarPdf()">📄 تحميل PDF</button>' +
             '<button type="button" class="save-btn" style="flex:1;background:#a65d4a;margin:0;" onclick="closeModal()">إغلاق</button>' +
           '</div>' +
         '</div>';
@@ -12001,6 +12076,12 @@ function openKatameros(dateObj) {
 
 
     function printPrayer() {
+      // لو صفحة المذبح مفتوحة — صدّر PDF مقسوم صلوات / تراحيم
+      try {
+        if (document.getElementById('altarPrayersBox') || document.getElementById('altarTarahimBox')) {
+          if (typeof printAltarPdf === 'function') { printAltarPdf(); return; }
+        }
+      } catch (eAlt) {}
       // تصدير النص فقط بدون أزرار التنقل والقوائم
       printCleanContent();
     }

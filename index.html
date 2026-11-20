@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="410" lang="ar" dir="rtl">
+<html data-app-ver="411" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -5526,19 +5526,80 @@ function applyWheelLanguage() {
     function buildChapterInspiredPrayer(book, chapterIdx, verses) {
       var name = (book && book.name) || 'هذا السفر';
       var ch = (chapterIdx|0) + 1;
-      var tip = '';
+      var full = '';
       try {
         if (verses && verses.length) {
-          var v0 = String(verses[0] || '').replace(/^\s*\d+[\-–—:\.]\s*/, '').trim();
-          if (v0.length > 90) v0 = v0.slice(0, 90) + '…';
-          if (v0) tip = v0;
+          full = verses.map(function (v) {
+            return String(v || '').replace(/^\s*\d+[\-–—:\.]\s*/, '').trim();
+          }).filter(Boolean).join(' ');
         }
-      } catch (e) {}
+      } catch (e0) { full = ''; }
+
+      // إزالة التشكيل لتسهيل المطابقة
+      function stripT(s) {
+        try {
+          if (typeof khStripTashkeel === 'function') return khStripTashkeel(s);
+        } catch (e) {}
+        return String(s || '').replace(/[\u064B-\u065F\u0670]/g, '');
+      }
+      var text = stripT(full);
+
+      // محاور روحية من وحي موضوع الإصحاح كله
+      var themes = [
+        { id: 'creation', keys: ['خلق','سماء','ارض','نور','ظلمه','مياه','برأ'], line: 'علّمني أن أرى يدك الخالقة في كل شيء، وأسجد لعظمتك في خليقتك.' },
+        { id: 'praise', keys: ['سبح','هلل','مزمور','ترنيم','احمد','باركوا','تمجيد'], line: 'هب لي قلباً مسبّحاً، يبارك اسمك في الضيق كما في الفرح.' },
+        { id: 'repent', keys: ['توب','خطي','اثم','ذنب','ندم','اعترف','رجوع'], line: 'امنحني توبةً صادقةً ودموعاً نقية، واغفر لي يا محب البشر.' },
+        { id: 'mercy', keys: ['رحم','حنو','شفقة','رءوف','طويل الروح','غفران','صفح'], line: 'أسكب عليّ مراحمك الكثيرة، فأحيى بنعمتك ولا أهلك في ضعفي.' },
+        { id: 'faith', keys: ['ايمان','آمن','صدق','وثق','اتكل','توكل'], line: 'ثبّت إيماني بك، ولا تدع الشك يسرق سلامي.' },
+        { id: 'love', keys: ['محبه','احب','ود','حنان','بذل'], line: 'ألهب قلبي بمحبتك، فعلّمني أن أحب كما أحببتني.' },
+        { id: 'suffer', keys: ['ضيق','الم','حزن','دموع','اضطهاد','صليب','آلام','تجارب'], line: 'في ضيقي كن لي عزاءً، وحوّل ألمي إلى شركة مع صليبك المحيي.' },
+        { id: 'wisdom', keys: ['حكمه','فهم','معرفه','تعليم','وصيه','ناموس','شريعه'], line: 'أنر ذهني بحكمتك، فأسلك في وصاياك بفهمٍ ووداعة.' },
+        { id: 'deliver', keys: ['خلاص','نجا','فداء','انقذ','حرر','عتق','خلّص'], line: 'خلّصني بقوة صليبك، وافتدِ حياتي من كل رباط يبعدني عنك.' },
+        { id: 'kingdom', keys: ['ملكوت','ملك','عرش','مسيح','مسيا'], line: 'ليأتِ ملكوتك في قلبي، واملك عليّ بكلمتك وروحك القدوس.' },
+        { id: 'prayer', keys: ['صلوات','صلى','دعا','طلبه','ابتهال','سجد'], line: 'علّمني أن أصلّي بلا ملل، وأرفع قلبي إليك في كل حين.' },
+        { id: 'peace', keys: ['سلام','طمءنينه','راحه','سكون'], line: 'أفضِ سلامك في قلبي، السلام الذي يفوق كل عقل.' },
+        { id: 'hope', keys: ['رجاء','انتظر','وعد','رجا'], line: 'املأني رجاءً لا يخيب، منتظراً مواعيدك بأمانة.' },
+        { id: 'service', keys: ['خدم','رسول','كرازه','بشاره','ارسل'], line: 'أرسلني لخدمة اسمك، واجعل حياتي شهادةً حيّةً لمحبتك.' },
+        { id: 'judgement', keys: ['دينون','قضاء','عدل','حكم','يوم الرب'], line: 'هيّئني للقاء وجهك، بعدلٍ مشوبٍ برحمتك العظيمة.' },
+        { id: 'unity', keys: ['واحد','وحده','شركه','جسد','كنيسه'], line: 'احفظني في شركة جسدك المقدس، ولا تفرّقني عن كنيستك.' },
+        { id: 'holy', keys: ['قدوس','قداسه','طهر','تقديس','نذير'], line: 'قدّس حواسي وأفكاري، فأعيش مقدساً كما أنت قدوس.' },
+        { id: 'word', keys: ['كلمه','قال الرب','هكذا قال','وحي','نبوء'], line: 'لتسكن كلمتك فيّ بغنى، فتكون نوراً لسبيلي وحياةً لروحي.' }
+      ];
+
+      var scores = {};
+      themes.forEach(function (th) {
+        var sc = 0;
+        th.keys.forEach(function (k) {
+          var kk = stripT(k);
+          var idx = 0;
+          while ((idx = text.indexOf(kk, idx)) >= 0) { sc++; idx += kk.length; }
+        });
+        if (sc > 0) scores[th.id] = sc;
+      });
+
+      // أعلى محورين
+      var ranked = themes.slice().sort(function (a, b) {
+        return (scores[b.id] || 0) - (scores[a.id] || 0);
+      });
+      var picked = [];
+      for (var i = 0; i < ranked.length && picked.length < 2; i++) {
+        if ((scores[ranked[i].id] || 0) > 0) picked.push(ranked[i]);
+      }
+
       var lines = [];
-      lines.push('يا رب، من خلال «' + name + '» إصحاح ' + ch + '، افتح قلبي لكلمتك.');
-      if (tip) lines.push('علّمني أن أتأمل قولَك: «' + tip + '» وأعيشه في يومي.');
-      lines.push('هب لي حكمةً وفهماً، وطهّرني بنعمتك، وثبّتني في محبتك.');
-      lines.push('أذكر يا رب أولادك بالخير والفرح وتدبير كل أمر صعب. آمين.');
+      lines.push('أيها الرب يسوع المسيح، من وحي «' + name + '» الإصحاح ' + ch + '، أقف أمامك بقلبٍ منسحق.');
+
+      if (picked.length) {
+        picked.forEach(function (th) { lines.push(th.line); });
+      } else {
+        lines.push('افتح أذني لأسمع ما تقوله الروح للكنيسة في هذا الإصحاح.');
+        lines.push('واجعل كلمتك تعمل فيّ، لا مجرد سماعٍ بل حياةً متجددة.');
+      }
+
+      // خاتمة أرثوذكسية بسيطة وعميقة
+      lines.push('بنعمة روحك القدوس ثبّتني إلى النهاية، وبشفاعات والدة الإله وجميع القديسين ارحمني.');
+      lines.push('آمين.');
+
       return lines.join('<br>');
     }
 

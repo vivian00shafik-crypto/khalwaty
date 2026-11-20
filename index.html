@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="411" lang="ar" dir="rtl">
+<html data-app-ver="412" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -3541,10 +3541,18 @@
     }
 
     function openFathersHub() {
+      try { if (typeof enterContentAudioPage === 'function') enterContentAudioPage(); } catch (e0) {}
+      var modal = document.getElementById('prayerModal');
       var pc = document.getElementById('prayerContent');
-      if (!pc) return;
+      var titleEl = document.getElementById('prayerTitle');
+      if (!pc || !modal) {
+        try { if (typeof showToast === 'function') showToast('تعذر فتح الآبائيات'); } catch (e) {}
+        return;
+      }
       try { if (typeof setPrayerJesusBg === 'function') setPrayerJesusBg(false); } catch (e) {}
-      document.getElementById('prayerTitle').textContent = 'آبائيات';
+      if (titleEl) titleEl.textContent = 'آبائيات';
+      // افتح المودال فوراً قبل بناء القائمة حتى لا يبدو أن الأيقونة لا تستجيب
+      modal.classList.add('active');
       var all = bustanAllFathers();
       var h = '<div style="text-align:right;direction:rtl;">';
       h += '<div style="text-align:center;font-weight:800;font-size:19px;color:#5a4a2a;margin:2px 0 10px;">🌿 بستان الرهبان</div>';
@@ -3566,7 +3574,7 @@
       h += '<button type="button" class="save-btn" style="width:100%;margin:6px 0;background:#8a7a60;" onclick="bustanOpenNotes()">📝 ملاحظاتي في الآبائيات</button>';
       h += '</div>';
       pc.innerHTML = h;
-      document.getElementById('prayerModal').classList.add('active');
+      try { modal.classList.add('active'); } catch (eM) { try { document.getElementById('prayerModal').classList.add('active'); } catch (e2) {} }
     }
     function bustanFilter(v) {
       var q = bsNorm(v || '').trim();
@@ -3696,7 +3704,7 @@
       if (type === 'bibleComment' || id === 'bibleComment') openBibleComment();
       else if (type === 'katameros') openKatameros();
       else if (type === 'faithExamples' || id === 'faithExamples') openFaithExamples();
-      else if (id === 'fathers') openFathersHub();
+      else if (id === 'fathers' || type === 'fathers') { try { openFathersHub(); } catch (eF) { console.log(eF); try { showToast('تعذر فتح الآبائيات'); } catch (e) {} } }
       else if (type === 'text') openTextModal(id);
       else if (type === 'books') openBooksSection();
       else if (type === 'chart') openProgressChart();
@@ -5472,7 +5480,10 @@ function applyWheelLanguage() {
             <div style="font-weight:800;color:#5a7d4a;font-size:15px;margin:14px 0 8px;">📝 لخّص تفسير الإصحاح هنا</div>
             <textarea id="chapterSummaryBox" rows="5" placeholder="اكتبي هنا ملخص تفسيرك أو تأملاتك في هذا الإصحاح..."
               style="width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid #d4c4a0;font-family:inherit;font-size:14px;line-height:1.8;resize:vertical;background:#fffdf8;color:#3e2f1c;"
-              oninput="saveChapterSummary(this.value)">${(typeof loadChapterSummary==='function') ? loadChapterSummary(book, bibleState.chapter).replace(/`/g,'').replace(/\\/g,'\\\\').replace(/\$\{/g,'\\${') : ''}</textarea>
+              oninput="saveChapterSummary(this.value)"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <button type="button" class="save-btn" style="flex:1;margin:0;background:#5a7d4a;" onclick="printChapterSummaryPdf()">📄 تحميل ملخص الإصحاح PDF</button>
+            </div>
             <p style="font-size:11px;color:#9a8a70;margin:6px 0 0;text-align:center;">يُحفظ تلقائياً لهذا الإصحاح</p>
           </div>
 
@@ -5515,6 +5526,33 @@ function applyWheelLanguage() {
         return localStorage.getItem(chapterStorageKey(book, chapterIdx)) || '';
       } catch (e) { return ''; }
     }
+
+    function printChapterSummaryPdf() {
+      try {
+        var books = window._mergedBooks || (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
+        var book = books[bibleState.bookIndex];
+        var ch = (bibleState.chapter|0) + 1;
+        var title = (book && book.name ? book.name : 'سفر') + ' — إصحاح ' + ch;
+        var box = document.getElementById('chapterSummaryBox');
+        var text = box ? (box.value || '') : (typeof loadChapterSummary === 'function' ? loadChapterSummary(book, bibleState.chapter) : '');
+        text = String(text || '').trim();
+        if (!text) {
+          if (typeof showToast === 'function') showToast('اكتبي الملخص أولاً ثم حمّليه');
+          return;
+        }
+        var body = '<h2 style="text-align:center;margin:0 0 12px;">ملخص تفسير الإصحاح</h2>' +
+          '<p style="text-align:center;color:#5c4033;font-weight:700;margin:0 0 16px;">' + title.replace(/</g,'&lt;') + '</p>' +
+          '<div style="font-size:15px;line-height:1.95;white-space:pre-wrap;">' +
+          text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') +
+          '</div>';
+        if (typeof printHTML === 'function') printHTML(title + ' — ملخص', body);
+        else if (typeof showToast === 'function') showToast('تعذر فتح الطباعة');
+      } catch (e) {
+        console.log(e);
+        if (typeof showToast === 'function') showToast('تعذر تحميل الملخص');
+      }
+    }
+
     function saveChapterSummary(val) {
       try {
         var books = window._mergedBooks || (window.BIBLE_SVD && window.BIBLE_SVD.books) || [];
@@ -5526,44 +5564,54 @@ function applyWheelLanguage() {
     function buildChapterInspiredPrayer(book, chapterIdx, verses) {
       var name = (book && book.name) || 'هذا السفر';
       var ch = (chapterIdx|0) + 1;
-      var full = '';
+      var versesList = [];
       try {
         if (verses && verses.length) {
-          full = verses.map(function (v) {
+          versesList = verses.map(function (v) {
             return String(v || '').replace(/^\s*\d+[\-–—:\.]\s*/, '').trim();
-          }).filter(Boolean).join(' ');
+          }).filter(Boolean);
         }
-      } catch (e0) { full = ''; }
+      } catch (e0) { versesList = []; }
 
-      // إزالة التشكيل لتسهيل المطابقة
       function stripT(s) {
-        try {
-          if (typeof khStripTashkeel === 'function') return khStripTashkeel(s);
-        } catch (e) {}
+        try { if (typeof khStripTashkeel === 'function') return khStripTashkeel(s); } catch (e) {}
         return String(s || '').replace(/[\u064B-\u065F\u0670]/g, '');
       }
+
+      var full = versesList.join(' ');
       var text = stripT(full);
 
-      // محاور روحية من وحي موضوع الإصحاح كله
+      // اقتطاف عبارات مميزة من جسم الإصحاح (بداية / وسط / نهاية)
+      function pickPhrase(arr, pos) {
+        if (!arr.length) return '';
+        var i = pos === 'mid' ? (arr.length >> 1) : (pos === 'end' ? arr.length - 1 : 0);
+        var s = String(arr[i] || '').trim();
+        s = s.replace(/[«»"']/g, '').trim();
+        if (s.length > 70) s = s.slice(0, 70) + '…';
+        return s;
+      }
+      var pStart = pickPhrase(versesList, 'start');
+      var pMid = pickPhrase(versesList, 'mid');
+      var pEnd = pickPhrase(versesList, 'end');
+
+      // محاور روحية من محتوى الإصحاح
       var themes = [
-        { id: 'creation', keys: ['خلق','سماء','ارض','نور','ظلمه','مياه','برأ'], line: 'علّمني أن أرى يدك الخالقة في كل شيء، وأسجد لعظمتك في خليقتك.' },
-        { id: 'praise', keys: ['سبح','هلل','مزمور','ترنيم','احمد','باركوا','تمجيد'], line: 'هب لي قلباً مسبّحاً، يبارك اسمك في الضيق كما في الفرح.' },
-        { id: 'repent', keys: ['توب','خطي','اثم','ذنب','ندم','اعترف','رجوع'], line: 'امنحني توبةً صادقةً ودموعاً نقية، واغفر لي يا محب البشر.' },
-        { id: 'mercy', keys: ['رحم','حنو','شفقة','رءوف','طويل الروح','غفران','صفح'], line: 'أسكب عليّ مراحمك الكثيرة، فأحيى بنعمتك ولا أهلك في ضعفي.' },
-        { id: 'faith', keys: ['ايمان','آمن','صدق','وثق','اتكل','توكل'], line: 'ثبّت إيماني بك، ولا تدع الشك يسرق سلامي.' },
-        { id: 'love', keys: ['محبه','احب','ود','حنان','بذل'], line: 'ألهب قلبي بمحبتك، فعلّمني أن أحب كما أحببتني.' },
-        { id: 'suffer', keys: ['ضيق','الم','حزن','دموع','اضطهاد','صليب','آلام','تجارب'], line: 'في ضيقي كن لي عزاءً، وحوّل ألمي إلى شركة مع صليبك المحيي.' },
-        { id: 'wisdom', keys: ['حكمه','فهم','معرفه','تعليم','وصيه','ناموس','شريعه'], line: 'أنر ذهني بحكمتك، فأسلك في وصاياك بفهمٍ ووداعة.' },
-        { id: 'deliver', keys: ['خلاص','نجا','فداء','انقذ','حرر','عتق','خلّص'], line: 'خلّصني بقوة صليبك، وافتدِ حياتي من كل رباط يبعدني عنك.' },
-        { id: 'kingdom', keys: ['ملكوت','ملك','عرش','مسيح','مسيا'], line: 'ليأتِ ملكوتك في قلبي، واملك عليّ بكلمتك وروحك القدوس.' },
-        { id: 'prayer', keys: ['صلوات','صلى','دعا','طلبه','ابتهال','سجد'], line: 'علّمني أن أصلّي بلا ملل، وأرفع قلبي إليك في كل حين.' },
-        { id: 'peace', keys: ['سلام','طمءنينه','راحه','سكون'], line: 'أفضِ سلامك في قلبي، السلام الذي يفوق كل عقل.' },
-        { id: 'hope', keys: ['رجاء','انتظر','وعد','رجا'], line: 'املأني رجاءً لا يخيب، منتظراً مواعيدك بأمانة.' },
-        { id: 'service', keys: ['خدم','رسول','كرازه','بشاره','ارسل'], line: 'أرسلني لخدمة اسمك، واجعل حياتي شهادةً حيّةً لمحبتك.' },
-        { id: 'judgement', keys: ['دينون','قضاء','عدل','حكم','يوم الرب'], line: 'هيّئني للقاء وجهك، بعدلٍ مشوبٍ برحمتك العظيمة.' },
-        { id: 'unity', keys: ['واحد','وحده','شركه','جسد','كنيسه'], line: 'احفظني في شركة جسدك المقدس، ولا تفرّقني عن كنيستك.' },
-        { id: 'holy', keys: ['قدوس','قداسه','طهر','تقديس','نذير'], line: 'قدّس حواسي وأفكاري، فأعيش مقدساً كما أنت قدوس.' },
-        { id: 'word', keys: ['كلمه','قال الرب','هكذا قال','وحي','نبوء'], line: 'لتسكن كلمتك فيّ بغنى، فتكون نوراً لسبيلي وحياةً لروحي.' }
+        { id: 'creation', keys: ['خلق','سماء','ارض','نور','ظلمه','مياه','برأ','جنة'], ask: 'هب لي أن أرى يدك في خليقتك وأسجد لك بذهنٍ شاكر.' },
+        { id: 'exodus', keys: ['فرعون','مصر','خروج','برية','من','موسى','ضرب'], ask: 'أخرجني من كل عبودية للخطية، واهدني في بريتي إليك.' },
+        { id: 'promise', keys: ['وعد','ميثاق','عهد','نسل','ابراهيم','اسحق','يعقوب'], ask: 'ثبّتني في مواعيدك الأمينة، ولا تدع قلبي يشك في أمانتك.' },
+        { id: 'king', keys: ['ملك','داود','عرش','مملكة','مسيح'], ask: 'املك على قلبي، واجعلني أميناً في بيتِك.' },
+        { id: 'prophet', keys: ['نبي','هكذا قال','وحي','نبوء','انذار'], ask: 'أَرِني أن أسمع صوتك وأطيع، لا أن أسمع وأمضي.' },
+        { id: 'wisdom', keys: ['حكمه','مثل','فهم','جاهل','عاقل'], ask: 'أنر ذهني بحكمتك، فاختار مخافتك فوق كل طريق.' },
+        { id: 'praise', keys: ['سبح','هلل','مزمور','ترنيم','احمد','بارك'], ask: 'اجعل لساني مسبّحاً، وقلبي مذبحَ حمدٍ لك.' },
+        { id: 'repent', keys: ['توب','خطي','اثم','ذنب','ندم','اعترف'], ask: 'امنحني توبةً بلا رجعة إلى الوراء، ودموعاً تغسل قلبي.' },
+        { id: 'mercy', keys: ['رحم','حنو','غفران','صفح','رءوف'], ask: 'غطّني بمراحمك، فأقوم من ضعفي ولا أهلك.' },
+        { id: 'faith', keys: ['ايمان','آمن','صدق','وثق','توكل','اتكل'], ask: 'زدني إيماناً، وعلّمني أن أستودع حياتي بين يديك.' },
+        { id: 'love', keys: ['محبه','احب','بذل','حنان'], ask: 'ألهب قلبي بمحبتك، فأحبّك فوق كل شيء وأحبّ القريب.' },
+        { id: 'suffer', keys: ['ضيق','الم','حزن','دموع','صليب','آلام','اضطهاد'], ask: 'في ضيقي كن لي عزاءً، واشركني في صليبك المحيي.' },
+        { id: 'deliver', keys: ['خلاص','نجا','فداء','انقذ','حرر','عتق'], ask: 'خلّصني بقوة صليبك من كل رباطٍ يبعدني عنك.' },
+        { id: 'gospel', keys: ['انجيل','بشاره','تلمذ','معجزه','شفا'], ask: 'اجعلني تلميذاً أميناً لكلمتك، وشاهداً لقيامة حياتك فيّ.' },
+        { id: 'church', keys: ['كنيسة','رسل','شركه','جسد','وحده'], ask: 'احفظني في شركة جسدك، ولا تفرّقني عن كنيستك المقدسة.' },
+        { id: 'end', keys: ['دينون','مجيء','قيامة','سماء جديدة','يوم الرب'], ask: 'هيّئني للقائك بوجهٍ غير مخزٍ، برحمتك لا بعدلي وحدي.' }
       ];
 
       var scores = {};
@@ -5576,30 +5624,33 @@ function applyWheelLanguage() {
         });
         if (sc > 0) scores[th.id] = sc;
       });
-
-      // أعلى محورين
-      var ranked = themes.slice().sort(function (a, b) {
-        return (scores[b.id] || 0) - (scores[a.id] || 0);
-      });
-      var picked = [];
-      for (var i = 0; i < ranked.length && picked.length < 2; i++) {
-        if ((scores[ranked[i].id] || 0) > 0) picked.push(ranked[i]);
+      var ranked = themes.slice().sort(function (a, b) { return (scores[b.id] || 0) - (scores[a.id] || 0); });
+      var top = null;
+      for (var i = 0; i < ranked.length; i++) {
+        if ((scores[ranked[i].id] || 0) > 0) { top = ranked[i]; break; }
       }
 
+      // صلاة فريدة: اسم السفر + رقم الإصحاح + مقتطف من القصة + طلب روحي
       var lines = [];
-      lines.push('أيها الرب يسوع المسيح، من وحي «' + name + '» الإصحاح ' + ch + '، أقف أمامك بقلبٍ منسحق.');
+      lines.push('أيها الرب يسوع المسيح، من وحي قصة «' + name + '» الإصحاح ' + ch + '، أرفع قلبي إليك.');
 
-      if (picked.length) {
-        picked.forEach(function (th) { lines.push(th.line); });
-      } else {
-        lines.push('افتح أذني لأسمع ما تقوله الروح للكنيسة في هذا الإصحاح.');
-        lines.push('واجعل كلمتك تعمل فيّ، لا مجرد سماعٍ بل حياةً متجددة.');
+      if (pStart) {
+        lines.push('أتأمّل في بدء هذا الإصحاح حيث يقال: «' + pStart + '».');
+      }
+      if (pMid && pMid !== pStart) {
+        lines.push('وفي مسيرة أحداثه أسمع: «' + pMid + '».');
+      } else if (pEnd && pEnd !== pStart) {
+        lines.push('وإلى تمامه أتدبّر: «' + pEnd + '».');
       }
 
-      // خاتمة أرثوذكسية بسيطة وعميقة
-      lines.push('بنعمة روحك القدوس ثبّتني إلى النهاية، وبشفاعات والدة الإله وجميع القديسين ارحمني.');
-      lines.push('آمين.');
+      if (top) {
+        lines.push(top.ask);
+      } else {
+        lines.push('افتح عينيّ لأرى فعلَك في هذا الإصحاح، واكتب كلمتك في قلبي.');
+      }
 
+      lines.push('بنعمة روحك القدوس ثبّتني، وبشفاعات والدة الإله وجميع القديسين ارحمني.');
+      lines.push('آمين.');
       return lines.join('<br>');
     }
 

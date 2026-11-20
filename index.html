@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="415" lang="ar" dir="rtl">
+<html data-app-ver="416" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9448,7 +9448,7 @@ function onPrepareImageSelected(idx, input) {
         tab = tab || 'verse';
         var html = '';
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;">';
-        [['verse','🤖 فسّر آية بالذكاء الاصطناعي'],['fathers','من أقوال الآباء'],['links','روابط التفاسير']].forEach(function (t) {
+        [['verse','📖 مُفسّر | خلوة اليوم'],['fathers','من أقوال الآباء'],['links','روابط التفاسير']].forEach(function (t) {
           var on = t[0] === tab;
           html += '<button type="button" class="bc-tab" data-tab="' + t[0] + '" style="padding:10px 14px;border-radius:16px;border:1px solid var(--gold);background:' + (on ? 'var(--gold)' : '#fff') + ';color:' + (on ? '#fff' : '#5a4a2a') + ';font-weight:700;cursor:pointer;">' + t[1] + '</button>';
         });
@@ -9486,7 +9486,7 @@ function onPrepareImageSelected(idx, input) {
           var snap = window._verseMenuData || window._lastTafsir || {};
           var prefRef = snap.ref || '';
           var prefTxt = (snap.text || '').replace(/🔊/g, '').replace(/^\s*\d+\s*/, '').trim();
-          html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;">اكتبي مرجع الآية ونصها، وسيُولَّد التفسير بالذكاء الاصطناعي.</p>';
+          html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;">رفيقك في فهم كلمة الله، والتعمق في معاني الكتاب المقدس. اكتبي مرجع الآية ونصها.</p>';
           html += '<input id="bcRef" type="text" value="' + esc(prefRef) + '" placeholder="مثال: يوحنا 3: 16" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;margin:8px 0;box-sizing:border-box;" />';
           html += '<textarea id="bcText" rows="4" placeholder="نص الآية…" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;line-height:1.7;">' + esc(prefTxt) + '</textarea>';
           html += '<button type="button" id="bcGo" class="save-btn" style="margin-top:10px;width:100%;padding:12px;">عرض التفسير</button>';
@@ -11720,8 +11720,18 @@ function openKatameros(dateObj) {
       const day = document.getElementById('currentDate').textContent;
       let goals = '';
       for (let i=1;i<=5;i++) {
-        goals += `<p>${data['goal'+i] ? '☑' : '☐'} ${data['goalText'+i] || ''}</p>`;
+        var gText = (data['goalText'+i] || '').trim();
+        if (!gText) continue;
+        var mark = data['goalMark'+i];
+        var symbol = '–';
+        if (mark === 'yes' || data['goal'+i] === true) symbol = '✓';
+        else if (mark === 'no') symbol = '×';
+        var from = data['goalFrom'+i] || '';
+        var to = data['goalTo'+i] || '';
+        var time = (from || to) ? (' <span style="color:#8a7a60;font-size:13px;">(' + (from||'…') + ' – ' + (to||'…') + ')</span>') : '';
+        goals += '<p style="margin:6px 0;line-height:1.8;"><strong style="font-size:18px;">' + symbol + '</strong> ' + String(gText).replace(/</g,'&lt;') + time + '</p>';
       }
+      if (!goals) goals = '<p style="color:#8a7a60;">لا توجد أهداف مكتوبة</p>';
       const body = `
         <p><strong>${day}</strong></p>
         <h3>أهدافى اليوم</h3>${goals}
@@ -14385,7 +14395,7 @@ DAILY_VERSES = [
         <button type="button" onclick="closeVerseMenu(); openVerseDesign();">🎨 تصميم للتأمل</button>
         <button type="button" onclick="closeVerseMenu(); openAIVerseDesign();">✨ تصميم بالذكاء للآية</button>
         <button type="button" onclick="closeVerseMenu(); openSavedVerses();">📖 آياتي المحفوظة</button>
-        <button type="button" onclick="openVerseTafsir();">📖 تفسير أرثوذكسي (توليد)</button>
+        <button type="button" onclick="openVerseTafsir();">📖 مُفسّر | خلوة اليوم</button>
         <button type="button" onclick="openWordMeaning();">📚 المعنى اللغوي (توليد)</button>
         <button onclick="closeVerseMenu()" style="background:#f5e6c8;">إغلاق</button>
       `;
@@ -16899,7 +16909,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         out += '• مفيش كلمات صعبة متسجلة لهذه الآية في المعجم المحلي.\n';
         out += '  اقرئي الآية فوق: معناها العام من نصها نفسه.\n\n';
       }
-      out += 'ملاحظة: ده معنى لغوي بسيط للكلمات العربية. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
+      out += 'ملاحظة: ده معنى لغوي بسيط للكلمات العربية. للتفسير الروحي استخدمي «مُفسّر | خلوة اليوم».';
       return out;
     }
 
@@ -17505,7 +17515,7 @@ function showDesignSavePreview(url, name, silent, blob) {
         window._lastTafsir = { ref: ref, text: txt, content: '' };
 
         var titleEl2 = document.getElementById('prayerTitle');
-        if (titleEl2) titleEl2.textContent = 'تفسير الآية (أرثوذكسي)';
+        if (titleEl2) titleEl2.textContent = 'مُفسّر | خلوة اليوم';
         var modal2 = document.getElementById('prayerModal');
         if (modal2) { modal2.classList.add('active'); modal2.style.zIndex = '5000'; }
 
@@ -17518,8 +17528,10 @@ function showDesignSavePreview(url, name, silent, blob) {
         loading.style.cssText = 'padding:28px 12px;text-align:center;color:#5c4033;';
         loading.innerHTML =
           '<div style="font-size:42px;line-height:1;margin-bottom:12px;animation:tafsirPulse 1.2s ease-in-out infinite;">⏳</div>' +
-          '<div style="font-size:16px;font-weight:700;margin-bottom:6px;">جارٍ توليد التفسير…</div>' +
-          '<div style="font-size:13px;color:#8a7a60;line-height:1.6;">تفسير أرثوذكسي بالذكاء الاصطناعي<br>لحظة من فضلك</div>' +
+          '<div style="font-size:18px;font-weight:800;margin-bottom:6px;color:#5c4033;">مُفسّر | خلوة اليوم</div>' +
+          '<div style="font-size:13px;color:#6b5b3e;line-height:1.75;margin-bottom:10px;">رفيقك في فهم كلمة الله، والتعمق في معاني الكتاب المقدس.</div>' +
+          '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">جارٍ توليد التفسير…</div>' +
+          '<div style="font-size:12px;color:#8a7a60;line-height:1.6;">لحظة من فضلك</div>' +
           (ref || txt ? ('<div style="margin-top:14px;font-size:12px;color:#6b5b3e;opacity:.9;">' + String(ref || '').replace(/</g,'&lt;') + '</div>') : '');
 
         var box = document.createElement('div');
@@ -18933,7 +18945,7 @@ function showDesignSavePreview(url, name, silent, blob) {
       // ملاحظة قصيرة
       var foot = document.createElement('div');
       foot.style.cssText = 'margin-top:12px;font-size:12px;color:#9a8a70;line-height:1.6;';
-      foot.textContent = 'المعنى اللغوي لفهم الكلمات الصعبة. للتفسير الروحي استخدمي «تفسير أرثوذكسي».';
+      foot.textContent = 'المعنى اللغوي لفهم الكلمات الصعبة. للتفسير الروحي استخدمي «مُفسّر | خلوة اليوم».';
       box.appendChild(foot);
     }
 

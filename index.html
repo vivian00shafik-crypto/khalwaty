@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="420" lang="ar" dir="rtl">
+<html data-app-ver="421" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -1894,7 +1894,9 @@
       <div class="card-title" style="justify-content:center;">
         <span>✝️ صوت يسوع</span>
       </div>
-      <p style="font-size:13px;color:#6b5b3e;text-align:center;margin:0 0 10px;line-height:1.6;">آية يومية بصوت البابا شنودة الثالث</p>
+      <p style="font-size:13px;color:#6b5b3e;text-align:center;margin:0 0 8px;line-height:1.6;">آية يومية بصوت البابا شنودة الثالث</p>
+      <div id="jesusHomeVerseTheme" style="text-align:center;font-size:12px;font-weight:800;color:#8b6914;margin:0 0 6px;"></div>
+      <div id="jesusHomeVerseText" style="font-size:15px;line-height:1.95;color:#3e2f1c;font-weight:700;text-align:center;margin:0 0 12px;padding:10px 8px;background:rgba(255,253,248,0.95);border-radius:12px;border:1px solid #e8d9b5;min-height:3em;"></div>
       <button type="button" class="save-btn" style="width:100%;background:linear-gradient(135deg,#5a7d4a,#3d5c32);margin:0;"
         onclick="if(typeof testJesusVoiceNow==='function')testJesusVoiceNow();else{window._forceJesusTest=true;if(typeof tryDeliverJesusNow==='function')tryDeliverJesusNow('test');}">
         🔊 تشغيل صوت يسوع
@@ -13212,6 +13214,37 @@ var REAL_BIBLE_DAILY = [
       };
     }
 
+    function refreshJesusHomeVerse() {
+      try {
+        var v = (typeof getDailyVerse === 'function') ? getDailyVerse() : null;
+        if (!v) return;
+        window._lastJesusVerse = v;
+        var body = String(v.body || v.ar || '').replace(/\s+/g, ' ').trim();
+        var ref = String(v.ref || '').trim();
+        var theme = String(v.theme || '').trim();
+        var ht = document.getElementById('jesusHomeVerseTheme');
+        var hx = document.getElementById('jesusHomeVerseText');
+        if (ht) ht.textContent = theme ? ('موضوع اليوم: ' + theme) : '';
+        if (hx) {
+          hx.textContent = '';
+          if (body) hx.appendChild(document.createTextNode(body));
+          if (ref) {
+            hx.appendChild(document.createElement('br'));
+            hx.appendChild(document.createTextNode('(' + ref + ')'));
+          }
+          if (!body) hx.textContent = 'اضغطي تشغيل لعرض آية اليوم';
+        }
+      } catch (e) { console.log('refreshJesusHomeVerse', e); }
+    }
+    try {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(refreshJesusHomeVerse, 200); });
+      } else {
+        setTimeout(refreshJesusHomeVerse, 200);
+      }
+    } catch (eR) {}
+
+
     function scheduleJesusVoiceAfterHymn() {
       if (window._jesusVoiceTimer) {
         clearTimeout(window._jesusVoiceTimer);
@@ -22002,52 +22035,78 @@ function playProgressFinalVideo() {
 
 
     function showVerseInApp(verse) {
-      var existing = document.getElementById('verseAlertCard');
-      if (existing) existing.remove();
-      if (!verse && typeof getDailyVerse === 'function') verse = getDailyVerse();
-      window._lastJesusVerse = verse;
-      var body = String((verse && (verse.body || '')) || '').replace(/\s+/g, ' ').trim();
-      var ref = String((verse && verse.ref) || '').replace(/\s+/g, ' ').trim();
-      if (!body && verse && verse.text) {
-        var full = String(verse.text).replace(/\s+/g, ' ').trim();
-        var m = full.match(/^(.*?)[\s]*((?:المزامير|مزمور|متى|مرقس|لوقا|يوحنا|رومية|كورنثوس|غلاطية|أفسس|فيلبي|كولوسي|تسالونيكي|تيموثاوس|تيطس|عبرانيين|يعقوب|بطرس|يهوذا|رؤيا|تكوين|خروج|عدد|تثنية|يشوع|قضاة|صموئيل|ملوك|أخبار|عزرا|نحميا|أيوب|أمثال|جامعة|إشعياء|إرميا|حزقيال|دانيال|هوشع|يوئيل|عاموس|ميخا|حبقوق|صفنيا|حجي|زكريا|ملاخي|نشيد|مراثي)[^\d]*\d+\s*:\s*\d+)\s*$/);
-        if (m) { body = m[1].trim(); ref = m[2].trim(); }
-        else body = full;
-      }
-      if (ref && /تذكير|reminder/i.test(ref)) ref = '';
-      if (body && !/[.。]$/.test(body)) body = body + '.';
-      var line = body + (ref ? (' ' + ref) : '');
+      try {
+        var existing = document.getElementById('verseAlertCard');
+        if (existing) existing.remove();
+        if (!verse && typeof getDailyVerse === 'function') verse = getDailyVerse();
+        if (!verse) verse = { body: '', ref: '', text: '', theme: '' };
+        window._lastJesusVerse = verse;
 
-      var card = document.createElement('div');
-      card.id = 'verseAlertCard';
-      card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:2500;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.2);text-align:right;max-height:60vh;overflow:auto;';
-      var safeLine = String(line || '').replace(/</g, '&lt;');
-      card.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-          '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
-          '<div style="font-weight:800;color:#8b6914;font-size:15px;">✝️ صوت يسوع</div>' +
-        '</div>' +
-        '<div style="font-size:17px;line-height:2;color:#3e2f1c;font-weight:700;">' + safeLine + '</div>' +
-        '<button type="button" id="jesusPlayBtn" onclick="window._forceJesusTest=true;if(typeof unlockAppAudio===\'function\')unlockAppAudio();if(typeof playShenoudaVoiceFallback===\'function\')playShenoudaVoiceFallback(\'\',true);" style="display:block;width:100%;margin-top:12px;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#5a7d4a,#3d5c32);color:#fff;font-weight:800;font-size:16px;font-family:inherit;cursor:pointer;">🔊 تشغيل صوت يسوع (البابا شنودة)</button>' +
-        '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' +
-          '<button type="button" onclick="designJesusVerse()" style="flex:1;min-width:120px;padding:10px 12px;border:none;border-radius:12px;background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff;font-weight:800;font-family:inherit;cursor:pointer;">🎨 تصميم</button>' +
-          '<button type="button" onclick="saveJesusVerseToList()" style="flex:1;min-width:120px;padding:10px 12px;border:1px solid #c9a227;border-radius:12px;background:#fff;color:#6b5b3e;font-weight:700;font-family:inherit;cursor:pointer;">💾 حفظ</button>' +
-        '</div>' +
-        '<div style="margin-top:10px;font-size:12px;color:#8a7a60;text-align:center;">لو الصوت لم يبدأ تلقائيًا اضغطي زر التشغيل</div>';
-      document.body.appendChild(card);
-      // محاولة تشغيل تلقائي
-      setTimeout(function () {
+        var body = String((verse && (verse.body || verse.ar || '')) || '').replace(/\s+/g, ' ').trim();
+        var ref = String((verse && verse.ref) || '').replace(/\s+/g, ' ').trim();
+        var theme = String((verse && verse.theme) || '').replace(/\s+/g, ' ').trim();
+
+        if (!body && verse && verse.text) {
+          var full = String(verse.text).replace(/\s+/g, ' ').trim();
+          // أزل الشاهد بين أقواس إن وُجد
+          var mPar = full.match(/^(.*?)\s*[\(（]\s*([^\)）]+)\s*[\)）]\s*$/);
+          if (mPar) {
+            body = mPar[1].trim();
+            if (!ref) ref = mPar[2].trim();
+          } else {
+            body = full;
+          }
+        }
+        if (ref && /تذكير|reminder/i.test(ref)) ref = '';
+        if (body && !/[.。؟!]$/.test(body)) body = body + '.';
+
+        // حدّث كارت الصفحة الرئيسية أيضًا
         try {
-          if (typeof playShenoudaVoiceFallback === 'function') playShenoudaVoiceFallback('', false);
-        } catch (eA) {}
-      }, 300);
-      setTimeout(function () {
-        try {
-          var c = document.getElementById('verseAlertCard');
-          if (c) c.remove();
-        } catch (e) {}
-      }, 300000);
+          var ht = document.getElementById('jesusHomeVerseTheme');
+          var hx = document.getElementById('jesusHomeVerseText');
+          if (ht) ht.textContent = theme ? ('موضوع اليوم: ' + theme) : '';
+          if (hx) hx.textContent = (body || '—') + (ref ? ('\n(' + ref + ')') : '');
+        } catch (eH) {}
+
+        var card = document.createElement('div');
+        card.id = 'verseAlertCard';
+        card.style.cssText = 'position:fixed;bottom:90px;left:12px;right:12px;z-index:9999;background:#fffdf8;border:2px solid #c9a227;border-radius:16px;padding:16px;box-shadow:0 8px 28px rgba(0,0,0,.28);text-align:right;max-height:65vh;overflow:auto;';
+        function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        var themeHtml = theme ? ('<div style="text-align:center;font-size:12px;font-weight:800;color:#8b6914;margin:0 0 8px;">' + esc(theme) + '</div>') : '';
+        var bodyHtml = '<div style="font-size:17px;line-height:2;color:#3e2f1c;font-weight:700;">' + esc(body || 'تعذّر تحميل نص الآية') + '</div>';
+        var refHtml = ref ? ('<div style="margin-top:8px;text-align:center;font-size:14px;font-weight:800;color:#5a7d4a;">(' + esc(ref) + ')</div>') : '';
+
+        card.innerHTML =
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+            '<button type="button" onclick="document.getElementById(\'verseAlertCard\').remove()" style="border:none;background:#eee;border-radius:50%;width:28px;height:28px;cursor:pointer;">✕</button>' +
+            '<div style="font-weight:800;color:#8b6914;font-size:15px;">✝️ صوت يسوع</div>' +
+          '</div>' +
+          themeHtml + bodyHtml + refHtml +
+          '<button type="button" id="jesusPlayBtn" onclick="window._forceJesusTest=true;if(typeof unlockAppAudio===\'function\')unlockAppAudio();if(typeof playShenoudaVoiceFallback===\'function\')playShenoudaVoiceFallback(\'\',true);" style="display:block;width:100%;margin-top:12px;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#5a7d4a,#3d5c32);color:#fff;font-weight:800;font-size:16px;font-family:inherit;cursor:pointer;">🔊 تشغيل صوت يسوع (البابا شنودة)</button>' +
+          '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' +
+            '<button type="button" onclick="designJesusVerse()" style="flex:1;min-width:120px;padding:10px 12px;border:none;border-radius:12px;background:linear-gradient(135deg,#c9a227,#8b6914);color:#fff;font-weight:800;font-family:inherit;cursor:pointer;">🎨 تصميم</button>' +
+            '<button type="button" onclick="saveJesusVerseToList()" style="flex:1;min-width:120px;padding:10px 12px;border:1px solid #c9a227;border-radius:12px;background:#fff;color:#6b5b3e;font-weight:700;font-family:inherit;cursor:pointer;">💾 حفظ</button>' +
+          '</div>' +
+          '<div style="margin-top:10px;font-size:12px;color:#8a7a60;text-align:center;">لو الصوت لم يبدأ تلقائيًا اضغطي زر التشغيل</div>';
+        document.body.appendChild(card);
+
+        setTimeout(function () {
+          try {
+            if (typeof playShenoudaVoiceFallback === 'function') playShenoudaVoiceFallback('', false);
+          } catch (eA) {}
+        }, 300);
+        setTimeout(function () {
+          try {
+            var c = document.getElementById('verseAlertCard');
+            if (c) c.remove();
+          } catch (e) {}
+        }, 300000);
+      } catch (err) {
+        console.log('showVerseInApp', err);
+        try { if (typeof showToast === 'function') showToast('تعذر عرض الآية'); } catch (e2) {}
+      }
     }
+
 
     function designJesusVerse() {
       var v = window._lastJesusVerse || (typeof getDailyVerse === 'function' ? getDailyVerse() : {});
@@ -22192,6 +22251,7 @@ function playProgressFinalVideo() {
         } else if (typeof deliverJesusVoiceWithShenoudaFallback === 'function') {
           deliverJesusVoiceWithShenoudaFallback();
         }
+        try { if (typeof refreshJesusHomeVerse === 'function') refreshJesusHomeVerse(); } catch (eRV) {}
         if (typeof showToast === 'function') showToast('تجربة صوت يسوع… اضغطي تشغيل إن لزم');
       } catch (e) {
         console.log('testJesus', e);

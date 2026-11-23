@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="421" lang="ar" dir="rtl">
+<html data-app-ver="422" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -12843,7 +12843,7 @@ function updateSelectedSinsCount() {
     }
 
 
-var REAL_BIBLE_DAILY = [
+var REAL_BIBLE_DAILY = window.REAL_BIBLE_DAILY = [
       { theme: 'الفرح', ar: 'اِفْرَحُوا فِي ٱلرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: ٱفْرَحُوا.', ref: 'فيليبي 4:4' },
       { theme: 'السلام', ar: '«سَلَامًا أَتْرُكُ لَكُمْ. سَلَامِي أُعْطِيكُمْ. لَيْسَ كَمَا يُعْطِي ٱلْعَالَمُ أُعْطِيكُمْ أَنَا. لَا تَضْطَرِبْ قُلُوبُكُمْ وَلَا تَرْهَبْ.', ref: 'يوحنا 14:27' },
       { theme: 'الرجاء', ar: 'لِأَنِّي عَرَفْتُ ٱلْأَفْكَارَ ٱلَّتِي أَنَا مُفْتَكِرٌ بِهَا عَنْكُمْ، يَقُولُ ٱلرَّبُّ، أَفْكَارَ سَلَامٍ لَا شَرٍّ، لِأُعْطِيَكُمْ آخِرَةً وَرَجَاءً.', ref: 'إرميا 29:11' },
@@ -13146,72 +13146,98 @@ var REAL_BIBLE_DAILY = [
       { theme: 'الغفران', ar: 'ٱغْسِلْنِي كَثِيرًا مِنْ إِثْمِي، وَمِنْ خَطِيَّتِي طَهِّرْنِي.', ref: 'المزامير 51:2' }
     ];
     function getDailyVerse() {
-      var now = new Date();
-      var startY = new Date(now.getFullYear(), 0, 0);
-      var dayOfYear = Math.floor((now - startY) / 86400000);
-      if (dayOfYear < 1) dayOfYear = 1;
-      // بنك آيات فانديك فقط (مع الشاهد)
-      var bank = (typeof REAL_BIBLE_DAILY !== 'undefined' && REAL_BIBLE_DAILY.length) ? REAL_BIBLE_DAILY : [];
-      if (!bank.length && typeof DAILY_VERSES !== 'undefined') bank = DAILY_VERSES;
-      var len = bank.length || 1;
-      // فهرس اليوم من يوم السنة — آية مختلفة كل يوم
-      var i = ((dayOfYear - 1) % len + len) % len;
-      // تجنّب تكرار نفس الآية عن أمس إن وُجدت
       try {
-        var yKey = 'khalwati_jesus_verse_day';
-        var prev = localStorage.getItem(yKey) || '';
-        var todayKey = String(now.getFullYear()) + '-' + String(dayOfYear);
-        if (prev) {
-          var parts = prev.split('|');
-          if (parts[0] === todayKey && parts[1] !== undefined) {
-            i = parseInt(parts[1], 10) || i;
-          } else {
-            var prevIdx = parseInt(parts[1], 10);
-            if (!isNaN(prevIdx) && prevIdx === i && len > 1) {
-              i = (i + 1) % len;
-            }
-            localStorage.setItem(yKey, todayKey + '|' + i);
-          }
-        } else {
-          localStorage.setItem(yKey, todayKey + '|' + i);
-        }
-      } catch (eStore) {}
+        var now = new Date();
+        var startY = new Date(now.getFullYear(), 0, 0);
+        var dayOfYear = Math.floor((now - startY) / 86400000);
+        if (!dayOfYear || dayOfYear < 1) dayOfYear = 1;
 
-      var v = bank[i] || {};
-      var body = String(v.ar || v.body || v.text || '').replace(/\s+/g, ' ').trim();
-      var ref = String(v.ref || '').replace(/\s+/g, ' ').trim();
-      // لا نستخدم «تذكير روحي» — إن ظهر نقفز لآية فانديك تالية
-      if (/تذكير روحي|Daily reminder/i.test(body) || /تذكير روحي/.test(ref)) {
-        for (var k = 1; k < len; k++) {
-          var v2 = bank[(i + k) % len] || {};
-          var b2 = String(v2.ar || '').replace(/\s+/g, ' ').trim();
-          var r2 = String(v2.ref || '').trim();
-          if (b2 && !/تذكير روحي|Daily reminder/i.test(b2) && r2 && !/تذكير/.test(r2)) {
-            v = v2; body = b2; ref = r2; i = (i + k) % len; break;
+        // اجعل البنك متاحًا على window
+        var bank = [];
+        try {
+          if (typeof REAL_BIBLE_DAILY !== 'undefined' && REAL_BIBLE_DAILY && REAL_BIBLE_DAILY.length) {
+            bank = REAL_BIBLE_DAILY;
+            try { window.REAL_BIBLE_DAILY = REAL_BIBLE_DAILY; } catch (e0) {}
+          } else if (window.REAL_BIBLE_DAILY && window.REAL_BIBLE_DAILY.length) {
+            bank = window.REAL_BIBLE_DAILY;
+          }
+        } catch (eB) { bank = []; }
+
+        var len = bank.length || 0;
+        var i = 0;
+        if (len > 0) {
+          i = ((dayOfYear - 1) % len + len) % len;
+          try {
+            var yKey = 'khalwati_jesus_verse_day';
+            var prev = localStorage.getItem(yKey) || '';
+            var todayKey = String(now.getFullYear()) + '-' + String(dayOfYear);
+            if (prev) {
+              var parts = prev.split('|');
+              if (parts[0] === todayKey && parts[1] !== undefined && parts[1] !== '') {
+                var stored = parseInt(parts[1], 10);
+                if (!isNaN(stored) && stored >= 0 && stored < len) i = stored;
+              } else {
+                var prevIdx = parseInt(parts[1], 10);
+                if (!isNaN(prevIdx) && prevIdx === i && len > 1) i = (i + 1) % len;
+                localStorage.setItem(yKey, todayKey + '|' + i);
+              }
+            } else {
+              localStorage.setItem(yKey, todayKey + '|' + i);
+            }
+          } catch (eStore) {}
+          // تأمين الفهرس
+          if (isNaN(i) || i < 0 || i >= len) i = ((dayOfYear - 1) % len + len) % len;
+        }
+
+        var v = (len > 0) ? (bank[i] || bank[0] || {}) : {};
+        var body = String(v.ar || v.body || v.text || '').replace(/\s+/g, ' ').trim();
+        var ref = String(v.ref || '').replace(/\s+/g, ' ').trim();
+        var theme = String(v.theme || '').trim();
+
+        // تخطّي أي بقايا تذكير روحي
+        if (len > 0 && (/تذكير روحي|Daily reminder/i.test(body) || /تذكير/.test(ref) || !body)) {
+          for (var k = 0; k < len; k++) {
+            var v2 = bank[(i + k) % len] || {};
+            var b2 = String(v2.ar || v2.body || '').replace(/\s+/g, ' ').trim();
+            var r2 = String(v2.ref || '').trim();
+            if (b2 && !/تذكير روحي|Daily reminder/i.test(b2) && r2 && !/تذكير/.test(r2)) {
+              v = v2; body = b2; ref = r2; theme = String(v2.theme || theme).trim(); i = (i + k) % len;
+              break;
+            }
           }
         }
-      }
-      if (!ref) {
-        var mm = body.match(/[（(]\s*([^）)]+)\s*[）)]\s*$/);
-        if (mm && !/تذكير|reminder/i.test(mm[1])) {
-          ref = mm[1].trim();
-          body = body.replace(mm[0], '').trim();
+
+        // احتياطي أخير — آية فانديك ثابتة حتى لا تظهر فارغة
+        if (!body) {
+          body = 'اِفْرَحُوا فِي الرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: افْرَحُوا.';
+          ref = 'فيليبي 4:4';
+          theme = theme || 'الفرح';
         }
+
+        var text = body;
+        if (ref) {
+          if (body && !/[.。؟!]$/.test(body)) text = body + '.';
+          text = (text ? (text + ' ') : '') + '(' + ref + ')';
+        }
+        return {
+          theme: theme || 'آية اليوم',
+          body: body,
+          ref: ref,
+          text: text,
+          index: i,
+          dayOfYear: dayOfYear
+        };
+      } catch (err) {
+        console.log('getDailyVerse', err);
+        return {
+          theme: 'الفرح',
+          body: 'اِفْرَحُوا فِي الرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: افْرَحُوا.',
+          ref: 'فيليبي 4:4',
+          text: 'اِفْرَحُوا فِي الرَّبِّ كُلَّ حِينٍ، وَأَقُولُ أَيْضًا: افْرَحُوا. (فيليبي 4:4)',
+          index: 0,
+          dayOfYear: 1
+        };
       }
-      // شكل العرض: نص الآية ثم الشاهد
-      var text = body;
-      if (ref) {
-        if (body && !/[.。؟!]$/.test(body)) text = body + '.';
-        text = (text ? (text + ' ') : '') + '(' + ref + ')';
-      }
-      return {
-        theme: v.theme || 'آية اليوم',
-        body: body,
-        ref: ref,
-        text: text,
-        index: i,
-        dayOfYear: dayOfYear
-      };
     }
 
     function refreshJesusHomeVerse() {
@@ -22046,6 +22072,27 @@ function playProgressFinalVideo() {
         var ref = String((verse && verse.ref) || '').replace(/\s+/g, ' ').trim();
         var theme = String((verse && verse.theme) || '').replace(/\s+/g, ' ').trim();
 
+        // لو فاضي — أعد الجلب مباشرة من البنك
+        if (!body && typeof getDailyVerse === 'function') {
+          try {
+            var v2 = getDailyVerse();
+            if (v2) {
+              if (!body) body = String(v2.body || v2.ar || '').replace(/\s+/g, ' ').trim();
+              if (!ref) ref = String(v2.ref || '').trim();
+              if (!theme) theme = String(v2.theme || '').trim();
+              verse = v2;
+              window._lastJesusVerse = v2;
+            }
+          } catch (eRe) {}
+        }
+        if (!body && window.REAL_BIBLE_DAILY && window.REAL_BIBLE_DAILY[0]) {
+          try {
+            body = String(window.REAL_BIBLE_DAILY[0].ar || '').trim();
+            ref = String(window.REAL_BIBLE_DAILY[0].ref || '').trim();
+            theme = String(window.REAL_BIBLE_DAILY[0].theme || theme).trim();
+          } catch (e3) {}
+        }
+
         if (!body && verse && verse.text) {
           var full = String(verse.text).replace(/\s+/g, ' ').trim();
           // أزل الشاهد بين أقواس إن وُجد
@@ -22242,6 +22289,7 @@ function playProgressFinalVideo() {
           localStorage.removeItem('khalwati_jesus_day_' + todayKey);
           localStorage.removeItem('khalwati_jesus_played_' + todayKey);
         }
+        try { localStorage.removeItem('khalwati_jesus_verse_day'); } catch (eClr) {}
         window._jesusVoiceArmed = false;
         window._forceJesusTest = true;
         if (window._jesusVoiceTimer) { clearTimeout(window._jesusVoiceTimer); window._jesusVoiceTimer = null; }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="433" lang="ar" dir="rtl">
+<html data-app-ver="434" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -5313,10 +5313,22 @@ function applyWheelLanguage() {
     sources.forEach(function (src) {
      Object.keys(src).forEach(function (k) {
       var nk = norm(k);
-      if (nk === nq || nk.indexOf(nq) >= 0 || nq.indexOf(nk) >= 0) {
-       results.push({ word: k, meaning: src[k] });
-      }
+      if (!nk || nk.length < 2) return;
+      var meaning = src[k];
+      var ms = String(meaning || '');
+      if (/استغراق|أفراد الجنس|حرف |أداة نفي|ضمير/.test(ms) && nk.length <= 3) return;
+      var ok = false;
+      if (nk === nq) ok = true;
+      else if (nq.length >= 3 && (nk.indexOf(nq) === 0 || nq.indexOf(nk) === 0) && Math.min(nk.length, nq.length) >= 3) ok = true;
+      else if (nq.length >= 4 && nk.length >= 4 && (nk.indexOf(nq) >= 0 || nq.indexOf(nk) >= 0) && Math.abs(nk.length - nq.length) <= 3) ok = true;
+      if (ok) results.push({ word: k, meaning: meaning });
      });
+    });
+    results.sort(function (a, b) {
+     var na = norm(a.word), nb = norm(b.word);
+     var sa = (na === nq) ? 0 : (na.indexOf(nq) === 0 ? 1 : 2);
+     var sb = (nb === nq) ? 0 : (nb.indexOf(nq) === 0 ? 1 : 2);
+     return sa - sb;
     });
     // also lexiconLookup exact
     try {
@@ -15929,9 +15941,14 @@ function showDesignSavePreview(url, name, silent, blob) {
    var base = stripTashkeel(raw);
    if (!base || base.length < 2) return [];
    var keys = [base];
-   // أزل حروف العطف/الجر الشائعة في البداية
-   var p = base.replace(/^[وفبكل]+/, '');
-   if (p && p !== base) keys.push(p);
+   // أزل حروف العطف/الجر الشائعة في البداية (ولا نُبقي ناتجًا أقصر من 3 حروف)
+   var p = base.replace(/^[وفب]+/, '');
+   if (p && p !== base && p.length >= 3) keys.push(p);
+   // الكاف الابتدائية فقط إن بقي جذع كافٍ
+   if (/^ك/.test(base) && base.length >= 4) {
+    var pk = base.replace(/^ك/, '');
+    if (pk.length >= 3) keys.push(pk);
+   }
    // أزل أل التعريف
    var noAl = p.replace(/^ال/, '');
    if (noAl && noAl !== p) {
@@ -16325,7 +16342,7 @@ function showDesignSavePreview(url, name, silent, blob) {
    'ان': 'أداة توكيد أو مصدرية.',
    'هذا': 'اسم إشارة للقريب.',
    'هذه': 'اسم إشارة للقريب المؤنث.',
-   'كل': 'استغراق أفراد الجنس.',
+
    'بين': 'الوسط أو الفاصل.',
    'قبل': 'السابق زمنيًا أو مكانيًا.',
    'بعد': 'اللاحق زمنيًا أو مكانيًا.',
@@ -17629,6 +17646,47 @@ function showDesignSavePreview(url, name, silent, blob) {
       'ين': 'له حافتان قاطعتان',
       'ينتثر': 'يتساقط',
       'يهملك': 'يتخلى عنك',
+    
+      // كلمات صعبة من سفر راعوث (فانديك)
+      'أبيت': 'أقضي الليل',
+      'أفسد': 'أُضرّ',
+      'أمرّني': 'جعل حياتي مُرّة',
+      'ابتع': 'اشترِ',
+      'اتفق نصيبها': 'صادف أنها',
+      'ادهني': 'ضعي على نفسك دهنًا',
+      'ارتجّت': 'اهتزّت',
+      'ارتعد': 'ارتجف',
+      'افتقد': 'اهتمّ ورعى',
+      'اقتنيتها': 'اشتريتها وتملّكتها',
+      'الجارات': 'النساء الجارات',
+      'المبادلة': 'تبادل الأملاك',
+      'المطرف': 'رداء كبير يُلتحف به',
+      'انسلوا': 'أخرجوا برفق',
+      'بسالة': 'شجاعة',
+      'تبرحي': 'تغادري',
+      'تحتمي': 'تلتجئين',
+      'تنحبسن': 'تمتنعن عن الزواج',
+      'ذيل ثوبك': 'طرف الثوب، كناية عن الحماية بالزواج',
+      'شخت': 'كبرتُ في السن',
+      'طيّبت': 'أراحت وطمأنت',
+      'عزّيتني': 'واسيتني',
+      'فاضلة': 'حسنة الخلق',
+      'فلان': 'فلان من الناس',
+      'كدّرني': 'أحزنني',
+      'لا تلحّي': 'لا تُصرّي',
+      'لازمي': 'التسقي بهن',
+      'لصقت': 'التسقت وتمسّكت',
+      'لقمة': 'ما يُوضع في الفم من طعام',
+      'ليتغرب': 'ليقيم كغريب',
+      'مربّية': 'من ترعاه وتربّيه',
+      'مرجع للنفس': 'من يُعيد إليك الحياة والنشاط',
+      'مشدّدة': 'مُصرّة',
+      'معيل': 'من ينفق عليك',
+      'مواليد': 'نسل وأنساب',
+      'يجازي': 'يكافئ',
+      'يذري': 'يفصل الحبّ عن التبن بإلقائه في الريح',
+      'يعدمك': 'يحرمك',
+      'ينقرض': 'ينتهي',
     };
 
 
@@ -17783,170 +17841,174 @@ function showDesignSavePreview(url, name, silent, blob) {
    }).filter(function (x) { return x.t.length > 0; });
    var vcount = verses.length;
    var joined = verses.map(function (x) { return x.t; }).join(' ');
-   var n = (typeof stripTashkeel === 'function' ? stripTashkeel(joined) : joined);
-   n = String(n).replace(/[^\u0600-\u06FF\s\dA-Za-z]/g, ' ').replace(/\s+/g, ' ').trim();
-   var ref = book + ' ' + ch;
+   var plain = (typeof stripTashkeel === 'function' ? stripTashkeel(joined) : joined);
+   plain = String(plain).replace(/[^\u0600-\u06FF\s\d]/g, ' ').replace(/\s+/g, ' ').trim();
 
-   function has(re) { return re.test(n); }
    function clip(s, max) {
     s = String(s || '').replace(/\s+/g, ' ').trim();
     if (s.length > max) s = s.slice(0, max - 1) + '…';
     return s;
    }
-   function rangeText(a, b) {
+   function rangeJoin(a, b) {
     return verses.slice(a, b).map(function (x) { return x.t; }).join(' ');
    }
+   function hasIn(text, re) { return re.test(text); }
 
-   // —— استخراج من النص ——
-   var stop = {'الذي':1,'التي':1,'الذين':1,'هذا':1,'هذه':1,'ذلك':1,'تلك':1,'على':1,'إلى':1,'في':1,'من':1,'عن':1,'مع':1,'ثم':1,'قد':1,'كان':1,'كانت':1,'يكون':1,'قال':1,'قالت':1,'وقال':1,'فقال':1,'فقالت':1,'الرب':1,'الله':1,'إله':1,'الإله':1,'ليس':1,'بين':1,'كل':1,'كما':1,'أيضا':1,'أيضاً':1,'لأن':1,'لكي':1,'حتى':1,'عند':1,'بعد':1,'قبل':1,'هم':1,'هي':1,'هو':1,'أنا':1,'نحن':1,'ولا':1,'فلا':1,'ولم':1,'إن':1,'إذا':1,'أو':1,'بل':1,'لكن':1,'إلا':1};
-   var freq = {};
-   n.split(/\s+/).forEach(function (w) {
-    if (w.length < 3 || stop[w] || /^\d+$/.test(w)) return;
-    freq[w] = (freq[w] || 0) + 1;
-   });
-   var topWords = Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; }).slice(0, 10);
-
-   var nameList = ['إبراهيم','إسحق','يعقوب','يوسف','موسى','هرون','يشوع','كالب','داود','سليمان','صموئيل','شاول','إيليا','أليشع','إشعياء','إرميا','حزقيال','دانيال','نوح','آدم','حواء','سارة','رفقة','راحيل','مريم','بطرس','بولس','يوحنا','أندراوس','فيلبس','توما','متى','مرقس','لوقا','تيموثاوس','برنابا','زكريا','إليصابات','لعازر','مرثا','بيلاطس','هيرودس','فرعون','جدعون','شمشون','دبورة','راعوث','نعمي','نحميا','عزرا','أستير','مردخاي','بلعام','راحاب'];
-   var placeList = ['مصر','سيناء','كنيان','كanaan','أريحا','أورشليم','بيت لحم','الناصرة','الجليل','السامرة','يهوذا','بابل','نينوى','دمشق','أنطاكية','البرية','الهيكل','الخيمة','الأردن','البحر الأحمر','جلجال','شكيم','حبرون','بيت إيل'];
-   var people = nameList.filter(function (x) { return n.indexOf(x) !== -1; }).slice(0, 8);
-   var places = placeList.filter(function (x) { return n.indexOf(x) !== -1; }).slice(0, 6);
-
-   // —— تقسيم موضوعي تقريبي حسب انتقال المعنى ——
-   // نستخدم فواصل طبيعية: "وقال الرب" / "ثم" / تغير الشخصيات، مع حد أدنى لطول الوحدة
-   var boundaries = [0];
-   for (var i = 1; i < vcount - 1; i++) {
+   // تقسيم موضوعي: فواصل عند انتقال الخطاب/الحدث
+   var cuts = [0];
+   for (var i = 1; i < vcount; i++) {
     var t = verses[i].t;
-    var prev = verses[i - 1].t;
-    var isBreak = false;
-    if (/^(وقال الرب|فقال الرب|ثم قال|وحدث|وفي تلك|وفي الغد|ولما|بعد ذلك)/.test(t)) isBreak = true;
-    if (/^(سمعوا|فسمع|فذهب|فأتى|فصعد|فنزل)/.test(t) && i - boundaries[boundaries.length - 1] >= 3) isBreak = true;
-    if (t.length < 40 && /:/.test(t) && i - boundaries[boundaries.length - 1] >= 4) isBreak = true;
-    if (isBreak && i - boundaries[boundaries.length - 1] >= 2) boundaries.push(i);
+    var br = false;
+    if (/^(وقال الرب|فقال الرب|ثم قال الرب|وأنت يا|وأنت ابن|هكذا قال|لذلك هكذا|حي أنا)/.test(t)) br = true;
+    if (/^(وحدث|ولما|بعد ذلك|وفي اليوم|وفي السنة)/.test(t)) br = true;
+    if (br && i - cuts[cuts.length - 1] >= 2) cuts.push(i);
    }
-   boundaries.push(vcount);
-   // دمج الوحدات الصغيرة جدًا وافتراض 3–6 وحدات
+   cuts.push(vcount);
    var units = [];
-   for (var u = 0; u < boundaries.length - 1; u++) {
-    var a = boundaries[u], b = boundaries[u + 1];
-    if (b - a < 2 && units.length) {
-     units[units.length - 1].b = b;
-    } else {
-     units.push({ a: a, b: b });
-    }
+   for (var u = 0; u < cuts.length - 1; u++) {
+    var a = cuts[u], b = cuts[u + 1];
+    if (b - a < 2 && units.length) units[units.length - 1].b = b;
+    else units.push({ a: a, b: b });
    }
    while (units.length > 6) {
-    // ادمج أقصر وحدتين متجاورتين
-    var minI = 0, minL = 1e9;
+    var mi = 0, ml = 1e9;
     for (var k = 0; k < units.length - 1; k++) {
-     var L = (units[k].b - units[k].a) + (units[k + 1].b - units[k + 1].a);
-     if (L < minL) { minL = L; minI = k; }
+      var L = units[k + 1].b - units[k].a;
+      if (L < ml) { ml = L; mi = k; }
     }
-    units[minI].b = units[minI + 1].b;
-    units.splice(minI + 1, 1);
+    units[mi].b = units[mi + 1].b;
+    units.splice(mi + 1, 1);
    }
-   if (units.length < 2 && vcount >= 6) {
-    var third = Math.floor(vcount / 3);
-    units = [{ a: 0, b: third }, { a: third, b: third * 2 }, { a: third * 2, b: vcount }];
-   }
-
-   function unitTitle(text, idx) {
-    var s = clip(text, 90);
-    if (/ذبيح|محرقة|قربان/.test(text)) return 'الذبيحة والتقدمة';
-    if (/عهد|ميثاق/.test(text)) return 'العهد والوعد';
-    if (/صلى|سجد|بارك/.test(text)) return 'الصلاة والتسبيح';
-    if (/حارب|حرب|ضرب|قاتل/.test(text)) return 'الصراع والنصرة';
-    if (/وصي|ناموس|شريعة|أمر/.test(text)) return 'الوصايا والتعليم';
-    if (/مثل|ملكوت/.test(text)) return 'التعليم والأمثال';
-    if (/شفى|أبرأ|أعمي|أبرص/.test(text)) return 'الشفاء وعمل القوة';
-    if (/تاب|توبة|ندم/.test(text)) return 'التوبة والرجوع';
-    if (/رؤيا|حلم|ملاك|ظهر/.test(text)) return 'الظهور والرؤيا';
-    if (/بني|بنى|هيكل|مذبح|سور/.test(text)) return 'البناء والعمل';
-    if (/دينون|غضب|هلاك|سبي/.test(text)) return 'التحذير والدينونة';
-    if (/برك|بارك/.test(text)) return 'البركة';
-    // عنوان من أول جملة
-    var first = s.split(/[.۔؟!]/)[0] || s;
-    first = clip(first, 42);
-    if (first.length < 8) return 'وحدة ' + (idx + 1);
-    return first;
+   if (units.length < 2 && vcount >= 8) {
+    var q = Math.floor(vcount / 4);
+    units = [
+      { a: 0, b: q }, { a: q, b: q * 2 },
+      { a: q * 2, b: q * 3 }, { a: q * 3, b: vcount }
+    ];
    }
 
-   // فكرة رئيسية
-   var mainIdeaParts = [];
-   if (people.length) mainIdeaParts.push('شخصيات: ' + people.slice(0, 3).join(' و'));
-   if (places.length) mainIdeaParts.push('في ' + places.slice(0, 2).join(' و'));
-   var eventHint = [];
-   if (has(/خلق|برأ/)) eventHint.push('عمل الخلق');
-   if (has(/عهد|ميثاق/)) eventHint.push('العهد');
-   if (has(/ذبيح|فدى|محرقة/)) eventHint.push('الذبيحة والفداء');
-   if (has(/حرب|حارب|نصر/)) eventHint.push('الصراع والنصرة');
-   if (has(/وصي|ناموس|تعليم|مثل/)) eventHint.push('التعليم والوصية');
-   if (has(/توب|غفر/)) eventHint.push('التوبة والغفران');
-   if (has(/ملكوت/)) eventHint.push('ملكوت الله');
-   if (has(/قام|قيام|صليب/)) eventHint.push('الصليب والقيامة');
-   if (!eventHint.length && topWords.length) eventHint.push(topWords.slice(0, 3).join('، '));
-   var mainIdea = 'موضوع هذا الإصحاح يدور حول ' + (eventHint.slice(0, 3).join(' و') || 'ما ورد في النص') +
-    (people.length ? '، ويظهر فيه ' + people.slice(0, 3).join(' و') : '') +
-    (places.length ? '، في إطار ' + places.slice(0, 2).join(' و') : '') + '.';
+   function makeTitle(text, idx) {
+    if (hasIn(text, /احلق|شعر|لحية|ميزان|ثلث/)) return 'الرمز العملي وتقسيمه';
+    if (hasIn(text, /ذبيح|محرقة|قربان|مذبح/)) return 'الذبيحة والتقدمة';
+    if (hasIn(text, /ويل|دينون|غضب|خراب|عقوب/)) return 'الإعلان عن الدينونة';
+    if (hasIn(text, /توب|ارجع|ندم/)) return 'الدعوة إلى التوبة';
+    if (hasIn(text, /عهد|ميثاق|وعد/)) return 'العهد والوعد';
+    if (hasIn(text, /مثل|ملكوت السموات|يشبه/)) return 'التعليم والأمثال';
+    if (hasIn(text, /شفى|أبرأ|أعمى|أبرص|مريض/)) return 'أعمال الشفاء';
+    if (hasIn(text, /صلى|سجد|بارك/)) return 'الصلاة والتسبيح';
+    if (hasIn(text, /حارب|حرب|سيف|قتل|ضرب/)) return 'الحرب والسيف';
+    if (hasIn(text, /رؤيا|حلم|ملاك|مركبة/)) return 'الرؤيا والظهور';
+    if (hasIn(text, /وصي|ناموس|احفظ|لا تزن|لا تسرق/)) return 'الوصايا والتعليم';
+    var first = clip((text.split(/[.。؟!؛]/)[0] || text), 40);
+    return first.length >= 6 ? first : ('المشهد ' + (idx + 1));
+   }
 
-   // شرح كل وحدة
+   // نقاط شرح خاصة بمحتوى الوحدة (مش جملة عامة)
+   function explainUnit(text, from, to) {
+    var pts = [];
+    // جملة محورية من النص
+    var sentences = text.split(/(?<=[.。؟!])\s+/).filter(function (s) { return s.trim().length > 15; });
+    if (!sentences.length) sentences = [text];
+    // ماذا يحدث
+    pts.push(clip(sentences[0], 150));
+    if (sentences.length > 1) pts.push(clip(sentences[1], 140));
+
+    // تفسير رموز إن وُجدت — بأسلوب مثال حزقيال
+    if (hasIn(text, /ثلث/) && hasIn(text, /نار|سيف|ريح/)) {
+      if (hasIn(text, /نار|حرق/)) pts.push('الجزء الذي يُحرق بالنار يشير إلى هلاك داخل المدينة بالمجاعة أو الوباء (بحسب سياق الإصحاح).');
+      if (hasIn(text, /سيف/)) pts.push('الجزء المضروب بالسيف يشير إلى القتلى في الحرب.');
+      if (hasIn(text, /ريح|ذري/)) pts.push('الجزء المذري في الريح يشير إلى التشتت بين الأمم.');
+    }
+    if (hasIn(text, /شعر|لحية|احلق/)) {
+      pts.push('حلق الشعر واللحية هنا فعل رمزي يأمر به الرب ليُرى معنى الدينونة عيانًا، لا عادة شخصية.');
+    }
+    if (hasIn(text, /ميزان|وزن/)) {
+      pts.push('استخدام الميزان يؤكد أن الحكم مقدَّر بعدل، لا اعتباطًا.');
+    }
+    if (hasIn(text, /أورشليم/) && hasIn(text, /أمم|وثن|أرجاس|نجس/)) {
+      pts.push('المدينة التي كان ينبغي أن تكون نورًا صارت أسوأ من الأمم؛ لذلك الدينونة علنية.');
+    }
+    if (hasIn(text, /أباء|أبناء|يأكل/) && hasIn(text, /مجاع|حصر|ضيق/)) {
+      pts.push('وصف المجاعة هنا يبيّن شدة الحصار وبشاعة نتائج الابتعاد عن الله.');
+    }
+    if (hasIn(text, /ذبيح|دم|محرقة/) && hasIn(text, /غفر|خطي|كفار/)) {
+      pts.push('الذبيحة في النص وسيلة غفران في عهدها؛ والمعنى يكتمل في المسيح دون إلغاء السياق الأصلي.');
+    }
+    if (hasIn(text, /عهد|ميثاق/)) {
+      pts.push('العهد يُظهر أمانة الله؛ نقضه من جهة الشعب يجلب تأديبًا عادلًا.');
+    }
+    if (hasIn(text, /مثل|يشبه الملكوت/)) {
+      pts.push('المَثَل يوصل حقيقة روحية بصورة مألوفة؛ العبرة في المعنى المقصود لا في جمود التفاصيل.');
+    }
+    if (hasIn(text, /لا تخف|تشجع/)) {
+      pts.push('الأمر «لا تخف» يقترن عادة بتكليف؛ السند هو حضور الرب لا قوة الإنسان.');
+    }
+    if (hasIn(text, /توب|ارجع|ندم/)) {
+      pts.push('التوبة في النص رجوع عملي عن الشر، لا مجرد شعور.');
+    }
+    // سبب/نتيجة
+    if (hasIn(text, /لأن|من أجل|بسبب/) && hasIn(text, /خطي|شر|عصى|نجس/)) {
+      pts.push('النص يربط بين الخطية والنتيجة؛ الدينونة ليست بلا علة.');
+    }
+    // إزالة تكرار وتقصير
+    var seen = {};
+    pts = pts.filter(function (p) {
+      var k = p.slice(0, 36);
+      if (seen[k]) return false;
+      seen[k] = 1;
+      return p && p.length > 8;
+    }).slice(0, 5);
+    if (!pts.length) pts.push(clip(text, 160));
+    return pts;
+   }
+
+   // مقدمة من مضمون الإصحاح لا قالب فارغ
+   var introBits = [];
+   if (hasIn(plain, /أورشليم/)) introBits.push('أورشليم');
+   if (hasIn(plain, /إسرائيل|يهوذا/)) introBits.push('شعب الله');
+   if (hasIn(plain, /خراب|دينون|عقوب|غضب/)) introBits.push('الدينونة');
+   if (hasIn(plain, /توب/)) introBits.push('التوبة');
+   if (hasIn(plain, /خلاص|نجا|فدى/)) introBits.push('الخلاص');
+   if (hasIn(plain, /هيكل/)) introBits.push('الهيكل');
+   if (hasIn(plain, /ملكوت/)) introBits.push('الملكوت');
+   var intro = 'الإصحاح يعالج ';
+   if (introBits.length) intro += introBits.slice(0, 3).join(' و');
+   else intro += 'موضوعًا محددًا يظهر من تسلسل آياته';
+   intro += '، ويبيّن المقصود من خلال الأحداث والرموز الواردة في النص نفسه.';
+   // جملة أدق إن وُجدت كلمات خراب/خطية
+   if (hasIn(plain, /خراب|دمار/) && hasIn(plain, /خطي|شر|أرجاس/)) {
+    intro = 'هذا الإصحاح يعلن خرابًا قادمًا بسبب الخطايا والابتعاد عن وصايا الله، ويوضّح صورة العقوبة ومعناها من خلال ما ورد في الآيات.';
+   }
+
    var ordinals = ['أولًا', 'ثانيًا', 'ثالثًا', 'رابعًا', 'خامسًا', 'سادسًا'];
    var out = [];
    out.push('شرح سفر ' + book + ' – الإصحاح ' + ch);
-   out.push('');
-   out.push(mainIdea);
-   if (vcount) out.push('عدد الآيات: ' + vcount + '.');
+   out.push(intro);
    out.push('');
 
    units.forEach(function (u, idx) {
-    var text = rangeText(u.a, u.b);
+    var text = rangeJoin(u.a, u.b);
     var from = u.a + 1, to = u.b;
-    var title = unitTitle(text, idx);
-    out.push(ordinals[idx] || ('وحدة ' + (idx + 1)) + ': ' + title + ' (ع ' + from + (to > from ? '–' + to : '') + ')');
-    // نقاط الشرح من مضمون الوحدة
-    var pts = [];
-    pts.push(clip(text, 160));
-    // نقاط إضافية حسب المحتوى
-    if (/قال الرب|يقول الرب/.test(text)) pts.push('يظهر هنا كلام الرب المباشر؛ المقصود طاعة الصوت الإلهي لا مجرد سماعه.');
-    if (/ذبيح|محرقة|قربان|دم/.test(text)) pts.push('الذبيحة في السياق الكتابي تربط الغفران بعمل الله، وتكتمل في المسيح الذبيحة الحقيقية.');
-    if (/عهد|ميثاق|وعد/.test(text)) pts.push('العهد يكشف أمانة الله؛ الاستجابة المطلوبة إيمان وطاعة.');
-    if (/لا |لا ت/.test(text) && /وصي|أمر|احفظ/.test(text)) pts.push('الأوامر هنا لحفظ الحياة مع الله والناس، لا لثقل خارجي فارغ.');
-    if (/مثل|يشبه/.test(text)) pts.push('المَثَل يوضح حقيقة روحية بصورة مألوفة؛ المطلوب المعنى لا جمود الصورة.');
-    if (/تاب|توبة|ندم|ارجع/.test(text)) pts.push('التوبة رجوع عملي إلى الله، لا شعور عابر.');
-    if (/حارب|ضرب|نصر|هزَم/.test(text)) pts.push('النص يبيّن أن النصرة مرتبطة بفعل الله لا بمجرد قوة بشرية.');
-    if (/صلى|سجد|باركوا/.test(text)) pts.push('الصلاة والتسبيح استجابة القلب لعمل الله في الأحداث.');
-    if (/خف|لا تخف|تشجع/.test(text)) pts.push('التشجيع الإلهي يرافق التكليف؛ الحضور الإلهي سند للطاعة.');
-    // رمزية بحذر
-    if (/حمل|خروف/.test(text) && /ذبح|فصح|دم/.test(text)) pts.push('الحمل المذبوح في السياق الكتابي يُفهم حرفيًا أولًا، ويُقرأ رمزيًا في ضوء فصح المسيح دون إلغاء المعنى الأصلي.');
-    if (/هيكل|خيمة/.test(text)) pts.push('الهيكل/الخيمة علامة سكنى الله وسط شعبه في سياقها التاريخي.');
-    // تقليل التكرار والطول
-    var seenP = {};
-    pts = pts.filter(function (p) {
-     var k = p.slice(0, 40);
-     if (seenP[k]) return false;
-     seenP[k] = 1;
-     return true;
-    }).slice(0, 4);
-    pts.forEach(function (p) { out.push('• ' + p); });
+    var title = makeTitle(text, idx);
+    out.push(ordinals[idx] + ': ' + title + ' (ع ' + from + (to > from ? '–' + to : '') + ')');
+    explainUnit(text, from, to).forEach(function (p) { out.push('• ' + p); });
     out.push('');
    });
 
-   // خلاصة روحية 3–5 نقاط من المضمون
    out.push('الخلاصة الروحية');
    var lessons = [];
-   if (has(/إيمان|آمن|وثق/)) lessons.push('الإيمان ثقة عاملة تظهر في الطاعة لا في الكلام وحده.');
-   if (has(/توب|غفر|خطي/)) lessons.push('التوبة باب مفتوح؛ الله يطلب حياة الخاطئ لا هلاكه.');
-   if (has(/محب|رحم|اغفر/)) lessons.push('رحمة الله مقياس لتعاملنا مع الآخرين بالمحبة والغفران.');
-   if (has(/وصي|احفظ|أطع/)) lessons.push('حفظ الوصية حماية للحياة مع الله، لا قيدًا بلا معنى.');
-   if (has(/لا تخف|تشجع|قوة/)) lessons.push('حضور الرب سند في الخوف والتجربة.');
-   if (has(/ذبيح|فدى|صليب|دم/)) lessons.push('الفداء عمل الله من أجلنا؛ نستجيب له بالتوبة والشكر.');
-   if (has(/صلّ|سجد|بارك/)) lessons.push('الصلاة والتسبيح جزء أصيل من حياة المؤمن اليومية.');
-   if (people.length) lessons.push('من سِيَر من ظهروا في الإصحاح نتعلم أن الله يعمل بأشخاص ضعفاء يطيعونه.');
+   if (hasIn(plain, /امتياز|أورشليم|قدس|مقدس/)) lessons.push('الامتيازات الروحية لا تُعفي من المسؤولية أمام الله.');
+   if (hasIn(plain, /وصي|عرف|علم/) && hasIn(plain, /خطي|عصى|رفض/)) lessons.push('معرفة الوصية دون العمل بها تزيد المسؤولية.');
+   if (hasIn(plain, /قدوس|عدل|دينون/)) lessons.push('الله قدوس وعادل، ولا يستهين بالخطية.');
+   if (hasIn(plain, /توب|ارجع/)) lessons.push('باب التوبة مفتوح؛ تأخير الرجوع يُعرّض للخسارة.');
+   if (hasIn(plain, /خراب|بعد/)) lessons.push('البعد عن الله يقود إلى خراب داخلي قبل أن يظهر خارجيًا.');
+   if (hasIn(plain, /إيمان|آمن/)) lessons.push('الإيمان الحقيقي يظهر في الطاعة والثبات.');
+   if (hasIn(plain, /رحم|غفر|محب/)) lessons.push('رحمة الله تدعونا أن نرحم ونغفر للآخرين.');
    if (!lessons.length) {
-    lessons.push('اقرأ الإصحاح كرسالة موجّهة إليك اليوم لا كخبر بعيد.');
-    lessons.push('الله أمين في كلامه؛ المطلوب استجابة القلب والعمل.');
+    lessons.push('اقرأ الإصحاح كرسالة عملية: ماذا يكشف عن الله؟ وماذا يطلب مني؟');
+    lessons.push('الاستجابة الصحيحة هي التوبة والطاعة لا مجرد المعرفة.');
    }
-   // تطبيق عملي
-   lessons.push('تطبيق: اختَر جملة واحدة من الإصحاح وصلِّ بها اليوم، واعمل بخطوة واحدة واضحة تنبع من معناه.');
+   lessons.push('تطبيق: اختر تحذيرًا أو وعدًا واحدًا من الإصحاح وحوّله إلى صلاة وعمل اليوم.');
    lessons.slice(0, 5).forEach(function (L) { out.push('• ' + L); });
 
    return out.join('\n');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="429" lang="ar" dir="rtl">
+<html data-app-ver="430" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9546,11 +9546,38 @@ function onPrepareImageSelected(idx, input) {
      var snap = window._verseMenuData || window._lastTafsir || {};
      var prefRef = snap.ref || '';
      var prefTxt = (snap.text || '').replace(/🔊/g, '').replace(/^\s*\d+\s*/, '').trim();
-     html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;">رفيقك في فهم كلمة الله، والتعمق في معاني الكتاب المقدس. اكتبي مرجع الآية ونصها.</p>';
-     html += '<input id="bcRef" type="text" value="' + esc(prefRef) + '" placeholder="مثال: يوحنا 3: 16" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;margin:8px 0;box-sizing:border-box;" />';
-     html += '<textarea id="bcText" rows="4" placeholder="نص الآية…" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;line-height:1.7;">' + esc(prefTxt) + '</textarea>';
-     html += '<button type="button" id="bcGo" class="save-btn" style="margin-top:10px;width:100%;padding:12px;">عرض التفسير</button>';
-     html += '<div id="bcOut" style="margin-top:14px;padding:12px;border-radius:14px;background:#fff;border:1px solid rgba(180,150,80,0.25);line-height:1.8;white-space:pre-wrap;display:none;"></div>';
+     var curBook = '';
+     var curCh = '';
+     try {
+      if (typeof bibleState !== 'undefined' && bibleState) {
+       curCh = String(bibleState.chapter + 1);
+       var books = (window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : [];
+       if (typeof bibleState.bookIndex === 'number' && books[bibleState.bookIndex]) {
+        curBook = books[bibleState.bookIndex].name || books[bibleState.bookIndex].abbrev || '';
+       }
+      }
+     } catch (eB) {}
+     html += '<p style="text-align:center;font-size:0.9em;color:#6a5a40;line-height:1.7;">رفيقك في فهم كلمة الله، والتعمق في معاني الكتاب المقدس.</p>';
+     html += '<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;">';
+     html += '<button type="button" id="bcModeVerse" class="bc-mode" data-mode="verse" style="flex:1;padding:10px;border-radius:14px;border:1px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;">آية واحدة</button>';
+     html += '<button type="button" id="bcModeChapter" class="bc-mode" data-mode="chapter" style="flex:1;padding:10px;border-radius:14px;border:1px solid var(--gold);background:#fff;color:#5a4a2a;font-weight:700;cursor:pointer;">الإصحاح كامل</button>';
+     html += '</div>';
+     html += '<div id="bcVerseBox">';
+     html += '<p style="font-size:0.85em;color:#8a7a60;margin:0 0 6px;">تفسير آية واحدة</p>';
+     html += '<input id="bcRef" type="text" value="' + esc(prefRef) + '" placeholder="مثال: يوحنا 3: 16" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;margin:6px 0;box-sizing:border-box;" />';
+     html += '<textarea id="bcText" rows="3" placeholder="نص الآية…" style="width:100%;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;line-height:1.7;">' + esc(prefTxt) + '</textarea>';
+     html += '<button type="button" id="bcGo" class="save-btn" style="margin-top:10px;width:100%;padding:12px;">عرض تفسير الآية</button>';
+     html += '</div>';
+     html += '<div id="bcChapterBox" style="display:none;">';
+     html += '<p style="font-size:0.85em;color:#8a7a60;margin:0 0 6px;">شرح أرثوذكسي مبسّط لـ<strong>الإصحاح كله</strong> (ليس آية واحدة فقط)</p>';
+     html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+     html += '<input id="bcBook" type="text" value="' + esc(curBook) + '" placeholder="اسم السفر (مثال: يوحنا)" style="flex:2;min-width:120px;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;" />';
+     html += '<input id="bcChapter" type="number" min="1" value="' + esc(curCh) + '" placeholder="رقم الإصحاح" style="flex:1;min-width:80px;padding:10px;border-radius:12px;border:1px solid #d4c4a0;box-sizing:border-box;" />';
+     html += '</div>';
+     html += '<button type="button" id="bcGoChapter" class="save-btn" style="margin-top:10px;width:100%;padding:12px;background:#5a7d4a;">توليد شرح الإصحاح</button>';
+     html += '<p style="font-size:0.8em;color:#9a8a70;margin:8px 0 0;line-height:1.5;">يُفضّل فتح الإصحاح أولًا من أيقونة الكتاب ليُحمَّل النص تلقائيًا.</p>';
+     html += '</div>';
+     html += '<div id="bcOut" style="margin-top:14px;padding:12px;border-radius:14px;background:#fff;border:1px solid rgba(180,150,80,0.25);line-height:1.85;white-space:pre-wrap;display:none;"></div>';
     }
 
     content.innerHTML = html;
@@ -9610,6 +9637,115 @@ function onPrepareImageSelected(idx, input) {
       else window.open(url, '_blank');
      });
     });
+
+
+    // تبديل وضع آية / إصحاح
+    function setBcMode(mode) {
+      var vBox = document.getElementById('bcVerseBox');
+      var cBox = document.getElementById('bcChapterBox');
+      var bV = document.getElementById('bcModeVerse');
+      var bC = document.getElementById('bcModeChapter');
+      if (!vBox || !cBox) return;
+      var isCh = mode === 'chapter';
+      vBox.style.display = isCh ? 'none' : 'block';
+      cBox.style.display = isCh ? 'block' : 'none';
+      if (bV) { bV.style.background = isCh ? '#fff' : 'var(--gold)'; bV.style.color = isCh ? '#5a4a2a' : '#fff'; }
+      if (bC) { bC.style.background = isCh ? 'var(--gold)' : '#fff'; bC.style.color = isCh ? '#fff' : '#5a4a2a'; }
+    }
+    var bV = document.getElementById('bcModeVerse');
+    var bC = document.getElementById('bcModeChapter');
+    if (bV) bV.addEventListener('click', function (e) { e.preventDefault(); setBcMode('verse'); });
+    if (bC) bC.addEventListener('click', function (e) { e.preventDefault(); setBcMode('chapter'); });
+
+    function resolveChapterVerses(bookName, chapter1based) {
+      var verses = [];
+      var name = String(bookName || '').trim();
+      var ch0 = (parseInt(chapter1based, 10) || 1) - 1;
+      try {
+        var books = (window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : [];
+        var book = null;
+        for (var i = 0; i < books.length; i++) {
+          var bn = String(books[i].name || books[i].abbrev || '');
+          if (bn === name || bn.indexOf(name) === 0 || name.indexOf(bn) === 0) { book = books[i]; break; }
+        }
+        if (!book && typeof bibleState !== 'undefined' && typeof bibleState.bookIndex === 'number') {
+          book = books[bibleState.bookIndex];
+        }
+        if (book && book.chapters && book.chapters[ch0]) {
+          verses = book.chapters[ch0].map(function (v) {
+            return String(v || '').replace(/^\s*\d+\s*[-–.]?\s*/, '').trim();
+          });
+        }
+      } catch (err) { console.log('resolveChapterVerses', err); }
+      return verses;
+    }
+
+    var goCh = document.getElementById('bcGoChapter');
+    if (goCh) {
+      goCh.addEventListener('click', function (e) {
+        e.preventDefault();
+        var book = ((document.getElementById('bcBook') || {}).value || '').trim();
+        var ch = ((document.getElementById('bcChapter') || {}).value || '').trim();
+        var out = document.getElementById('bcOut');
+        if (!book) { if (typeof showToast === 'function') showToast('اكتبي اسم السفر'); return; }
+        if (!ch) { if (typeof showToast === 'function') showToast('اكتبي رقم الإصحاح'); return; }
+        var verses = resolveChapterVerses(book, ch);
+        if (!verses.length) {
+          // try current open chapter
+          try {
+            if (typeof bibleState !== 'undefined') {
+              var books = (window.BIBLE_SVD && window.BIBLE_SVD.books) ? window.BIBLE_SVD.books : [];
+              var b = books[bibleState.bookIndex];
+              if (b && b.chapters && b.chapters[bibleState.chapter]) {
+                verses = b.chapters[bibleState.chapter].map(function (v) {
+                  return String(v || '').replace(/^\s*\d+\s*[-–.]?\s*/, '').trim();
+                });
+                if (!book) book = b.name || '';
+                if (!ch) ch = String(bibleState.chapter + 1);
+              }
+            }
+          } catch (e2) {}
+        }
+        if (!verses.length) {
+          if (typeof showToast === 'function') showToast('لم يُعثر على نص الإصحاح. افتحي الإصحاح من الكتاب أولًا');
+          return;
+        }
+        var body = (typeof generateOrthodoxChapterTafsir === 'function')
+          ? generateOrthodoxChapterTafsir(book, ch, verses)
+          : ('تفسير ' + book + ' ' + ch);
+        if (out) {
+          out.style.display = 'block';
+          out.textContent = body;
+          try { out.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (err) {}
+        }
+        // optional AI chapter request if worker available
+        try {
+          if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
+            out.textContent = body + '\n\n⏳ جارٍ إثراء الشرح إن توفّر الاتصال…';
+            var sample = verses.slice(0, 8).join(' ');
+            fetch(TAFSIR_WORKER_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ref: book + ' ' + ch,
+                verseText: sample,
+                mode: 'chapter',
+                chapter: true,
+                verseCount: verses.length,
+                sources: (typeof commentarySources === 'function' ? commentarySources(book + ' ' + ch, sample) : [])
+              })
+            }).then(function (r) { return r.json(); }).then(function (j) {
+              if (j && (j.tafsir || j.text || j.content)) {
+                out.textContent = (j.tafsir || j.text || j.content);
+              } else {
+                out.textContent = body;
+              }
+            }).catch(function () { out.textContent = body; });
+          }
+        } catch (eAi) { out.textContent = body; }
+      });
+    }
+
 
     var go = document.getElementById('bcGo');
     if (go) {
@@ -17616,6 +17752,139 @@ function showDesignSavePreview(url, name, silent, blob) {
    }
    out += 'ملاحظة: ده معنى لغوي بسيط للكلمات العربية. للتفسير الروحي استخدمي «مُفسّر | خلوة اليوم».';
    return out;
+  }
+
+
+  
+  function generateOrthodoxChapterTafsir(bookName, chapterNum, versesArr) {
+   var book = String(bookName || '').trim();
+   var ch = parseInt(chapterNum, 10) || 1;
+   var verses = Array.isArray(versesArr) ? versesArr : [];
+   var full = verses.map(function (v, i) {
+    var t = String(v || '').replace(/^\s*\d+\s*[-–.]?\s*/, '').replace(/\s+/g, ' ').trim();
+    return t;
+   }).filter(Boolean);
+   var joined = full.join(' ');
+   var n = (typeof stripTashkeel === 'function' ? stripTashkeel(joined) : joined);
+   n = String(n).replace(/[^\u0600-\u06FF\s\dA-Za-z]/g, ' ').replace(/\s+/g, ' ').trim();
+   var ref = book + ' ' + ch;
+   var vcount = full.length || 0;
+
+   var bookMeta = {
+    'تكوين': { name: 'سفر التكوين', ctx: 'تاريخ البدايات والوعد', testament: 'ot' },
+    'خروج': { name: 'سفر الخروج', ctx: 'التحرير والعهد', testament: 'ot' },
+    'لاويين': { name: 'سفر اللاويين', ctx: 'القداسة والعبادة', testament: 'ot' },
+    'عدد': { name: 'سفر العدد', ctx: 'المسيرة في البرية', testament: 'ot' },
+    'تثنية': { name: 'سفر التثنية', ctx: 'تجديد العهد', testament: 'ot' },
+    'يشوع': { name: 'سفر يشوع', ctx: 'دخول الموعد', testament: 'ot' },
+    'قضاة': { name: 'سفر القضاة', ctx: 'السقوط والخلاص', testament: 'ot' },
+    'راعوث': { name: 'سفر راعوث', ctx: 'الأمانة والرحمة', testament: 'ot' },
+    'مزمور': { name: 'المزامير', ctx: 'صلاة الكنيسة', testament: 'ot' },
+    'مزامير': { name: 'المزامير', ctx: 'صلاة الكنيسة', testament: 'ot' },
+    'أمثال': { name: 'سفر الأمثال', ctx: 'حكمة الحياة', testament: 'ot' },
+    'إشعياء': { name: 'سفر إشعياء', ctx: 'النبوة والمسيّا', testament: 'ot' },
+    'إشعيا': { name: 'سفر إشعياء', ctx: 'النبوة والمسيّا', testament: 'ot' },
+    'إرميا': { name: 'سفر إرميا', ctx: 'الدعوة والتوبة', testament: 'ot' },
+    'حزقيال': { name: 'سفر حزقيال', ctx: 'مجد الله والتجديد', testament: 'ot' },
+    'دانيال': { name: 'سفر دانيال', ctx: 'الأمانة في السبي', testament: 'ot' },
+    'متى': { name: 'إنجيل متى', ctx: 'الملكوت والمسيّا الملك', testament: 'nt' },
+    'مرقس': { name: 'إنجيل مرقس', ctx: 'ابن الله الخادم', testament: 'nt' },
+    'لوقا': { name: 'إنجيل لوقا', ctx: 'المخلّص الرحيم', testament: 'nt' },
+    'يوحنا': { name: 'إنجيل يوحنا', ctx: 'كلمة الله المتجسّد', testament: 'nt' },
+    'أعمال': { name: 'سفر الأعمال', ctx: 'حياة الكنيسة الأولى', testament: 'nt' },
+    'رومية': { name: 'رسالة رومية', ctx: 'الخلاص بالإيمان', testament: 'nt' },
+    'كورنثوس': { name: 'رسالتا كورنثوس', ctx: 'حياة الكنيسة والتقديس', testament: 'nt' },
+    'غلاطية': { name: 'رسالة غلاطية', ctx: 'الحرية في المسيح', testament: 'nt' },
+    'أفسس': { name: 'رسالة أفسس', ctx: 'وحدانية الجسد', testament: 'nt' },
+    'فيلبي': { name: 'رسالة فيلبي', ctx: 'الفرح في المسيح', testament: 'nt' },
+    'كولوسي': { name: 'رسالة كولوسي', ctx: 'سمو المسيح', testament: 'nt' },
+    'تيموثاوس': { name: 'رسالتا تيموثاوس', ctx: 'رعاية الكنيسة', testament: 'nt' },
+    'عبرانيين': { name: 'رسالة العبرانيين', ctx: 'الكهنوت الأعظم', testament: 'nt' },
+    'يعقوب': { name: 'رسالة يعقوب', ctx: 'الإيمان العامل', testament: 'nt' },
+    'بطرس': { name: 'رسالتا بطرس', ctx: 'الرجاء وسط الألم', testament: 'nt' },
+    'رؤيا': { name: 'سفر الرؤيا', ctx: 'رجاء الكنيسة النهائي', testament: 'nt' }
+   };
+   var meta = null;
+   for (var k in bookMeta) {
+    if (book.indexOf(k) !== -1) { meta = bookMeta[k]; break; }
+   }
+   if (!meta) meta = { name: book || 'الكتاب المقدس', ctx: 'كلمة الله لبنيان المؤمنين', testament: 'ot' };
+
+   function has(re) { return re.test(n); }
+   var themes = [];
+   if (has(/خلق|صنع|بارك/)) themes.push('عمل الله الخالق والمدبّر');
+   if (has(/خطي|سقو|عصى|تمرّد|ذنب/)) themes.push('الضعف البشري والحاجة إلى التوبة');
+   if (has(/عهد|وعد|ميثاق/)) themes.push('أمانة الله في عهده');
+   if (has(/فدى|خلّص|نجّى|تحرير|أخرج/)) themes.push('الله المخلّص والمحرّر');
+   if (has(/قدّاس|مقدّس|طاهر|نجس|ذبيح|كاهن/)) themes.push('القداسة والعبادة');
+   if (has(/محب|رحم|حنو|غفر/)) themes.push('محبة الله ورحمته');
+   if (has(/إيمان|آمن|صدق/)) themes.push('الإيمان والثقة بالله');
+   if (has(/صلّ|صلوات|سجد|باركوا الرب/)) themes.push('الصلاة والتسبيح');
+   if (has(/ملكوت|ملك|مسيّا|مسيح/)) themes.push('الملكوت والمسيح');
+   if (has(/قيام|موت|صليب|تألم/)) themes.push('الصليب والقيامة');
+   if (has(/كنيسة|جسد|روح/)) themes.push('حياة الكنيسة وعمل الروح');
+   if (has(/وصي|ناموس|شريعة|احفظ/)) themes.push('حفظ الوصية والطاعة');
+   if (has(/دينون|دينونة|غضب|عدل/)) themes.push('عدل الله والدينونة');
+   if (has(/رجاء|عزّ|سلام|فرح/)) themes.push('الرجاء والسلام في الله');
+   if (!themes.length) themes.push('تجلّي عمل الله في حياة شعبه');
+
+   // قسم الإصحاح إلى أجزاء تقريبية
+   var thirds = Math.max(1, Math.floor(vcount / 3));
+   var part1 = full.slice(0, thirds).join(' ');
+   var part2 = full.slice(thirds, thirds * 2).join(' ');
+   var part3 = full.slice(thirds * 2).join(' ');
+   function shortPart(s) {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    if (s.length > 220) s = s.slice(0, 218) + '…';
+    return s;
+   }
+
+   var lines = [];
+   lines.push('📖 تفسير أرثوذكسي مبسّط — ' + ref);
+   lines.push('');
+   lines.push('■ الإطار');
+   lines.push(meta.name + ' · الإصحاح ' + ch + (vcount ? (' · ' + vcount + ' آية') : '') + '.');
+   lines.push(meta.ctx + '.');
+   lines.push('');
+   lines.push('■ موضوع الإصحاح');
+   lines.push('يدور هذا الإصحاح حول: ' + themes.slice(0, 3).join('، ') + '.');
+   lines.push('لا نقرأ الآيات منفصلة عن سياقها، بل كوحدة واحدة تُظهر قصد الله وتعليم الكنيسة.');
+   lines.push('');
+
+   if (part1) {
+    lines.push('■ مسار الإصحاح');
+    lines.push('• البداية: ' + shortPart(part1));
+    if (part2) lines.push('• الوسط: ' + shortPart(part2));
+    if (part3 && vcount > 4) lines.push('• الختام: ' + shortPart(part3));
+    lines.push('');
+   }
+
+   lines.push('■ المعنى الروحي');
+   if (meta.testament === 'nt') {
+    lines.push('في نور العهد الجديد نرى هنا عمل المسيح في كنيسته: يدعو، يعلّم، يشفي، ويؤسس حياة جديدة بالروح. النص لا يقف عند حدثٍ قديم، بل يخاطب المؤمن اليوم.');
+   } else {
+    lines.push('يقرأ الآباء العهد القديم في ضوء المسيح: فالوعود والرموز والخلاصات تكتمل فيه. هذا الإصحاح يدعونا أن نرى أمانة الله وصبره، وضعف الإنسان وحاجته إلى النعمة.');
+   }
+   if (has(/ذبيح|حمل|دم|فدى/)) {
+    lines.push('الذبيحة والفداء يشيران إلى ذبيحة المسيح الكاملة التي بها غُفرت الخطايا مرة واحدة.');
+   }
+   if (has(/هيكل|خيمة|مذبح/)) {
+    lines.push('الهيكل والعبادة يرمزان إلى حضور الله وسط شعبه، وقد صارت الكنيسة جسد المسيح هيكلًا حيًا للروح القدس.');
+   }
+   if (has(/توب|ارجع|ندم/)) {
+    lines.push('الدعوة إلى التوبة باب رجاء: الله لا يشاء موت الخاطئ بل أن يرجع ويحيا.');
+   }
+   lines.push('');
+
+   lines.push('■ تطبيق عملي');
+   lines.push('1) اقرأِي الإصحاح كاملًا بهدوء مرة واحدة على الأقل قبل التأمل في آية واحدة.');
+   lines.push('2) اسألي: ماذا يكشف عن الله؟ وعن الإنسان؟ وماذا يطلب مني اليوم؟');
+   lines.push('3) اختاري جملة واحدة للصلاة بها خلال اليوم، واحفظيها في القلب.');
+   lines.push('');
+   lines.push('■ خاتمة');
+   lines.push('ليُنر الرب عيون قلوبنا لنَفْهَم كلمته، ونسلك بها في محبة واتضاع، بصلوات القديسين. آمين.');
+
+   return lines.join('\n');
   }
 
 

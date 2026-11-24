@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="430" lang="ar" dir="rtl">
+<html data-app-ver="431" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -17760,9 +17760,8 @@ function showDesignSavePreview(url, name, silent, blob) {
    var book = String(bookName || '').trim();
    var ch = parseInt(chapterNum, 10) || 1;
    var verses = Array.isArray(versesArr) ? versesArr : [];
-   var full = verses.map(function (v, i) {
-    var t = String(v || '').replace(/^\s*\d+\s*[-–.]?\s*/, '').replace(/\s+/g, ' ').trim();
-    return t;
+   var full = verses.map(function (v) {
+    return String(v || '').replace(/^\s*\d+\s*[-–.]?\s*/, '').replace(/\s+/g, ' ').trim();
    }).filter(Boolean);
    var joined = full.join(' ');
    var n = (typeof stripTashkeel === 'function' ? stripTashkeel(joined) : joined);
@@ -17771,38 +17770,40 @@ function showDesignSavePreview(url, name, silent, blob) {
    var vcount = full.length || 0;
 
    var bookMeta = {
-    'تكوين': { name: 'سفر التكوين', ctx: 'تاريخ البدايات والوعد', testament: 'ot' },
-    'خروج': { name: 'سفر الخروج', ctx: 'التحرير والعهد', testament: 'ot' },
-    'لاويين': { name: 'سفر اللاويين', ctx: 'القداسة والعبادة', testament: 'ot' },
-    'عدد': { name: 'سفر العدد', ctx: 'المسيرة في البرية', testament: 'ot' },
-    'تثنية': { name: 'سفر التثنية', ctx: 'تجديد العهد', testament: 'ot' },
-    'يشوع': { name: 'سفر يشوع', ctx: 'دخول الموعد', testament: 'ot' },
-    'قضاة': { name: 'سفر القضاة', ctx: 'السقوط والخلاص', testament: 'ot' },
-    'راعوث': { name: 'سفر راعوث', ctx: 'الأمانة والرحمة', testament: 'ot' },
-    'مزمور': { name: 'المزامير', ctx: 'صلاة الكنيسة', testament: 'ot' },
-    'مزامير': { name: 'المزامير', ctx: 'صلاة الكنيسة', testament: 'ot' },
-    'أمثال': { name: 'سفر الأمثال', ctx: 'حكمة الحياة', testament: 'ot' },
-    'إشعياء': { name: 'سفر إشعياء', ctx: 'النبوة والمسيّا', testament: 'ot' },
-    'إشعيا': { name: 'سفر إشعياء', ctx: 'النبوة والمسيّا', testament: 'ot' },
-    'إرميا': { name: 'سفر إرميا', ctx: 'الدعوة والتوبة', testament: 'ot' },
-    'حزقيال': { name: 'سفر حزقيال', ctx: 'مجد الله والتجديد', testament: 'ot' },
-    'دانيال': { name: 'سفر دانيال', ctx: 'الأمانة في السبي', testament: 'ot' },
-    'متى': { name: 'إنجيل متى', ctx: 'الملكوت والمسيّا الملك', testament: 'nt' },
-    'مرقس': { name: 'إنجيل مرقس', ctx: 'ابن الله الخادم', testament: 'nt' },
-    'لوقا': { name: 'إنجيل لوقا', ctx: 'المخلّص الرحيم', testament: 'nt' },
-    'يوحنا': { name: 'إنجيل يوحنا', ctx: 'كلمة الله المتجسّد', testament: 'nt' },
-    'أعمال': { name: 'سفر الأعمال', ctx: 'حياة الكنيسة الأولى', testament: 'nt' },
-    'رومية': { name: 'رسالة رومية', ctx: 'الخلاص بالإيمان', testament: 'nt' },
-    'كورنثوس': { name: 'رسالتا كورنثوس', ctx: 'حياة الكنيسة والتقديس', testament: 'nt' },
-    'غلاطية': { name: 'رسالة غلاطية', ctx: 'الحرية في المسيح', testament: 'nt' },
-    'أفسس': { name: 'رسالة أفسس', ctx: 'وحدانية الجسد', testament: 'nt' },
-    'فيلبي': { name: 'رسالة فيلبي', ctx: 'الفرح في المسيح', testament: 'nt' },
-    'كولوسي': { name: 'رسالة كولوسي', ctx: 'سمو المسيح', testament: 'nt' },
-    'تيموثاوس': { name: 'رسالتا تيموثاوس', ctx: 'رعاية الكنيسة', testament: 'nt' },
-    'عبرانيين': { name: 'رسالة العبرانيين', ctx: 'الكهنوت الأعظم', testament: 'nt' },
-    'يعقوب': { name: 'رسالة يعقوب', ctx: 'الإيمان العامل', testament: 'nt' },
-    'بطرس': { name: 'رسالتا بطرس', ctx: 'الرجاء وسط الألم', testament: 'nt' },
-    'رؤيا': { name: 'سفر الرؤيا', ctx: 'رجاء الكنيسة النهائي', testament: 'nt' }
+    'تكوين': { name: 'سفر التكوين', ctx: 'تاريخ البدايات والخلق والسقوط والوعد', testament: 'ot' },
+    'خروج': { name: 'سفر الخروج', ctx: 'التحرير من العبودية وإعطاء العهد', testament: 'ot' },
+    'لاويين': { name: 'سفر اللاويين', ctx: 'القداسة والذبائح والكهنوت', testament: 'ot' },
+    'عدد': { name: 'سفر العدد', ctx: 'مسيرة الشعب في البرية', testament: 'ot' },
+    'تثنية': { name: 'سفر التثنية', ctx: 'تجديد العهد قبل دخول الأرض', testament: 'ot' },
+    'يشوع': { name: 'سفر يشوع', ctx: 'دخول أرض الموعد وتقسيمها', testament: 'ot' },
+    'قضاة': { name: 'سفر القضاة', ctx: 'دورة السقوط والخلاص', testament: 'ot' },
+    'راعوث': { name: 'سفر راعوث', ctx: 'الأمانة والرحمة في نسب داود', testament: 'ot' },
+    'صموئيل': { name: 'سفرا صموئيل', ctx: 'من القضاة إلى الملك داود', testament: 'ot' },
+    'ملوك': { name: 'سفرا الملوك', ctx: 'تاريخ المملكة والانقسام والسبي', testament: 'ot' },
+    'مزمور': { name: 'المزامير', ctx: 'صلاة الكنيسة وتسبيحها', testament: 'ot' },
+    'مزامير': { name: 'المزامير', ctx: 'صلاة الكنيسة وتسبيحها', testament: 'ot' },
+    'أمثال': { name: 'سفر الأمثال', ctx: 'حكمة الحياة في مخافة الرب', testament: 'ot' },
+    'إشعياء': { name: 'سفر إشعياء', ctx: 'النبوة والرجاء المسيّاني', testament: 'ot' },
+    'إشعيا': { name: 'سفر إشعياء', ctx: 'النبوة والرجاء المسيّاني', testament: 'ot' },
+    'إرميا': { name: 'سفر إرميا', ctx: 'الدعوة إلى التوبة وسط الدينونة', testament: 'ot' },
+    'حزقيال': { name: 'سفر حزقيال', ctx: 'مجد الله وتجديد الشعب', testament: 'ot' },
+    'دانيال': { name: 'سفر دانيال', ctx: 'الأمانة في السبي وسيادة الله', testament: 'ot' },
+    'متى': { name: 'إنجيل متى', ctx: 'المسيّا الملك وبشارة الملكوت', testament: 'nt' },
+    'مرقس': { name: 'إنجيل مرقس', ctx: 'ابن الله الخادم المتألم', testament: 'nt' },
+    'لوقا': { name: 'إنجيل لوقا', ctx: 'المخلّص الرحيم لكل البشر', testament: 'nt' },
+    'يوحنا': { name: 'إنجيل يوحنا', ctx: 'كلمة الله المتجسّد والحياة الأبدية', testament: 'nt' },
+    'أعمال': { name: 'سفر أعمال الرسل', ctx: 'حياة الكنيسة الأولى وعمل الروح', testament: 'nt' },
+    'رومية': { name: 'رسالة رومية', ctx: 'الخلاص بالإيمان وحياة النعمة', testament: 'nt' },
+    'كورنثوس': { name: 'رسالتا كورنثوس', ctx: 'بناء الكنيسة والتقديس والمحبة', testament: 'nt' },
+    'غلاطية': { name: 'رسالة غلاطية', ctx: 'الحرية في المسيح لا بالناموس', testament: 'nt' },
+    'أفسس': { name: 'رسالة أفسس', ctx: 'وحدانية جسد المسيح', testament: 'nt' },
+    'فيلبي': { name: 'رسالة فيلبي', ctx: 'الفرح في الرب وسط الضيق', testament: 'nt' },
+    'كولوسي': { name: 'رسالة كولوسي', ctx: 'سموّ المسيح وكفاية عمله', testament: 'nt' },
+    'تيموثاوس': { name: 'رسالتا تيموثاوس', ctx: 'رعاية الكنيسة والتعليم الصحيح', testament: 'nt' },
+    'عبرانيين': { name: 'رسالة العبرانيين', ctx: 'كهنوت المسيح الأعظم', testament: 'nt' },
+    'يعقوب': { name: 'رسالة يعقوب', ctx: 'الإيمان العامل في الحياة', testament: 'nt' },
+    'بطرس': { name: 'رسالتا بطرس', ctx: 'الرجاء والصبر وسط الألم', testament: 'nt' },
+    'رؤيا': { name: 'سفر الرؤيا', ctx: 'رجاء الكنيسة وانتصار الحمل', testament: 'nt' }
    };
    var meta = null;
    for (var k in bookMeta) {
@@ -17811,84 +17812,113 @@ function showDesignSavePreview(url, name, silent, blob) {
    if (!meta) meta = { name: book || 'الكتاب المقدس', ctx: 'كلمة الله لبنيان المؤمنين', testament: 'ot' };
 
    function has(re) { return re.test(n); }
-   var themes = [];
-   if (has(/خلق|صنع|بارك/)) themes.push('عمل الله الخالق والمدبّر');
-   if (has(/خطي|سقو|عصى|تمرّد|ذنب/)) themes.push('الضعف البشري والحاجة إلى التوبة');
-   if (has(/عهد|وعد|ميثاق/)) themes.push('أمانة الله في عهده');
-   if (has(/فدى|خلّص|نجّى|تحرير|أخرج/)) themes.push('الله المخلّص والمحرّر');
-   if (has(/قدّاس|مقدّس|طاهر|نجس|ذبيح|كاهن/)) themes.push('القداسة والعبادة');
-   if (has(/محب|رحم|حنو|غفر/)) themes.push('محبة الله ورحمته');
-   if (has(/إيمان|آمن|صدق/)) themes.push('الإيمان والثقة بالله');
-   if (has(/صلّ|صلوات|سجد|باركوا الرب/)) themes.push('الصلاة والتسبيح');
-   if (has(/ملكوت|ملك|مسيّا|مسيح/)) themes.push('الملكوت والمسيح');
-   if (has(/قيام|موت|صليب|تألم/)) themes.push('الصليب والقيامة');
-   if (has(/كنيسة|جسد|روح/)) themes.push('حياة الكنيسة وعمل الروح');
-   if (has(/وصي|ناموس|شريعة|احفظ/)) themes.push('حفظ الوصية والطاعة');
-   if (has(/دينون|دينونة|غضب|عدل/)) themes.push('عدل الله والدينونة');
-   if (has(/رجاء|عزّ|سلام|فرح/)) themes.push('الرجاء والسلام في الله');
-   if (!themes.length) themes.push('تجلّي عمل الله في حياة شعبه');
 
-   // قسم الإصحاح إلى أجزاء تقريبية
-   var thirds = Math.max(1, Math.floor(vcount / 3));
-   var part1 = full.slice(0, thirds).join(' ');
-   var part2 = full.slice(thirds, thirds * 2).join(' ');
-   var part3 = full.slice(thirds * 2).join(' ');
-   function shortPart(s) {
+   // نقاط الموضوع الرئيسي
+   var themes = [];
+   if (has(/خلق|صنع|بارك|بدء/)) themes.push('الله الخالق والمدبّر لكل شيء');
+   if (has(/خطي|سقو|عصى|تمرّد|ذنب|شر/)) themes.push('ضعف الإنسان وحاجته إلى التوبة');
+   if (has(/عهد|وعد|ميثاق|أقسم/)) themes.push('أمانة الله في عهده ووعوده');
+   if (has(/فدى|خلّص|نجّى|تحرير|أخرج|فداء/)) themes.push('الله المخلّص الذي يفدي شعبه');
+   if (has(/قدّاس|مقدّس|طاهر|نجس|ذبيح|كاهن|هيكل|خيمة|مذبح/)) themes.push('القداسة والعبادة وحضور الله');
+   if (has(/محب|رحم|حنو|غفر|شفقة/)) themes.push('محبة الله ورحمته الغافرة');
+   if (has(/إيمان|آمن|صدق|وثق/)) themes.push('الإيمان والثقة الكاملة بالله');
+   if (has(/صلّ|صلاة|سجد|باركوا|سبّح|هلّل/)) themes.push('الصلاة والتسبيح');
+   if (has(/ملكوت|ملك|مسيّا|مسيح/)) themes.push('ملكوت الله والمسيح الملك');
+   if (has(/قيام|موت|صليب|تألم|قبر/)) themes.push('الصليب والقيامة');
+   if (has(/كنيسة|جسد|روح قدس|رسل/)) themes.push('حياة الكنيسة وعمل الروح القدس');
+   if (has(/وصي|ناموس|شريعة|احفظ|أطع/)) themes.push('حفظ الوصية والطاعة من القلب');
+   if (has(/دينون|غضب|عدل|قصاص/)) themes.push('عدل الله والدينونة');
+   if (has(/رجاء|عزّ|سلام|فرح|تعزية/)) themes.push('الرجاء والسلام والفرح في الرب');
+   if (has(/ empirically| empirically| empirically/)) themes.push('');
+   if (!themes.length) themes.push('عمل الله في حياة شعبه وتدبيره الخلاصي');
+   themes = themes.filter(Boolean).slice(0, 5);
+
+   // تقسيم تقريبي لمسار الإصحاح
+   var a = Math.max(1, Math.floor(vcount / 3));
+   var p1 = full.slice(0, a).join(' ');
+   var p2 = full.slice(a, a * 2).join(' ');
+   var p3 = full.slice(a * 2).join(' ');
+   function clip(s, max) {
     s = String(s || '').replace(/\s+/g, ' ').trim();
-    if (s.length > 220) s = s.slice(0, 218) + '…';
+    if (s.length > max) s = s.slice(0, max - 1) + '…';
     return s;
    }
 
-   var lines = [];
-   lines.push('📖 تفسير أرثوذكسي مبسّط — ' + ref);
-   lines.push('');
-   lines.push('■ الإطار');
-   lines.push(meta.name + ' · الإصحاح ' + ch + (vcount ? (' · ' + vcount + ' آية') : '') + '.');
-   lines.push(meta.ctx + '.');
-   lines.push('');
-   lines.push('■ موضوع الإصحاح');
-   lines.push('يدور هذا الإصحاح حول: ' + themes.slice(0, 3).join('، ') + '.');
-   lines.push('لا نقرأ الآيات منفصلة عن سياقها، بل كوحدة واحدة تُظهر قصد الله وتعليم الكنيسة.');
-   lines.push('');
+   var out = [];
+   out.push('📖 تفسير أرثوذكسي مبسّط');
+   out.push(ref + (vcount ? ('  ·  ' + vcount + ' آية') : ''));
+   out.push('');
 
-   if (part1) {
-    lines.push('■ مسار الإصحاح');
-    lines.push('• البداية: ' + shortPart(part1));
-    if (part2) lines.push('• الوسط: ' + shortPart(part2));
-    if (part3 && vcount > 4) lines.push('• الختام: ' + shortPart(part3));
-    lines.push('');
-   }
+   out.push('────────────────');
+   out.push('١) خلفية سريعة');
+   out.push('────────────────');
+   out.push('• السفر: ' + meta.name);
+   out.push('• الإصحاح: ' + ch);
+   out.push('• إطار السفر: ' + meta.ctx);
+   out.push('• ملاحظة: نقرأ الإصحاح كوحدة واحدة، لا كآيات منفصلة عن سياقها.');
+   out.push('');
 
-   lines.push('■ المعنى الروحي');
+   out.push('────────────────');
+   out.push('٢) موضوع الإصحاح في نقاط');
+   out.push('────────────────');
+   themes.forEach(function (t, i) {
+    out.push('• ' + t);
+   });
+   out.push('');
+
+   out.push('────────────────');
+   out.push('٣) مسار الأحداث / الأفكار');
+   out.push('────────────────');
+   if (p1) out.push('• في البداية: ' + clip(p1, 180));
+   if (p2) out.push('• في الوسط: ' + clip(p2, 180));
+   if (p3 && vcount > 4) out.push('• في الختام: ' + clip(p3, 180));
+   if (!p1) out.push('• افتحي نص الإصحاح من أيقونة الكتاب ليظهر المسار بوضوح.');
+   out.push('');
+
+   out.push('────────────────');
+   out.push('٤) المعنى الروحي (قراءة أرثوذكسية)');
+   out.push('────────────────');
    if (meta.testament === 'nt') {
-    lines.push('في نور العهد الجديد نرى هنا عمل المسيح في كنيسته: يدعو، يعلّم، يشفي، ويؤسس حياة جديدة بالروح. النص لا يقف عند حدثٍ قديم، بل يخاطب المؤمن اليوم.');
+    out.push('• النص يعلن عمل المسيح في كنيسته: تعليم، شفاء، خلاص، وحياة جديدة بالروح.');
+    out.push('• الكنيسة تقرأ الإنجيل كصوت حيّ يخاطب المؤمن اليوم لا كخبرٍ ماضٍ فقط.');
+    out.push('• كل نعمة هنا مصدرها الصليب والقيامة وحلول الروح القدس.');
    } else {
-    lines.push('يقرأ الآباء العهد القديم في ضوء المسيح: فالوعود والرموز والخلاصات تكتمل فيه. هذا الإصحاح يدعونا أن نرى أمانة الله وصبره، وضعف الإنسان وحاجته إلى النعمة.');
+    out.push('• الآباء يقرأون العهد القديم في ضوء المسيح: الرموز والوعود تكتمل فيه.');
+    out.push('• الإصحاح يكشف أمانة الله وصبره، وضعف الإنسان وحاجته إلى النعمة.');
+    out.push('• ما حدث لشعب الله قديمًا صار تعليمًا لكنيسة المسيح (راجع 1كو 10).');
    }
-   if (has(/ذبيح|حمل|دم|فدى/)) {
-    lines.push('الذبيحة والفداء يشيران إلى ذبيحة المسيح الكاملة التي بها غُفرت الخطايا مرة واحدة.');
+   if (has(/ذبيح|حمل|دم|فدى|محرقة/)) {
+    out.push('• الذبيحة والفداء يشيران إلى ذبيحة المسيح الكاملة عن خطايا العالم.');
    }
-   if (has(/هيكل|خيمة|مذبح/)) {
-    lines.push('الهيكل والعبادة يرمزان إلى حضور الله وسط شعبه، وقد صارت الكنيسة جسد المسيح هيكلًا حيًا للروح القدس.');
+   if (has(/هيكل|خيمة|مذبح|كاهن/)) {
+    out.push('• الهيكل والعبادة رمز لحضور الله؛ والكنيسة الآن هيكل الروح القدس.');
    }
-   if (has(/توب|ارجع|ندم/)) {
-    lines.push('الدعوة إلى التوبة باب رجاء: الله لا يشاء موت الخاطئ بل أن يرجع ويحيا.');
+   if (has(/توب|ارجع|ندم|غفر/)) {
+    out.push('• التوبة باب رجاء مفتوح: الله لا يشاء موت الخاطئ بل أن يرجع ويحيا.');
    }
-   lines.push('');
+   if (has(/إيمان|آمن|اتكال/)) {
+    out.push('• الإيمان ليس فكرة فقط، بل ثقة حيّة تظهر في الطاعة والصلاة والصبر.');
+   }
+   out.push('');
 
-   lines.push('■ تطبيق عملي');
-   lines.push('1) اقرأِي الإصحاح كاملًا بهدوء مرة واحدة على الأقل قبل التأمل في آية واحدة.');
-   lines.push('2) اسألي: ماذا يكشف عن الله؟ وعن الإنسان؟ وماذا يطلب مني اليوم؟');
-   lines.push('3) اختاري جملة واحدة للصلاة بها خلال اليوم، واحفظيها في القلب.');
-   lines.push('');
-   lines.push('■ خاتمة');
-   lines.push('ليُنر الرب عيون قلوبنا لنَفْهَم كلمته، ونسلك بها في محبة واتضاع، بصلوات القديسين. آمين.');
+   out.push('────────────────');
+   out.push('٥) ماذا يعني لي اليوم؟');
+   out.push('────────────────');
+   out.push('• أقرأ الإصحاح كاملًا مرة بهدوء قبل أن أركّز على آية واحدة.');
+   out.push('• أسأل نفسي: ماذا يكشف عن الله؟ وعن قلبي؟ وما الخطوة العملية اليوم؟');
+   out.push('• أختار جملة واحدة من الإصحاح للصلاة بها وحفظها خلال اليوم.');
+   out.push('• إن وُجدت خطية أو فتور: أعترف وأطلب قوة الروح للتوبة والعمل.');
+   out.push('');
 
-   return lines.join('\n');
+   out.push('────────────────');
+   out.push('٦) صلاة ختامية');
+   out.push('────────────────');
+   out.push('أيها الرب يسوع المسيح، أنر عيني قلبي لأفهم كلامك في هذا الإصحاح، وأحيَ به، وأسلك في محبتك باتضاع وتوبة. بصلوات والدة الإله وجميع القديسين. آمين.');
+
+   return out.join('\n');
   }
 
-
-  function generateOrthodoxTafsir(ref, text) {
+function generateOrthodoxTafsir(ref, text) {
    var t = String(text || '').replace(/\s+/g, ' ').trim();
    var r = String(ref || '').trim();
    t = t.replace(/^\s*\d+\s*[-–.]?\s*/, '');

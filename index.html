@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="436" lang="ar" dir="rtl">
+<html data-app-ver="437" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9730,6 +9730,41 @@ function onPrepareImageSelected(idx, input) {
           out.textContent = body;
           try { out.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (err) {}
         }
+        try {
+          window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body, book: book, chapter: ch };
+        } catch (eLT) {}
+        // زر PDF تحت النتيجة — عنوانه السفر والإصحاح فقط
+        try {
+          var oldPdf = document.getElementById('bcTafsirPdfBtn');
+          if (oldPdf) oldPdf.remove();
+          var pdfB = document.createElement('button');
+          pdfB.type = 'button';
+          pdfB.id = 'bcTafsirPdfBtn';
+          pdfB.className = 'save-btn';
+          pdfB.textContent = '📄 تحميل PDF';
+          pdfB.style.cssText = 'margin-top:10px;width:100%;padding:12px;background:#5a7d4a;';
+          pdfB.onclick = function () {
+            var ref = (book + ' ' + ch).trim();
+            var txt = body;
+            try {
+              if (window._lastTafsir && window._lastTafsir.content) {
+                ref = String(window._lastTafsir.ref || ref).trim();
+                txt = String(window._lastTafsir.content || txt);
+              }
+            } catch (e0) {}
+            txt = String(txt)
+              .replace(/رفيقك في فهم كلمة الله[^\n]*/g, '')
+              .replace(/تفسير آية واحدة/g, '')
+              .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^\n]*/g, '')
+              .replace(/يُفضّل فتح الإصحاح أولًا[^\n]*/g, '')
+              .replace(/ليس آية واحدة فقط\)?/g, '')
+              .replace(/⏳[^\n]*/g, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
+            if (typeof printHTML === 'function') printHTML(ref, txt.replace(/\n/g, '<br>'));
+          };
+          if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
+        } catch (ePdf) {}
         // optional AI chapter request if worker available
         try {
           if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
@@ -9749,9 +9784,12 @@ function onPrepareImageSelected(idx, input) {
               })
             }).then(function (r) { return r.json(); }).then(function (j) {
               if (j && (j.tafsir || j.text || j.content)) {
-                out.textContent = (j.tafsir || j.text || j.content);
+                var clean = String(j.tafsir || j.text || j.content || '');
+                out.textContent = clean;
+                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: clean }; } catch (e1) {}
               } else {
                 out.textContent = body;
+                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (e2) {}
               }
             }).catch(function () { out.textContent = body; });
           }
@@ -18696,7 +18734,28 @@ function generateOrthodoxTafsir(ref, text) {
      };
      if (pdfBtn) pdfBtn.onclick = function() {
       if (!window._lastTafsir || !window._lastTafsir.content) return;
-      printHTML('تفسير ' + (window._lastTafsir.ref || ''), String(window._lastTafsir.content || '').replace(/\n/g, '<br>'));
+      (function(){
+        var ref = String(window._lastTafsir.ref || '').trim();
+        var body = String(window._lastTafsir.content || '');
+        body = body
+          .replace(/رفيقك في فهم كلمة الله[^
+]*/g, '')
+          .replace(/تفسير آية واحدة/g, '')
+          .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^
+]*/g, '')
+          .replace(/يُفضّل فتح الإصحاح أولًا[^
+]*/g, '')
+          .replace(/ليس آية واحدة فقط\)?/g, '')
+          .replace(/⏳[^
+]*/g, '')
+          .replace(/
+{3,}/g, '
+
+')
+          .trim();
+        printHTML(ref || 'تفسير', body.replace(/
+/g, '<br>'));
+      })();
      };
      if (designBtn) designBtn.onclick = function() {
       if (!window._lastTafsir || !window._lastTafsir.content) return;

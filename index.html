@@ -9749,15 +9749,7 @@ function onPrepareImageSelected(idx, input) {
                 txt = String(window._lastTafsir.content || txt);
               }
             } catch (e0) {}
-            txt = String(txt)
-              .replace(/رفيقك في فهم كلمة الله[^\n]*/g, '')
-              .replace(/تفسير آية واحدة/g, '')
-              .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^\n]*/g, '')
-              .replace(/يُفضّل فتح الإصحاح أولًا[^\n]*/g, '')
-              .replace(/ليس آية واحدة فقط\)?/g, '')
-              .replace(/⏳[^\n]*/g, '')
-              .replace(/\n{3,}/g, '\n\n')
-              .trim();
+            txt = (typeof cleanTafsirPdfText==='function' ? cleanTafsirPdfText(txt) : String(txt||'').trim());
             if (typeof printHTML === 'function') printHTML(ref, txt.replace(/\n/g, '<br>'));
           };
           if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
@@ -17863,6 +17855,19 @@ function showDesignSavePreview(url, name, silent, blob) {
     "القالب: شرح سفر [اسم] – الإصحاح [رقم] / مقدمة قصيرة / أولًا: عنوان (ع س–ص) + نقاط / … / الخلاصة الروحية.\n" +
     "الأولوية: أمانة النص، ثم الدقة العقائدية، ثم سهولة الفهم والاختصار.";
 
+  
+  function cleanTafsirPdfText(txt) {
+    return String(txt || '').split('\n').filter(function (line) {
+      if (/رفيقك في فهم كلمة الله/.test(line)) return false;
+      if (/تفسير آية واحدة/.test(line)) return false;
+      if (/شرح أرثوذكسي مبسّط/.test(line)) return false;
+      if (/يُفضّل فتح الإصحاح/.test(line)) return false;
+      if (/ليس آية واحدة فقط/.test(line)) return false;
+      if (/⏳/.test(line)) return false;
+      return true;
+    }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
   function generateOrthodoxChapterTafsir(bookName, chapterNum, versesArr) {
    var book = String(bookName || '').trim();
    var ch = parseInt(chapterNum, 10) || 1;
@@ -18750,25 +18755,8 @@ function generateOrthodoxTafsir(ref, text) {
       if (!window._lastTafsir || !window._lastTafsir.content) return;
       (function(){
         var ref = String(window._lastTafsir.ref || '').trim();
-        var body = String(window._lastTafsir.content || '');
-        body = body
-          .replace(/رفيقك في فهم كلمة الله[^
-]*/g, '')
-          .replace(/تفسير آية واحدة/g, '')
-          .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^
-]*/g, '')
-          .replace(/يُفضّل فتح الإصحاح أولًا[^
-]*/g, '')
-          .replace(/ليس آية واحدة فقط\)?/g, '')
-          .replace(/⏳[^
-]*/g, '')
-          .replace(/
-{3,}/g, '
-
-')
-          .trim();
-        printHTML(ref || 'تفسير', body.replace(/
-/g, '<br>'));
+        var body = (typeof cleanTafsirPdfText==='function' ? cleanTafsirPdfText(window._lastTafsir.content) : String(window._lastTafsir.content||'').trim());
+        printHTML(ref || 'تفسير', body.replace(/\n/g, '<br>'));
       })();
      };
      if (designBtn) designBtn.onclick = function() {

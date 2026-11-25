@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="436" lang="ar" dir="rtl">
+<html data-app-ver="437" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9730,6 +9730,38 @@ function onPrepareImageSelected(idx, input) {
           out.textContent = body;
           try { out.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (err) {}
         }
+        try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (eLT) {}
+        try {
+          var oldPdf = document.getElementById('bcTafsirPdfBtn');
+          if (oldPdf) oldPdf.remove();
+          var pdfB = document.createElement('button');
+          pdfB.type = 'button';
+          pdfB.id = 'bcTafsirPdfBtn';
+          pdfB.className = 'save-btn';
+          pdfB.textContent = '📄 تحميل PDF';
+          pdfB.style.cssText = 'margin-top:10px;width:100%;padding:12px;background:#5a7d4a;';
+          pdfB.onclick = function () {
+            var ref = (book + ' ' + ch).trim();
+            var txt = body;
+            try {
+              if (window._lastTafsir && window._lastTafsir.content) {
+                ref = String(window._lastTafsir.ref || ref).trim();
+                txt = String(window._lastTafsir.content || txt);
+              }
+            } catch (e0) {}
+            txt = String(txt)
+              .replace(/رفيقك في فهم كلمة الله[^\n]*/g, '')
+              .replace(/تفسير آية واحدة/g, '')
+              .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^\n]*/g, '')
+              .replace(/يُفضّل فتح الإصحاح أولًا[^\n]*/g, '')
+              .replace(/ليس آية واحدة فقط\)?/g, '')
+              .replace(/⏳[^\n]*/g, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim();
+            if (typeof printHTML === 'function') printHTML(ref, txt.replace(/\n/g, '<br>'));
+          };
+          if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
+        } catch (ePdf) {}
         // optional AI chapter request if worker available
         try {
           if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
@@ -17849,27 +17881,24 @@ function showDesignSavePreview(url, name, silent, blob) {
     if (s.length > max) s = s.slice(0, max - 1) + '…';
     return s;
    }
-   function rangeJoin(a, b) {
-    return verses.slice(a, b).map(function (x) { return x.t; }).join(' ');
-   }
-   function hasIn(text, re) { return re.test(text); }
+   function hasIn(text, re) { return re.test(String(text || '')); }
    function stripT(s) {
     s = String(s || '');
     try { if (typeof stripTashkeel === 'function') s = stripTashkeel(s); } catch (e) {}
     return s;
    }
+   function rangeJoin(a, b) {
+    return verses.slice(a, b).map(function (x) { return x.t; }).join(' ');
+   }
    function formatVerseBlock(a, b) {
-    // a inclusive 0-based start, b exclusive end
     var lines = [];
     for (var i = a; i < b && i < verses.length; i++) {
-      var vt = verses[i].t;
-      // لا نطيل أكثر من اللازم لكل آية
-      lines.push('(' + verses[i].n + ') ' + clip(vt, 220));
+      lines.push('(' + verses[i].n + ') ' + clip(verses[i].t, 240));
     }
     return lines;
    }
 
-   // تقسيم موضوعي
+   // —— تقسيم موضوعي من انتقالات النص ——
    var cuts = [0];
    for (var i = 1; i < vcount; i++) {
     var t = verses[i].t;
@@ -17896,112 +17925,127 @@ function showDesignSavePreview(url, name, silent, blob) {
    }
    if (units.length < 2 && vcount >= 8) {
     var q = Math.floor(vcount / 4);
-    units = [
-      { a: 0, b: q }, { a: q, b: q * 2 },
-      { a: q * 2, b: q * 3 }, { a: q * 3, b: vcount }
-    ];
+    units = [{ a: 0, b: q }, { a: q, b: q * 2 }, { a: q * 2, b: q * 3 }, { a: q * 3, b: vcount }];
    }
 
-   function makeTitle(text, idx) {
+   // عنوان من مضمون الوحدة نفسها
+   function makeTitle(unitVerses, idx) {
+    var text = unitVerses.map(function (x) { return x.t; }).join(' ');
     var p = stripT(text);
-    if (hasIn(p, /احلق|شعر|لحية|ميزان|ثلث|موسى الحلاق|سكين/)) return 'رمزية الفعل وتقسيمه';
-    if (hasIn(p, /ذبيح|محرقة|قربان|مذبح/)) return 'الذبيحة والتقدمة';
-    if (hasIn(p, /أورشليم/) && hasIn(p, /أمم|شعوب|أرجاس|نجس/)) return 'سبب دينونة المدينة';
-    if (hasIn(p, /ويل|دينون|غضب|خراب|عقوب|سخط/)) return 'إعلان الدينونة والعقوبة';
+    if (hasIn(p, /احلق|شعر|لحية|ميزان|موسى الحلاق|سكين/)) return 'الفعل الرمزي وتقسيم الشعر';
+    if (hasIn(p, /أورشليم/) && hasIn(p, /أمم|شعوب|أرجاس|نجس|شرائع/)) return 'مكانة أورشليم وسبب دينونتها';
+    if (hasIn(p, /تأكل الآباء|ياكل|الآباء.*الأبناء/) && hasIn(p, /ثلث|سيف|وباء|مجاع/)) return 'شدة العقوبة وتقسيم المصير';
+    if (hasIn(p, /خراب|عار|لعنة/) && hasIn(p, /أمم|سخط|غضب/)) return 'نتيجة الدينونة أمام الأمم';
     if (hasIn(p, /توب|ارجع|ندم/)) return 'الدعوة إلى التوبة';
     if (hasIn(p, /عهد|ميثاق|وعد/)) return 'العهد والوعد';
-    if (hasIn(p, /مثل|ملكوت السموات|يشبه/)) return 'التعليم والأمثال';
-    if (hasIn(p, /شفى|أبرأ|أعمى|أبرص|مريض/)) return 'أعمال الشفاء';
-    if (hasIn(p, /صلى|سجد|بارك/)) return 'الصلاة والتسبيح';
-    if (hasIn(p, /حارب|حرب|سيف|قتل|ضرب/)) return 'الحرب والسيف';
-    if (hasIn(p, /رؤيا|حلم|ملاك|مركبة/)) return 'الرؤيا والظهور';
-    if (hasIn(p, /وصي|ناموس|احفظ|لا تزن|لا تسرق/)) return 'الوصايا والتعليم';
-    if (hasIn(p, /مجاع|وباء|تشتت|سبي/)) return 'شدة العقوبة ونتائجها';
-    return 'مشهد ' + (idx + 1) + ' من الإصحاح';
+    if (hasIn(p, /مثل|ملكوت/)) return 'التعليم والأمثال';
+    if (hasIn(p, /شفى|أبرأ|أعمى|أبرص/)) return 'أعمال الشفاء';
+    if (hasIn(p, /ذبيح|محرقة|قربان/)) return 'الذبيحة والتقدمة';
+    if (hasIn(p, /حارب|حرب|سيف/) && !hasIn(p, /ثلث/)) return 'الحرب والسيف';
+    if (hasIn(p, /رؤيا|حلم|ملاك/)) return 'الرؤيا أو الظهور';
+    // أول جملة مختصرة كعنوان وصفي
+    var first = clip((unitVerses[0] && unitVerses[0].t) || ('مشهد ' + (idx + 1)), 48);
+    return first;
    }
 
-   function explainUnit(text) {
-    var p = stripT(text);
+   // تلخيص/شرح من نص الوحدة: نقاط مرتبطة بالأيات نفسها
+   function explainUnit(unitVerses) {
     var pts = [];
-    if (hasIn(p, /احلق|شعر|لحية|سكين|موسى/)) pts.push('الله يأمر النبي بفعل رمزي ظاهر: حلق شعر رأسه ولحيته.');
-    if (hasIn(p, /ميزان|وزن|اقسم|ثلث/)) pts.push('يُطلب وزن الشعر وتقسيمه إلى أجزاء؛ الحكم مقدَّر بعدل لا عشوائيًا.');
-    if (hasIn(p, /ثلث/) && hasIn(p, /نار|احرق|حرق/)) pts.push('الثلث المحروق بالنار يرمز لمن يهلكون داخل المدينة بالمجاعة أو الوباء أيام الحصار.');
-    if (hasIn(p, /ثلث/) && hasIn(p, /سيف|اضرب/)) pts.push('الثلث المضروب بالسيف يرمز لمن يسقطون في الحرب.');
-    if (hasIn(p, /ثلث/) && hasIn(p, /ريح|ذرّ|اذري|اذره/)) pts.push('الثلث المذري في الريح يرمز للتشتت بين الأمم.');
-    if (hasIn(p, /أذيال|قليل|منه في/) && hasIn(p, /شعر|ثلث|نار|سيف/)) pts.push('القليل المحفوظ يرمز لبقية صغيرة ناجية، وقد تمر هي أيضًا بتأديب.');
-    if (hasIn(p, /أورشليم/) && hasIn(p, /وسط|شعوب|أمم|اراض/)) pts.push('أورشليم وُضعت في مكانة مميزة وسط الشعوب لتكون مثالًا لمعرفة الله.');
-    if (hasIn(p, /أورشليم|المدينة/) && hasIn(p, /أرجاس|نجس|عصى|خالف|شر/)) pts.push('بدل أن تحفظ الوصية، تمردت وارتكبت شرورًا حتى صارت أسوأ من الأمم المحيطة.');
-    if (hasIn(p, /أفعل بك|ما لم أفعل|عقوب|دينون|غضب|سخط/)) pts.push('الله يعلن عقوبة شديدة غير معتادة بسبب كثرة الأرجاس والرفض المتواصل.');
-    if (hasIn(p, /ياكل|تأكل|آباء|ابناء|أبناء/) && hasIn(p, /مجاع|حصر|ضيق|وسط/)) pts.push('وصف المجاعة يبلغ أقصى شدته ليبين بشاعة الحصار ونتائج الابتعاد عن الله.');
-    if (hasIn(p, /ثلث/) && hasIn(p, /وباء|مجاع|سيف|اشتت|اذري/)) pts.push('يتكرر تقسيم المصير: جزء للوباء والمجاعة، وجزء للسيف، وجزء للتشتت.');
-    if (hasIn(p, /خراب|عار|لعنة|تأديب/) && hasIn(p, /أمم|حوال|عيون/)) pts.push('تصير المدينة خرابًا وعارًا أمام الأمم؛ الدينونة علنية لتظهر قداسة أحكام الله.');
-    if (hasIn(p, /مجاع|وحش|وباء|سيف|دم/)) pts.push('وسائل التأديب المذكورة (مثل المجاعة والوباء والسيف) تكشف جدية التحذير.');
-    if (hasIn(p, /يعلمون اني|انا الرب|تكلمت/)) pts.push('غاية الإعلان أن يعرفوا أن الرب هو الذي تكلم ونفّذ أحكامه بعدل.');
-    if (!pts.length) {
-      if (hasIn(p, /قال الرب|هكذا قال/)) pts.push('يتكلم الرب بكلام مباشر؛ المطلوب فهم القصد والعمل به لا مجرد السماع.');
-      if (hasIn(p, /عهد|ميثاق|وعد/)) pts.push('النص يعرض عهد الله وأمانته، ويكشف مسؤولية الشعب في الاستجابة.');
-      if (hasIn(p, /توب|ارجع|ندم/)) pts.push('هناك دعوة للرجوع إلى الله؛ التوبة هنا تغيير طريق لا شعور عابر.');
-      if (hasIn(p, /ذبيح|محرقة|قربان|دم/)) pts.push('الذبيحة في سياقها تعني الاقتراب من الله وطلب الغفران حسب ترتيب العهد.');
-      if (hasIn(p, /مثل|يشبه|ملكوت/)) pts.push('التعليم يأتي بصورة مثل ليوضح حقيقة روحية بأسلوب قريب من السامع.');
-      if (hasIn(p, /شفى|أبرأ|آية|اعجوب/)) pts.push('عمل الشفاء/القوة يدل على سلطان الله ودعوته للإيمان.');
-      if (hasIn(p, /حارب|سيف|نصر|هزيم/)) pts.push('مشهد الصراع يبيّن أن النتيجة مرتبطة بتدبير الله لا بمجرد القوة البشرية.');
-      if (hasIn(p, /صلى|سجد|بارك|سبح/)) pts.push('الصلاة والتسبيح استجابة القلب لحضور الله وعمله.');
-      if (hasIn(p, /وصي|ناموس|احفظ|أمر/)) pts.push('الوصايا تُعطى لحماية الحياة مع الله والناس، وتُقاس بالطاعة العملية.');
+    var text = unitVerses.map(function (x) { return x.t; }).join(' ');
+    var p = stripT(text);
+
+    // لكل آية أو كل آيتين: جملة شرح بسيطة مستمدة من معناها
+    for (var i = 0; i < unitVerses.length; i++) {
+      var vt = stripT(unitVerses[i].t);
+      var n = unitVerses[i].n;
+      var line = '';
+      // أوامر / خطاب إلهي
+      if (/^وقال الرب|^فقال الرب|^هكذا قال|^ثم قال/.test(vt) || hasIn(vt, /قال السيد الرب|يقول الرب/)) {
+        line = 'في ع ' + n + ': يتكلم الرب بكلام مباشر يحدد ما سيحدث أو ما يُطلب.';
+      } else if (hasIn(vt, /احلق|شعر|لحية|سكين|موسى/)) {
+        line = 'في ع ' + n + ': أمر رمزي ظاهر (حلق الشعر/اللحية) ليُرى معنى الدينونة عيانًا.';
+      } else if (hasIn(vt, /ميزان|وزن|اقسم/)) {
+        line = 'في ع ' + n + ': الوزن والتقسيم يبينان أن الحكم مقدَّر بعدل لا عشوائيًا.';
+      } else if (hasIn(vt, /ثلث/) && hasIn(vt, /نار|احرق|حرق/)) {
+        line = 'في ع ' + n + ': الثلث المحروق يشير إلى هلاك داخل المدينة (مجاعة/وباء أيام الحصار).';
+      } else if (hasIn(vt, /ثلث/) && hasIn(vt, /سيف/)) {
+        line = 'في ع ' + n + ': الثلث بالسيف يشير إلى القتلى في الحرب.';
+      } else if (hasIn(vt, /ثلث/) && hasIn(vt, /ريح|ذر|اذري/)) {
+        line = 'في ع ' + n + ': الثلث في الريح يشير إلى التشتت بين الأمم.';
+      } else if (hasIn(vt, /أورشليم/) && hasIn(vt, /وسط|شعوب|أمم/)) {
+        line = 'في ع ' + n + ': أورشليم وُضعت في مكانة مميزة وسط الشعوب لتكون مثالًا.';
+      } else if (hasIn(vt, /شرائع|أحكام|أرجاس|نجس|عصى|تمرد|خالف/)) {
+        line = 'في ع ' + n + ': السبب هو مخالفة الوصايا وارتكاب الأرجاس أكثر من الأمم.';
+      } else if (hasIn(vt, /آباء|أبناء|ابناء/) && hasIn(vt, /أكل|تأكل|ياكل/)) {
+        line = 'في ع ' + n + ': صورة المجاعة القاسية تبيّن بشاعة الحصار ونتائج البعد عن الله.';
+      } else if (hasIn(vt, /خراب|عار|لعنة|تأديب/)) {
+        line = 'في ع ' + n + ': النتيجة خراب وعار أمام الأمم؛ الدينونة علنية.';
+      } else if (hasIn(vt, /غضب|سخط|غيرة/) && hasIn(vt, /الرب|أنا/)) {
+        line = 'في ع ' + n + ': اكتمال الغضب ليعلموا أن الرب هو الذي تكلم ونفّذ.';
+      } else if (hasIn(vt, /وباء|مجاع|سيف|وحوش|دم/)) {
+        line = 'في ع ' + n + ': وسائل التأديب المذكورة تكشف جدية التحذير.';
+      } else if (hasIn(vt, /توب|ارجع|ندم/)) {
+        line = 'في ع ' + n + ': دعوة عملية للرجوع إلى الله لا مجرد شعور.';
+      } else if (hasIn(vt, /عهد|ميثاق|وعد/)) {
+        line = 'في ع ' + n + ': العهد يكشف أمانة الله ومسؤولية الإنسان في الاستجابة.';
+      } else if (hasIn(vt, /مثل|يشبه|ملكوت/)) {
+        line = 'في ع ' + n + ': التعليم يأتي بمَثَل ليوضح حقيقة روحية للسامع.';
+      } else if (hasIn(vt, /صلى|سجد|بارك|سبح/)) {
+        line = 'في ع ' + n + ': الصلاة/التسبيح استجابة القلب لعمل الله.';
+      } else if (hasIn(vt, /لا تخف|تشجع/)) {
+        line = 'في ع ' + n + ': التشجيع يقترن بالتكليف؛ السند هو حضور الرب.';
+      } else if (hasIn(vt, /ذبيح|محرقة|قربان/)) {
+        line = 'في ع ' + n + ': الذبيحة في سياقها وسيلة اقتراب وطلب غفران حسب ترتيب العهد.';
+      } else if (vt.length > 25) {
+        // شرح عام مرتبط بنص الآية: إعادة صياغة مختصرة
+        line = 'في ع ' + n + ': ' + clip(vt, 120);
+      }
+      if (line) pts.push(line);
     }
-    if (hasIn(p, /لان|بسبب|من اجل|لأجل|لاجرم/) && hasIn(p, /خطي|شر|ارجاس|عصى|نجس|رفض/)) {
-      pts.push('النص يربط بوضوح بين الخطية والنتيجة؛ العقوبة ليست بلا علة.');
+
+    // إن كثرت النقاط: ادمج لحد 5–6 بأولوية الأسطر الأوضح
+    if (pts.length > 6) {
+      // خذ أول نقطة + نقاط فيها تفسير رمزي/سبب + آخر نقطة
+      var kept = [];
+      pts.forEach(function (pt, idx) {
+        if (kept.length >= 6) return;
+        if (idx === 0 || idx === pts.length - 1 || /يرمز|يشير|السبب|النتيجة|المكانة|دعوة|عهد|مثل/.test(pt)) {
+          kept.push(pt);
+        }
+      });
+      if (kept.length < 3) kept = pts.slice(0, 5);
+      pts = kept.slice(0, 6);
     }
-    if (pts.length < 2) {
-      pts.push('هذه الأعداد جزء أساسي من رسالة الإصحاح؛ اقرئيها لفهم القصد في سياقها.');
-      pts.push('الشرح يركز على المعنى والسبب والنتيجة.');
-    }
+
+    // أزل التكرار
     var seen = {};
-    return pts.filter(function (x) {
-      var k = x.slice(0, 42);
-      if (seen[k]) return false;
-      seen[k] = 1;
+    pts = pts.filter(function (x) {
+      var key = x.replace(/في ع \d+:\s*/, '').slice(0, 40);
+      if (seen[key]) return false;
+      seen[key] = 1;
       return true;
-    }).slice(0, 5);
+    });
+
+    if (!pts.length) {
+      pts.push('هذه الأعداد جزء من رسالة الإصحاح؛ اقرئيها في سياق ما قبلها وما بعدها.');
+    }
+    return pts;
    }
 
-   // تدريب عملي سهل من وحي النص
-   function buildPractice() {
-    var items = [];
-    if (hasIn(plain, /توب|ارجع|ندم|خطي/)) {
-      items.push('اكتبي خطية واحدة تريدين تركها، وصلّي دقيقة واحدة: «يا رب أعني أن أرجع إليك اليوم».');
-    }
-    if (hasIn(plain, /أورشليم|قدس|وصي|علم/)) {
-      items.push('اختاري وصية واحدة تعرفينها جيدًا واكتبي كيف تعملين بها قبل نهاية اليوم.');
-    }
-    if (hasIn(plain, /لا تخف|تشجع|قوة/)) {
-      items.push('اذكري مخوفًا واحدًا أمام الله واطلبي منه خطوة شجاعة صغيرة اليوم.');
-    }
-    if (hasIn(plain, /رحم|غفر|محب/)) {
-      items.push('اختاري شخصًا واحدًا تسامحينه بالقلب، وقولي جملة طيبة له إن أمكن.');
-    }
-    if (hasIn(plain, /صلّ|سجد|بارك|سبح/)) {
-      items.push('اقرئي ثلاث آيات من الإصحاح بصوت هادئ ثم سبّحي بجملة شكر واحدة.');
-    }
-    if (hasIn(plain, /خراب|دينون|غضب|عار/)) {
-      items.push('اسألي نفسك: أين أبتعد عن الله في أسبوعي؟ سجّلي إجابة واحدة عملية وصغيرة.');
-    }
-    if (!items.length) {
-      items.push('اقرئي آيات الوحدة الأولى ببطء، ثم اكتبي جملة واحدة: ماذا يقول الإصحاح عن الله؟');
-      items.push('نفّذي خطوة واحدة بسيطة اليوم مرتبطة بمعنى الإصحاح (صلاة / اعتذار / طاعة).');
-    }
-    // سهولة التنفيذ: نقطة واحدة أو اثنتين كحد أقصى للتركيز
-    return items.slice(0, 2);
-   }
-
-   var intro = 'هذا الإصحاح يعرض موضوعًا محددًا من خلال تسلسل آياته، ويبيّن المقصود عبر الأحداث والرموز الواردة في النص.';
+   // مقدمة من مضمون الإصحاح كله
+   var intro = 'يتناول هذا الإصحاح موضوعًا يظهر من تسلسل آياته، ويوضّح المقصود من خلال الأحداث والكلمات الواردة فيه.';
    if (hasIn(plain, /خراب|دمار/) && hasIn(plain, /خطي|شر|أرجاس|عصى/)) {
     intro = 'هذا الإصحاح يعلن خرابًا قادمًا بسبب الخطايا والابتعاد عن وصايا الله، ويوضّح صورة العقوبة ومعناها من خلال ما ورد في الآيات.';
    } else if (hasIn(plain, /توب|ارجع/) && hasIn(plain, /غفر|رحم/)) {
-    intro = 'هذا الإصحاح يدعو إلى التوبة والرجوع، ويظهر رحمة الله وعدله معًا في التعامل مع شعبه.';
+    intro = 'هذا الإصحاح يدعو إلى التوبة والرجوع، ويظهر رحمة الله وعدله معًا.';
    } else if (hasIn(plain, /عهد|وعد|ميثاق/)) {
-    intro = 'هذا الإصحاح يركز على عهد الله ووعوده، ويكشف مسؤولية الإنسان في حفظ الأمانة أمامه.';
+    intro = 'هذا الإصحاح يركّز على عهد الله ووعوده، ومسؤولية الإنسان في حفظ الأمانة.';
    } else if (hasIn(plain, /ملكوت|مثل/)) {
-    intro = 'هذا الإصحاح يقدّم تعليمًا عن ملكوت الله وحياة الإيمان، بأسلوب يوضح المعنى للسامع ويعين على العمل.';
+    intro = 'هذا الإصحاح يقدّم تعليمًا عن ملكوت الله وحياة الإيمان.';
+   } else if (hasIn(plain, /خلق|برأ|بدء/)) {
+    intro = 'هذا الإصحاح يتناول عمل الله في البدء أو ترتيب الخليقة كما يرد في النص.';
+   } else if (hasIn(plain, /موسى/) && hasIn(plain, /فرعون|مصر|خروج/)) {
+    intro = 'هذا الإصحاح يعرض مشهدًا من تعامل الله مع موسى وفرعون/مصر في مسار التحرير.';
    }
 
    var ordinals = ['أولًا', 'ثانيًا', 'ثالثًا', 'رابعًا', 'خامسًا', 'سادسًا'];
@@ -18011,35 +18055,43 @@ function showDesignSavePreview(url, name, silent, blob) {
    out.push('');
 
    units.forEach(function (u, idx) {
-    var text = rangeJoin(u.a, u.b);
+    var unitVerses = verses.slice(u.a, u.b);
     var from = u.a + 1, to = u.b;
-    var title = makeTitle(text, idx);
+    var title = makeTitle(unitVerses, idx);
     out.push(ordinals[idx] + ': ' + title + ' (من الآية ' + from + ' إلى الآية ' + to + ')');
     out.push('الآيات:');
     formatVerseBlock(u.a, u.b).forEach(function (line) { out.push(line); });
     out.push('الشرح:');
-    explainUnit(text).forEach(function (pt) { out.push('• ' + pt); });
+    explainUnit(unitVerses).forEach(function (pt) { out.push('• ' + pt); });
     out.push('');
    });
 
    out.push('الخلاصة الروحية');
    var lessons = [];
-   if (hasIn(plain, /أورشليم|قدس|مقدس|امتياز|وسط الشعوب/)) lessons.push('الامتيازات الروحية لا تُعفي من المسؤولية أمام الله.');
-   if (hasIn(plain, /وصي|عرف|علم/) && hasIn(plain, /خطي|عصى|رفض|أرجاس/)) lessons.push('معرفة الوصية دون العمل بها تزيد المسؤولية.');
-   if (hasIn(plain, /قدوس|عدل|دينون|غضب/)) lessons.push('الله قدوس وعادل، ولا يستهين بالخطية.');
+   if (hasIn(plain, /أورشليم|قدس|مقدس|وسط الشعوب/)) lessons.push('الامتيازات الروحية لا تُعفي من المسؤولية أمام الله.');
+   if (hasIn(plain, /وصي|شرائع|أحكام/) && hasIn(plain, /خطي|عصى|رفض|أرجاس/)) lessons.push('معرفة الوصية دون العمل بها تزيد المسؤولية.');
+   if (hasIn(plain, /عدل|دينون|غضب|قدوس/)) lessons.push('الله قدوس وعادل، ولا يستهين بالخطية.');
    if (hasIn(plain, /توب|ارجع/)) lessons.push('باب التوبة مفتوح؛ تأخير الرجوع يُعرّض للخسارة.');
-   if (hasIn(plain, /خراب|بعد عن|بعيدين/)) lessons.push('البعد عن الله يقود إلى خراب داخلي قبل أن يظهر خارجيًا.');
+   if (hasIn(plain, /خراب/)) lessons.push('البعد عن الله يقود إلى خراب داخلي قبل أن يظهر خارجيًا.');
    if (hasIn(plain, /إيمان|آمن/)) lessons.push('الإيمان الحقيقي يظهر في الطاعة والثبات.');
    if (hasIn(plain, /رحم|غفر|محب/)) lessons.push('رحمة الله تدعونا أن نرحم ونغفر للآخرين.');
+   if (hasIn(plain, /عهد|وعد/)) lessons.push('الله أمين في عهده؛ المطلوب استجابة القلب والعمل.');
    if (!lessons.length) {
     lessons.push('اقرأ الإصحاح كرسالة عملية: ماذا يكشف عن الله؟ وماذا يطلب مني؟');
     lessons.push('الاستجابة الصحيحة هي التوبة والطاعة لا مجرد المعرفة.');
    }
    lessons.slice(0, 5).forEach(function (L) { out.push('• ' + L); });
    out.push('');
-
    out.push('تدريب عملي');
-   buildPractice().forEach(function (x) { out.push('• ' + x); });
+   var practice = [];
+   if (hasIn(plain, /توب|خطي|أرجاس/)) practice.push('اكتبي أمرًا واحدًا تحتاجين أن ترجعي عنه اليوم، وصلّي دقيقة: «يا رب أعني أن أرجع».');
+   if (hasIn(plain, /وصي|شرائع|احفظ/)) practice.push('اختاري وصية واحدة واكتبي خطوة عملية لتطبيقها قبل نهاية اليوم.');
+   if (hasIn(plain, /لا تخف|تشجع/)) practice.push('اذكري مخوفًا واحدًا واطلبي من الرب خطوة شجاعة صغيرة.');
+   if (!practice.length) {
+    practice.push('اقرئي آيات الوحدة الأولى ببطء، ثم اكتبي جملة: ماذا يقول الإصحاح عن الله؟');
+    practice.push('نفّذي خطوة واحدة بسيطة اليوم (صلاة / اعتذار / طاعة) من وحي الإصحاح.');
+   }
+   practice.slice(0, 2).forEach(function (x) { out.push('• ' + x); });
 
    return out.join('\n');
   }
@@ -18696,7 +18748,28 @@ function generateOrthodoxTafsir(ref, text) {
      };
      if (pdfBtn) pdfBtn.onclick = function() {
       if (!window._lastTafsir || !window._lastTafsir.content) return;
-      printHTML('تفسير ' + (window._lastTafsir.ref || ''), String(window._lastTafsir.content || '').replace(/\n/g, '<br>'));
+      (function(){
+        var ref = String(window._lastTafsir.ref || '').trim();
+        var body = String(window._lastTafsir.content || '');
+        body = body
+          .replace(/رفيقك في فهم كلمة الله[^
+]*/g, '')
+          .replace(/تفسير آية واحدة/g, '')
+          .replace(/شرح أرثوذكسي مبسّط لـ?الإصحاح كله[^
+]*/g, '')
+          .replace(/يُفضّل فتح الإصحاح أولًا[^
+]*/g, '')
+          .replace(/ليس آية واحدة فقط\)?/g, '')
+          .replace(/⏳[^
+]*/g, '')
+          .replace(/
+{3,}/g, '
+
+')
+          .trim();
+        printHTML(ref || 'تفسير', body.replace(/
+/g, '<br>'));
+      })();
      };
      if (designBtn) designBtn.onclick = function() {
       if (!window._lastTafsir || !window._lastTafsir.content) return;

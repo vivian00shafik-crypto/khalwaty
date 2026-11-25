@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="442" lang="ar" dir="rtl">
+<html data-app-ver="444" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9754,10 +9754,9 @@ function onPrepareImageSelected(idx, input) {
           };
           if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
         } catch (ePdf) {}
-        // optional AI chapter request if worker available
+        // الإبقاء على الشرح المحلي دائمًا؛ الخدمة الخارجية اختيارية وبفلتر جودة
         try {
           if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
-            out.textContent = '⏳ جارٍ إعداد شرح أرثوذكسي للإصحاح…';
             var lexAssist = (typeof buildChapterLexiconAssist === 'function') ? buildChapterLexiconAssist(verses) : [];
             var numbered = verses.map(function (t, i) { return '(' + (i + 1) + ') ' + t; }).join('\n');
             fetch(TAFSIR_WORKER_URL, {
@@ -9771,21 +9770,44 @@ function onPrepareImageSelected(idx, input) {
                 verseCount: verses.length,
                 lexiconAssist: lexAssist,
                 systemPrompt: (typeof KHALWATI_TAFSIR_SYSTEM_PROMPT !== 'undefined' ? KHALWATI_TAFSIR_SYSTEM_PROMPT : ''),
-                instruction: 'اشرح الإصحاح شرحًا أرثوذكسيًا حقيقيًا آيةً آية أو فكرةً فكرة. ممنوع الكلام العام وممنوع إعادة نص الآيات وممنوع أن تطلب من القارئ أن يفهم بنفسه. ادمج معاني الكلمات الصعبة المرفقة داخل جمل الشرح طبيعيًا. القالب: عنوان، مقدمة محددة من المحتوى، أولًا/ثانيًا مع أرقام الآيات وشرح تقريري، خلاصة روحية، تدريب عملي قصير.'
+                instruction: 'اشرح كل آية بجملة مختلفة من معناها الفعلي. ممنوع تمامًا: الكلام العام، تكرار نفس الجملة على أكثر من آية، عبارات مثل «يركز النص على» أو «ضمن رسالة الإصحاح» أو «تصاعد المعنى»، وشرح كلمات عامة مثل الرب وإسرائيل. ادمج معنى كلمة صعبة نادرة فقط داخل الجملة إن لزم.'
               })
             }).then(function (r) { return r.json(); }).then(function (j) {
               var clean = '';
               if (j && (j.tafsir || j.text || j.content)) clean = String(j.tafsir || j.text || j.content || '');
-              if (clean && clean.length > 80) {
+              function badTafsir(t) {
+                if (!t || t.length < 80) return true;
+                if (/يركز النص على/.test(t)) return true;
+                if (/تصاعد المعنى/.test(t)) return true;
+                if (/ضمن رسالة الإصحاح/.test(t)) return true;
+                if (/المقصود بـ«?(الرب|الله|إسرائيل|اسرائيل)/.test(t)) return true;
+                if (/افهمي|افهم من|من خلال قراء/.test(t)) return true;
+                // تكرار مريب لنفس الجملة
+                var lines = t.split(/\n/).map(function (x) { return x.replace(/الآية [٠-٩0-9]+/g,'').trim(); }).filter(function (x) { return x.length > 40; });
+                var seen = {}, dup = 0;
+                lines.forEach(function (x) {
+                  var k = x.slice(0, 50);
+                  if (seen[k]) dup++;
+                  seen[k] = 1;
+                });
+                if (dup >= 2) return true;
+                return false;
+              }
+              if (!badTafsir(clean)) {
                 out.textContent = clean;
                 try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: clean }; } catch (e1) {}
               } else {
+                // أبقِ الشرح المحلي
                 out.textContent = body;
                 try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (e2) {}
               }
-            }).catch(function () { out.textContent = body; });
+            }).catch(function () {
+              out.textContent = body;
+            });
           }
-        } catch (eAi) { out.textContent = body; }
+        } catch (eAi) {
+          if (out) out.textContent = body;
+        }
       });
     }
 
@@ -18351,11 +18373,12 @@ function showDesignSavePreview(url, name, silent, blob) {
     } else if (has(p, /لا تخف|تشجع|كن قويا/)) {
       s = 'في الآية ' + n + ' الطمأنينة هنا مربوطة بوجود الرب مع المكلَّف، لا بقوة الشخص وحده.';
     } else if (has(p, /قال السيد الرب|هكذا قال الرب|وقال الرب|يقول الرب/)) {
-      // لا نكتفي بـ«كلام الرب» فقط — نربط ببقية الآية
-      var rest = p.replace(/^.*?قال[^\s]*\s*/i, '').replace(/^.*?يقول الرب\s*/i, '');
-      rest = clip(rest, 100);
-      if (rest.length > 12) {
-        s = 'في الآية ' + n + ' يعلن الرب أمرًا محددًا: ' + rest + ' — وهذا الإعلان يلزم السامعين بالجدّية لأنه منسوب إليه.';
+      if (has(p, /خراب|عار|دينون|سخط|غضب/)) {
+        s = 'في الآية ' + n + ' يعلن الرب حكمًا مرتبطًا بالدينونة أو السخط؛ الوزن هنا لإعلان إلهي يلزم الجدية لا لرأي بشري.';
+      } else if (has(p, /خذ|افعل|قل |كلم|انذر/)) {
+        s = 'في الآية ' + n + ' يصدر عن الرب تكليف أو أمر عملي للنبي أو للشعب، والاستجابة مطلوبة لأنه كلام إلهي.';
+      } else if (has(p, /لان|بسبب|من اجل/)) {
+        s = 'في الآية ' + n + ' يبيّن الرب علة ما يحدث أو ما سيحدث؛ السبب معلن لا مستتر.';
       } else {
         s = 'في الآية ' + n + ' الإعلان صادر من الرب مباشرة، فيحمل وزن الأمر لا وزن الرأي البشري.';
       }
@@ -18368,42 +18391,77 @@ function showDesignSavePreview(url, name, silent, blob) {
       s = buildFromVerse(n, p, raw);
     }
 
-    // دمج كلمة صعبة واحدة نادرة داخل الجملة إن وُجدت فعلًا في الآية
+    // ارفض أي شرح يعيد جملة طويلة من نص الآية
+    try {
+      var vt = st(raw);
+      if (vt.length > 28) {
+        var probe = vt.slice(0, 28);
+        if (st(s).indexOf(probe) !== -1) {
+          s = buildFromVerse(n, p, raw);
+        }
+      }
+    } catch (eNo) {}
+    // دمج كلمة صعبة نادرة داخل الجملة فقط
     var hw = hardWordFromVerse(raw);
     if (hw && s.indexOf(hw.m) === -1 && s.indexOf(hw.w) === -1) {
-      // ادمج بشكل طبيعي
-      s = s.replace(/\s*$/, '') + ' — وعبارة «' + hw.w + '» في الآية تعني ' + clip(hw.m, 55) + '.';
+      s = s.replace(/\s*$/, '') + ' — و«' + hw.w + '» هنا بمعنى ' + clip(hw.m, 55) + '.';
     }
     return s;
   }
 
    function buildFromVerse(n, p, raw) {
-    // حوّل الآية إلى جملة شارحة تعتمد على محتواها الفعلي
-    var core = p;
-    // أزل مقدمات الخطاب المتكررة ليبقى المضمون
-    core = core.replace(/^(وقال|فقال|ثم قال|هكذا قال|يقول)\s+(السيد\s+)?الرب\s*/g, '');
-    core = core.replace(/^(يا )?ابن ادم\s*/g, '');
-    core = clip(core, 140);
-
+    // شرح بلا إعادة لنص الآية — فقط تصنيف المعنى
     if (has(p, /لا |لا ت/)) {
-      return 'في الآية ' + n + ' يرد تحذير واضح يمنع سلوكًا معينًا في هذا السياق: ' + core + '.';
+      return 'في الآية ' + n + ' يوجد نهي أو تحذير يمنع سلوكًا يضر العلاقة مع الله أو مع الآخرين.';
     }
-    if (has(p, /افعل|خذ|اذهب|قل |كلم|انذر|سمع/)) {
-      return 'في الآية ' + n + ' يصدر تكليف عملي: ' + core + '.';
+    if (has(p, /افعل|خذ|اذهب|قل |كلم|انذر|اكتب|كلمهم/)) {
+      return 'في الآية ' + n + ' يُعطى تكليف عملي: المطلوب فعل أو تبليغ لا مجرد معرفة.';
     }
-    if (has(p, /لان|بسبب|من اجل|لاجله|حيث/)) {
-      return 'في الآية ' + n + ' يُذكر السبب المرتبط بما قبله: ' + core + '.';
+    if (has(p, /لان|بسبب|من اجل|لاجله|حيث ان|من حيث/)) {
+      return 'في الآية ' + n + ' يُوضَّح السبب وراء الحكم أو الحدث المذكور في السياق.';
     }
-    if (has(p, /فيكون|لذلك|حينئذ|كي |لكي/)) {
-      return 'في الآية ' + n + ' تُذكر النتيجة المترتبة: ' + core + '.';
+    if (has(p, /فيكون|لذلك|حينئذ|كي |لكي|حتى /)) {
+      return 'في الآية ' + n + ' تُذكر النتيجة المترتبة على الموقف السابق.';
     }
-    if (core.length > 15) {
-      return 'في الآية ' + n + ' يتضح أن ' + core + '.';
+    if (has(p, /بارك|بركة/)) {
+      return 'في الآية ' + n + ' ترتبط البركة بعطاء الله واستجابة الإنسان بالامانة.';
     }
-    return 'في الآية ' + n + ' يكمُل المشهد السابق بتفصيلة جديدة من نفس موضوع الإصحاح.';
+    if (has(p, /لعن|ويل|عقاب|عقوب/)) {
+      return 'في الآية ' + n + ' يظهر إنذار شديد هدفه الدفع للتوبة لا التلذذ بالوعيد.';
+    }
+    if (has(p, /سمع|اصغ|انصت/)) {
+      return 'في الآية ' + n + ' التركيز على السماع الواعي لكلام الله استعدادًا للطاعة.';
+    }
+    if (has(p, /ارض|امم|شعوب|مدين/)) {
+      return 'في الآية ' + n + ' يمتد الأثر إلى الأرض أو الشعوب؛ الحدث ليس فرديًا معزولًا.';
+    }
+    if (has(p, /نار|حرق|لهيب/)) {
+      return 'في الآية ' + n + ' صورة النار تشير إلى شدة الدينونة أو التنقية حسب السياق.';
+    }
+    if (has(p, /سيف|حرب|قتال/)) {
+      return 'في الآية ' + n + ' السيف أو الحرب هنا أداة تنفيذ للإنذار المعلن في الإصحاح.';
+    }
+    if (has(p, /شتت|بدد|الرياح|تائه/)) {
+      return 'في الآية ' + n + ' التشتيت يعني فقدان الاستقرار والتشرد نتيجة البعد عن الله.';
+    }
+    if (has(p, /رحم|غفر|اشفق/)) {
+      return 'في الآية ' + n + ' تلمح الآية إلى جانب الرحمة حتى وسط العدل.';
+    }
+    if (has(p, /صلى|سجد|سبح|باركوا/)) {
+      return 'في الآية ' + n + ' الصلاة أو التسبيح هما الاستجابة اللائقة لعمل الله.';
+    }
+    // تنويع خفيف حسب رقم الآية حتى لا تتطابق الجمل
+    var variants = [
+      'في الآية ' + n + ' تُضاف تفصيلة تُكمل صورة المقطع السابق وتدفع المعنى خطوة إلى الأمام.',
+      'في الآية ' + n + ' يتضح جانب جديد من نفس الموضوع: موقف الله ومسؤولية الإنسان.',
+      'في الآية ' + n + ' يشتد الإعلان أو يتضح أثره العملي على السامعين في سياق الإصحاح.',
+      'في الآية ' + n + ' تُربط الأحداث بالغاية الروحية للمقطع: جدية كلام الله وضرورة الاستجابة.'
+    ];
+    var idx = (parseInt(String(n).replace(/[٠-٩]/g, function(d){return '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)];}), 10) || 1) % variants.length;
+    return variants[idx];
   }
 
-   // تقسيم بسيط
+// تقسيم بسيط
    var cuts = [0];
    for (var i = 1; i < verses.length; i++) {
     var t = verses[i].t;

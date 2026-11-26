@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="444" lang="ar" dir="rtl">
+<html data-app-ver="445" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9754,11 +9754,36 @@ function onPrepareImageSelected(idx, input) {
           };
           if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
         } catch (ePdf) {}
-        // الإبقاء على الشرح المحلي دائمًا؛ الخدمة الخارجية اختيارية وبفلتر جودة
+        // مولّد تفسير الإصحاح: يطلب شرحًا كتابيًا متسلسلًا لكل آية، مع إبقاء البديل المحلي عند تعذر الخدمة.
         try {
           if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
             var lexAssist = (typeof buildChapterLexiconAssist === 'function') ? buildChapterLexiconAssist(verses) : [];
             var numbered = verses.map(function (t, i) { return '(' + (i + 1) + ') ' + t; }).join('\n');
+            var chapterPrompt = [
+              'الدور: مُفسِّر كتابي أرثوذكسي قبطي، أمين للنص والسياق، يكتب بالعربية الواضحة.',
+              'المهمة: إعداد تفسير حقيقي لهذا الإصحاح كاملًا، وليس ملخصًا عامًا أو تأملًا إنشائيًا.',
+              'اعتمد على نص فاندايك المرفق أولًا، وعلى سياق السفر والكتاب المقدس. لا تخترع خلفية تاريخية أو معنى لغويًا أو قولًا آبائيًا.',
+              'ابدأ بعنوان الإصحاح وفقرة سياقية قصيرة تشرح موضعه في السفر وما يرتبط به من أحداث أو موضوعات ثابتة من النص.',
+              'قسّم الإصحاح إلى وحدات بحسب انتقال الموضوع أو المتكلم أو الحدث. اذكر مدى الآيات في عنوان كل وحدة.',
+              'اشرح كل آية على حدة وبالترتيب، دون إسقاط أي آية أو دمج عدة آيات في شرح واحد. استخدم الصيغة: الآية (رقمها): الشرح.',
+              'في شرح كل آية وضّح المقصود من العبارة في سياقها، وما تضيفه إلى الفكرة أو الحدث، وصلتها بما قبلها وبعدها. لا تكرر نص الآية فقط ولا تضع جملة عامة تصلح لأي آية.',
+              'اشرح الألفاظ الصعبة أو القديمة فقط عندما تؤثر في فهم الآية، وبيّن معناها المقصود في هذا الموضع. لا تشرح الكلمات الواضحة أو أسماء الله والشخصيات لمجرد الشرح.',
+              'في النبوات والأمثال والرؤى والأفعال الرمزية: وضّح الرمز ودلالته من قرائن النص والكتاب المقدس، وميّز بين ما يقوله النص صراحة وما هو استنتاج تفسيري.',
+              'راعِ الخلفية التاريخية والجغرافية والطقسية عندما تكون لازمة للفهم، ولا تجزم بتفاصيل مختلف عليها.',
+              'التزم بالفهم الأرثوذكسي القبطي، واستفد من روح تفاسير الآباء دون اختلاق اقتباسات أو نسب أقوال لمصادر غير مؤكدة.',
+              'بعد شرح جميع الآيات أضف: (1) الفكرة الرئيسية للإصحاح، (2) أهم الكلمات والتعبيرات الصعبة ومعناها في السياق، (3) تأملات روحية مستخلصة من النص، (4) تطبيق عملي محدد ومتزن.',
+              'اكتب باختصار مفيد لكن بتغطية كافية لكل آية. تجنب التكرار والحشو والعبارات النمطية مثل: يركز النص على، تصاعد المعنى، ضمن رسالة الإصحاح، افهمي، من خلال قراءتك.',
+              'لا تسقط الآيات القصيرة أو التكرارية؛ اشرح وظيفتها في السياق. لا تضف تطبيقًا روحيًا لا يسنده النص.',
+              'عدد آيات الإصحاح: ' + verses.length + '. يجب أن يمتد الشرح من الآية 1 حتى الآية ' + verses.length + ' بالترتيب.'
+            ].join('\n');
+            if (out) {
+              out.setAttribute('aria-live', 'polite');
+              out.textContent = body + '\n\n⏳ جارٍ إعداد تفسير الإصحاح آيةً آية...';
+            }
+            var chapterController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            var chapterTimer = setTimeout(function () {
+              try { if (chapterController) chapterController.abort(); } catch (eTimeout) {}
+            }, 90000);
             fetch(TAFSIR_WORKER_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -9769,40 +9794,53 @@ function onPrepareImageSelected(idx, input) {
                 chapter: true,
                 verseCount: verses.length,
                 lexiconAssist: lexAssist,
+                tradition: 'coptic_orthodox',
+                lang: 'ar',
                 systemPrompt: (typeof KHALWATI_TAFSIR_SYSTEM_PROMPT !== 'undefined' ? KHALWATI_TAFSIR_SYSTEM_PROMPT : ''),
-                instruction: 'اشرح كل آية بجملة مختلفة من معناها الفعلي. ممنوع تمامًا: الكلام العام، تكرار نفس الجملة على أكثر من آية، عبارات مثل «يركز النص على» أو «ضمن رسالة الإصحاح» أو «تصاعد المعنى»، وشرح كلمات عامة مثل الرب وإسرائيل. ادمج معنى كلمة صعبة نادرة فقط داخل الجملة إن لزم.'
-              })
-            }).then(function (r) { return r.json(); }).then(function (j) {
-              var clean = '';
-              if (j && (j.tafsir || j.text || j.content)) clean = String(j.tafsir || j.text || j.content || '');
+                instruction: chapterPrompt,
+                task: 'full_chapter_exegesis'
+              }),
+              signal: chapterController ? chapterController.signal : undefined
+            }).then(function (r) {
+              return r.json().then(function (j) {
+                if (!r.ok) throw new Error('chapter_http_' + r.status);
+                return j || {};
+              });
+            }).then(function (j) {
+              clearTimeout(chapterTimer);
+              var clean = String((j && (j.tafsir || j.text || j.content)) || '').trim();
               function badTafsir(t) {
-                if (!t || t.length < 80) return true;
-                if (/يركز النص على/.test(t)) return true;
-                if (/تصاعد المعنى/.test(t)) return true;
-                if (/ضمن رسالة الإصحاح/.test(t)) return true;
-                if (/المقصود بـ«?(الرب|الله|إسرائيل|اسرائيل)/.test(t)) return true;
-                if (/افهمي|افهم من|من خلال قراء/.test(t)) return true;
-                // تكرار مريب لنفس الجملة
-                var lines = t.split(/\n/).map(function (x) { return x.replace(/الآية [٠-٩0-9]+/g,'').trim(); }).filter(function (x) { return x.length > 40; });
+                if (!t || t.length < Math.max(250, verses.length * 28)) return true;
+                if (/يركز النص على|تصاعد المعنى|ضمن رسالة الإصحاح/.test(t)) return true;
+                var lines = t.split(/\n/).map(function (x) { return x.replace(/الآية\s*[٠-٩0-9]+/g, '').trim(); }).filter(function (x) { return x.length > 55; });
                 var seen = {}, dup = 0;
                 lines.forEach(function (x) {
-                  var k = x.slice(0, 50);
+                  var k = x.replace(/[٠-٩0-9]/g, '').replace(/\s+/g, ' ').slice(0, 72);
                   if (seen[k]) dup++;
                   seen[k] = 1;
                 });
                 if (dup >= 2) return true;
+                // يجب أن تظهر إحالات كافية لأرقام الآيات؛ نقبل الأرقام العربية أو الهندية.
+                var covered = {}, re = /(?:الآية|آية|عدد)\s*\(?\s*([٠-٩0-9]{1,3})/g, m;
+                while ((m = re.exec(t)) !== null) {
+                  var n = m[1].replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
+                  n = parseInt(n, 10);
+                  if (n >= 1 && n <= verses.length) covered[n] = true;
+                }
+                if (verses.length >= 6 && Object.keys(covered).length < Math.ceil(verses.length * 0.55)) return true;
                 return false;
               }
               if (!badTafsir(clean)) {
-                out.textContent = clean;
+                if (out) out.textContent = clean;
                 try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: clean }; } catch (e1) {}
               } else {
-                // أبقِ الشرح المحلي
-                out.textContent = body;
-                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (e2) {}
+                if (out) out.textContent = body + '\n\nلم يصل تفسير تفصيلي مستوفٍ لمعايير تغطية الإصحاح؛ عُرض الشرح المحلي بدلًا منه.';
+                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: out ? out.textContent : body }; } catch (e2) {}
               }
             }).catch(function () {
-              out.textContent = body;
+              clearTimeout(chapterTimer);
+              if (out) out.textContent = body + '\n\nتعذّر الاتصال بخدمة التفسير الذكي؛ يمكنك إعادة المحاولة عند توافر الاتصال.';
+              try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: out ? out.textContent : body }; } catch (e3) {}
             });
           }
         } catch (eAi) {

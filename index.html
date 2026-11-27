@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="446" lang="ar" dir="rtl">
+<html data-app-ver="447" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9731,37 +9731,43 @@ function onPrepareImageSelected(idx, input) {
           try { out.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (err) {}
         }
         try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (eLT) {}
-        try {
-          var oldPdf = document.getElementById('bcTafsirPdfBtn');
-          if (oldPdf) oldPdf.remove();
-          var pdfB = document.createElement('button');
-          pdfB.type = 'button';
-          pdfB.id = 'bcTafsirPdfBtn';
-          pdfB.className = 'save-btn';
-          pdfB.textContent = '📄 تحميل PDF';
-          pdfB.style.cssText = 'margin-top:10px;width:100%;padding:12px;background:#5a7d4a;';
-          pdfB.onclick = function () {
-            var ref = (book + ' ' + ch).trim();
-            var txt = body;
-            try {
-              if (window._lastTafsir && window._lastTafsir.content) {
-                ref = String(window._lastTafsir.ref || ref).trim();
-                txt = String(window._lastTafsir.content || txt);
-              }
-            } catch (e0) {}
-            txt = (typeof cleanTafsirPdfText==='function' ? cleanTafsirPdfText(txt) : String(txt||'').trim());
-            if (typeof printHTML === 'function') printHTML(ref, txt.replace(/\n/g, '<br>'));
-          };
-          if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
-        } catch (ePdf) {}
-        // الإبقاء على الشرح المحلي دائمًا؛ الخدمة الخارجية اختيارية وبفلتر جودة
+        // زر PDF الموحد موجود أسفل نافذة prayerModal؛ لا نضيف زرًا ثانيًا داخل النتيجة.
+        try { var duplicatePdf = document.getElementById('bcTafsirPdfBtn'); if (duplicatePdf) duplicatePdf.remove(); } catch (ePdf) {}
+        // التفسير الذكي للإصحاح: نعرض التفسير المحلي فورًا ثم نطلب شرحًا كاملًا من الـ Worker.
+        // استخدام text/plain يمنع طلب OPTIONS المسبق الذي قد يفشل إذا لم يكن الـ Worker يجيب عن preflight.
         try {
           if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
             var lexAssist = (typeof buildChapterLexiconAssist === 'function') ? buildChapterLexiconAssist(verses) : [];
             var numbered = verses.map(function (t, i) { return '(' + (i + 1) + ') ' + t; }).join('\n');
+            var chapterPrompt = [
+              'أنت مُعِدّ تفسير كتابي أرثوذكسي قبطي أمين، تشرح بالعربية الواضحة والدقيقة.',
+              'فسّر الإصحاح كاملًا اعتمادًا على نص فاندايك المرسل وسياقه، وليس بتأمل عام أو ملخص إنشائي.',
+              'ابدأ بمقدمة قصيرة تشرح موقع الإصحاح في سياق السفر، دون اختلاق خلفية تاريخية.',
+              'قسّم الإصحاح إلى وحدات موضوعية بحسب انتقالات النص الفعلية، مع عنوان وأرقام الآيات لكل وحدة.',
+              'اشرح كل آية بالترتيب ولا تسقط أي آية. اكتب رقم الآية ثم شرحًا يوضح معناها ومقصدها وعلاقتها بالسياق.',
+              'لا تكرر نص الآية فقط ولا تستخدم جملة واحدة تصلح لأي آية. اربط كل شرح بألفاظ الآية وتفاصيلها المحددة.',
+              'اشرح الأفعال والرموز والصور النبوية والأماكن والأسماء المهمة عند ورودها، وميّز بين المعنى الحرفي والرمزي.',
+              'في النبوات والدينونة وضّح المخاطَبين وسبب الإنذار والصورة والنتيجة. لا تجعل كل تفصيل رمزًا دون دليل.',
+              'راعِ النوع الأدبي: نبوة أو شعر أو مثل أو شريعة أو سرد تاريخي. لا تفرض قالبًا واحدًا على كل النصوص.',
+              'التزم بالفهم الأرثوذكسي القبطي والكتاب المقدس، ولا تنسب أقوالًا أو آراء إلى الآباء دون تحقق.',
+              'بعد الشرح أضف: خلاصة رسالة الإصحاح، ثم الكلمات والتعبيرات الصعبة الموجودة فعلًا ومعناها في السياق، ثم تطبيقًا روحيًا عمليًا مرتبطًا بالنص.',
+              'لا تخترع معلومات أو مراجع. عند عدم اليقين اذكر ذلك باختصار.',
+              'اكتب بعربية فصيحة سهلة، في عناوين ونقاط واضحة، دون مخاطبة مؤنثة ودون إطالة إنشائية.',
+              'يجب تغطية جميع الآيات وعددها ' + verses.length + ' آية، مع الحفاظ على ترتيبها.'
+            ].join('\n');
+            if (out) {
+              out.setAttribute('aria-live', 'polite');
+              out.textContent = body + '\n\n⏳ جارٍ إعداد التفسير التفصيلي للإصحاح آيةً آية...';
+            }
+            var chapterController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            var chapterTimer = setTimeout(function () {
+              try { if (chapterController) chapterController.abort(); } catch (eTimeout) {}
+            }, 90000);
             fetch(TAFSIR_WORKER_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              mode: 'cors',
+              cache: 'no-store',
+              headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
               body: JSON.stringify({
                 ref: book + ' ' + ch,
                 verseText: numbered,
@@ -9769,40 +9775,60 @@ function onPrepareImageSelected(idx, input) {
                 chapter: true,
                 verseCount: verses.length,
                 lexiconAssist: lexAssist,
+                tradition: 'coptic_orthodox',
+                lang: 'ar',
                 systemPrompt: (typeof KHALWATI_TAFSIR_SYSTEM_PROMPT !== 'undefined' ? KHALWATI_TAFSIR_SYSTEM_PROMPT : ''),
-                instruction: 'اشرح كل آية بجملة مختلفة من معناها الفعلي. ممنوع تمامًا: الكلام العام، تكرار نفس الجملة على أكثر من آية، عبارات مثل «يركز النص على» أو «ضمن رسالة الإصحاح» أو «تصاعد المعنى»، وشرح كلمات عامة مثل الرب وإسرائيل. ادمج معنى كلمة صعبة نادرة فقط داخل الجملة إن لزم.'
-              })
-            }).then(function (r) { return r.json(); }).then(function (j) {
+                instruction: chapterPrompt,
+                task: 'full_chapter_exegesis'
+              }),
+              signal: chapterController ? chapterController.signal : undefined
+            }).then(function (r) {
+              return r.text().then(function (raw) {
+                var j = {};
+                try { j = raw ? JSON.parse(raw) : {}; } catch (parseErr) { throw new Error('invalid_worker_response'); }
+                if (!r.ok) throw new Error('worker_http_' + r.status + (j.error ? ':' + j.error : ''));
+                return j;
+              });
+            }).then(function (j) {
+              clearTimeout(chapterTimer);
               var clean = '';
-              if (j && (j.tafsir || j.text || j.content)) clean = String(j.tafsir || j.text || j.content || '');
+              if (j && (j.tafsir || j.text || j.content)) clean = String(j.tafsir || j.text || j.content || '').trim();
               function badTafsir(t) {
-                if (!t || t.length < 80) return true;
-                if (/يركز النص على/.test(t)) return true;
-                if (/تصاعد المعنى/.test(t)) return true;
-                if (/ضمن رسالة الإصحاح/.test(t)) return true;
+                if (!t || t.length < Math.max(350, verses.length * 38)) return true;
+                if (/يركز النص على|تصاعد المعنى|ضمن رسالة الإصحاح|افهمي|افهم من|من خلال قراء/.test(t)) return true;
                 if (/المقصود بـ«?(الرب|الله|إسرائيل|اسرائيل)/.test(t)) return true;
-                if (/افهمي|افهم من|من خلال قراء/.test(t)) return true;
-                // تكرار مريب لنفس الجملة
-                var lines = t.split(/\n/).map(function (x) { return x.replace(/الآية [٠-٩0-9]+/g,'').trim(); }).filter(function (x) { return x.length > 40; });
+                var lines = t.split(/\n/).map(function (x) {
+                  return x.replace(/الآية\s*[٠-٩0-9]+/g, '').replace(/^\s*[٠-٩0-9]+\s*[-.:：]/, '').trim();
+                }).filter(function (x) { return x.length > 45; });
                 var seen = {}, dup = 0;
                 lines.forEach(function (x) {
-                  var k = x.slice(0, 50);
+                  var k = x.replace(/[٠-٩0-9]/g, '').slice(0, 65);
                   if (seen[k]) dup++;
                   seen[k] = 1;
                 });
                 if (dup >= 2) return true;
+                // يجب أن تظهر إشارات كافية لأرقام الآيات في الناتج.
+                var nums = {}, reNum = /(?:الآية\s*|آية\s*|^\s*)([٠-٩0-9]{1,3})\s*[:：.)-]?/gm, mm;
+                while ((mm = reNum.exec(t)) !== null) {
+                  var digits = mm[1].replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
+                  var nn = parseInt(digits, 10);
+                  if (nn >= 1 && nn <= verses.length) nums[nn] = 1;
+                }
+                if (verses.length >= 5 && Object.keys(nums).length < Math.ceil(verses.length * 0.55)) return true;
                 return false;
               }
               if (!badTafsir(clean)) {
-                out.textContent = clean;
+                if (out) out.textContent = clean;
                 try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: clean }; } catch (e1) {}
               } else {
-                // أبقِ الشرح المحلي
-                out.textContent = body;
-                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (e2) {}
+                if (out) out.textContent = body + '\n\nلم يُعتمد الرد الذكي لأنه لم يغطِّ آيات الإصحاح بالقدر الكافي؛ عُرض الشرح المحلي بدلًا منه.';
+                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: out ? out.textContent : body }; } catch (e2) {}
               }
-            }).catch(function () {
-              out.textContent = body;
+            }).catch(function (err) {
+              clearTimeout(chapterTimer);
+              var reason = (err && err.name === 'AbortError') ? 'انتهت مهلة الاتصال بخدمة التفسير.' : 'تعذّر الاتصال بخدمة التفسير الذكي. تأكدي من الإنترنت، ثم أعيدي المحاولة.';
+              if (out) out.textContent = body + '\n\n' + reason + '\nملاحظة: تم الاحتفاظ بالشرح المحلي ولم تُفقد بيانات الإصحاح.';
+              try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: out ? out.textContent : body }; } catch (e3) {}
             });
           }
         } catch (eAi) {
@@ -24797,7 +24823,7 @@ function playProgressFinalVideo() {
   
   // ترقية هادئة للكاش دون ريستارت متكرر
   (function forceUpgradeCache() {
-   var APP_VER = '405';
+   var APP_VER = '447';
    var KEY = 'khalwati_force_v' + APP_VER;
    var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

@@ -1,2 +1,3 @@
-1) index.html (نسخة 449) → استبدلي به الملف في المستودع. sw.js زي ما هو.
-2) khalwaty-tafsir-worker.js (v12) → الصقيه كامل في Cloudflare Worker ثم Deploy. يحتاج OPENAI_API_KEY كما هو.
+1) index.html (449) → GitHub بدل القديم.
+2) khalwaty-tafsir-worker.js (v12) → الصقيه كامل في Cloudflare Worker ثم Deploy.
+3) للتشغيل المجاني: Worker → Settings → Bindings → Add → Workers AI → اسم المتغير: AI

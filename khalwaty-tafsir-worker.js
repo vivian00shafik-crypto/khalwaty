@@ -80,7 +80,15 @@ const WORD_RULES = `
 
 async function ask(env, system, prompt, tokens = 6500) {
   if (!env.OPENAI_API_KEY) {
-    throw new Error("مفتاح OPENAI_API_KEY غير موجود.");
+    if (!env.AI) throw new Error("لا يوجد مفتاح OPENAI_API_KEY ولا ربط Workers AI (AI).");
+    const r = await env.AI.run(env.AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+      messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+      temperature: 0.25,
+      max_tokens: Math.min(tokens, 3000)
+    });
+    const t = r && (r.response || (r.result && r.result.response));
+    if (!t || !String(t).trim()) throw new Error("لم يصل رد من نموذج التفسير.");
+    return String(t).trim();
   }
 
   const response = await fetch(
@@ -193,6 +201,8 @@ ${Array.isArray(previous) ? previous.join("\n") : previous}
 
   const draft = await ask(env, CHAPTER_RULES, prompt, 6500);
 
+  if (!env.OPENAI_API_KEY) return draft;
+
   const reviewed = await ask(env, `
 أنت مراجع للتفسير الكتابي.
 قارن التفسير بالنص الأصلي.
@@ -228,8 +238,8 @@ export default {
         success: true,
         status: "online",
         version: VERSION,
-        ready: !!env.OPENAI_API_KEY,
-        model: env.OPENAI_MODEL || "gpt-4o-mini"
+        ready: !!(env.OPENAI_API_KEY || env.AI),
+        model: env.OPENAI_API_KEY ? (env.OPENAI_MODEL || "gpt-4o-mini") : (env.AI_MODEL || "workers-ai")
       }, 200, headers);
     }
 

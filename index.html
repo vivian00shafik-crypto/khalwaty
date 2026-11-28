@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="448" lang="ar" dir="rtl">
+<html data-app-ver="449" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9692,6 +9692,71 @@ function onPrepareImageSelected(idx, input) {
       return verses;
     }
 
+
+    function khChunkChapter(verses) {
+      var parts = [], cur = [], raw = [], len = 0, from = 1;
+      verses.forEach(function (t, i) {
+        var line = '(' + (i + 1) + ') ' + t;
+        if (cur.length && (len + line.length > 1400 || cur.length >= 14)) {
+          parts.push({ from: from, to: i, lines: cur, raw: raw });
+          cur = []; raw = []; len = 0; from = i + 1;
+        }
+        cur.push(line); raw.push(t); len += line.length;
+      });
+      if (cur.length) parts.push({ from: from, to: verses.length, lines: cur, raw: raw });
+      return parts;
+    }
+    function khChapterErr(j, st) {
+      var e = String((j && (j.error || j.message)) || '');
+      if (/origin_not_allowed/.test(e) || st === 403) return 'الـ Worker رفض الطلب لأن رابط التطبيق غير مسموح له.';
+      if (/missing_ref_or_verse_text/.test(e)) return 'الـ Worker على Cloudflare لسه على نسخة قديمة. حدّثيه بملف khalwaty-tafsir-worker.js.';
+      if (st === 429 || /quota|limit/i.test(e)) return 'الحصة اليومية للخدمة انتهت. جرّبي لاحقًا.';
+      if (/ai_unavailable|model/.test(e) || st >= 500) return 'خدمة الذكاء على Cloudflare غير متاحة الآن. [' + (e || ('http_' + st)) + ']';
+      return 'لم تُرجع الخدمة تفسيرًا: ' + e + ' [' + (e || ('http_' + st)) + ']';
+    }
+    function khRunChapterAi(book, ch, verses, body, out) {
+      if (!out || typeof TAFSIR_WORKER_URL === 'undefined' || !TAFSIR_WORKER_URL) return;
+      var ref = (book + ' ' + ch).trim(), parts = khChunkChapter(verses), done = [], oldWorker = false;
+      function fail(msg) {
+        out.textContent = (done.length ? done.join('\n\n') : body) + '\n\n⚠️ ' + msg + (done.length ? ' (المعروض أعلاه جزء من التفسير)' : ' (المعروض الشرح المحلي من التطبيق)');
+      }
+      function step(i) {
+        if (i >= parts.length) {
+          var all = done.join('\n\n');
+          if (all.length < 80) { fail('التفسير الراجع قصير جدًا.'); return; }
+          all += '\n\n— الشرح أعلاه مولَّد بالذكاء الاصطناعي؛ رجّعي للتفاسير الآبائية للتأكد.' + (oldWorker ? '\n⚠️ الـ Worker لسه نسخة قديمة — حدّثيه بـ worker-chapter.js لتفسير أدق.' : '');
+          out.textContent = all;
+          try { window._lastTafsir = { ref: ref, content: all }; } catch (e1) {}
+          return;
+        }
+        out.textContent = (done.length ? done.join('\n\n') + '\n\n' : '') + '⏳ جارٍ إعداد المقطع ' + (i + 1) + ' من ' + parts.length + '…';
+        var p = parts[i], ctrl = new AbortController(), tm = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 80000), lex = [];
+        try { lex = buildChapterLexiconAssist(p.raw); } catch (e2) {}
+        var payload = {
+          mode: 'chapter', chapter: true, ref: ref, book: book, chapterNumber: ch,
+          verseText: p.lines.join('\n'), verseCount: verses.length, fromVerse: p.from, toVerse: p.to,
+          part: i + 1, totalParts: parts.length,
+          previousSummary: done.length ? (done.join('\n').split('\n').filter(function (l) { return /^#{2,3}\s/.test(l); }).join('\n') + '\n' + done[done.length - 1].slice(-400)) : '',
+          lexiconAssist: lex, tradition: 'coptic_orthodox', lang: 'ar',
+          systemPrompt: (typeof KHALWATI_TAFSIR_SYSTEM_PROMPT !== 'undefined' ? KHALWATI_TAFSIR_SYSTEM_PROMPT : '')
+        };
+        fetch(TAFSIR_WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal })
+          .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j = j || {}; j.__st = r.status; return j; }); })
+          .then(function (j) {
+            clearTimeout(tm);
+            var t = String(j.tafsir || j.text || j.content || j.result || '').trim();
+            if (!t || j.ok === false || j.error) { fail(khChapterErr(j, j.__st)); return; }
+            if (j.mode !== 'chapter') oldWorker = true;
+            done.push(t); step(i + 1);
+          })
+          .catch(function (e) {
+            clearTimeout(tm);
+            fail(e && e.name === 'AbortError' ? 'الخدمة تأخرت في الرد. أعيدي المحاولة.' : 'تعذّر الاتصال بخدمة التفسير. تحققي من الإنترنت.');
+          });
+      }
+      step(0);
+    }
+
     var goCh = document.getElementById('bcGoChapter');
     if (goCh) {
       goCh.addEventListener('click', function (e) {
@@ -9754,60 +9819,7 @@ function onPrepareImageSelected(idx, input) {
           };
           if (out && out.parentNode) out.parentNode.insertBefore(pdfB, out.nextSibling);
         } catch (ePdf) {}
-        // الإبقاء على الشرح المحلي دائمًا؛ الخدمة الخارجية اختيارية وبفلتر جودة
-        try {
-          if (typeof TAFSIR_WORKER_URL !== 'undefined' && TAFSIR_WORKER_URL) {
-            var lexAssist = (typeof buildChapterLexiconAssist === 'function') ? buildChapterLexiconAssist(verses) : [];
-            var numbered = verses.map(function (t, i) { return '(' + (i + 1) + ') ' + t; }).join('\n');
-            fetch(TAFSIR_WORKER_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ref: book + ' ' + ch,
-                verseText: numbered,
-                mode: 'chapter',
-                chapter: true,
-                verseCount: verses.length,
-                lexiconAssist: lexAssist,
-                systemPrompt: (typeof KHALWATI_TAFSIR_SYSTEM_PROMPT !== 'undefined' ? KHALWATI_TAFSIR_SYSTEM_PROMPT : ''),
-                instruction: 'mode=chapter: فسّر الإصحاح كاملًا بالهيكل: مقدمة، موضوعات (أولًا/ثانيًا مع أرقام الآيات)، شرح بلا إعادة نص الآيات، كلمات صعبة مدمجة، معنى روحي، تطبيق عملي، ملخص. ممنوع التكرار والكلام العام واختراع معلومات. راعِ التقليد القبطي الأرثوذكسي.'
-              })
-            }).then(function (r) { return r.json(); }).then(function (j) {
-              var clean = '';
-              if (j && (j.tafsir || j.text || j.content || j.result || j.answer || j.interpretation)) clean = String(j.tafsir || j.text || j.content || j.result || j.answer || j.interpretation || '');
-              function badTafsir(t) {
-                if (!t || t.length < 80) return true;
-                if (/يركز النص على/.test(t)) return true;
-                if (/تصاعد المعنى/.test(t)) return true;
-                if (/ضمن رسالة الإصحاح/.test(t)) return true;
-                if (/المقصود بـ«?(الرب|الله|إسرائيل|اسرائيل)/.test(t)) return true;
-                if (/افهمي|افهم من|من خلال قراء/.test(t)) return true;
-                // تكرار مريب لنفس الجملة
-                var lines = t.split(/\n/).map(function (x) { return x.replace(/الآية [٠-٩0-9]+/g,'').trim(); }).filter(function (x) { return x.length > 40; });
-                var seen = {}, dup = 0;
-                lines.forEach(function (x) {
-                  var k = x.slice(0, 50);
-                  if (seen[k]) dup++;
-                  seen[k] = 1;
-                });
-                if (dup >= 2) return true;
-                return false;
-              }
-              if (!badTafsir(clean)) {
-                out.textContent = clean;
-                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: clean }; } catch (e1) {}
-              } else {
-                // أبقِ الشرح المحلي
-                out.textContent = body;
-                try { window._lastTafsir = { ref: (book + ' ' + ch).trim(), content: body }; } catch (e2) {}
-              }
-            }).catch(function () {
-              out.textContent = body;
-            });
-          }
-        } catch (eAi) {
-          if (out) out.textContent = body;
-        }
+        try { khRunChapterAi(book, ch, verses, body, out); } catch (eAi) { if (out) out.textContent = body; }
       });
     }
 
@@ -24707,7 +24719,7 @@ function playProgressFinalVideo() {
   
   // ترقية هادئة للكاش دون ريستارت متكرر
   (function forceUpgradeCache() {
-   var APP_VER = '405';
+   var APP_VER = '449';
    var KEY = 'khalwati_force_v' + APP_VER;
    var htmlVer = (document.documentElement.getAttribute('data-app-ver') || '').trim();
 

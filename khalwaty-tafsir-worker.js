@@ -1,290 +1,286 @@
-/**
- * Khalwaty Smart Tafsir — Cloudflare Worker
- * Deploy: wrangler deploy (or paste into Cloudflare Workers editor)
- * Secret required: OPENAI_API_KEY
- * Optional: OPENAI_MODEL (default gpt-4o-mini)
- *
- * Compatible with خلوتي app fetch contract:
- *  GET  -> { ok, service, ready, version }
- *  POST -> chapter | verse | linguistic
- */
+const VERSION = "12.0";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct";
 
-const VERSION = 8;
-const SERVICE = 'Khalwaty Smart Tafsir';
-const ALLOWED_ORIGINS = [
-  'https://vivian00shafik-crypto.github.io',
-  'http://localhost',
-  'http://127.0.0.1'
+const ORIGINS = [
+  "https://vivian00shafik-crypto.github.io",
+  "http://localhost:3000",
+  "http://127.0.0.1:5500"
 ];
 
-function corsHeaders(origin) {
-  const allow = ALLOWED_ORIGINS.some((o) => origin === o || origin.startsWith(o))
-    ? origin
-    : ALLOWED_ORIGINS[0];
+const CHAPTER_RULES = `
+أنت مفسر متخصص في الكتاب المقدس من منظور قبطي أرثوذكسي.
+
+مهمتك تفسير النص الكتابي المرسل فعلًا، وليس إنتاج كلام عام.
+
+قواعد أساسية:
+- اقرأ النص كاملًا قبل التفسير.
+- لا تخترع أحداثًا أو كلمات أو أسبابًا أو رموزًا.
+- لا تذكر كلمة صعبة غير موجودة في النص.
+- لا تكرر نفس المعنى في أكثر من موضع.
+- لا تستخدم عبارات وعظية عامة بدل شرح الآيات.
+- قسّم الإصحاح حسب انتقال الموضوع والأحداث، وليس حسب عدد ثابت من الآيات.
+- التزم بأرقام الآيات الصحيحة.
+- اشرح المعنى المباشر أولًا، ثم المعنى الروحي.
+- اذكر الرموز والنبوات فقط إذا كان لها أساس كتابي وتفسيري.
+- لا تنسب أقوالًا للآباء دون مصدر موثوق.
+- إذا لم تتوفر معلومة، لا تخمّنها.
+
+اكتب بهذا الترتيب:
+
+# شرح الإصحاح
+
+## مقدمة
+موضوع الإصحاح وسياقه في السفر.
+
+## شرح الإصحاح
+قسّم الإصحاح إلى مقاطع حسب المعنى.
+
+لكل مقطع:
+### عنوان يعبّر عن موضوعه (أرقام الآيات)
+- شرح الآيات: وضّح ما يحدث ومعنى الكلام وسبب الأحداث ونتائجها.
+- المعنى الروحي: استخرج معنى محددًا من المقطع.
+- الكلمات الصعبة: اذكر الكلمات الموجودة فعلًا فقط.
+- الرموز والنبوات: عند وجود أساس واضح فقط.
+
+## الدروس المستفادة
+3 إلى 5 نقاط مستخرجة من الإصحاح.
+
+## تدريب عملي
+تدريب واقعي محدد مستخرج من موضوع الإصحاح، مع ربطه بآية أو موقف.
+يجب أن يختلف التدريب باختلاف الإصحاح.
+
+## ملخص الإصحاح
+خلاصة قصيرة لأهم ما يعلّمه الإصحاح.
+
+ممنوع تكرار العناوين أو ملء الأقسام بكلام إنشائي.
+يجب أن يحتوي كل مقطع على شرح حقيقي للآيات.
+`;
+
+const VERSE_RULES = `
+أنت مفسر كتابي قبطي أرثوذكسي.
+اشرح الآية المرسلة:
+1. المعنى المباشر.
+2. شرح الكلمات والتعبيرات الصعبة.
+3. سياق الآية.
+4. المعنى الروحي.
+5. الرمز أو النبوة إن وجد أساس واضح.
+لا تخترع معلومات ولا تكرر نص الآية.
+استخدم العربية البسيطة والنقاط الواضحة.
+`;
+
+const WORD_RULES = `
+اشرح الكلمات الصعبة الموجودة فعلًا في النص المرسل.
+لكل كلمة اذكر:
+- الكلمة.
+- معناها اللغوي.
+- معناها في سياق الآية.
+- رقم الآية إن توفر.
+لا تضف كلمات من خارج النص.
+`;
+
+async function ask(env, system, prompt, tokens = 6500) {
+  if (!env.OPENAI_API_KEY) {
+    throw new Error("مفتاح OPENAI_API_KEY غير موجود.");
+  }
+
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.25,
+        max_tokens: tokens
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "خطأ في خدمة التفسير.");
+  }
+
+  const result = data?.choices?.[0]?.message?.content;
+  if (!result) throw new Error("لم يصل رد من نموذج التفسير.");
+
+  return result.trim();
+}
+
+function getText(b) {
+  return String(
+    b.chapterText || b.bibleText || b.scriptureText ||
+    b.text || b.content || b.verseText || ""
+  ).trim();
+}
+
+function getMode(b) {
+  const m = String(b.mode || b.type || b.action || "").toLowerCase();
+  if (m === "image") return "image";
+  if (["linguistic", "words", "dictionary"].includes(m)) return "linguistic";
+  if (["verse", "single-verse", "ayat"].includes(m)) return "verse";
+  if (m === "chapter" || b.chapter === true) return "chapter";
+  return b.ref ? "verse" : "chapter";
+}
+
+function cors(origin) {
   return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json; charset=utf-8',
-    Vary: 'Origin'
+    "Access-Control-Allow-Origin": ORIGINS.includes(origin)
+      ? origin : ORIGINS[0],
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin"
   };
 }
 
-function json(data, status, origin) {
+function reply(data, status, headers) {
   return new Response(JSON.stringify(data), {
-    status: status || 200,
-    headers: corsHeaders(origin || '')
-  });
-}
-
-const CHAPTER_SYSTEM = `أنت «مُفسّر | خلوة اليوم» وفق التعليم الأرثوذكسي القبطي.
-فسّر الإصحاح كاملًا بالهيكل التالي وبالعربية البسيطة:
-
-مقدمة الإصحاح
-(خلفية وسياق مختصران، بلا كلام عام فارغ)
-
-أولًا: [عنوان موضوعي] (ع س–ص)
-* شرح المعنى والسبب والنتيجة والرموز إن وُجدت
-* لا تعد لصق نص الآيات
-* ادمج معاني الكلمات الصعبة المرفقة داخل الجمل طبيعيًا
-
-ثانيًا: ...
-(أكمل حسب تسلسل الأفكار)
-
-المعنى الروحي
-* نقاط
-
-تطبيق عملي
-* خطوة واحدة قابلة للتنفيذ
-
-ملخص الإصحاح
-* نقاط مختصرة
-
-قواعد صارمة:
-- لا تكرر نفس الجملة على آيات متعددة
-- لا تخترع تاريخًا أو لاهوتًا
-- لا تنسب قولًا لقديس بلا مصدر
-- ميّز بين نص الكتاب والتفسير
-- راعِ التقليد القبطي الأرثوذكسي`;
-
-const VERSE_SYSTEM = `أنت مفسّر أرثوذكسي قبطي. اشرح الآية شرحًا واضحًا مختصرًا:
-المعنى في السياق، أي كلمة صعبة، والبعد الروحي العملي.
-لا تعد نص الآية كاملًا. لا تخترع معلومات.`;
-
-const LINGUISTIC_SYSTEM = `أنت مساعد لغوي لنص فانديك العربي.
-استخرج الكلمات الصعبة أو غير المألوفة من النص وأعطِ لكل كلمة معنى موجزًا في السياق.
-أرجع JSON فقط بالشكل: {"words":[{"word":"...","meaning":"..."}]}`;
-
-async function callOpenAI(env, messages, maxTokens) {
-  const key = env.OPENAI_API_KEY;
-  if (!key) return { error: 'ai_unavailable', detail: 'OPENAI_API_KEY missing' };
-  const model = env.OPENAI_MODEL || 'gpt-4o-mini';
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
+    status,
     headers: {
-      Authorization: 'Bearer ' + key,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.4,
-      max_tokens: maxTokens || 2500,
-      messages
-    })
+      ...headers,
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    }
   });
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    return { error: 'ai_unavailable', detail: 'openai_http_' + res.status, body: t.slice(0, 300) };
-  }
-  const data = await res.json();
-  const text = (((data || {}).choices || [])[0] || {}).message || {};
-  return { text: String(text.content || '').trim() };
 }
 
-function buildLexiconBlock(lex) {
-  if (!Array.isArray(lex) || !lex.length) return '';
-  return (
-    '\n\nكلمات صعبة للمساعدة (ادمجها في الشرح عند الحاجة):\n' +
-    lex
-      .slice(0, 20)
-      .map((x) => '- ' + (x.word || '') + ': ' + (x.meaning || ''))
-      .join('\n')
-  );
-}
+async function interpret(env, b, text, mode) {
+  const book = b.book || b.bookName || "غير محدد";
+  const chapter = (typeof b.chapter === "boolean" ? b.chapterNumber : b.chapter) || b.chapterNumber || "غير محدد";
+  const context = `السفر: ${book}\nالإصحاح: ${chapter}\n` + (b.ref ? `المرجع: ${b.ref}\n` : "");
+  const lex = Array.isArray(b.lexiconAssist) && b.lexiconAssist.length
+    ? "\nكلمات صعبة مساعدة (استخدم الموجود في النص فقط):\n" + b.lexiconAssist.slice(0, 25).join("\n") + "\n" : "";
 
-function splitLongChapter(verseText, maxChunk) {
-  const lines = String(verseText || '').split(/\n+/).filter(Boolean);
-  if (String(verseText || '').length <= maxChunk) return [verseText];
-  const chunks = [];
-  let buf = [];
-  let size = 0;
-  for (const line of lines) {
-    if (size + line.length > maxChunk && buf.length) {
-      chunks.push(buf.join('\n'));
-      buf = [];
-      size = 0;
-    }
-    buf.push(line);
-    size += line.length + 1;
-  }
-  if (buf.length) chunks.push(buf.join('\n'));
-  return chunks;
-}
-
-async function handleChapter(body, env) {
-  const ref = String(body.ref || '').trim();
-  const verseText = String(body.verseText || '').trim();
-  const systemPrompt = String(body.systemPrompt || CHAPTER_SYSTEM).trim() || CHAPTER_SYSTEM;
-  const instruction = String(body.instruction || '').trim();
-  const lex = body.lexiconAssist || [];
-  const verseCount = body.verseCount || 0;
-
-  if (!verseText) return { ok: false, error: 'missing_verseText' };
-
-  // لا نقصّ عند 1800 — نمرّر كاملًا مع تقسيم داخلي إن لزم
-  const chunks = splitLongChapter(verseText, 6000);
-  const parts = [];
-
-  for (let i = 0; i < chunks.length; i++) {
-    const user =
-      'المرجع: ' +
-      ref +
-      (verseCount ? '\nعدد الآيات: ' + verseCount : '') +
-      (chunks.length > 1 ? '\nجزء ' + (i + 1) + ' من ' + chunks.length : '') +
-      '\n\nنص الإصحاح:\n' +
-      chunks[i] +
-      buildLexiconBlock(lex) +
-      (instruction ? '\n\nتعليمات إضافية:\n' + instruction : '') +
-      (chunks.length > 1 && i > 0
-        ? '\n\nأكمل نفس هيكل التفسير دون تكرار المقدمة إن وُجدت في جزء سابق؛ ركّز على هذا الجزء.'
-        : '');
-
-    const r = await callOpenAI(
-      env,
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: user }
-      ],
-      chunks.length > 1 ? 1800 : 3200
-    );
-    if (r.error) return { ok: false, error: r.error, detail: r.detail || '' };
-    parts.push(r.text);
+  if (mode === "verse") {
+    return ask(env, VERSE_RULES, context + "\nالنص:\n" + text + lex, 3000);
   }
 
-  const text = parts.join('\n\n').trim();
-  return {
-    ok: true,
-    mode: 'ai',
-    text,
-    tafsir: text,
-    content: text,
-    disclaimer: 'تفسير مبسّط للاستفادة الروحية؛ للرجوع العلمي راجع التفاسير الكنسية الموثوقة.',
-    chapter: true,
-    version: VERSION
-  };
-}
+  if (mode === "linguistic") {
+    return ask(env, WORD_RULES, context + "\nالنص:\n" + text, 3000);
+  }
 
-async function handleVerse(body, env) {
-  const ref = String(body.ref || '').trim();
-  const verseText = String(body.verseText || '').trim();
-  if (!verseText) return { ok: false, error: 'missing_verseText' };
-  const lex = body.lexiconAssist || [];
-  const user =
-    'المرجع: ' + ref + '\nالآية:\n' + verseText + buildLexiconBlock(lex);
-  const r = await callOpenAI(
-    env,
-    [
-      { role: 'system', content: VERSE_SYSTEM },
-      { role: 'user', content: user }
-    ],
-    1200
-  );
-  if (r.error) return { ok: false, error: r.error, detail: r.detail || '' };
-  return {
-    ok: true,
-    mode: 'ai',
-    text: r.text,
-    tafsir: r.text,
-    disclaimer: 'تفسير مبسّط للاستفادة الروحية.',
-    version: VERSION
-  };
-}
+  if (Number(b.totalParts) > 1) {
+    const p = Number(b.part) || 1, n = Number(b.totalParts);
+    let d = `هذا المقطع ${p} من ${n} من الإصحاح (الآيات ${b.fromVerse}–${b.toVerse} من ${b.verseCount}). `;
+    if (p === 1) d += "ابدأ بـ «## مقدمة» عن الإصحاح كله ثم المقاطع، ولا تكتب الدروس أو التدريب أو الملخص الآن.";
+    else if (p < n) d += "اكتب مقاطع هذه الآيات فقط (### عنوان (أرقام الآيات)) بلا مقدمة ولا دروس ولا تدريب ولا ملخص، ولا تكرر ما سبق.";
+    else d += "اكتب مقاطع هذه الآيات بلا مقدمة، ثم اختم عن الإصحاح كله بـ «## الدروس المستفادة» و«## تدريب عملي» و«## ملخص الإصحاح» اعتمادًا على العناوين السابقة وهذا المقطع.";
+    const prev = b.previousSummary ? "\nما سبق (للربط وعدم التكرار):\n" + b.previousSummary + "\n" : "";
+    return ask(env, CHAPTER_RULES + "\nمهم: التزم بتعليمات المقطع أدناه حتى لو خالفت الترتيب أعلاه.", context + d + prev + "\nالنص:\n" + text + lex, 3500);
+  }
 
-async function handleLinguistic(body, env) {
-  const verseText = String(body.verseText || '').trim();
-  if (!verseText) return { ok: false, error: 'missing_verseText' };
-  const r = await callOpenAI(
-    env,
-    [
-      { role: 'system', content: LINGUISTIC_SYSTEM },
-      { role: 'user', content: verseText }
-    ],
-    1000
-  );
-  if (r.error) return { ok: false, error: r.error, detail: r.detail || '' };
-  let words = [];
-  try {
-    const m = r.text.match(/\{[\s\S]*\}/);
-    if (m) {
-      const j = JSON.parse(m[0]);
-      if (Array.isArray(j.words)) words = j.words;
-    }
-  } catch (e) {}
-  return {
-    ok: true,
-    mode: 'linguistic',
-    words,
-    text: r.text,
-    version: VERSION
-  };
+  const previous = b.previousTrainings || b.trainingHistory || "";
+  const prompt = `
+${context}
+
+النص الكتابي الكامل:
+${text}
+${lex}
+تدريبات سابقة لتجنب تكرارها:
+${Array.isArray(previous) ? previous.join("\n") : previous}
+
+فسّر الإصحاح كاملًا وفق التعليمات.
+لا تكتب تفسيرًا قبل قراءة النص.
+`;
+
+  const draft = await ask(env, CHAPTER_RULES, prompt, 6500);
+
+  const reviewed = await ask(env, `
+أنت مراجع للتفسير الكتابي.
+قارن التفسير بالنص الأصلي.
+صحح أرقام الآيات.
+احذف الكلمات غير الموجودة في النص.
+احذف الرموز غير المثبتة والتكرار والكلام العام.
+تأكد أن كل مقطع يحتوي على شرح فعلي.
+لا تضف معلومات غير مؤكدة.
+أخرج التفسير النهائي فقط.
+`, `
+النص الأصلي:
+${text}
+
+التفسير:
+${draft}
+
+${context}
+`, 6500);
+
+  return reviewed;
 }
 
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get('Origin') || '';
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    }
-    if (request.method === 'GET') {
-      return json(
-        {
-          ok: true,
-          service: SERVICE,
-          ready: !!env.OPENAI_API_KEY,
-          version: VERSION
-        },
-        200,
-        origin
-      );
-    }
-    if (request.method !== 'POST') {
-      return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+    const headers = cors(request.headers.get("Origin") || "");
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers });
     }
 
-    let body = {};
-    try {
-      body = await request.json();
-    } catch (e) {
-      return json({ ok: false, error: 'invalid_json' }, 400, origin);
+    if (request.method === "GET") {
+      return reply({
+        success: true,
+        status: "online",
+        version: VERSION,
+        ready: !!env.OPENAI_API_KEY,
+        model: env.OPENAI_MODEL || "gpt-4o-mini"
+      }, 200, headers);
+    }
+
+    if (request.method !== "POST") {
+      return reply({ success: false, error: "Method not allowed." }, 405, headers);
     }
 
     try {
-      const mode = String(body.mode || '').toLowerCase();
-      let result;
-      if (mode === 'linguistic') result = await handleLinguistic(body, env);
-      else if (mode === 'chapter' || body.chapter === true) result = await handleChapter(body, env);
-      else result = await handleVerse(body, env);
-
-      if (result && result.ok === false) {
-        return json(result, 503, origin);
+      const body = await request.json();
+      if (getMode(body) === "image") {
+        return reply({ success: false, ok: false, error: "image_unavailable", detail: "توليد الصور غير مفعّل في هذا الـ Worker" }, 501, headers);
       }
-      return json(result, 200, origin);
-    } catch (err) {
-      return json(
-        { ok: false, error: 'server_error', detail: String((err && err.message) || err) },
-        500,
-        origin
-      );
+      const text = getText(body);
+      const mode = getMode(body);
+
+      if (!text) {
+        return reply({
+          success: false,
+          error: "نص الإصحاح غير موجود. افتحي الإصحاح من الكتاب أولًا."
+        }, 400, headers);
+      }
+
+      if (text.length > 50000) {
+        return reply({
+          success: false,
+          error: "النص أطول من الحد المسموح."
+        }, 413, headers);
+      }
+
+      const result = await interpret(env, body, text, mode);
+
+      return reply({
+        success: true,
+        ok: true,
+        version: VERSION,
+        mode,
+        result,
+        text: result,
+        tafsir: result,
+        content: result,
+        answer: result,
+        interpretation: result
+      }, 200, headers);
+
+    } catch (error) {
+      return reply({
+        success: false,
+        ok: false,
+        version: VERSION,
+        error: error.message || "حدث خطأ أثناء التفسير."
+      }, 500, headers);
     }
   }
 };

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="450" lang="ar" dir="rtl">
+<html data-app-ver="452" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -2215,7 +2215,7 @@
         <span class="voice-mic-status" id="voiceMicStatus"></span>
         <button type="button" class="voice-mic-btn" id="modalVoiceMic" title="كتابة صوتية" onclick="toggleVoiceTyping('modalTextarea', this)">🎤</button>
       </div>
-      <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث" spellcheck="false" autocorrect="off" autocapitalize="sentences" autocomplete="off" lang="ar" dir="rtl" inputmode="text" enterkeyhint="enter"></textarea>
+      <textarea id="modalTextarea" data-voice-attached="1" placeholder="اكتب هنا... أو اضغطي 🎤 للتحدث" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" lang="ar" dir="rtl" inputmode="text" enterkeyhint="enter"></textarea>
       <div id="likedReadingsHistory" style="display:none;margin-top:12px;text-align:right;"></div>
       <button class="save-btn" onclick="saveText()" data-i18n-btn="save">حفظ</button>
       <button class="save-btn" onclick="printCurrentText()" style="margin-top:8px; background:#5a7d4a;" data-i18n-btn="downloadPdf">تحميل PDF</button>
@@ -11623,9 +11623,11 @@ function openKatameros(dateObj) {
   // Save psalm text fields on change
   function disableSpellcheckEverywhere() {
    try {
-    document.querySelectorAll('textarea, input[type="text"]').forEach(function (el) {
+    document.querySelectorAll('textarea, input[type="text"], input:not([type])').forEach(function (el) {
      el.setAttribute('spellcheck', 'false');
      el.setAttribute('autocorrect', 'off');
+     el.setAttribute('autocomplete', 'off');
+     el.setAttribute('autocapitalize', 'off');
     });
    } catch (e) {}
   }
@@ -11696,7 +11698,27 @@ function openKatameros(dateObj) {
    confessionView = 'home';
    var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
    document.getElementById('confessionTitle').textContent = isEn ? 'Confession helper' : 'مساعد الاعتراف';
+   var data = (typeof loadData === 'function') ? loadData() : {};
+   var doneToday = !!(data.confessionDone || (typeof data.confession === 'string' && data.confession.trim()));
+   var confDate = localStorage.getItem('khalwati_conf_date') || '';
+   var every = parseInt(localStorage.getItem('khalwati_conf_every') || '40', 10);
+   var nextInfo = '';
+   if (confDate) {
+    try {
+     var d = new Date(confDate + 'T12:00:00');
+     d.setDate(d.getDate() + every);
+     nextInfo = (isEn ? 'Next approx: ' : 'القادم تقريبًا: ') + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    } catch (eN) {}
+   } else {
+    nextInfo = isEn ? 'Set last confession date in Settings' : 'حددي تاريخ آخر اعتراف من الإعدادات';
+   }
+   var statusHtml = doneToday
+    ? '<p style="text-align:center;color:#2e7d32;font-weight:700;margin:0 0 12px;">✅ ' + (isEn ? 'Confession marked done today — icon is lit' : 'تم تسجيل الاعتراف اليوم — الأيقونة منوّرة') + '</p>'
+    : '<p style="text-align:center;color:#8a7a60;margin:0 0 12px;">' + (isEn ? 'Mark when you finish confession so the icon lights up' : 'علّمي إنك نفّذتي الاعتراف عشان الأيقونة تنوّر') + '</p>';
    document.getElementById('confessionBody').innerHTML = `
+    ${statusHtml}
+    <p style="text-align:center;font-size:13px;color:var(--gold-dark);margin:0 0 14px;">${nextInfo}</p>
+    <button type="button" class="save-btn" style="margin:0 0 14px;background:${doneToday ? '#8a7a60' : '#5a7d4a'};" onclick="markConfessionDone()">${doneToday ? (isEn ? '✓ Done today' : '✓ تم اليوم') : (isEn ? '✅ I confessed today' : '✅ نفّذت الاعتراف اليوم')}</button>
     <div class="helper-grid">
      <button class="helper-btn" onclick="showConfessionPage('before')">🌿<br>${isEn ? 'Before confession' : 'قبل الاعتراف'}</button>
      <button class="helper-btn" onclick="showConfessionPage('during')">🙏<br>${isEn ? 'During confession' : 'أثناء الاعتراف'}</button>
@@ -11705,6 +11727,59 @@ function openKatameros(dateObj) {
      <button class="helper-btn" onclick="renderConfessionHistory()">📂<br>${isEn ? 'Saved history' : 'المحفوظات'}</button>
     </div>
    `;
+  }
+
+  function markConfessionDone() {
+   var isEn = (typeof getAppLang === 'function' && getAppLang() === 'en');
+   var data = loadData();
+   data.confessionDone = true;
+   // لو مفيش نص اعتراف، نحط ملاحظة بسيطة عشان الأيقونة تفضل منورة
+   if (!data.confession || !String(data.confession).trim()) {
+    data.confession = (isEn ? 'Confession completed on this day.' : 'تم الاعتراف في هذا اليوم.');
+   }
+   saveData(data);
+   // تحديث تاريخ آخر اعتراف = النهاردة عشان يحسب الميعاد القادم
+   var today = new Date();
+   var iso = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+   localStorage.setItem('khalwati_conf_date', iso);
+   // امسح علامة الإشعار لليوم عشان ما يتكررش
+   try {
+    var dueKey = (typeof getDateKey === 'function') ? getDateKey(today) : iso;
+    localStorage.setItem('khalwati_conf_notified_' + dueKey, '1');
+   } catch (e) {}
+   if (typeof renderServices === 'function') renderServices();
+   if (typeof updateNextConfInfo === 'function') updateNextConfInfo();
+   // جدولة إشعار الميعاد القادم
+   try { scheduleConfessionNotification(); } catch (eS) {}
+   showToast(isEn ? 'Confession marked — icon lit ✓' : 'تم تسجيل الاعتراف — الأيقونة منوّرة ✓');
+   renderConfessionHome();
+  }
+
+  function scheduleConfessionNotification() {
+   var confDate = localStorage.getItem('khalwati_conf_date');
+   var every = parseInt(localStorage.getItem('khalwati_conf_every') || '40', 10);
+   var confTime = localStorage.getItem('khalwati_conf_time') || '09:00';
+   if (!confDate) return;
+   try {
+    var parts = String(confTime).split(':');
+    var hh = parseInt(parts[0], 10); if (isNaN(hh)) hh = 9;
+    var mm = parseInt(parts[1], 10); if (isNaN(mm)) mm = 0;
+    var d = new Date(confDate + 'T12:00:00');
+    d.setDate(d.getDate() + every);
+    d.setHours(hh, mm, 0, 0);
+    var now = new Date();
+    if (d.getTime() <= now.getTime()) {
+     d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+     if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
+    }
+    var title = 'خلوتي — ميعاد الاعتراف';
+    var body = 'حان ميعاد الاعتراف القادم 🕊️\nادخلي وعلّمي إنك نفّذتي الاعتراف عشان الأيقونة تنوّر.\n«إن اعترفنا بخطايانا فهو أمين وعادل حتى يغفر لنا خطايانا ويطهّرنا من كل إثم (١ يوحنا ١: ٩)»';
+    if (typeof scheduleBackgroundNotification === 'function') {
+     scheduleBackgroundNotification(title, body, d.getTime(), { tag: 'khalwati-confession-due', data: { type: 'confession' } });
+    } else if (typeof showAppNotification === 'function' && (d.getTime() - now.getTime()) < 120000) {
+     showAppNotification(title, body);
+    }
+   } catch (e) { console.warn('scheduleConfessionNotification', e); }
   }
 
   function getConfessionHistory() {
@@ -22153,6 +22228,7 @@ function generateOrthodoxTafsir(ref, text) {
    const fontSize = localStorage.getItem('khalwati_font_size') || '16';
    const fontColor = localStorage.getItem('khalwati_font_color') || '#3e2f1c';
    const confEvery = localStorage.getItem('khalwati_conf_every') || '40';
+   const confTime = localStorage.getItem('khalwati_conf_time') || '09:00';
    const confDate = localStorage.getItem('khalwati_conf_date') || '';
    const prayTime = localStorage.getItem('khalwati_pray_time') || '06:00';
    const msgTime = localStorage.getItem('khalwati_msg_time') || '21:00';
@@ -22245,6 +22321,8 @@ function generateOrthodoxTafsir(ref, text) {
       <option value="40" ${confEvery==='40'?'selected':''}>${isEn?'40 days':'40 يوم'}</option>
       <option value="30" ${confEvery==='30'?'selected':''}>${isEn?'Every month (30 days)':'كل شهر (30 يوم)'}</option>
      </select>
+     <label style="margin-top:8px;display:block;">${isEn?'Notification time on due day':'ساعة الإشعار يوم الميعاد'}</label>
+     <input type="time" id="confTime" value="${confTime}" style="width:100%;padding:8px;font-family:inherit;" onchange="localStorage.setItem('khalwati_conf_time', this.value); updateNextConfInfo();">
      <p id="nextConfInfo" style="color:var(--gold-dark);font-size:13px;"></p>
 
      <p style="margin-top:14px;"><strong>${isEn?'♿ Accessibility / blind mode':'♿ وضع المكفوفين وإمكانية الوصول'}</strong></p>
@@ -22331,6 +22409,7 @@ function generateOrthodoxTafsir(ref, text) {
    const iso = y.value + '-' + m.value + '-' + d.value;
    localStorage.setItem('khalwati_conf_date', iso);
    updateNextConfInfo();
+   try { if (typeof scheduleConfessionNotification === 'function') scheduleConfessionNotification(); } catch (e) {}
   }
 
   function applyAppFont(size) {
@@ -22346,7 +22425,9 @@ function generateOrthodoxTafsir(ref, text) {
    if (!confDate) { el.textContent = 'حددي تاريخ آخر اعتراف'; return; }
    const d = new Date(confDate + 'T12:00:00');
    d.setDate(d.getDate() + every);
-   el.textContent = 'الاعتراف القادم تقريبًا: ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+   var confTime = localStorage.getItem('khalwati_conf_time') || '09:00';
+   el.textContent = 'الاعتراف القادم تقريبًا: ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear() + ' · الساعة ' + confTime;
+   try { if (typeof scheduleConfessionNotification === 'function') scheduleConfessionNotification(); } catch (e) {}
   }
 
   async function showAppNotification(title, body, opts) {
@@ -24470,6 +24551,7 @@ function playProgressFinalVideo() {
   }
 
   function checkReminders(forceTest) {
+   try { if (typeof scheduleConfessionNotification === 'function') scheduleConfessionNotification(); } catch (eC) {}
    const now = new Date();
    const mins = now.getHours() * 60 + now.getMinutes();
    const prayTime = localStorage.getItem('khalwati_pray_time') || '06:00';
@@ -24481,12 +24563,17 @@ function playProgressFinalVideo() {
    // اعتراف
    const confDate = localStorage.getItem('khalwati_conf_date');
    const every = parseInt(localStorage.getItem('khalwati_conf_every') || '40', 10);
+   const confTime = localStorage.getItem('khalwati_conf_time') || '09:00';
    if (confDate) {
     const d = new Date(confDate + 'T12:00:00');
     d.setDate(d.getDate() + every);
     const dueKey = getDateKey(d);
-    if (dueKey <= todayKey && localStorage.getItem('khalwati_conf_notified_' + dueKey) !== '1') {
-     showAppNotification('خلوتي', 'حان ميعاد الاعتراف القادم 🕊️');
+    const confMins = timeToMinutes(confTime);
+    // يوم الميعاد (أو بعده لو فات) وفي نافذة الساعة المختارة (±2 دقيقة)
+    const dayDue = dueKey <= todayKey;
+    const timeWindow = (confMins >= 0) && (Math.abs(mins - confMins) <= 2);
+    if (dayDue && timeWindow && localStorage.getItem('khalwati_conf_notified_' + dueKey) !== '1') {
+     showAppNotification('خلوتي — ميعاد الاعتراف', 'حان ميعاد الاعتراف القادم 🕊️\nادخلي وعلّمي إنك نفّذتي الاعتراف عشان الأيقونة تنوّر.\n«إن اعترفنا بخطايانا فهو أمين وعادل حتى يغفر لنا خطايانا ويطهّرنا من كل إثم (١ يوحنا ١: ٩)»');
      localStorage.setItem('khalwati_conf_notified_' + dueKey, '1');
     }
    }

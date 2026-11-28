@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-app-ver="447" lang="ar" dir="rtl">
+<html data-app-ver="448" lang="ar" dir="rtl">
 <head>
 <script>window.KH_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());</script>
   <meta charset="UTF-8">
@@ -9774,7 +9774,7 @@ function onPrepareImageSelected(idx, input) {
               })
             }).then(function (r) { return r.json(); }).then(function (j) {
               var clean = '';
-              if (j && (j.tafsir || j.text || j.content)) clean = String(j.tafsir || j.text || j.content || '');
+              if (j && (j.tafsir || j.text || j.content || j.result || j.answer || j.interpretation)) clean = String(j.tafsir || j.text || j.content || j.result || j.answer || j.interpretation || '');
               function badTafsir(t) {
                 if (!t || t.length < 80) return true;
                 if (/يركز النص على/.test(t)) return true;
@@ -9842,8 +9842,9 @@ function onPrepareImageSelected(idx, input) {
       }).then(function (res) { return res.json(); }).then(function (data) {
        clearTimeout(tm2);
        go.disabled = false;
-       if (data && data.mode === 'ai' && data.text) {
-        var aiBody = '【 الآية 】\n' + ref + '\n' + text + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+       if (data && (data.text || data.result || data.tafsir || data.content) && data.ok !== false && data.success !== false) {
+        var _aiTxt = data.text || data.result || data.tafsir || data.content || '';
+        var aiBody = '【 الآية 】\n' + ref + '\n' + text + '\n\n' + _aiTxt + '\n\n' + (data.disclaimer || '');
         try { aiBody = appendLexiconToTafsir(aiBody, text); } catch(eLx) {}
         out.textContent = aiBody;
         window._lastTafsir = { ref: ref, text: text, content: aiBody };
@@ -19613,8 +19614,9 @@ function generateOrthodoxTafsir(ref, text) {
       signal: ctrl.signal
      }).then(function (res) { return res.json(); }).then(function (data) {
       clearTimeout(tm);
-      if (data && (data.mode === 'ai' || data.text) && data.text) {
-       var aiContent = '【 الآية 】\n' + (ref ? ref + '\n' : '') + txt + '\n\n' + data.text + '\n\n' + (data.disclaimer || '');
+      if (data && (data.text || data.result || data.tafsir) && data.ok !== false && data.success !== false) {
+       var _aiTxt2 = data.text || data.result || data.tafsir || data.content || '';
+       var aiContent = '【 الآية 】\n' + (ref ? ref + '\n' : '') + txt + '\n\n' + _aiTxt2 + '\n\n' + (data.disclaimer || '');
        showAiResult(aiContent);
       } else {
        showError('تعذّر توليد التفسير الذكي الآن. حاول مرة أخرى.');
